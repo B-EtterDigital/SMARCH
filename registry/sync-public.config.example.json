@@ -1,5 +1,9 @@
 {
-  "allowlist_globs": [],
+  "$comment": "An explicit non-empty allowlist is required. Replace these examples with the exact public files for your sync.",
+  "allowlist_globs": [
+    "README.md",
+    "docs/**/*.md"
+  ],
   "exclude_globs": [],
   "replacements": [
     {

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
+import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery, substringIdfHits } from "./lib/graph-embeddings.mjs";
 import { sourceFreshness } from "./lib/graph-staleness.mjs";
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,6 +26,7 @@ function parseArgs(argv) {
     quiet: false,
     verbose: false,
     semantic: false,
+    semanticRank: true,
     timeoutSeconds: null,
     budget: "2000",
     registry: defaultRegistry,
@@ -60,6 +62,8 @@ function parseArgs(argv) {
       options.verbose = true;
     } else if (arg === "--semantic") {
       options.semantic = true;
+    } else if (arg === "--no-semantic-rank") {
+      options.semanticRank = false;
     } else if (arg === "--limit" && next) {
       options.limit = Number(next);
       i += 1;
@@ -110,7 +114,8 @@ Usage:
   node tools/sma-graphify.mjs refresh-modules [--project <id>|--project-root <path>] [--global] [--no-cluster] [--missing-only] [--limit N] [--quiet] [--semantic] [--timeout-seconds N]
   node tools/sma-graphify.mjs project-from-modules [--project <id>|--project-root <path>] [--global]
   node tools/sma-graphify.mjs target-fixes [--project <id>|--project-root <path>] [--json]
-  node tools/sma-graphify.mjs query [--project <id>|--project-root <path>] [--module <id-or-name>] [--budget 1500] -- "question"
+  node tools/sma-graphify.mjs embedding-index [--project <id>|--project-root <path>] [--module <id-or-name>]
+  node tools/sma-graphify.mjs query [--project <id>|--project-root <path>] [--module <id-or-name>] [--budget 1500] [--no-semantic-rank] -- "question"
   node tools/sma-graphify.mjs path [--project <id>|--project-root <path>] [--module <id-or-name>] -- "A" "B"
   node tools/sma-graphify.mjs explain [--project <id>|--project-root <path>] [--module <id-or-name>] -- "Node"
   node tools/sma-graphify.mjs global-list
@@ -1645,11 +1650,22 @@ function commandProjectFromModules(options) {
   return commandCheck({ ...options, strict: false, projectRoot });
 }
 
-function commandQuery(options) {
+async function commandEmbeddingIndex(options) {
+  const status = requireGraph(options);
+  const result = await buildEmbeddingIndex({ graphPath: status.graphPath });
+  if (!result.built || !("count" in result)) return 0;
+  console.log(`embedding index: ${result.count} nodes, ${result.dims} dims, ${result.backend}/${result.model}`);
+  return 0;
+}
+
+async function commandQuery(options) {
   const status = requireGraph(options);
   const question = options.rest.join(" ").trim();
   if (!question) throw new Error("query requires a question after --");
-  const result = runGraphify(["query", question, "--graph", status.graphPath, "--budget", String(options.budget)]);
+  const ranked = options.semanticRank
+    ? await semanticRerankQuery({ graphPath: status.graphPath, question })
+    : { expandedQuestion: question };
+  const result = runGraphify(["query", ranked.expandedQuestion, "--graph", status.graphPath, "--budget", String(options.budget)]);
   return result.status;
 }
 
@@ -1676,7 +1692,7 @@ function commandGlobalPath() {
   return runGraphify(["global", "path"]).status;
 }
 
-function commandSelftest() {
+async function commandSelftest() {
   const stderrCap = graphifyGlobalCapMessage({
     stderr: "Error: global graph exceeds GRAPHIFY_MAX_GRAPH_BYTES 512MB",
     stdout: "",
@@ -1756,6 +1772,32 @@ function commandSelftest() {
     utimesSync(initialStatus.graphPath, oldTime, oldTime);
     const emptyStatus = graphStatusForTarget(strictOptions, fixtureRoot, moduleTarget, process.execPath);
     assertSelftest(emptyStatus.graphKnownEmpty && !emptyStatus.graphStale, "known-empty graphs must keep existing semantics");
+
+    const embeddingGraphPath = path.join(fixtureRoot, "graphify-out", "graph.json");
+    writeFileSync(embeddingGraphPath, JSON.stringify({
+      nodes: [
+        { id: "session-signin", label: "session-signin", source_snippet: "Establishes a user session." },
+        { id: "invoice-total", label: "invoice-total", source_snippet: "Calculates billing totals." },
+      ],
+      edges: [],
+    }) + "\n");
+    const stubEmbedder = createDeterministicHashEmbedder({ aliases: { auth: "session", login: "signin", flow: "" } });
+    const builtIndex = await buildEmbeddingIndex({ graphPath: embeddingGraphPath, embedder: stubEmbedder });
+    assertSelftest(builtIndex.built && "count" in builtIndex && builtIndex.count === 2, "stub embedding index should build without a model");
+    assertSelftest("builtAt" in builtIndex && builtIndex.builtAt === statSync(embeddingGraphPath).mtime.toISOString(), "embedding metadata must use graph mtime");
+    assertSelftest(substringIdfHits(readJson(embeddingGraphPath), "auth login flow").length === 0, "synonym fixture must miss substring ranking");
+    const semanticResult = await semanticRerankQuery({ graphPath: embeddingGraphPath, question: "auth login flow", embedder: stubEmbedder });
+    assertSelftest(semanticResult.usedSemantic, "semantic rerank should use the fixture index");
+    assertSelftest(semanticResult.hits[0]?.id === "session-signin", "semantic rerank should find the synonym node");
+    assertSelftest(semanticResult.expandedQuestion.includes("session-signin"), "semantic seed should feed the existing traversal query");
+    const warnings = [];
+    const missingEmbedder = await buildEmbeddingIndex({
+      graphPath: embeddingGraphPath,
+      backend: "unavailable-fixture",
+      onWarning: (warning) => warnings.push(warning),
+    });
+    assertSelftest(!missingEmbedder.built && warnings.length === 1, "missing local embedder should warn exactly once and skip");
+    assertSelftest(parseArgs(["query", "--no-semantic-rank", "--", "question"]).semanticRank === false, "query should allow semantic ranking opt-out");
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
@@ -1768,7 +1810,7 @@ function assertSelftest(condition, message) {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }
 
-function main() {
+async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help || options.command === "help" || options.command === "--help" || options.command === "-h") {
     printHelp();
@@ -1781,6 +1823,7 @@ function main() {
   if (options.command === "refresh-modules") return commandRefreshModules(options);
   if (options.command === "project-from-modules") return commandProjectFromModules(options);
   if (options.command === "target-fixes") return commandTargetFixes(options);
+  if (options.command === "embedding-index") return commandEmbeddingIndex(options);
   if (options.command === "query") return commandQuery(options);
   if (options.command === "path") return commandPath(options);
   if (options.command === "explain") return commandExplain(options);
@@ -1792,7 +1835,7 @@ function main() {
 }
 
 try {
-  process.exitCode = main();
+  process.exitCode = await main();
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

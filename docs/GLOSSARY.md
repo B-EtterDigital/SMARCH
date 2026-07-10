@@ -29,7 +29,7 @@ Agent-context is the append-only record of why an agent changed a brick: its int
 
 ## Brick
 
-A brick is the smallest reusable unit of code with a stable contract: owned boundaries, a public interface, required gates, provenance, and clone or update rules. A component or module becomes a brick only when it can be found, verified, and reused through that contract.
+A brick is the smallest reusable unit of code with a stable contract: owned boundaries, a public interface, required gates, provenance, and clone or update rules. A component or module becomes a brick when it carries that contract; the registry then ranks bricks from candidate toward canonical as verification and reuse evidence accumulate.
 
 ## Canonical
 

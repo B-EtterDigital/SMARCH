@@ -169,7 +169,12 @@
     "typecheck": "tsc --noEmit",
     "gate:leaks": "node tools/sma-leak-gate.mjs",
     "fixtures:gen": "node tools/evals/fixtures/gen.mjs",
-    "sync:public": "node tools/sma-sync-public.mjs"
+    "sync:public": "node tools/sma-sync-public.mjs",
+    "demo:record": "cd docs/demo && vhs demo.tape",
+    "journey:quickstart": "node tools/evals/journeys/quickstart.mjs",
+    "mcp:serve": "node tools/mcp/server.mjs",
+    "types:gen": "node tools/lib/schema-types/generate.mjs",
+    "types:check": "node tools/lib/schema-types/generate.mjs --check"
   },
   "description": "SMARCH \u2014 Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
   "license": "Apache-2.0",
@@ -180,5 +185,8 @@
   "devDependencies": {
     "typescript": "^5.7.2",
     "@types/node": "^24.0.0"
+  },
+  "optionalDependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
   }
 }

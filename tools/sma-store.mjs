@@ -31,56 +31,60 @@ import { SMA_ROOT } from "./lib/sma-paths.mjs";
 import {
   readFileSync,
   existsSync,
+  realpathSync,
   readdirSync,
   statSync,
 } from 'node:fs';
-import { resolve } from 'node:path';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { argv, exit } from 'node:process';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 
-const RELEASES_DIR = resolve(SMA_ROOT, 'releases');
-const CLONE_TOOL = resolve(SMA_ROOT, 'tools/sma-clone.mjs');
 const RELEASE_TOOL = resolve(SMA_ROOT, 'tools/sma-release.mjs');
 
-const cmd = argv[2];
-const args = parseArgs(argv.slice(3));
+let args = {};
 
-try {
-  switch (cmd) {
-    case 'list-versions':
-      runListVersions();
-      break;
-    case 'version-graph':
-      runVersionGraph();
-      break;
-    case 'resolve':
-      runResolve();
-      break;
-    case 'install':
-      runInstall();
-      break;
-    case 'create-release':
-      runCreateRelease();
-      break;
-    case 'list-bricks':
-      runListBricks();
-      break;
-    case 'help':
-    case '--help':
-    case '-h':
-    case undefined:
-      usage();
-      exit(cmd ? 0 : 2);
-      break;
-    default:
-      console.error(`unknown subcommand: ${cmd}`);
-      usage();
-      exit(2);
+function main(cliArgs = argv.slice(2)) {
+  const [cmd, ...rawArgs] = cliArgs;
+  args = parseArgs(rawArgs);
+
+  try {
+    switch (cmd) {
+      case 'list-versions':
+        runListVersions();
+        break;
+      case 'version-graph':
+        runVersionGraph();
+        break;
+      case 'resolve':
+        runResolve();
+        break;
+      case 'install':
+        runInstall();
+        break;
+      case 'create-release':
+        runCreateRelease();
+        break;
+      case 'list-bricks':
+        runListBricks();
+        break;
+      case 'help':
+      case '--help':
+      case '-h':
+      case undefined:
+        usage();
+        exit(cmd ? 0 : 2);
+        break;
+      default:
+        console.error(`unknown subcommand: ${cmd}`);
+        usage();
+        exit(2);
+    }
+  } catch (err) {
+    console.error(`sma-store: ${err.message}`);
+    exit(1);
   }
-} catch (err) {
-  console.error(`sma-store: ${err.message}`);
-  exit(1);
 }
 
 function usage() {
@@ -100,7 +104,7 @@ function usage() {
 
 function runListVersions() {
   requireArg('brick', '--brick');
-  const dir = resolve(RELEASES_DIR, args.brick);
+  const dir = resolve(SMA_ROOT, 'releases', args.brick);
   if (!existsSync(dir)) {
     if (args.json) console.log('[]');
     else console.log(`(no releases for ${args.brick})`);
@@ -121,7 +125,7 @@ function runListVersions() {
 
 function runVersionGraph() {
   requireArg('brick', '--brick');
-  const dir = resolve(RELEASES_DIR, args.brick);
+  const dir = resolve(SMA_ROOT, 'releases', args.brick);
   if (!existsSync(dir)) {
     if (args.json) console.log('[]');
     else console.log(`(no releases for ${args.brick})`);
@@ -185,30 +189,155 @@ function runInstall() {
   requireArg('version', '--version');
   requireArg('target', '--target');
 
-  const path = releasePath(args.brick, args.version);
-  if (!existsSync(path)) throw new Error(`release not found: ${args.brick}@${args.version}`);
+  installRelease({
+    root: SMA_ROOT,
+    brick: args.brick,
+    version: args.version,
+    target: args.target,
+    write: Boolean(args.write),
+    force: Boolean(args.force),
+    stdio: 'inherit',
+    logger: console,
+  });
+}
+
+export class StoreInstallRefusedError extends Error {
+  constructor(reason, details = {}) {
+    super(`MCP_RELEASE_INSTALL_REFUSED: ${reason}`);
+    this.name = 'StoreInstallRefusedError';
+    this.code = 'MCP_RELEASE_INSTALL_REFUSED';
+    this.details = { reason, ...details };
+  }
+}
+
+/**
+ * Programmatic release install entry point shared by the CLI and MCP tool.
+ * Destination validation happens before sma-clone can inspect or write the
+ * target, so a hostile release cannot redirect a copy through path syntax or
+ * a pre-existing symlink in the target project.
+ */
+export function installRelease(options = {}) {
+  const root = resolve(options.root || SMA_ROOT);
+  const brick = String(options.brick || '').trim();
+  const version = String(options.version || '').trim();
+  const target = String(options.target || '').trim();
+  if (!brick) throw new Error('missing --brick');
+  if (!version) throw new Error('missing --version');
+  if (!target) throw new Error('missing --target');
+
+  const path = releasePath(brick, version, root);
+  if (!existsSync(path)) throw new Error(`release not found: ${brick}@${version}`);
   const release = JSON.parse(readFileSync(path, 'utf8'));
-  const r = release.release ?? {};
-  if (r.status === 'yanked') {
-    if (!args.force) throw new Error(`refusing to install yanked release ${args.brick}@${args.version}; pass --force to override`);
-    console.warn(`warn: installing YANKED release ${args.brick}@${args.version}`);
+  const releaseMeta = release.release ?? {};
+  if (releaseMeta.status === 'yanked') {
+    if (!options.force) throw new Error(`refusing to install yanked release ${brick}@${version}; pass --force to override`);
+    options.logger?.warn?.(`warn: installing YANKED release ${brick}@${version}`);
   }
 
-  // Delegate the actual file copy to sma-clone.mjs. It is the source of truth
-  // for placement, .smarch lock writes, and integration_recipe stamping.
-  const cloneArgs = [
-    CLONE_TOOL,
-    '--brick',
-    args.brick,
-    '--target',
-    args.target,
-  ];
-  if (args.write) cloneArgs.push('--write');
-  if (args.force) cloneArgs.push('--force');
+  const targetRoot = canonicalTargetRoot(target);
+  const artifacts = Array.isArray(release.content?.artifacts)
+    ? release.content.artifacts
+    : [];
+  for (const [index, artifact] of artifacts.entries()) {
+    validateArtifactDestination(targetRoot, artifact?.path, index);
+  }
 
-  console.log(`install ${args.brick}@${args.version} → ${args.target}${args.write ? ' (writing)' : ' (dry-run)'}`);
-  const res = spawnSync('node', cloneArgs, { stdio: 'inherit' });
-  if (res.status !== 0) throw new Error(`sma-clone exited with status ${res.status}`);
+  // sma-clone remains the source of truth for placement, lock writes, and
+  // integration_recipe stamping. Both the CLI and MCP now reach it through
+  // this single validated store API.
+  const cloneArgs = [
+    resolve(root, 'tools/sma-clone.mjs'),
+    '--brick',
+    brick,
+    '--target',
+    targetRoot,
+  ];
+  if (options.write) cloneArgs.push('--write');
+  if (options.force) cloneArgs.push('--force');
+
+  options.logger?.log?.(`install ${brick}@${version} → ${target}${options.write ? ' (writing)' : ' (dry-run)'}`);
+  const res = spawnSync('node', cloneArgs, {
+    encoding: options.stdio === 'inherit' ? undefined : 'utf8',
+    stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
+  });
+  if (res.error) throw res.error;
+  if (res.status !== 0) {
+    const detail = String(res.stderr || '').trim();
+    throw new Error(`sma-clone exited with status ${res.status}${detail ? `: ${detail}` : ''}`);
+  }
+
+  let clone = null;
+  if (typeof res.stdout === 'string' && res.stdout.trim()) {
+    try { clone = JSON.parse(res.stdout); }
+    catch { clone = { output: res.stdout.trim() }; }
+  }
+  return {
+    ok: true,
+    brick,
+    version,
+    target: targetRoot,
+    write: options.write === true,
+    force: options.force === true,
+    clone,
+  };
+}
+
+function canonicalTargetRoot(target) {
+  try {
+    return realpathSync(resolve(target));
+  } catch (error) {
+    throw new StoreInstallRefusedError('target-root-unresolvable', {
+      target,
+      cause: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+function validateArtifactDestination(targetRoot, artifactPath, index) {
+  const value = typeof artifactPath === 'string' ? artifactPath.trim() : '';
+  const details = { artifact_index: index, artifact_path: artifactPath ?? null, target_root: targetRoot };
+  if (!value) throw new StoreInstallRefusedError('artifact-path-missing', details);
+  if (isAbsolute(value)) throw new StoreInstallRefusedError('artifact-path-absolute', details);
+
+  const segments = value.split(/[\\/]+/);
+  if (segments.includes('..')) throw new StoreInstallRefusedError('artifact-path-traversal', details);
+
+  const lexicalDestination = resolve(targetRoot, value);
+  if (!isContainedPath(targetRoot, lexicalDestination)) {
+    throw new StoreInstallRefusedError('artifact-path-outside-target', {
+      ...details,
+      resolved_path: lexicalDestination,
+    });
+  }
+
+  let canonicalCursor = targetRoot;
+  for (const segment of segments.filter((part) => part && part !== '.')) {
+    const next = resolve(canonicalCursor, segment);
+    if (!existsSync(next)) {
+      canonicalCursor = next;
+      continue;
+    }
+    try {
+      canonicalCursor = realpathSync(next);
+    } catch (error) {
+      throw new StoreInstallRefusedError('artifact-path-unresolvable', {
+        ...details,
+        resolved_path: next,
+        cause: error instanceof Error ? error.message : String(error),
+      });
+    }
+    if (!isContainedPath(targetRoot, canonicalCursor)) {
+      throw new StoreInstallRefusedError('artifact-symlink-outside-target', {
+        ...details,
+        resolved_path: canonicalCursor,
+      });
+    }
+  }
+}
+
+function isContainedPath(root, candidate) {
+  const rel = relative(root, candidate);
+  return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel));
 }
 
 // ── create-release ───────────────────────────────────────────────────────────
@@ -232,15 +361,16 @@ function runCreateRelease() {
 // ── list-bricks ──────────────────────────────────────────────────────────────
 
 function runListBricks() {
-  if (!existsSync(RELEASES_DIR)) {
+  const releasesDir = resolve(SMA_ROOT, 'releases');
+  if (!existsSync(releasesDir)) {
     if (args.json) console.log('[]');
     else console.log('(no releases dir)');
     return;
   }
-  const entries = readdirSync(RELEASES_DIR, { withFileTypes: true })
+  const entries = readdirSync(releasesDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => {
-      const dir = resolve(RELEASES_DIR, d.name);
+      const dir = resolve(releasesDir, d.name);
       const versions = readdirSync(dir).filter((f) => f.endsWith('.json'));
       return { brick: d.name, versions: versions.length };
     });
@@ -257,8 +387,13 @@ function runListBricks() {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function releasePath(brick, version) {
-  return resolve(RELEASES_DIR, brick, `${version}.json`);
+function releasePath(brick, version, root = SMA_ROOT) {
+  const releasesDir = resolve(root, 'releases');
+  const candidate = resolve(releasesDir, brick, `${version}.json`);
+  if (!isContainedPath(releasesDir, candidate)) {
+    throw new StoreInstallRefusedError('release-path-outside-store', { brick, version });
+  }
+  return candidate;
 }
 
 function semverCompare(a, b) {
@@ -301,4 +436,8 @@ function parseArgs(list) {
     i += 1;
   }
   return out;
+}
+
+if (argv[1] && resolve(argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
 }

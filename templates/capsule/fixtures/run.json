@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "fixtures": [
+    {
+      "name": "identity",
+      "inputs": {
+        "message": "capsule ready"
+      },
+      "expected_outputs": {
+        "message": "capsule ready"
+      }
+    }
+  ]
+}

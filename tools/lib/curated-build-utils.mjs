@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { defaultPaths, maybeReadJson } from "./sma-adoption.mjs";
 import { parseArgs as parseFlatArgs } from "./adoption-utils.mjs";
 
+/** @typedef {import("./schema-types/brick.manifest.schema.js").BrickManifest} BrickManifest */
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
 const SKIP_DIRS = new Set([".git", "node_modules", ".next", ".nuxt", ".turbo", "dist", "build", "coverage"]);

@@ -13,7 +13,7 @@ const platformTargets = {
 };
 
 function parseArgs(argv) {
-  const options = { target: process.cwd(), platform: "all", instructions: true };
+  const options = { target: process.cwd(), platform: "all", instructions: true, hooks: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -27,6 +27,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === "--no-instructions") {
       options.instructions = false;
+    } else if (arg === "--hooks") {
+      options.hooks = true;
     } else if (arg === "--help" || arg === "-h") {
       console.log(`Install SMA agent skills
 
@@ -38,12 +40,72 @@ Platforms:
 
 Options:
   --no-instructions  Install skills without appending AGENTS.md / CLAUDE.md snippets
+  --hooks            Merge ambient write hooks into .claude/settings.json
 `);
       process.exit(0);
     }
   }
 
   return options;
+}
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", `'\\''`)}'`;
+}
+
+function hasCommandHook(entries, command) {
+  return entries.some((entry) =>
+    Array.isArray(entry?.hooks)
+    && entry.hooks.some((hook) => hook?.type === "command" && hook.command === command)
+  );
+}
+
+async function installAmbientHooks(target) {
+  const settingsPath = path.join(target, ".claude", "settings.json");
+  /** @type {{ hooks?: Record<string, Array<{ matcher?: string, hooks?: Array<{ type?: string, command?: string }> }>> }} */
+  let settings = {};
+
+  try {
+    settings = JSON.parse(await fs.readFile(settingsPath, "utf8"));
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      throw new Error(`Cannot merge ambient hooks into ${settingsPath}: ${error.message}`);
+    }
+  }
+
+  if (!settings || Array.isArray(settings) || typeof settings !== "object") {
+    throw new Error(`Cannot merge ambient hooks into ${settingsPath}: settings root must be an object`);
+  }
+
+  settings.hooks ??= {};
+  if (Array.isArray(settings.hooks) || typeof settings.hooks !== "object") {
+    throw new Error(`Cannot merge ambient hooks into ${settingsPath}: hooks must be an object`);
+  }
+
+  const matcher = "Write|Edit|MultiEdit|NotebookEdit";
+  const hookSpecs = [
+    ["PreToolUse", "pre-write.sh"],
+    ["PostToolUse", "post-write.sh"],
+  ];
+
+  for (const [eventName, scriptName] of hookSpecs) {
+    settings.hooks[eventName] ??= [];
+    if (!Array.isArray(settings.hooks[eventName])) {
+      throw new Error(`Cannot merge ambient hooks into ${settingsPath}: hooks.${eventName} must be an array`);
+    }
+
+    const command = shellQuote(path.join(smaRoot, "tools", "hooks", "ambient", scriptName));
+    if (!hasCommandHook(settings.hooks[eventName], command)) {
+      settings.hooks[eventName].push({
+        matcher,
+        hooks: [{ type: "command", command }],
+      });
+    }
+  }
+
+  await fs.mkdir(path.dirname(settingsPath), { recursive: true });
+  await fs.writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  console.log(`Installed SMA ambient hooks in ${settingsPath}`);
 }
 
 async function copyDir(source, dest) {
@@ -141,6 +203,10 @@ async function main() {
       }
     }
     console.log(`Installed SMA skills for ${platform}`);
+  }
+
+  if (options.hooks) {
+    await installAmbientHooks(options.target);
   }
 }
 

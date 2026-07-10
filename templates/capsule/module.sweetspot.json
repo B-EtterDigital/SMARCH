@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0.0",
+  "brick": {
+    "id": "example.capsule",
+    "name": "Example Capsule",
+    "kind": "capsule",
+    "status": "candidate",
+    "version": "0.1.0",
+    "language": ["typescript"],
+    "frameworks": [],
+    "domain": ["portable-logic"]
+  },
+  "hierarchy": {
+    "level": "brick",
+    "contains": ["module"],
+    "component_policy": "internal_by_default"
+  },
+  "source": {
+    "project": "capsule-template",
+    "repository": "",
+    "commit": "",
+    "paths": ["src"]
+  },
+  "owner": {
+    "primary": "sma-operator",
+    "team": "Sweetspot",
+    "reviewers": []
+  },
+  "boundaries": {
+    "owned_paths": ["src"],
+    "public_paths": ["src/index.ts"],
+    "private_paths": [],
+    "forbidden_imports": [],
+    "allowed_side_effects": []
+  },
+  "classification": {
+    "data_classes": ["public"],
+    "risk": "low",
+    "notes": "The untouched capsule is a pure identity transform."
+  },
+  "sweetspot": {
+    "ssa_v2": { "status": "passing", "score": 100 },
+    "ssi": { "status": "passing", "score": 100 },
+    "sstf": { "status": "passing", "score": 100 },
+    "spe": { "status": "passing", "score": 100 },
+    "srs": { "status": "passing", "score": 100 },
+    "ssra": { "status": "passing", "score": 100 },
+    "sas": { "status": "passing", "score": 100 },
+    "sva": { "status": "passing", "score": 100 },
+    "srls": { "status": "not_applicable", "score": 100 },
+    "sev": { "status": "passing", "score": 100 },
+    "ssc": { "status": "passing", "score": 100 },
+    "sai": { "status": "not_applicable", "score": 100 }
+  },
+  "interfaces": {
+    "public_api": ["default"],
+    "adapters": [],
+    "ports": [],
+    "forbidden_dependencies": [],
+    "required_dependencies": []
+  },
+  "security": {
+    "rls": {
+      "required": false,
+      "status": "not_applicable"
+    },
+    "env": {
+      "required": false,
+      "status": "complete",
+      "variables": []
+    },
+    "vulnerability_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "report_paths": []
+    }
+  },
+  "supply_chain": {
+    "dependencies": [],
+    "licenses": ["project-license"],
+    "checksums": [],
+    "sbom_path": ""
+  },
+  "quality": {
+    "score": 100,
+    "line_count": {
+      "max_file_lines": 8,
+      "over_600_count": 0
+    },
+    "code_budget": {
+      "status": "lean",
+      "feature_lines": 5,
+      "file_count": 1,
+      "dependency_count": 0,
+      "notes": "One entry point, one mandatory fixture, and no default ports."
+    },
+    "test_commands": ["node tools/sma-brick-run.mjs templates/capsule"],
+    "verification": [
+      {
+        "command": "node tools/sma-brick-run.mjs templates/capsule",
+        "status": "passing",
+        "notes": "The untouched template fixture is the capsule tier smoke test."
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "copy_ready",
+    "adaptation_points": ["brick identity", "entry implementation", "fixtures", "declared ports", "env contract"],
+    "install_steps": [
+      "Copy the capsule directory.",
+      "Change the brick identity and source metadata.",
+      "Implement src/index.ts and update fixtures/run.json.",
+      "Declare every external import as an interfaces.ports entry.",
+      "Run the capsule fixture runner."
+    ],
+    "known_traps": [
+      "Do not add a second entry point.",
+      "Do not import undeclared packages or Node built-ins.",
+      "Do not read undeclared environment variables."
+    ]
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "human",
+      "actor_id": "sma-template",
+      "role": "architect",
+      "timestamp": "2026-07-10T00:00:00Z",
+      "summary": "Created the constraint-first capsule template."
+    },
+    "touched_by": [],
+    "reviewed_by": [],
+    "source_chain": []
+  }
+}

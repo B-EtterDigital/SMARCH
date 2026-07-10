@@ -26,3 +26,26 @@
 {"ts": "2026-07-10T15:54:10+00:00", "action": "complete", "id": "UV-MC-server-scaffold", "detail": "node tools/mcp/selftest.mjs"}
 {"ts": "2026-07-10T15:54:12+00:00", "action": "complete", "id": "UV-RG-skeptic-scan-fail-closed", "detail": "node --check tools/sma-scan.mjs"}
 {"ts": "2026-07-10T15:54:16+00:00", "action": "complete", "id": "UV-DO-doc-glossary-write", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T16:05:31+00:00", "action": "claim", "id": "UV-SM-workforce-contract", "agent": "codex-w2-workforce"}
+{"ts": "2026-07-10T16:05:33+00:00", "action": "claim", "id": "UV-CO-ambient-hooks", "agent": "codex-w2-hooks"}
+{"ts": "2026-07-10T16:05:35+00:00", "action": "claim", "id": "UV-DO-demo-tape", "agent": "codex-w3-demo"}
+{"ts": "2026-07-10T16:05:36+00:00", "action": "claim", "id": "UV-DO-doc-quickstart-write", "agent": "codex-w3-quickstart"}
+{"ts": "2026-07-10T16:23:47+00:00", "action": "claim", "id": "UV-GR-embedding-index", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:48+00:00", "action": "claim", "id": "UV-CP-scaffold", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:48+00:00", "action": "claim", "id": "UV-CP-brick-run", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:49+00:00", "action": "claim", "id": "UV-SC-schema-types-codegen", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:50+00:00", "action": "claim", "id": "UV-DO-commands-reference", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:51+00:00", "action": "claim", "id": "UV-DO-start-here", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:51+00:00", "action": "claim", "id": "UV-DO-orientation-zero", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:23:52+00:00", "action": "claim", "id": "UV-MC-skeptic-install-path-escape", "agent": "codex-w4"}
+{"ts": "2026-07-10T16:46:04+00:00", "action": "complete", "id": "UV-SM-workforce-contract", "detail": "node tools/lib/workforce/contract.mjs --selftest"}
+{"ts": "2026-07-10T16:46:06+00:00", "action": "complete", "id": "UV-CO-ambient-hooks", "detail": "bash -n tools/hooks/ambient/pre-write.sh"}
+{"ts": "2026-07-10T16:47:41+00:00", "action": "complete", "id": "UV-DO-doc-quickstart-write", "detail": "node tools/evals/journeys/quickstart.mjs"}
+{"ts": "2026-07-10T16:47:42+00:00", "action": "complete", "id": "UV-GR-embedding-index", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-10T16:47:43+00:00", "action": "complete", "id": "UV-CP-scaffold", "detail": "node tools/sma-brick-run.mjs --selftest"}
+{"ts": "2026-07-10T16:47:44+00:00", "action": "complete", "id": "UV-CP-brick-run", "detail": "node tools/sma-brick-run.mjs --selftest"}
+{"ts": "2026-07-10T16:47:46+00:00", "action": "complete", "id": "UV-SC-schema-types-codegen", "detail": "node tools/lib/schema-types/generate.mjs --check"}
+{"ts": "2026-07-10T16:47:47+00:00", "action": "complete", "id": "UV-DO-commands-reference", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T16:47:49+00:00", "action": "complete", "id": "UV-DO-start-here", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T16:47:51+00:00", "action": "complete", "id": "UV-DO-orientation-zero", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T16:47:53+00:00", "action": "complete", "id": "UV-MC-skeptic-install-path-escape", "detail": "node tools/mcp/selftest.mjs"}

@@ -7,30 +7,55 @@
  * or as { "exceptions": [...] }.
  */
 
-import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const TOOL_PATH = fileURLToPath(import.meta.url);
+const SMA_ROOT = resolve(dirname(TOOL_PATH), '..');
 const PATTERNS_PATH = resolve(SMA_ROOT, 'registry/leak-patterns.json');
 const PATTERNS_REPO_PATH = 'registry/leak-patterns.json';
+
+// The gate and its pattern file necessarily contain pattern-shaped text
+// (selftest fixtures, the patterns themselves) — scanning them is always a
+// false positive. Everything else stays in scope.
+const SELF_EXCLUDE = new Set(['tools/sma-leak-gate.mjs', PATTERNS_REPO_PATH]);
 const root = resolve(process.cwd());
 
+let args = {};
 try {
-  const args = parseArgs(process.argv.slice(2));
+  args = parseArgs(process.argv.slice(2));
+  if (args.selftest) {
+    runSelftest();
+  } else {
+    const result = scanLeaks(args, root);
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      printResult(result);
+    }
+    if (result.hit_count > 0) process.exitCode = 1;
+  }
+} catch (error) {
+  printError(error.code || 'UNEXPECTED_ERROR', error.message);
+  process.exitCode = 2;
+}
+
+function scanLeaks(options, repoRoot) {
   const patterns = readPatterns(PATTERNS_PATH);
-  const exceptions = args.allow ? readExceptions(resolve(args.allow)) : [];
-  const files = trackedFiles(root);
-  const patternRegistryPath = pathWithin(root, PATTERNS_PATH);
-  const allowPath = args.allow ? pathWithin(root, resolve(args.allow)) : null;
+  const exceptions = options.allow ? readExceptions(resolve(options.allow)) : [];
+  const files = trackedFiles(repoRoot);
+  const patternRegistryPath = pathWithin(repoRoot, PATTERNS_PATH);
+  const allowPath = options.allow ? pathWithin(repoRoot, resolve(options.allow)) : null;
   const hits = [];
   let textFileCount = 0;
   let allowedCount = 0;
 
   for (const file of files) {
-    if (file === patternRegistryPath || file === PATTERNS_REPO_PATH || file === allowPath) continue;
-    const absolutePath = resolve(root, file);
+    if (file === patternRegistryPath || file === allowPath || SELF_EXCLUDE.has(file)) continue;
+    const absolutePath = resolve(repoRoot, file);
     if (!existsSync(absolutePath) || !lstatSync(absolutePath).isFile()) continue;
     const text = readTextFile(absolutePath);
     if (text === null) continue;
@@ -38,20 +63,21 @@ try {
     const lines = text.split(/\r?\n/);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
-      const lowered = line.toLowerCase();
       for (const entry of patterns) {
-        if (!lowered.includes(entry.normalized)) continue;
-        if (isSafePlaceholder(line, entry.pattern)) continue;
-        const hit = {
-          path: file,
-          line: lineIndex + 1,
-          pattern: entry.pattern,
-          category: entry.category,
-        };
-        if (isAllowed(hit, exceptions)) {
-          allowedCount += 1;
-        } else {
-          hits.push(hit);
+        for (const matchIndex of findMatchIndexes(line.toLowerCase(), entry.normalized)) {
+          if (isSafePlaceholder(line, matchIndex, entry.pattern)) continue;
+          const hit = {
+            path: file,
+            line: lineIndex + 1,
+            column: matchIndex + 1,
+            pattern: entry.pattern,
+            category: entry.category,
+          };
+          if (isAllowed(hit, exceptions)) {
+            allowedCount += 1;
+          } else {
+            hits.push(hit);
+          }
         }
       }
     }
@@ -59,24 +85,14 @@ try {
 
   const result = {
     status: hits.length ? 'failed' : 'passed',
-    root,
+    root: repoRoot,
     tracked_file_count: files.length,
     tracked_text_file_count: textFileCount,
     hit_count: hits.length,
     allowed_count: allowedCount,
     hits,
   };
-
-  if (args.json) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    printResult(result);
-  }
-
-  if (hits.length) process.exit(1);
-} catch (error) {
-  printError(error.code || 'UNEXPECTED_ERROR', error.message);
-  process.exit(2);
+  return result;
 }
 
 function readPatterns(filePath) {
@@ -153,18 +169,77 @@ function isAllowed(hit, exceptions) {
   return exceptions.some((entry) => entry.path === hit.path && entry.pattern === pattern);
 }
 
-function isSafePlaceholder(line, pattern) {
-  const lowered = line.toLowerCase();
-  if (pattern.startsWith('/') && lowered.includes(pattern.toLowerCase())) {
-    return line.includes('[redacted]') || line.includes(`${pattern}...`);
+function findMatchIndexes(text, pattern) {
+  const indexes = [];
+  let offset = 0;
+  while ((offset = text.indexOf(pattern, offset)) !== -1) {
+    indexes.push(offset);
+    offset += pattern.length;
+  }
+  return indexes;
+}
+
+function isSafePlaceholder(line, matchIndex, pattern) {
+  if (pattern.startsWith('/')) {
+    const suffix = line.slice(matchIndex + pattern.length);
+    return suffix.startsWith('[redacted]') || suffix.startsWith('...');
   }
   if (!pattern.startsWith('@')) return false;
-  const publicMailLink = line.match(/\[([^\]]+@[^\]]+)\]\(mailto:([^\)]+)\)/i);
-  return Boolean(
-    publicMailLink
+  const mailLinkPattern = /\[([^\]]+@[^\]]+)\]\(mailto:([^\)]+)\)/ig;
+  for (const publicMailLink of line.matchAll(mailLinkPattern)) {
+    const start = publicMailLink.index;
+    const end = start + publicMailLink[0].length;
+    if (
+      matchIndex >= start
+      && matchIndex < end
       && publicMailLink[1].toLowerCase() === publicMailLink[2].toLowerCase()
-      && publicMailLink[1].toLowerCase().includes(pattern.toLowerCase()),
-  );
+      && publicMailLink[1].toLowerCase().includes(pattern.toLowerCase())
+    ) return true;
+  }
+  return false;
+}
+
+function runSelftest() {
+  const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'sma-leak-gate-selftest-'));
+  try {
+    mkdirSync(fixtureRoot, { recursive: true });
+    execFileSync('git', ['init', '-q'], { cwd: fixtureRoot, stdio: 'ignore' });
+    const fixturePath = resolve(fixtureRoot, 'mixed.txt');
+    writeFileSync(
+      fixturePath,
+      'placeholder=/home/[redacted] real=/home/private\n'
+      + 'public=[team@gmail.com](mailto:team@gmail.com) private=owner@gmail.com\n',
+    );
+    execFileSync('git', ['add', '--', 'mixed.txt'], { cwd: fixtureRoot, stdio: 'ignore' });
+
+    const failed = spawnTool(fixtureRoot);
+    assert(failed.status === 1, `leak hits must exit 1, received ${failed.status}`);
+    const failedResult = JSON.parse(failed.stdout);
+    assert(failedResult.hit_count === 2, `expected two real per-match hits, received ${failedResult.hit_count}`);
+    assert(failedResult.hits.every((hit) => hit.column > 1), 'per-match hits must include their columns');
+
+    writeFileSync(
+      fixturePath,
+      'placeholder=/home/[redacted]\npublic=[team@gmail.com](mailto:team@gmail.com)\n',
+    );
+    execFileSync('git', ['add', '--', 'mixed.txt'], { cwd: fixtureRoot, stdio: 'ignore' });
+    const passed = spawnTool(fixtureRoot);
+    assert(passed.status === 0, `placeholder-only fixture must exit 0, received ${passed.status}`);
+    assert(JSON.parse(passed.stdout).hit_count === 0, 'placeholder-only fixture produced a hit');
+    console.log('SMA leak gate selftest: passed');
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+}
+
+function spawnTool(cwd) {
+  const result = spawnSync(process.execPath, [TOOL_PATH, '--json'], { cwd, encoding: 'utf8' });
+  if (result.error) throw result.error;
+  return result;
+}
+
+function assert(condition, message) {
+  if (!condition) throw codedError('SELFTEST_FAILED', message);
 }
 
 function printResult(result) {
@@ -199,6 +274,10 @@ function parseArgs(list) {
     const arg = list[index];
     if (arg === '--json') {
       out.json = true;
+      continue;
+    }
+    if (arg === '--selftest') {
+      out.selftest = true;
       continue;
     }
     if (arg === '--allow') {

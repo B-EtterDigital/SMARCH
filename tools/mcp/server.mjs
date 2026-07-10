@@ -64,9 +64,16 @@ function toolResult(value) {
 
 function toolError(error) {
   const message = error instanceof Error ? error.message : String(error);
+  const structured = error && typeof error === "object" && typeof error.code === "string"
+    ? {
+      code: error.code,
+      message,
+      ...(error.details && typeof error.details === "object" ? { details: error.details } : {}),
+    }
+    : message;
   return {
     isError: true,
-    content: [{ type: "text", text: JSON.stringify({ error: message }) }],
+    content: [{ type: "text", text: JSON.stringify({ error: structured }) }],
   };
 }
 
@@ -126,4 +133,3 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exitCode = 1;
   });
 }
-

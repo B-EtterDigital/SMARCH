@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,6 +52,42 @@ async function fixtureRegistry() {
   };
 }
 
+async function writeReleaseFixture(root, brick, version, artifactPath) {
+  const releaseDirectory = path.join(root, "releases", brick);
+  await mkdir(releaseDirectory, { recursive: true });
+  await writeFile(
+    path.join(releaseDirectory, `${version}.json`),
+    `${JSON.stringify({
+      release: {
+        artifact_id: brick,
+        version,
+        status: "published",
+      },
+      content: {
+        included_paths: [artifactPath],
+        artifacts: [{
+          path: artifactPath,
+          kind: "file",
+          sha256: "a".repeat(64),
+        }],
+      },
+    }, null, 2)}\n`,
+  );
+}
+
+async function assertInstallRefused(install, input, reason, artifactPath) {
+  await assert.rejects(
+    install.handler(input),
+    (error) => {
+      const structured = /** @type {{ code?: string, details?: Record<string, unknown> }} */ (error);
+      assert.equal(structured?.code, "MCP_RELEASE_INSTALL_REFUSED");
+      assert.equal(structured?.details?.reason, reason);
+      assert.equal(structured?.details?.artifact_path, artifactPath);
+      return true;
+    },
+  );
+}
+
 async function run() {
   const tools = await loadToolModules();
   assert.deepEqual(tools.map((tool) => tool.name).sort(), EXPECTED_TOOLS);
@@ -93,17 +129,53 @@ async function run() {
     assert.ok(response.results.every((brick) => Number.isFinite(brick.trust.score)));
     assert.ok(response.results.every((brick) => Object.hasOwn(brick.trust, "health_status")));
     assert.ok(response.results.every((brick) => Object.hasOwn(brick.trust, "clone_readiness")));
+
+    const install = tools.find((tool) => tool.name === "release-install");
+    const target = path.join(root, "target-project");
+    const outside = path.join(root, "outside-target");
+    await mkdir(target, { recursive: true });
+    await mkdir(outside, { recursive: true });
+
+    const attacks = [
+      {
+        brick: "attack.dot-dot",
+        version: "1.0.0",
+        artifactPath: "../escaped.txt",
+        reason: "artifact-path-traversal",
+      },
+      {
+        brick: "attack.absolute",
+        version: "1.0.0",
+        artifactPath: path.join(outside, "absolute.txt"),
+        reason: "artifact-path-absolute",
+      },
+      {
+        brick: "attack.symlink",
+        version: "1.0.0",
+        artifactPath: "linked/escaped.txt",
+        reason: "artifact-symlink-outside-target",
+      },
+    ];
+    await symlink(outside, path.join(target, "linked"), "dir");
+    for (const attack of attacks) {
+      await writeReleaseFixture(root, attack.brick, attack.version, attack.artifactPath);
+      await assertInstallRefused(install, {
+        brick: attack.brick,
+        version: attack.version,
+        target,
+        write: false,
+      }, attack.reason, attack.artifactPath);
+    }
   } finally {
     if (previousRoot === undefined) delete process.env.SMA_ROOT;
     else process.env.SMA_ROOT = previousRoot;
     await rm(root, { recursive: true, force: true });
   }
 
-  console.log("mcp selftest: ok (8 tools; fixture trust search passed)");
+  console.log("mcp selftest: ok (8 tools; fixture trust search and install containment attacks passed)");
 }
 
 run().catch((error) => {
   console.error(`mcp selftest: ${error.stack || error.message}`);
   process.exitCode = 1;
 });
-
