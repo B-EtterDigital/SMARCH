@@ -519,7 +519,7 @@ function familyFromPath(file) {
 }
 
 function familyFromKnownName(value) {
-  const match = String(value || '').match(/\b(modlink|modcap|modchat|moddic|modagent|modbro|modcore|modvibe|modflow)\b/i);
+  const match = String(value || '').match(/\b(modlink|modcap|modchat|moddic|acme-agent|modbro|modcore|modvibe|modflow)\b/i);
   return match ? match[1].toLowerCase() : null;
 }
 

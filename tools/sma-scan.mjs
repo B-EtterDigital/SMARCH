@@ -2803,7 +2803,7 @@ function looksLikeProjectImport(specifier) {
     || specifier.startsWith("/")
     || specifier.startsWith("@/")
     || specifier.startsWith("~/")
-    || /^(src|app|apps|web|packages|modagent|supabase|electron|renderer|main|sidecar|shared|lib|libs|0000[a-z0-9._-]*|000_[a-z0-9._-]+|002-[a-z0-9._-]+|099_[a-z0-9._-]+)/i.test(specifier);
+    || /^(src|app|apps|web|packages|acme-agent|supabase|electron|renderer|main|sidecar|shared|lib|libs|0000[a-z0-9._-]*|000_[a-z0-9._-]+|002-[a-z0-9._-]+|099_[a-z0-9._-]+)/i.test(specifier);
 }
 
 function importResolutionCandidates(basePath) {

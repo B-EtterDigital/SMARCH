@@ -51,12 +51,12 @@ const PROJECT_OVERRIDES = {
   'acme-cms': 'acme-cms',
   'acme-travel': 'acme-travel',
   'acme-desktop': 'acme-desktop',
-  'modagent': 'modagent',
-  '003-mcc': '003_MCC',
-  'modagent-standalone': 'modagent-standalone',
+  'acme-agent': 'acme-agent',
+  'acme-mcc': 'ACME_MCC',
+  'acme-agent-standalone': 'acme-agent-standalone',
   'acme-lab': 'workspace/acme-lab',
-  'clndel': '000CLNDEL/clndel',
-  'modstrudl': '000_modstrudl',
+  'acme-cleaner': 'acme-cleaner/acme-cleaner',
+  'acme-strudel': '000_acme-strudel',
 };
 
 // Declared up here to avoid TDZ when referenced from lastCommits() invoked

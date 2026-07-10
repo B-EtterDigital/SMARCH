@@ -3,7 +3,7 @@
  * path consistently across planner + runner.
  *
  * The registry occasionally stores `source_paths` with the project name as
- * the first segment (e.g. project="modagent", source_paths[0]="modagent/...").
+ * the first segment (e.g. project="acme-agent", source_paths[0]="acme-agent/...").
  * When we resolve that against a project root that already ends in the
  * project name, we get a doubled prefix and the path doesn't exist on disk.
  * The manifest_path field is always correct, so we use its directory as the

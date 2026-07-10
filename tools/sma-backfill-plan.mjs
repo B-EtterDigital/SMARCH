@@ -49,8 +49,8 @@ const PRIORITY_TIER = new Set([
 ]);
 
 const TOP10_BY_BRICK_COUNT = new Set([
-  'acme-desktop', 'acme-studio', 'acme-factory', 'acme-desktop', 'modagent',
-  '003-mcc', 'modagent-standalone', 'betterdigital-lab', 'clndel', 'modstrudl',
+  'acme-desktop', 'acme-studio', 'acme-factory', 'acme-desktop', 'acme-agent',
+  'acme-mcc', 'acme-agent-standalone', 'acme-labs', 'acme-cleaner', 'acme-strudel',
 ]);
 
 // Lazy-loaded recency cache (declared up here to avoid TDZ when reached
