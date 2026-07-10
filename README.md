@@ -11,6 +11,44 @@ without turning the repo into a junk drawer.
 > boundaries and evidence. The registry only matters if bad bricks are
 > rejected.
 
+[![gates](https://github.com/B-EtterDigital/SMARCH/actions/workflows/gates.yml/badge.svg)](https://github.com/B-EtterDigital/SMARCH/actions/workflows/gates.yml)
+![license](https://img.shields.io/badge/license-Apache--2.0-blue)
+[![site](https://img.shields.io/badge/site-smarch.netlify.app-ffc21f)](https://smarch.netlify.app)
+
+## Quickstart (ten minutes)
+
+```bash
+git clone https://github.com/B-EtterDigital/SMARCH sma
+cd sma && npm install && npm link
+sma list                                          # every command
+node tools/install-agent-skills.mjs --target ~/your-project
+```
+
+What lands on your machine: a Node CLI, the CI gates, the scanner, the agent
+skills (one command installs them into any project), and a registry that fills
+with your own bricks when you point the scanner at your own repos.
+
+## Verify this repo, no trust required
+
+The repo seals its own tools in a public hash-chain ledger
+(`registry/public-ledger.generated.json`). Recompute it yourself:
+
+```bash
+node tools/gen-public-ledger.mjs   # recompute seals from file bytes + git history
+```
+
+Or verify it live in your browser on [smarch.netlify.app](https://smarch.netlify.app#provenance):
+the page fetches the raw files and the ledger from GitHub, recomputes every
+content hash, anchor, and chain head with WebCrypto, and compares. If history
+was edited, the head breaks.
+
+## Honest status
+
+Fresh from the forge (day 406 of refinement). The one-command installer is
+still being packaged, so today you clone and link. The $5 lifetime scanner
+license arrives by email while checkout is built:
+[betterdigitalllc@gmail.com](mailto:betterdigitalllc@gmail.com).
+
 ## Core Vocabulary
 
 | Term | Meaning |

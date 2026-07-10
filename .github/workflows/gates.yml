@@ -1,0 +1,18 @@
+name: gates
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: syntax-check every tool
+        run: |
+          set -e
+          find tools -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - name: seal the public ledger (proves the provenance path runs)
+        run: node tools/gen-public-ledger.mjs
