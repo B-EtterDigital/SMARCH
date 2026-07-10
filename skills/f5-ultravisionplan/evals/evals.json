@@ -1,0 +1,23 @@
+{
+  "skill_name": "f5-ultravisionplan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run /f5-ultravisionplan in pilot mode on this repo. Reconstruct the full vision, audit the current state, and generate the .UltraVision plan with calibration task shards.",
+      "expected_output": ".UltraVision/ folder with all 10 root docs, per-module tasklists with _MODULE.md charters, schema-valid tasks (IDs, complexity, lane, milestone, done-when, gates), media tasks flagged paid for a visual product, and a clean validator run reflected in INDEX.md",
+      "files": ["toy game repo with ambitious README vision, TODO comments, no sma.gen3.json"]
+    },
+    {
+      "id": 2,
+      "prompt": "this project needs the full treatment — map every single task between what we have now and the perfect finished product, ready for my SMA agents to execute in parallel",
+      "expected_output": "Full-mode .UltraVision plan: exhaustive gap-covering tasklists grouped by module ownership, shared-hot-path serialization, complexity distribution suitable for model delegation, validator PASS",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "We finished a bunch of UltraVision tasks last sprint and added a new payments module — refresh the plan.",
+      "expected_output": "Refresh mode: completed tasks flipped with evidence preserved, new module directory with new task IDs appended (no renumbering), regenerated stats and INDEX",
+      "files": ["repo with existing .UltraVision folder"]
+    }
+  ]
+}

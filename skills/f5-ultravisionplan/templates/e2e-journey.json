@@ -1,0 +1,23 @@
+{
+  "applies_to": "e2e-journey",
+  "version": 1,
+  "notes": "Every critical user journey in inventories/*.e2e-journey.json (e.g. 'first-run to first success', 'purchase', 'recover account'). These verify the product, not single screens. Vars: steps (short journey outline).",
+  "steps": [
+    { "slug": "spec", "title": "Specify journey: {name}", "domain": "test", "complexity": "C2", "est_minutes": 30,
+      "description": "Write the journey contract for {name}: entry state, steps ({steps}), success signal, and the top 2 failure branches users actually hit.",
+      "acceptance_criteria": ["journey doc with steps + success signal + failure branches"],
+      "gates": ["review against 02-GAP-ANALYSIS.md user promises"] },
+    { "slug": "impl", "title": "Automate journey: {name}", "domain": "test", "complexity": "C3", "depends_on": ["#spec"], "est_minutes": 90,
+      "description": "Automate {name} end-to-end against a real build (not mocks at the seams users cross): happy path plus both specified failure branches.",
+      "acceptance_criteria": ["green in CI against a production-like build", "failure branches asserted with user-visible outcomes"],
+      "gates": ["e2e suite"] },
+    { "slug": "flake", "title": "Deflake and time-budget journey: {name}", "domain": "test", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 40,
+      "description": "Run {name} 10x in CI: eliminate nondeterminism (explicit waits on signals, not sleeps); set a runtime budget so the suite stays fast.",
+      "acceptance_criteria": ["10/10 consecutive green", "runtime within suite budget"],
+      "gates": ["e2e suite x10"] },
+    { "slug": "monitor", "title": "Production signal for journey: {name}", "domain": "telemetry", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 30,
+      "description": "Define the real-world health signal for {name} (funnel completion rate or synthetic check) so a regression is visible without a bug report.",
+      "acceptance_criteria": ["signal observable in telemetry", "alert-worthy threshold documented"],
+      "gates": ["telemetry audit"] }
+  ]
+}

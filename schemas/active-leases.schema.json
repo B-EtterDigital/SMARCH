@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sma/schemas/active-leases.schema.json",
+  "title": "SMA Active Leases",
+  "description": "Soft locks across SMARCH-managed resources. Agents (human or model-driven) acquire a lease on a brick or regen-target before edits, and release it after. TTL-based so a crashed agent does not permanently block a resource. Runtime cache lives at SMA/registry/active-leases.generated.json and is intentionally ignored by git.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "leases"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "leases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lease" }
+    }
+  },
+  "$defs": {
+    "lease": {
+      "type": "object",
+      "required": ["lease_id", "resource_kind", "resource_id", "agent_id", "acquired_at", "expires_at", "intent"],
+      "additionalProperties": false,
+      "properties": {
+        "lease_id": {
+          "type": "string",
+          "description": "Unique id for this lease. Format: lease-<unix-ms>-<8 hex>."
+        },
+        "resource_kind": {
+          "type": "string",
+          "enum": [
+            "brick",
+            "build",
+            "release",
+            "registry-regen",
+            "wiki-regen",
+            "state-regen",
+            "import-lock",
+            "backlog",
+            "other"
+          ]
+        },
+        "resource_id": {
+          "type": "string",
+          "description": "Brick id, build id, regen target name (e.g. wiki/BRICK_WALL), etc."
+        },
+        "project": {
+          "type": "string",
+          "description": "Optional project scope. Required for project-local resources like backlog or import-lock."
+        },
+        "agent_id": {
+          "type": "string",
+          "description": "Identifier of the actor holding the lease. e.g. claude-opus-4-7@sess-abc, human@sma-operator."
+        },
+        "actor_kind": {
+          "type": "string",
+          "enum": ["human", "ai_model", "agent", "automation", "tool"]
+        },
+        "session_id": { "type": "string" },
+        "task_id": { "type": "string" },
+        "model": { "type": "string" },
+        "acquired_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "renewed_at": { "type": "string", "format": "date-time" },
+        "renewals": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 4,
+          "description": "What the agent plans to do with this resource. Mandatory."
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this work is happening now. Optional but encouraged."
+        },
+        "linked_backlog": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "force_acquired_from": {
+          "type": "string",
+          "description": "If this lease was force-stolen, the prior lease_id."
+        },
+        "force_acquired_reason": { "type": "string" }
+      }
+    }
+  }
+}

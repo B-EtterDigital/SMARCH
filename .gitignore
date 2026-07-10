@@ -1,0 +1,42 @@
+.DS_Store
+node_modules/
+
+# Local environment files
+.env
+.env.*
+
+# Machine-local portfolio description (copy from portfolio.config.example.json)
+registry/portfolio.config.json
+
+# Generated runtime artifacts — every operator regenerates their own
+registry/*.generated.json
+scans/*/
+wiki/*.generated.*
+wiki/bricks/
+wiki/bricks-detailed/
+wiki/projects/
+wiki/all-projects/
+wiki/gen3/
+security/*.generated.json
+handoffs/*.generated.json
+handoffs/repo-builds/
+handoffs/repo-queues/
+handoffs/backfill/
+handoffs/module-waves/
+publish/*.generated.json
+releases/
+scaffolds/*.generated.json
+logs/
+
+# Provenance-seal signing keys — private keys must NEVER be committed.
+# Public keys (seal.<id>.pub.pem) may be committed so seals can be verified.
+security/keys/*.key.pem
+
+# Local SMA Gen3 runtime cache (rewritten whenever leases are acquired/released)
+registry/active-leases.generated.json
+
+# Local Graphify retrieval artifacts
+graphify-out/
+
+# Local debugging and browser/session captures
+.playwright-mcp/

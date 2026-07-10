@@ -1,0 +1,4 @@
+interface:
+  display_name: "SMA Gen3"
+  short_description: "SMA Gen3 lanes and module graphs"
+  default_prompt: "Use $sma-gen3 to plan safe SMA work with Gen3 lanes, mandatory module Graphify, SRS proof, and scanner freshness."

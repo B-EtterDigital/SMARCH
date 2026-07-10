@@ -1,0 +1,10 @@
+{
+  "$comment": "Copy to registry/portfolio.config.json (gitignored) to describe your local portfolio. All fields optional.",
+  "priority_project_ids": ["acme-desktop", "acme-studio"],
+  "overrides": {
+    "000_AcmeDesktop_v1": { "id": "acme-desktop", "name": "Acme Desktop" },
+    "workspace/acme-studio": { "id": "acme-studio", "name": "Acme Studio" }
+  },
+  "ignored_top_level_dirs": ["DEPRECATED", "RESEARCH"],
+  "ignored_name_fragments": ["backup", "corrupt"]
+}

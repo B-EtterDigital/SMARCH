@@ -1,0 +1,25 @@
+{
+  "applies_to": "background-job",
+  "version": 1,
+  "notes": "Every queue worker/cron/scheduled job in inventories/*.background-job.json. Vars: schedule or trigger.",
+  "steps": [
+    { "slug": "impl", "title": "Implement {name} job", "domain": "backend", "complexity": "C3", "est_minutes": 60,
+      "description": "Implement {name} at {path} with single-flight protection (no overlapping runs), bounded runtime, and structured start/finish logging.",
+      "acceptance_criteria": ["overlapping trigger does not double-run", "runtime bounded with timeout"],
+      "gates": ["{module_gates}"] },
+    { "slug": "idempotent", "title": "Idempotency and resume for {name}", "domain": "backend", "complexity": "C3", "depends_on": ["#impl"], "est_minutes": 45,
+      "description": "A crashed or retried {name} run must not corrupt or duplicate work: checkpoint progress, make side effects idempotent, define poison-input handling (dead-letter).",
+      "acceptance_criteria": ["kill mid-run then rerun produces correct final state", "poison input parks in dead-letter with telemetry, not an infinite retry loop"],
+      "gates": ["{module_gates}"] },
+    { "slug": "backoff", "title": "Retry/backoff policy for {name}", "domain": "backend", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 30,
+      "description": "Explicit retry policy for {name}: max attempts, exponential backoff with jitter, which error classes retry vs fail fast; documented in code.",
+      "acceptance_criteria": ["transient failure retries with backoff", "permanent failure fails fast with telemetry"],
+      "gates": ["{module_gates}"] },
+    { "$ref": "unit-tests", "depends_on": ["#idempotent"] },
+    { "slug": "observability", "title": "Run-health observability for {name}", "domain": "telemetry", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 30,
+      "description": "Emit per-run metrics for {name}: duration, processed count, failure count, last-success timestamp; alert-worthy conditions (N consecutive failures, staleness) breadcrumbed.",
+      "acceptance_criteria": ["a stalled or repeatedly failing job is visible in telemetry without reading logs"],
+      "gates": ["telemetry audit"] },
+    { "$ref": "docs", "depends_on": ["#impl"] }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "build_id": "example.build.capability",
+  "command_id": "positive-smoke",
+  "evidence_type": "smoke",
+  "status": "pass",
+  "recorded_at": "2026-04-22T00:00:00Z",
+  "operator": "engineer-or-agent-name",
+  "environment": "local-dev-or-fixture-name",
+  "command": "npm run <build-specific-smoke>",
+  "result_summary": "Primary flow completed successfully in the target fixture.",
+  "limitations": [
+    "Only one target was exercised",
+    "Publish safety was not evaluated here"
+  ],
+  "artifacts": [
+    {
+      "kind": "log",
+      "path": "path/to/log-or-note.txt"
+    }
+  ]
+}

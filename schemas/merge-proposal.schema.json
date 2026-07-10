@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sma/schemas/merge-proposal.schema.json",
+  "title": "SMA Merge Proposal",
+  "description": "Generated when two divergent edit chains are detected on the same brick. Surfaces conflicting intents from agent-context, not just conflicting bytes. Written to <project>/.smarch/merge-proposals/<brick-id>-<unix-ms>.json for human or orchestrator review.",
+  "type": "object",
+  "required": ["schema_version", "proposal_id", "brick_id", "generated_at", "chains", "files", "recommendation"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "proposal_id": { "type": "string" },
+    "brick_id": { "type": "string" },
+    "project": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "chains": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["chain_id", "agent_id", "intents", "events"],
+        "additionalProperties": false,
+        "properties": {
+          "chain_id": { "type": "string" },
+          "agent_id": { "type": "string" },
+          "session_id": { "type": "string" },
+          "actor_kind": { "type": "string" },
+          "model": { "type": "string" },
+          "started_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": "string", "format": "date-time" },
+          "intents": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Distinct intent statements pulled from the chain's agent-context events."
+          },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "description": "event_id refs into the agent-context log" }
+          },
+          "files_touched": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "lease_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "status": {
+            "enum": ["only_in_chain_a", "only_in_chain_b", "diverged", "agreed", "manifest_field_diverged"]
+          },
+          "diverged_field": {
+            "type": "string",
+            "description": "If status is manifest_field_diverged, the JSON pointer of the field."
+          }
+        }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "required": ["preferred_chain", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "preferred_chain": { "type": "string", "description": "chain_id, or 'manual' if no clear winner" },
+        "reason": { "type": "string" }
+      }
+    },
+    "resolved_at": { "type": "string", "format": "date-time" },
+    "resolved_by": { "type": "string" },
+    "resolution_kind": {
+      "type": "string",
+      "enum": ["accepted_a", "accepted_b", "manual_merge", "discarded_a", "discarded_b", "fork"]
+    },
+    "resolution_notes": { "type": "string" }
+  }
+}

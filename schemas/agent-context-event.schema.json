@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sma/schemas/agent-context-event.schema.json",
+  "title": "SMA Agent Context Event",
+  "description": "One event in an append-only NDJSON log of agent actions on a brick. Lives at <project>/.smarch/agent-context/<brick-id>.ndjson. Never rewrite an event; always append. Survives compaction. Parallel to git history but records intent rather than diff.",
+  "type": "object",
+  "required": ["schema_version", "event_id", "brick_id", "actor_kind", "actor_id", "kind", "intent", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "event_id": {
+      "type": "string",
+      "description": "Stable id, format: ctx-<unix-ms>-<8 hex>."
+    },
+    "brick_id": { "type": "string" },
+    "project": { "type": "string" },
+    "actor_kind": {
+      "type": "string",
+      "enum": ["human", "ai_model", "agent", "automation", "tool"]
+    },
+    "actor_id": { "type": "string" },
+    "model": { "type": "string" },
+    "session_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "lease_id": {
+      "type": "string",
+      "description": "Lease this event was performed under. Strongly encouraged."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "lease_acquired",
+        "lease_renewed",
+        "lease_released",
+        "lease_expired",
+        "lease_force_acquired",
+        "edit_planned",
+        "edit_applied",
+        "decision_recorded",
+        "alternative_rejected",
+        "verification_run",
+        "proof_recorded",
+        "promotion_attempted",
+        "promotion_blocked",
+        "release_cut",
+        "merge_proposed",
+        "merge_resolved",
+        "conflict_detected",
+        "conflict_resolved",
+        "note"
+      ]
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 4,
+      "description": "What the agent is doing or about to do. Plain sentence. Mandatory."
+    },
+    "decision_rationale": {
+      "type": "string",
+      "description": "Why this approach was chosen. Optional but expected on edit_applied and decision_recorded."
+    },
+    "rejected_alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["alternative", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "alternative": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "linked_backlog": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "files_touched": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "commit": { "type": "string" },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command": { "type": "string" },
+        "status": { "enum": ["pass", "fail", "skipped", "blocked"] },
+        "output_path": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "proof": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Concrete proof commands or artifact references produced for this brick."
+    },
+    "gain_percent": {
+      "type": "number",
+      "description": "Optional measured or estimated improvement captured with proof evidence."
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

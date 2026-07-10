@@ -1,0 +1,22 @@
+name: SMA
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  sma:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run SMA gates
+        run: |
+          node ~/DEV/SMARCH/tools/sma-ci.mjs \
+            --root "$GITHUB_WORKSPACE" \
+            --registry "$GITHUB_WORKSPACE/.sweetspot/global-modules.generated.json" \
+            --wiki "$GITHUB_WORKSPACE/.sweetspot/wiki"

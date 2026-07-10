@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "threshold": 1900,
+  "updated_at": "2026-07-03T00:00:00.000Z",
+  "files": [
+    {
+      "path": "tools/sma-scan.mjs",
+      "lines": 4732,
+      "reason": "legacy oversized source; split below the SMA source-size cap"
+    },
+    {
+      "path": "tools/sma-wiki.mjs",
+      "lines": 4159,
+      "reason": "legacy oversized source; split below the SMA source-size cap"
+    }
+  ]
+}

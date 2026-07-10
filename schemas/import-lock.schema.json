@@ -1,0 +1,363 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/import-lock.schema.json",
+  "title": "Sweetspot Import Lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "lock",
+    "target",
+    "selected_builds",
+    "resolved_bricks",
+    "frozen_dependency_graph",
+    "trust_policy",
+    "verification_policy"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_at", "registry_snapshot_sha", "mode"],
+      "properties": {
+        "lock_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "generated_by": {
+          "$ref": "#/$defs/actor_record"
+        },
+        "registry_snapshot_sha": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["exact", "channel", "mixed"]
+        },
+        "imports_path": {
+          "type": "string"
+        },
+        "registry_origin": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional. Identity-portable origin URL of the SMA registry that produced this lock. Federation hook."
+        },
+        "placements_path": {
+          "type": "string"
+        },
+        "update_journal_path": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "commit": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "runtimes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "frameworks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "selected_builds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/locked_build"
+      }
+    },
+    "resolved_bricks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/locked_brick"
+      }
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_type", "artifact_id", "channel"],
+        "properties": {
+          "artifact_type": {
+            "$ref": "#/$defs/artifact_type"
+          },
+          "artifact_id": {
+            "$ref": "#/$defs/artifact_id"
+          },
+          "channel": {
+            "type": "string",
+            "enum": ["dev", "alpha", "beta", "candidate", "stable", "lts", "hotfix"]
+          }
+        }
+      }
+    },
+    "frozen_dependency_graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["node_id", "artifact_type", "artifact_id", "release_version"],
+            "properties": {
+              "node_id": {
+                "type": "string"
+              },
+              "artifact_type": {
+                "$ref": "#/$defs/artifact_type"
+              },
+              "artifact_id": {
+                "$ref": "#/$defs/artifact_id"
+              },
+              "release_version": {
+                "$ref": "#/$defs/semver"
+              },
+              "release_hash": {
+                "$ref": "#/$defs/hash_like"
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to", "relation"],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "relation": {
+                "type": "string",
+                "enum": ["depends_on", "composes_with", "optional", "adapter_for", "alternative_to"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "trust_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_release_statuses",
+        "require_contract_hashes",
+        "allow_local_overrides"
+      ],
+      "properties": {
+        "allowed_release_statuses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["draft", "published", "deprecated", "yanked", "superseded"]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "minimum_verification_status": {
+          "type": "string",
+          "enum": ["unverified", "candidate", "verified", "canonical"]
+        },
+        "require_contract_hashes": {
+          "type": "boolean"
+        },
+        "allow_local_overrides": {
+          "type": "boolean"
+        },
+        "fail_on_yanked_release": {
+          "type": "boolean"
+        },
+        "fail_on_breaking_upgrade": {
+          "type": "boolean"
+        }
+      }
+    },
+    "verification_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_declared_tests", "fail_on_missing_env", "required_check_status"],
+      "properties": {
+        "run_declared_tests": {
+          "type": "boolean"
+        },
+        "run_import_resolution": {
+          "type": "boolean"
+        },
+        "run_env_truthing": {
+          "type": "boolean"
+        },
+        "run_rls_truthing": {
+          "type": "boolean"
+        },
+        "fail_on_missing_env": {
+          "type": "boolean"
+        },
+        "fail_on_contract_delta": {
+          "type": "boolean"
+        },
+        "required_check_status": {
+          "type": "string",
+          "enum": ["passed", "warning", "skipped"]
+        },
+        "post_install_checks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "actor_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor"],
+      "properties": {
+        "actor": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,160}$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "enum": ["brick", "build"]
+    },
+    "hash_like": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{7,128}$"
+    },
+    "locked_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["import_id", "artifact_type", "artifact_id", "release_version"],
+      "properties": {
+        "import_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
+        },
+        "artifact_type": {
+          "$ref": "#/$defs/artifact_type"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/artifact_id"
+        },
+        "release_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "release_hash": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["dev", "alpha", "beta", "candidate", "stable", "lts", "hotfix"]
+        },
+        "source_project": {
+          "type": "string"
+        },
+        "trust_tier": {
+          "type": "string",
+          "enum": ["experimental", "candidate", "verified", "canonical"]
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": ["unverified", "candidate", "verified", "canonical", "failed"]
+        },
+        "local_overrides": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "locked_brick": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/locked_artifact"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifact_type": {
+              "const": "brick"
+            }
+          }
+        }
+      ]
+    },
+    "locked_build": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/locked_artifact"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "artifact_type": {
+              "const": "build"
+            }
+          }
+        }
+      ]
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    }
+  }
+}

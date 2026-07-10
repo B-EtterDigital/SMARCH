@@ -1,0 +1,667 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/brick.manifest.schema.json",
+  "title": "Sweetspot Brick Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "brick",
+    "source",
+    "owner",
+    "boundaries",
+    "classification",
+    "sweetspot",
+    "interfaces",
+    "security",
+    "supply_chain",
+    "quality",
+    "clone",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "brick": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind", "status", "version", "language"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,120}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["module", "submodule", "module_group", "adapter", "guard", "tooling", "template"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["experimental", "project_bound", "variant", "duplicate", "legacy", "candidate", "canonical"]
+        },
+        "version": {
+          "type": "string"
+        },
+        "language": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "frameworks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "domain": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "registry_origin": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional. Identity-portable origin URL for this brick. Lets the same brick id resolve across SMA instances or external mirrors (e.g. https://sma.example.local, https://codeberg.org/<org>/<repo>). Federation hook; runtime federation deferred."
+        },
+        "replication": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Optional. Declares the brick author's stance on downstream copies. Read by sma-propagate.mjs to decide auto-fan-out vs notify-only.",
+          "properties": {
+            "policy": {
+              "enum": ["track-canonical", "pin-version", "fork-snapshot", "manual"],
+              "description": "track-canonical: dependents should auto-update on minor/patch. pin-version: dependents stay on declared version. fork-snapshot: copy-and-own; no upstream propagation expected. manual: case-by-case."
+            },
+            "auto_pr_on_minor": { "type": "boolean", "default": false },
+            "auto_pr_on_patch": { "type": "boolean", "default": false },
+            "deprecation_window_days": { "type": "integer", "minimum": 0 },
+            "notify_owners": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Slack/email handles to ping when a release artifact is cut."
+            }
+          }
+        }
+      }
+    },
+    "hierarchy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level"],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["brick_group", "brick", "module", "submodule", "component"]
+        },
+        "group_id": { "type": "string" },
+        "parent_brick_id": { "type": "string" },
+        "parent_module_id": { "type": "string" },
+        "contains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["brick", "module", "submodule", "component", "service", "adapter", "hook", "utility", "file"]
+          },
+          "uniqueItems": true
+        },
+        "component_policy": {
+          "type": "string",
+          "enum": ["internal_by_default", "manifest_required", "public_component_brick"]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project", "paths"],
+      "properties": {
+        "project": { "type": "string" },
+        "repository": { "type": "string" },
+        "commit": { "type": "string" },
+        "archive_hash": { "type": "string" },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "copied_from": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["project", "brick_id"],
+            "properties": {
+              "project": { "type": "string" },
+              "brick_id": { "type": "string" },
+              "commit": { "type": "string" },
+              "path": { "type": "string" },
+              "copied_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary"],
+      "properties": {
+        "primary": { "type": "string" },
+        "team": { "type": "string" },
+        "reviewers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The brick's OWN license and openness — distinct from supply_chain.licenses (which are dependency licenses). Optional in the schema; resolved and enforced by the license-ledger + license-lattice gate. Fail-safe: an absent/unknown license is treated as closed.",
+      "required": ["spdx", "openness"],
+      "properties": {
+        "spdx": {
+          "type": "string",
+          "description": "SPDX identifier (e.g. MIT, Apache-2.0, AGPL-3.0) or 'proprietary'/'UNLICENSED' for closed source."
+        },
+        "openness": {
+          "type": "string",
+          "enum": ["closed", "source-available", "open"],
+          "description": "The redistribution axis. A composed build's openness can never exceed the MEET of its bricks' openness."
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["private", "internal", "community", "public"],
+          "description": "Access tier for this brick. A build's visibility can never exceed the MEET of its bricks' visibility."
+        },
+        "redistribute": {
+          "type": "string",
+          "enum": ["forbidden", "with-attribution", "allowed"]
+        },
+        "commercial_use": { "type": "boolean" },
+        "attribution_required": { "type": "boolean" },
+        "inherited_from": {
+          "type": "string",
+          "description": "brick_id this license/openness was inherited from when the brick was forked or copied."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owned_paths", "public_paths", "private_paths"],
+      "properties": {
+        "owned_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "public_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "private_paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "forbidden_imports": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "allowed_side_effects": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_classes", "risk"],
+      "properties": {
+        "data_classes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "public",
+              "user_private",
+              "org_private",
+              "admin_only",
+              "pii",
+              "payment",
+              "credential",
+              "health_sensitive",
+              "regulated"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "risk": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "sweetspot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ssa_v2", "ssi", "sstf", "spe", "srs", "ssra", "sas", "sva", "srls", "sev", "ssc", "sai"],
+      "properties": {
+        "ssa_v2": { "$ref": "#/$defs/gate_score" },
+        "ssi": { "$ref": "#/$defs/gate_score" },
+        "sstf": { "$ref": "#/$defs/gate_score" },
+        "spe": { "$ref": "#/$defs/gate_score" },
+        "srs": { "$ref": "#/$defs/gate_score" },
+        "ssra": { "$ref": "#/$defs/gate_score" },
+        "sas": { "$ref": "#/$defs/gate_score" },
+        "sva": { "$ref": "#/$defs/gate_score" },
+        "srls": { "$ref": "#/$defs/gate_score" },
+        "sev": { "$ref": "#/$defs/gate_score" },
+        "ssc": { "$ref": "#/$defs/gate_score" },
+        "sai": { "$ref": "#/$defs/gate_score" }
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "public_api": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "adapters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "forbidden_dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "required_dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rls", "env", "vulnerability_findings"],
+      "properties": {
+        "rls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "status"],
+          "properties": {
+            "required": { "type": "boolean" },
+            "status": { "type": "string", "enum": ["not_applicable", "missing", "partial", "complete"] },
+            "matrix_path": { "type": "string" },
+            "negative_tests": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            }
+          }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "status", "variables"],
+          "properties": {
+            "required": { "type": "boolean" },
+            "status": { "type": "string", "enum": ["not_applicable", "missing", "partial", "complete"] },
+            "variables": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/env_var" },
+              "uniqueItems": true
+            }
+          }
+        },
+        "vulnerability_findings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["critical", "high", "medium", "low"],
+          "properties": {
+            "critical": { "type": "integer", "minimum": 0 },
+            "high": { "type": "integer", "minimum": 0 },
+            "medium": { "type": "integer", "minimum": 0 },
+            "low": { "type": "integer", "minimum": 0 },
+            "report_paths": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    },
+    "supply_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dependencies", "licenses", "checksums"],
+      "properties": {
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "purpose"],
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "type": "string" },
+              "license": { "type": "string" },
+              "purpose": { "type": "string" },
+              "risk": { "type": "string", "enum": ["low", "medium", "high", "unknown"] }
+            }
+          }
+        },
+        "licenses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "checksums": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": { "type": "string" },
+              "sha256": { "type": "string" }
+            }
+          }
+        },
+        "sbom_path": { "type": "string" }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "line_count", "code_budget", "test_commands", "verification"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "line_count": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_file_lines", "over_600_count"],
+          "properties": {
+            "max_file_lines": { "type": "integer", "minimum": 0 },
+            "over_600_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "code_budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "feature_lines", "file_count", "dependency_count"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["lean", "acceptable", "bloated", "unknown"]
+            },
+            "feature_lines": { "type": "integer", "minimum": 0 },
+            "file_count": { "type": "integer", "minimum": 0 },
+            "dependency_count": { "type": "integer", "minimum": 0 },
+            "notes": { "type": "string" },
+            "exceptions": {
+              "type": "array",
+              "items": { "type": "string" },
+              "uniqueItems": true
+            },
+            "static_tokens_estimate": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Heuristic generation-token count for this brick's source. Populated by tools/sma-token-count.mjs."
+            },
+            "realistic_regenerate_tokens_estimate": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "static_tokens_estimate × multiplier (default 3.8×) accounting for iteration and design discussion."
+            },
+            "estimate_method": {
+              "type": "string",
+              "description": "Method that produced the estimate, e.g. 'heuristic@3.8x' or 'tiktoken@gpt-4o@3.8x'."
+            },
+            "last_estimated_at": { "type": "string", "format": "date-time" }
+          }
+        },
+        "test_commands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "verification": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/verification_event" }
+        }
+      }
+    },
+    "clone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["readiness", "adaptation_points", "install_steps", "known_traps"],
+      "properties": {
+        "readiness": {
+          "type": "string",
+          "enum": ["blocked", "manual_only", "guided", "copy_ready"]
+        },
+        "adaptation_points": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "install_steps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "known_traps": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created_by", "touched_by", "reviewed_by", "source_chain"],
+      "properties": {
+        "created_by": { "$ref": "#/$defs/touch_event" },
+        "touched_by": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/touch_event" }
+        },
+        "reviewed_by": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/touch_event" }
+        },
+        "source_chain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["project", "brick_id"],
+            "properties": {
+              "project": { "type": "string" },
+              "brick_id": { "type": "string" },
+              "commit": { "type": "string" },
+              "path": { "type": "string" },
+              "event": { "type": "string", "enum": ["created", "copied", "forked", "merged", "promoted"] },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "seal": { "$ref": "#/$defs/provenance_seal" }
+      }
+    }
+  },
+  "$defs": {
+    "provenance_seal": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Tamper-evident hash chain over provenance events anchored to the content fingerprint. Generated by tools/sma-provenance-ledger.mjs and verified by tools/sma-provenance-verify.mjs. Editing history breaks the head; signing closes the recompute-forgery gap.",
+      "required": ["algo", "head"],
+      "properties": {
+        "algo": { "type": "string", "description": "e.g. sha256-chain-v1" },
+        "anchor": { "type": "string", "description": "H(algo:brick_id:content_hash) — binds the seal to the source fingerprint." },
+        "head": { "type": "string", "description": "Chain head after folding in every provenance event in order." },
+        "chain_length": { "type": "integer", "minimum": 0 },
+        "events_digest": { "type": "string" },
+        "signature": { "type": "string", "description": "Optional ed25519 signature over head (hex)." },
+        "key_id": { "type": "string", "description": "Short id of the signing public key (security/keys/seal.<key_id>.pub.pem)." }
+      }
+    },
+    "gate_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "score"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_applicable", "missing", "partial", "passing", "blocked"]
+        },
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "notes": { "type": "string" },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "env_var": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "scope", "required_in"],
+      "properties": {
+        "name": { "type": "string" },
+        "scope": {
+          "type": "string",
+          "enum": ["server_only", "public_client", "ci_only", "local_only"]
+        },
+        "required_in": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["local", "preview", "production", "test", "ci"] },
+          "uniqueItems": true
+        },
+        "forbidden_in": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["client_bundle", "logs", "docs", "tests", "ci"] },
+          "uniqueItems": true
+        },
+        "example": { "type": "string" }
+      }
+    },
+    "verification_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "status"],
+      "properties": {
+        "command": { "type": "string" },
+        "status": { "type": "string", "enum": ["pass", "fail", "skipped", "blocked"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "output_path": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "touch_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_kind", "actor_id", "role", "timestamp", "summary"],
+      "properties": {
+        "actor_kind": {
+          "type": "string",
+          "enum": ["human", "ai_model", "agent", "automation", "tool"]
+        },
+        "actor_id": { "type": "string" },
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": ["architect", "implementer", "reviewer", "security", "tester", "refactor", "release", "scanner"]
+        },
+        "session_id": { "type": "string" },
+        "task_id": { "type": "string" },
+        "commit": { "type": "string" },
+        "files_touched": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "verification": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/verification_event" }
+        },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "summary": { "type": "string" },
+        "intent": {
+          "type": "string",
+          "description": "What the actor was trying to do. The 'why' Entire-style. Strongly encouraged for ai_model and agent actors."
+        },
+        "decision_rationale": {
+          "type": "string",
+          "description": "Why this approach was chosen over alternatives."
+        },
+        "rejected_alternatives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["alternative", "reason"],
+            "properties": {
+              "alternative": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "linked_backlog": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Backlog entry ids related to this touch."
+        },
+        "lease_id": {
+          "type": "string",
+          "description": "active-leases.generated.json lease_id under which this touch was performed."
+        },
+        "context_event_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "agent-context event_ids for this touch."
+        },
+        "attestation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["manual", "git_commit", "agent_runner", "ci_job", "scanner"]
+            },
+            "reference": { "type": "string" },
+            "hash": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

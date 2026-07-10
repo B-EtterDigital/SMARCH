@@ -1,0 +1,31 @@
+{
+  "build_id": "example.build.capability",
+  "generated_for": "repo-level verification repair",
+  "commands": [
+    {
+      "id": "positive-smoke",
+      "purpose": "Exercise the main happy-path behavior once with explicit prerequisites.",
+      "kind": "command",
+      "command": "npm run <build-specific-smoke>",
+      "working_directory": "/path/to/source/project",
+      "requires": [
+        "Required env vars are present",
+        "Target service or fixture is reachable"
+      ],
+      "expected_result": "Primary flow completes without build-specific errors.",
+      "evidence_required": true
+    },
+    {
+      "id": "negative-path-review",
+      "purpose": "Check the build's main failure or authorization boundary honestly.",
+      "kind": "review",
+      "command": "Review auth, RLS, or failure-path behavior for the build-specific risk area.",
+      "working_directory": "/path/to/source/project",
+      "requires": [
+        "Relevant source paths and contracts are available"
+      ],
+      "expected_result": "Failure path is understood and limitations are written down.",
+      "evidence_required": true
+    }
+  ]
+}

@@ -1,0 +1,470 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/release.schema.json",
+  "title": "Sweetspot Artifact Release",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release",
+    "content",
+    "contracts",
+    "verification",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "artifact_id",
+        "version",
+        "channel",
+        "status",
+        "created_at",
+        "source_commit",
+        "registry_snapshot_sha",
+        "content_hash"
+      ],
+      "properties": {
+        "release_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
+        },
+        "artifact_type": {
+          "$ref": "#/$defs/artifact_type"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/artifact_id"
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["dev", "alpha", "beta", "candidate", "stable", "lts", "hotfix"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published", "deprecated", "yanked", "superseded"]
+        },
+        "source_project": {
+          "type": "string"
+        },
+        "source_manifest_path": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_commit": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "registry_snapshot_sha": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "content_hash": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "previous_release": {
+          "type": "string"
+        },
+        "registry_origin": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional. Identity-portable origin URL. Federation hook for resolving the same release across SMA instances."
+        },
+        "supersedes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "replacement_release": {
+          "type": "string"
+        },
+        "breaking": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included_paths"],
+      "properties": {
+        "included_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "portable_docs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "entrypoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "kind", "sha256"],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["file", "directory", "doc", "asset", "config", "migration", "test"]
+              },
+              "sha256": {
+                "$ref": "#/$defs/hash_like"
+              },
+              "executable": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashes", "runtimes"],
+      "properties": {
+        "hashes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "env": {
+              "$ref": "#/$defs/hash_like"
+            },
+            "interfaces": {
+              "$ref": "#/$defs/hash_like"
+            },
+            "data": {
+              "$ref": "#/$defs/hash_like"
+            },
+            "rls": {
+              "$ref": "#/$defs/hash_like"
+            },
+            "dependencies": {
+              "$ref": "#/$defs/hash_like"
+            },
+            "verification": {
+              "$ref": "#/$defs/hash_like"
+            }
+          }
+        },
+        "runtimes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "required_env": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "optional_env": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "forbidden_env": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "data_classes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "public",
+              "user_private",
+              "org_private",
+              "admin_only",
+              "pii",
+              "payment",
+              "credential",
+              "health_sensitive",
+              "regulated"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "public_interfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "dependency_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["artifact_type", "artifact_id"],
+            "properties": {
+              "artifact_type": {
+                "$ref": "#/$defs/artifact_type"
+              },
+              "artifact_id": {
+                "$ref": "#/$defs/artifact_id"
+              },
+              "version_range": {
+                "type": "string"
+              },
+              "release_ref": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "external_packages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version_range": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["runtime", "build", "dev"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["unverified", "candidate", "verified", "canonical", "failed"]
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fixture_targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "smoke_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "integration_targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "status"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["passed", "failed", "skipped"]
+              },
+              "command": {
+                "type": "string"
+              },
+              "evidence_path": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "rollback_supported": {
+          "type": "boolean"
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "type": "string"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "manual_steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "type": "string"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "artifact_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created_by"],
+      "properties": {
+        "created_by": {
+          "$ref": "#/$defs/actor_record"
+        },
+        "reviewed_by": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actor_record"
+          }
+        },
+        "source_chain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "ref"],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": ["manifest", "registry", "build", "brick", "release", "commit", "doc"]
+              },
+              "ref": {
+                "type": "string"
+              },
+              "hash": {
+                "$ref": "#/$defs/hash_like"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,160}$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "enum": ["brick", "build"]
+    },
+    "actor_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor"],
+      "properties": {
+        "actor": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "hash_like": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{7,128}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    }
+  }
+}

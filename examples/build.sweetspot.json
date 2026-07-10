@@ -1,0 +1,536 @@
+{
+  "schema_version": "1.0.0",
+  "build": {
+    "id": "acme-studio.build.ai-image-generation.capability",
+    "name": "AI Image Generation Capability",
+    "slug": "ai-image-generation-capability",
+    "kind": "capability_build",
+    "status": "candidate",
+    "version": "0.1.0",
+    "domain": ["ai", "image-generation", "media"],
+    "runtimes": ["node", "supabase", "browser"],
+    "visibility": "private",
+    "stability": "evolving",
+    "trust_tier": "reviewed",
+    "summary": "Fal-backed image generation with processing, proxy delivery, and regression coverage."
+  },
+  "source": {
+    "project": "acme-studio-workspace",
+    "repository": "",
+    "commit": "",
+    "paths": [
+      "supabase/functions/ai-image-process",
+      "supabase/functions/fal-artwork-tools",
+      "supabase/functions/process-image",
+      "supabase/functions/image-proxy",
+      "0000testing/suites/86-image-generation"
+    ],
+    "derived_from_bricks": [
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-ai-image-process.489bb75d",
+        "role": "request_orchestrator",
+        "required": true,
+        "order": 10,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/ai-image-process",
+        "notes": "Validates requests and dispatches the generation workflow."
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-fal-artwork-tools.0b5b8135",
+        "role": "provider_adapter",
+        "required": true,
+        "order": 20,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/fal-artwork-tools",
+        "notes": "Calls the external image provider and normalizes response payloads."
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-process-image.6eb94f2d",
+        "role": "storage_adapter",
+        "required": true,
+        "order": 30,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/process-image",
+        "notes": "Post-processes generated assets before durable storage."
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-image-proxy.01227ad5",
+        "role": "asset_proxy",
+        "required": true,
+        "order": 40,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/image-proxy",
+        "notes": "Serves generated assets through controlled project-owned URLs."
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.test-suite.0000testing-suites-86-image-generation.d7768729",
+        "role": "test_harness",
+        "required": false,
+        "order": 90,
+        "project": "acme-studio-workspace",
+        "path": "0000testing/suites/86-image-generation",
+        "notes": "Regression suite for generation flow quality and failure handling."
+      }
+    ],
+    "supporting_artifacts": ["docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md"]
+  },
+  "owner": {
+    "primary": "sma-operator",
+    "team": "Sweetspot",
+    "reviewers": []
+  },
+  "composition": {
+    "brick_refs": [
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-ai-image-process.489bb75d",
+        "role": "request_orchestrator",
+        "required": true,
+        "order": 10,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/ai-image-process"
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-fal-artwork-tools.0b5b8135",
+        "role": "provider_adapter",
+        "required": true,
+        "order": 20,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/fal-artwork-tools"
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-process-image.6eb94f2d",
+        "role": "storage_adapter",
+        "required": true,
+        "order": 30,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/process-image"
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-image-proxy.01227ad5",
+        "role": "asset_proxy",
+        "required": true,
+        "order": 40,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/image-proxy"
+      },
+      {
+        "brick_id": "acme-studio.acme-studio.test-suite.0000testing-suites-86-image-generation.d7768729",
+        "role": "test_harness",
+        "required": false,
+        "order": 90,
+        "project": "acme-studio-workspace",
+        "path": "0000testing/suites/86-image-generation"
+      }
+    ],
+    "flows": [
+      {
+        "id": "request-to-asset",
+        "name": "Request To Stored Asset",
+        "steps": [
+          {
+            "id": "request_validation",
+            "name": "Request Validation",
+            "order": 10,
+            "brick_refs": [
+              "acme-studio.acme-studio.supabase-function.supabase-functions-ai-image-process.489bb75d"
+            ],
+            "inputs": ["prompt", "style_preset", "aspect_ratio", "seed"],
+            "outputs": ["sanitized_request", "generation_job_id"]
+          },
+          {
+            "id": "provider_generation",
+            "name": "Provider Generation",
+            "order": 20,
+            "brick_refs": [
+              "acme-studio.acme-studio.supabase-function.supabase-functions-fal-artwork-tools.0b5b8135"
+            ],
+            "inputs": ["sanitized_request", "generation_job_id"],
+            "outputs": ["provider_asset_url", "provider_job_id"]
+          },
+          {
+            "id": "post_process",
+            "name": "Post Process Asset",
+            "order": 30,
+            "brick_refs": [
+              "acme-studio.acme-studio.supabase-function.supabase-functions-process-image.6eb94f2d"
+            ],
+            "inputs": ["provider_asset_url", "generation_job_id"],
+            "outputs": ["normalized_asset_path", "storage_asset_path"]
+          },
+          {
+            "id": "secure_delivery",
+            "name": "Secure Delivery",
+            "order": 40,
+            "brick_refs": [
+              "acme-studio.acme-studio.supabase-function.supabase-functions-image-proxy.01227ad5"
+            ],
+            "inputs": ["storage_asset_path"],
+            "outputs": ["proxy_url"]
+          }
+        ],
+        "notes": "Core generation pipeline from prompt intake to project-owned delivery URL."
+      }
+    ],
+    "optional_bricks": [
+      {
+        "brick_id": "acme-studio.acme-studio.supabase-function.supabase-functions-generate-story-images.9d16270b",
+        "role": "fallback_provider",
+        "required": false,
+        "order": 15,
+        "project": "acme-studio-workspace",
+        "path": "supabase/functions/generate-story-images",
+        "notes": "Optional narrative prompt composer for story-driven image batches."
+      }
+    ],
+    "alternatives": [
+      {
+        "slot": "provider_adapter",
+        "brick_ids": [
+          "acme-studio.acme-studio.supabase-function.supabase-functions-fal-artwork-tools.0b5b8135",
+          "acme-studio.acme-studio.supabase-function.supabase-functions-generate-story-images.9d16270b"
+        ],
+        "notes": "Fal is the default generator. Story images can augment or replace prompt shaping in some flows."
+      }
+    ],
+    "shared_contracts": ["env", "storage", "auth", "telemetry", "provider"],
+    "topology": "pipeline",
+    "notes": "This build treats image generation as a capability boundary, not as a single function."
+  },
+  "classification": {
+    "data_classes": ["user_private", "org_private"],
+    "risk": "high",
+    "notes": "Prompts and generated assets can contain private creative material and external provider metadata."
+  },
+  "sweetspot": {
+    "ssa_v2": {
+      "status": "passing",
+      "score": 88,
+      "evidence": [
+        "Provider access is isolated inside dedicated server-side functions.",
+        "Client delivery is routed through a project-owned proxy layer."
+      ]
+    },
+    "ssi": {
+      "status": "passing",
+      "score": 86,
+      "notes": "Provider, processing, and proxy concerns are split into separate bricks."
+    },
+    "sstf": {
+      "status": "partial",
+      "score": 75,
+      "notes": "Regression suite exists, but fixture-level clone verification is not wired yet."
+    },
+    "spe": {
+      "status": "partial",
+      "score": 72,
+      "notes": "Latency depends on provider queue time and post-processing cost."
+    },
+    "srs": {
+      "status": "partial",
+      "score": 74,
+      "notes": "Telemetry and incident routing need a standardized adapter contract."
+    },
+    "ssra": {
+      "status": "partial",
+      "score": 72,
+      "notes": "Asset and queue ownership are split correctly but not yet formally attested."
+    },
+    "sas": {
+      "status": "partial",
+      "score": 70,
+      "notes": "Build ownership and release roles need explicit multi-agent policy."
+    },
+    "sva": {
+      "status": "partial",
+      "score": 76,
+      "notes": "Security review exists conceptually but not yet as executable publish evidence."
+    },
+    "srls": {
+      "status": "partial",
+      "score": 68,
+      "notes": "RLS table matrix and negative tests need to be published with the build."
+    },
+    "sev": {
+      "status": "partial",
+      "score": 70,
+      "notes": "Environment contract is known but not yet documented as reusable target-side templates."
+    },
+    "ssc": {
+      "status": "partial",
+      "score": 73,
+      "notes": "Needs release hash, lockfile, and placement artifacts before upgrade claims are strong."
+    },
+    "sai": {
+      "status": "partial",
+      "score": 78,
+      "notes": "Agent handoff is viable once build-level clone/update artifacts exist."
+    }
+  },
+  "interfaces": {
+    "entrypoints": [
+      "POST /functions/v1/ai-image-process",
+      "POST /functions/v1/fal-artwork-tools",
+      "GET /functions/v1/image-proxy/:assetId"
+    ],
+    "ui_surfaces": ["story-image-request", "generated-asset-gallery", "provider-status"],
+    "events": [
+      "image.requested",
+      "image.generated",
+      "image.processed",
+      "image.proxied",
+      "image.failed"
+    ],
+    "api_endpoints": [
+      "POST /functions/v1/ai-image-process",
+      "POST /functions/v1/fal-artwork-tools",
+      "GET /functions/v1/image-proxy/:assetId"
+    ],
+    "commands": [
+      "supabase functions serve ai-image-process",
+      "supabase functions serve fal-artwork-tools",
+      "npm run test -- 86-image-generation"
+    ]
+  },
+  "contracts": {
+    "env": {
+      "required": [
+        {
+          "name": "FAL_KEY",
+          "scope": "server_only",
+          "required_in": ["local", "preview", "production"],
+          "forbidden_in": ["client_bundle", "logs", "docs", "tests"],
+          "example": "fal_xxx"
+        },
+        {
+          "name": "SUPABASE_URL",
+          "scope": "server_only",
+          "required_in": ["local", "preview", "production"],
+          "forbidden_in": ["docs"],
+          "example": "https://project.supabase.co"
+        },
+        {
+          "name": "SUPABASE_SERVICE_ROLE_KEY",
+          "scope": "server_only",
+          "required_in": ["local", "preview", "production"],
+          "forbidden_in": ["client_bundle", "logs", "docs", "tests"],
+          "example": "service_role_key"
+        }
+      ],
+      "optional": [
+        {
+          "name": "OPENAI_API_KEY",
+          "scope": "server_only",
+          "required_in": ["local", "preview", "production"],
+          "forbidden_in": ["client_bundle", "logs", "docs", "tests"],
+          "example": "sk-..."
+        }
+      ],
+      "forbidden": ["service_role_on_client", "raw_provider_asset_url_in_client"]
+    },
+    "data": {
+      "inputs": ["prompt", "style_preset", "aspect_ratio", "seed"],
+      "outputs": ["provider_job_id", "storage_asset_path", "proxy_url"],
+      "stores": ["generated_assets", "story_image_requests", "usage_events"],
+      "tables": ["generated_assets", "usage_events"],
+      "retention": "Retain generated assets and usage logs according to project policy."
+    },
+    "auth": {
+      "required": true,
+      "modes": ["user_session", "service_job"],
+      "roles": ["artist", "story-editor", "system-worker"],
+      "notes": "User-triggered generation and background processing require separate access lanes."
+    },
+    "rls": {
+      "required": true,
+      "status": "partial",
+      "tables": ["generated_assets", "usage_events"],
+      "matrix_path": "",
+      "negative_tests": [
+        "User cannot fetch another tenant's generated asset through the proxy.",
+        "Anonymous client cannot execute service-role generation workflow directly."
+      ]
+    },
+    "network": {
+      "outbound_hosts": ["fal.ai"],
+      "webhooks": [],
+      "inbound_endpoints": [
+        "POST /functions/v1/ai-image-process",
+        "POST /functions/v1/fal-artwork-tools",
+        "GET /functions/v1/image-proxy/:assetId"
+      ]
+    },
+    "performance": {
+      "latency_budget_ms": 4000,
+      "queue_allowed": true,
+      "concurrency_hint": 4,
+      "notes": "Interactive requests should return a job record quickly; generation can complete asynchronously."
+    }
+  },
+  "verification": {
+    "status": "partial",
+    "fixture_targets": ["fixtures/supabase-image-gen", "fixtures/next-image-gen"],
+    "smoke_commands": [
+      "supabase functions serve ai-image-process",
+      "supabase functions serve fal-artwork-tools",
+      "npm run test -- 86-image-generation"
+    ],
+    "integration_targets": ["supabase-project", "next-web-client"],
+    "evidence": [
+      {
+        "command": "npm run test -- 86-image-generation",
+        "status": "skipped",
+        "notes": "Example manifest only."
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "guided",
+    "greenfield_support": true,
+    "matching_architecture_support": true,
+    "required_ports": ["auth_facade", "blob_store", "telemetry", "usage_meter"],
+    "file_map": [
+      {
+        "source_path": "supabase/functions/ai-image-process",
+        "target_path": "supabase/functions/ai-image-process",
+        "ownership": "managed",
+        "notes": "Keep request orchestration and contract validation together."
+      },
+      {
+        "source_path": "supabase/functions/fal-artwork-tools",
+        "target_path": "supabase/functions/fal-artwork-tools",
+        "ownership": "managed",
+        "notes": "Provider adapter can evolve independently but should be upgraded as part of the build."
+      },
+      {
+        "source_path": "supabase/functions/process-image",
+        "target_path": "supabase/functions/process-image",
+        "ownership": "managed"
+      },
+      {
+        "source_path": "supabase/functions/image-proxy",
+        "target_path": "supabase/functions/image-proxy",
+        "ownership": "adapter",
+        "notes": "Target projects may need to adapt auth and bucket naming."
+      }
+    ],
+    "install_steps": [
+      "Copy the four required Supabase functions into the target project.",
+      "Bind FAL and Supabase server env vars using the declared contract.",
+      "Adapt auth, blob storage, and telemetry ports at the project boundary.",
+      "Run the image generation smoke flow and proxy ownership checks."
+    ],
+    "post_clone_checks": [
+      "Generate one test image and confirm a proxy URL is returned.",
+      "Confirm the proxy denies cross-tenant asset access.",
+      "Run the image-generation regression suite or an equivalent smoke harness."
+    ],
+    "rollback_steps": [
+      "Disable the imported functions and restore previous function versions.",
+      "Revoke temporary provider keys if any test environment used live credentials.",
+      "Delete any partially stored generated assets created during failed integration."
+    ],
+    "known_traps": [
+      "Do not expose provider asset URLs directly to the browser.",
+      "Do not bundle service-role keys into any client-facing adapter.",
+      "Do not treat prompt moderation and asset proxying as optional in multi-tenant deployments."
+    ],
+    "target_docs": ["docs/ai-image-generation.md"]
+  },
+  "upgrade": {
+    "channel": "review_required",
+    "compatibility_policy": "manifested_ports_only",
+    "migration_hooks": [
+      "Rotate provider envs if the adapter contract changes.",
+      "Re-run proxy ownership tests whenever storage or auth changes."
+    ],
+    "supersedes": [],
+    "replacement_policy": "manual_review_if_contract_changes",
+    "rollback_supported": true,
+    "breaking_change_signals": [
+      "provider payload shape changes",
+      "storage bucket contract changes",
+      "proxy auth rules change"
+    ]
+  },
+  "publishing": {
+    "visibility": "private",
+    "publishable": false,
+    "redaction_profile": "internal-default",
+    "license": "private",
+    "exposed_docs": ["portable architecture note", "env contract summary"],
+    "excluded_assets": [
+      "tenant-specific sample images",
+      "provider response fixtures with copyrighted prompts"
+    ]
+  },
+  "economics": {
+    "estimated_prompt_token_savings": 18000,
+    "estimated_clone_time_minutes": 45,
+    "estimated_update_time_minutes": 20,
+    "maintenance_score": 64,
+    "notes": "Build-level retrieval lets an agent fetch one capability contract instead of rediscovering several image-related bricks."
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "human",
+      "actor_id": "sma-operator",
+      "role": "architect",
+      "timestamp": "2026-04-22T00:00:00Z",
+      "summary": "Composed the first build-level AI image generation manifest from existing Acme Studio bricks."
+    },
+    "touched_by": [
+      {
+        "actor_kind": "ai_model",
+        "actor_id": "codex",
+        "provider": "openai",
+        "model": "gpt-5-codex",
+        "role": "architect",
+        "timestamp": "2026-04-22T00:00:00Z",
+        "files_touched": [
+          "schemas/build.manifest.schema.json",
+          "examples/build.sweetspot.json"
+        ],
+        "summary": "Added first-class build schema and AI image generation example manifest.",
+        "attestation": {
+          "method": "manual",
+          "reference": "current Codex session"
+        }
+      }
+    ],
+    "reviewed_by": [],
+    "source_chain": [
+      {
+        "project": "acme-studio-workspace",
+        "artifact_id": "acme-studio.acme-studio.supabase-function.supabase-functions-ai-image-process.489bb75d",
+        "artifact_type": "brick",
+        "path": "supabase/functions/ai-image-process",
+        "event": "composed",
+        "timestamp": "2026-04-22T00:00:00Z"
+      },
+      {
+        "project": "acme-studio-workspace",
+        "artifact_id": "acme-studio.acme-studio.supabase-function.supabase-functions-fal-artwork-tools.0b5b8135",
+        "artifact_type": "brick",
+        "path": "supabase/functions/fal-artwork-tools",
+        "event": "composed",
+        "timestamp": "2026-04-22T00:00:00Z"
+      },
+      {
+        "project": "acme-studio-workspace",
+        "artifact_id": "acme-studio.acme-studio.supabase-function.supabase-functions-image-proxy.01227ad5",
+        "artifact_type": "brick",
+        "path": "supabase/functions/image-proxy",
+        "event": "composed",
+        "timestamp": "2026-04-22T00:00:00Z"
+      },
+      {
+        "project": "acme-studio-workspace",
+        "artifact_id": "acme-studio.acme-studio.test-suite.0000testing-suites-86-image-generation.d7768729",
+        "artifact_type": "fixture",
+        "path": "0000testing/suites/86-image-generation",
+        "event": "verified",
+        "timestamp": "2026-04-22T00:00:00Z"
+      }
+    ]
+  }
+}

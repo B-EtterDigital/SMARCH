@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/global.registry.schema.json",
+  "title": "Sweetspot Global Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "projects", "bricks"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "generated_at": { "type": "string" },
+    "scan_root": { "type": "string" },
+    "scan_project_id": { "type": ["string", "null"] },
+    "scanned_project_roots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["root", "id"],
+        "properties": {
+          "root": { "type": "string" },
+          "id": { "type": "string" }
+        }
+      }
+    },
+    "count": { "type": "integer", "minimum": 0 },
+    "failure_count": { "type": "integer", "minimum": 0 },
+    "validation_error_count": { "type": "integer", "minimum": 0 },
+    "validation_warning_count": { "type": "integer", "minimum": 0 },
+    "unmanifested_count": { "type": "integer", "minimum": 0 },
+    "candidate_group_count": { "type": "integer", "minimum": 0 },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "root"],
+        "properties": {
+          "id": { "type": "string" },
+          "root": { "type": "string" },
+          "repository": { "type": "string" },
+          "brick_count": { "type": "integer", "minimum": 0 },
+          "unmanifested_count": { "type": "integer", "minimum": 0 },
+          "candidate_group_count": { "type": "integer", "minimum": 0 },
+          "status_counts": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "health_counts": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "candidate_type_counts": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "candidate_role_counts": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "error_count": { "type": "integer", "minimum": 0 },
+          "warning_count": { "type": "integer", "minimum": 0 },
+          "average_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "security_gate": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "findings", "high_or_critical"],
+            "properties": {
+              "status": { "type": "string" },
+              "findings": { "type": "integer", "minimum": 0 },
+              "high_or_critical": { "type": "integer", "minimum": 0 },
+              "scanned_files": { "type": "integer", "minimum": 0 },
+              "truncated": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "candidate_groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["project", "id", "name", "path", "candidate_count"],
+        "properties": {
+          "project": { "type": "string" },
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "candidate_count": { "type": "integer", "minimum": 0 },
+          "candidate_type_counts": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "candidate_role_counts": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "sample_paths": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "unmanifested_bricks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["project", "path", "candidate_type", "status", "reason"],
+        "properties": {
+          "project": { "type": "string" },
+          "path": { "type": "string" },
+          "relative_path": { "type": "string" },
+          "candidate_type": { "type": "string" },
+          "hierarchy_role": { "type": "string" },
+          "brick_group": { "type": "string" },
+          "group_name": { "type": "string" },
+          "group_path": { "type": "string" },
+          "status": { "type": "string", "const": "unmanifested" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "bricks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "status", "manifest_path"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "status": { "type": "string" },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "project": { "type": "string" },
+          "manifest_path": { "type": "string" },
+          "brick_group": { "type": ["string", "null"] },
+          "hierarchy": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "data_classes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "models": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "source_paths": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "domain": {
+            "type": "array",
+            "items": { "type": "string" },
+            "uniqueItems": true
+          },
+          "feature_cluster": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "description"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "risk": { "type": "string" },
+          "clone_readiness": { "type": "string" },
+          "health": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "error_count", "warning_count"],
+            "properties": {
+              "status": { "type": "string", "enum": ["ok", "warn", "fail"] },
+              "error_count": { "type": "integer", "minimum": 0 },
+              "warning_count": { "type": "integer", "minimum": 0 },
+              "errors": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "warnings": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "calculated_score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 }
+            }
+          }
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["manifest_path", "error"],
+        "properties": {
+          "manifest_path": { "type": "string" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}

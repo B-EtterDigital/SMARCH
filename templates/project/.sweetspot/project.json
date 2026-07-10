@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "project": {
+    "id": "replace-with-project-id",
+    "name": "Replace With Project Name",
+    "root": ".",
+    "repository": "",
+    "stack": []
+  },
+  "modules": []
+}
+

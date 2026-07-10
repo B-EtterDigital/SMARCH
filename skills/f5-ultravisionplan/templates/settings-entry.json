@@ -1,0 +1,18 @@
+{
+  "applies_to": "settings-entry",
+  "version": 1,
+  "notes": "Every user-configurable setting in inventories/*.settings-entry.json. Vars: default (the default value), scope (user|workspace|device).",
+  "steps": [
+    { "slug": "impl", "title": "Implement {name} setting", "domain": "frontend", "complexity": "C2", "est_minutes": 40,
+      "description": "Add {name} to the settings surface at {path}: typed storage ({scope} scope), default `{default}`, live effect without restart where feasible, migration for existing users.",
+      "acceptance_criteria": ["persists across restart", "default `{default}` applied for fresh installs", "changing it takes effect as specified"],
+      "gates": ["{module_gates}"] },
+    { "slug": "validation", "title": "Validate and bound {name} values", "domain": "backend", "complexity": "C1", "depends_on": ["#impl"], "est_minutes": 15,
+      "description": "Reject/clamp invalid values of {name} (corrupted storage, manual edits); the product must behave sanely for any stored value.",
+      "acceptance_criteria": ["corrupted value falls back to default with telemetry, not a crash"],
+      "gates": ["{module_gates}"] },
+    { "$ref": "i18n-extract", "depends_on": ["#impl"] },
+    { "$ref": "unit-tests", "depends_on": ["#validation"] },
+    { "$ref": "docs", "depends_on": ["#impl"] }
+  ]
+}

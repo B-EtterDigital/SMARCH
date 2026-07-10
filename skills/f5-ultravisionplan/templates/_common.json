@@ -1,0 +1,41 @@
+{
+  "library": true,
+  "notes": "Shared step library. Templates include these via {\"$ref\": \"<slug>\", ...overrides}. Overrides replace fields wholesale (e.g. supply depends_on when the including template needs ordering). Keeping telemetry/docs/i18n-extraction here means the quality bar cannot drift apart between templates.",
+  "steps": {
+    "telemetry": {
+      "slug": "telemetry", "title": "Error telemetry for {name}", "domain": "telemetry",
+      "complexity": "C1", "est_minutes": 15,
+      "description": "Capture every real error path of {name} in the project telemetry (SRS-equivalent) with area/severity/context breadcrumbs; no silent catches, no ignored promise failures.",
+      "acceptance_criteria": ["failure paths emit telemetry with area+severity", "telemetry audit passes for the touched paths"],
+      "gates": ["telemetry audit"]
+    },
+    "docs": {
+      "slug": "docs", "title": "Document {name}", "domain": "docs",
+      "complexity": "C1", "est_minutes": 15,
+      "description": "Document {name}: purpose, contract/usage, states or flags, known limitations. Docs reflect current evidence, not intentions.",
+      "acceptance_criteria": ["docs entry current with implementation"],
+      "gates": ["docs build"]
+    },
+    "i18n-extract": {
+      "slug": "i18n", "title": "Externalize and key all strings in {name}", "domain": "i18n",
+      "complexity": "C1", "est_minutes": 15,
+      "description": "Move every user-facing string in {name} to the i18n layer with stable namespaced keys; ICU plurals where counts appear; verify +40% expansion tolerance.",
+      "acceptance_criteria": ["hardcoded-string lint passes for {path}", "pseudo-locale renders without truncation"],
+      "gates": ["i18n lint", "{module_gates}"]
+    },
+    "unit-tests": {
+      "slug": "unit", "title": "Unit tests for {name}", "domain": "test",
+      "complexity": "C2", "est_minutes": 40,
+      "description": "Unit-test {name}: happy path, every typed error/edge state, boundary values; deterministic, no real network.",
+      "acceptance_criteria": ["edge and error paths asserted", "tests deterministic across 3 runs"],
+      "gates": ["module test suite", "{module_gates}"]
+    },
+    "perf-budget": {
+      "slug": "perf", "title": "Performance budget check for {name}", "domain": "perf",
+      "complexity": "C2", "est_minutes": 30,
+      "description": "Measure {name} against its 07-PERFORMANCE-PLAN.md budget on the reference low-tier profile; fix or split if over budget.",
+      "acceptance_criteria": ["within budget on baseline profile"],
+      "gates": ["perf check"]
+    }
+  }
+}

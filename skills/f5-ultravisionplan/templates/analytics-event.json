@@ -1,0 +1,19 @@
+{
+  "applies_to": "analytics-event",
+  "version": 1,
+  "notes": "Every product analytics/telemetry event in inventories/*.analytics-event.json. Vars: trigger (when it fires), properties (payload summary).",
+  "steps": [
+    { "slug": "spec", "title": "Specify {name} event contract", "domain": "data", "complexity": "C1", "est_minutes": 15,
+      "description": "Define {name}: exact trigger ({trigger}), payload schema ({properties}), PII posture (what is never included), and the question this event answers. Register in the event catalog.",
+      "acceptance_criteria": ["catalog entry with schema and PII notes", "no free-text user content in payload"],
+      "gates": ["event catalog lint"] },
+    { "slug": "impl", "title": "Instrument {name}", "domain": "telemetry", "complexity": "C1", "depends_on": ["#spec"], "est_minutes": 20,
+      "description": "Fire {name} at {path} exactly per its contract; respects user consent settings; never blocks or breaks the interaction it measures.",
+      "acceptance_criteria": ["fires once per trigger in dev verification", "suppressed when consent absent"],
+      "gates": ["{module_gates}"] },
+    { "slug": "test", "title": "Assert {name} firing in tests", "domain": "test", "complexity": "C1", "depends_on": ["#impl"], "est_minutes": 15,
+      "description": "Test that {name} fires with the specified payload on trigger and not otherwise (no double-fire on re-render/retry).",
+      "acceptance_criteria": ["payload snapshot asserted", "no-fire cases covered"],
+      "gates": ["module test suite"] }
+  ]
+}

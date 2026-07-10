@@ -1,0 +1,308 @@
+{
+  "schema_version": "1.0.0",
+  "brick": {
+    "id": "sweetspot.svd.visual-demo",
+    "name": "Sweetspot Visual Demo",
+    "kind": "module",
+    "status": "candidate",
+    "version": "0.1.0",
+    "language": ["markdown", "json"],
+    "frameworks": [],
+    "domain": ["visual-demo", "walkthrough", "proof-gallery", "release-proof", "evidence-claims", "screenshot-quality"]
+  },
+  "hierarchy": {
+    "level": "brick",
+    "group_id": "sweetspot:optional-modules",
+    "contains": ["module", "component", "file"],
+    "component_policy": "manifest_required",
+    "notes": "SVD is a known optional module. Projects opt in when they need visual walkthrough proof."
+  },
+  "source": {
+    "project": "SMA",
+    "repository": "https://github.com/B-EtterDigital/SMARCH",
+    "commit": "",
+    "archive_hash": "sha256:3f1166d304f8265286723336988339d6f250c6ba2a79952954dde4e866476b44",
+    "paths": ["docs/SWEETSPOT_VISUAL_DEMO.md"]
+  },
+  "owner": {
+    "primary": "sma-operator",
+    "team": "Sweetspot",
+    "reviewers": ["sma-operator"]
+  },
+  "boundaries": {
+    "owned_paths": ["docs/SWEETSPOT_VISUAL_DEMO.md", "examples/sweetspot-visual-demo.module.sweetspot.json"],
+    "public_paths": ["docs/SWEETSPOT_VISUAL_DEMO.md"],
+    "private_paths": [],
+    "forbidden_imports": ["service-role-client", "raw-secret-capture", "unredacted-private-artifacts"],
+    "allowed_side_effects": [
+      "write local proof artifacts",
+      "open local proof gallery",
+      "record numbered proof claims",
+      "record screenshot quality checks",
+      "record privacy-safe SRS breadcrumbs"
+    ]
+  },
+  "classification": {
+    "data_classes": ["public", "user_private", "pii"],
+    "risk": "high",
+    "notes": "The module contract is public, but SVD implementations can capture screenshots or video containing private user data. Artifact storage and redaction policy control the effective data class."
+  },
+  "sweetspot": {
+    "ssa_v2": {
+      "status": "passing",
+      "score": 90,
+      "evidence": ["SVD is isolated as an optional module contract and does not require product logic coupling."]
+    },
+    "ssi": {
+      "status": "passing",
+      "score": 85,
+      "evidence": ["Proof gallery requirements include exit, replay, numbered claim rails, screenshot quality states, missing-artifact states, and no non-dismissible completion toast."]
+    },
+    "sstf": {
+      "status": "passing",
+      "score": 80,
+      "evidence": ["The contract requires replayable runs, artifact manifests, claim-to-artifact links, screenshot visibility checks, and validation without a dev server."]
+    },
+    "spe": {
+      "status": "passing",
+      "score": 85,
+      "evidence": ["Gallery requirements include thumbnail generation, lazy loading, and bounded retention."]
+    },
+    "srs": {
+      "status": "passing",
+      "score": 85,
+      "evidence": ["The contract requires SRS breadcrumbs or local proof ids for numbered claims, important steps, and failures."]
+    },
+    "ssra": {
+      "status": "partial",
+      "score": 75,
+      "notes": "First implementation should attach a release review packet before promotion."
+    },
+    "sas": {
+      "status": "passing",
+      "score": 80,
+      "evidence": ["The manifest declares narrow owned paths for the optional module contract."]
+    },
+    "sva": {
+      "status": "passing",
+      "score": 80,
+      "evidence": ["The contract requires screenshot/video redaction, visibility checks, honest state labels, and forbids secrets in artifacts."]
+    },
+    "srls": {
+      "status": "not_applicable",
+      "score": 100,
+      "notes": "This contract does not define database tables. Implementations that persist proof remotely must add SRLS evidence."
+    },
+    "sev": {
+      "status": "not_applicable",
+      "score": 100,
+      "notes": "This contract introduces no environment variables. Implementations must declare capture or storage env vars if added."
+    },
+    "ssc": {
+      "status": "passing",
+      "score": 80,
+      "evidence": ["The manifest records the source doc checksum and provenance events."]
+    },
+    "sai": {
+      "status": "passing",
+      "score": 80,
+      "evidence": ["SVD treats captured app content as data and requires approved instruction boundaries for generated proof artifacts."]
+    }
+  },
+  "interfaces": {
+    "public_api": [
+      "svd-run.json artifact manifest",
+      "numbered proof claim ledger",
+      "ordered screenshot/video proof packet",
+      "screenshot quality status per step",
+      "feature visibility check",
+      "escapable proof gallery",
+      "replay demo control",
+      "annotation show/hide control",
+      "claim-linked annotation ids",
+      "privacy-safe SRS breadcrumb references"
+    ],
+    "adapters": [
+      "route registry",
+      "screenshot driver",
+      "screenshot quality evaluator",
+      "claim ledger writer",
+      "annotation renderer",
+      "redaction policy",
+      "artifact storage path",
+      "SRS facade"
+    ],
+    "forbidden_dependencies": ["service-role-client", "raw-secret-reader", "public-upload-without-release-approval"],
+    "required_dependencies": []
+  },
+  "security": {
+    "rls": {
+      "required": false,
+      "status": "not_applicable"
+    },
+    "env": {
+      "required": false,
+      "status": "not_applicable",
+      "variables": []
+    },
+    "vulnerability_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "report_paths": []
+    }
+  },
+  "supply_chain": {
+    "dependencies": [],
+    "licenses": ["project-license"],
+    "checksums": [
+      {
+        "path": "docs/SWEETSPOT_VISUAL_DEMO.md",
+        "sha256": "3f1166d304f8265286723336988339d6f250c6ba2a79952954dde4e866476b44"
+      }
+    ],
+    "sbom_path": ""
+  },
+  "quality": {
+    "score": 84,
+    "line_count": {
+      "max_file_lines": 399,
+      "over_600_count": 0
+    },
+    "code_budget": {
+      "status": "lean",
+      "feature_lines": 707,
+      "file_count": 2,
+      "dependency_count": 0,
+      "notes": "The candidate is a docs and manifest contract, not a verified product implementation. Implementations must keep proof capture, claim ledgers, screenshot quality checks, gallery, annotations, and redaction modular."
+    },
+    "evidence_quality": {
+      "status": "candidate_standard",
+      "notes": "SVD proof is acceptable only when numbered claims link to visible UI evidence. Pretty screenshots, hidden features, unclear annotations, and unsupported pitch claims fail the standard.",
+      "required_checks": [
+        "claim has step number",
+        "feature is visible in screenshot",
+        "result state is visible",
+        "screenshot is not occluded",
+        "primary text is readable",
+        "annotation labels match the claim number",
+        "mocked or incomplete states are labeled"
+      ]
+    },
+    "test_commands": ["node tools/sma-validate.mjs --manifest examples/sweetspot-visual-demo.module.sweetspot.json"],
+    "verification": [
+      {
+        "command": "node tools/sma-validate.mjs --manifest examples/sweetspot-visual-demo.module.sweetspot.json",
+        "status": "pass",
+        "timestamp": "2026-05-29T09:31:00Z",
+        "notes": "Validates the SVD candidate manifest contract."
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "guided",
+    "adaptation_points": [
+      "route registry",
+      "screenshot driver",
+      "screenshot quality evaluator",
+      "numbered claim ledger",
+      "redaction policy",
+      "artifact storage path",
+      "SRS facade",
+      "gallery shell",
+      "annotation renderer",
+      "replay runner"
+    ],
+    "install_steps": [
+      "Copy the SVD contract into the target project's SMA docs.",
+      "Define the first scripted user flow and artifact directory.",
+      "Write numbered step-by-step claims before capturing screenshots.",
+      "Wire screenshot or video capture through the project's approved test/runtime harness.",
+      "Add a screenshot visibility check so captured artifacts must show the feature named in the claim.",
+      "Add the escapable gallery with replay, exit, artifact link, and manifest download controls.",
+      "Add subtle claim-linked annotation generation or manual annotation metadata.",
+      "Record privacy redaction and SRS breadcrumb references in svd-run.json.",
+      "Run the target project's SMA and visual proof validation commands."
+    ],
+    "known_traps": [
+      "Do not ship a gallery that cannot be closed.",
+      "Do not leave replay, screenshot links, or artifact-folder buttons unwired.",
+      "Do not let proof toasts cover the UI state that the proof is supposed to show.",
+      "Do not use giant default annotations that hide the UI state being proven.",
+      "Do not accept screenshots where the feature is offscreen, unreadable, or hidden behind proof UI.",
+      "Do not make pitch claims that lack numbered step evidence.",
+      "Do not use annotation labels that cannot be matched to a step-by-step claim.",
+      "Do not save private screenshots as public proof artifacts.",
+      "Do not call the demo complete when the proof only covers one happy-path screenshot."
+    ]
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "human",
+      "actor_id": "sma-operator",
+      "role": "architect",
+      "timestamp": "2026-05-28T00:00:00Z",
+      "summary": "Requested Sweetspot Visual Demo as a known optional SMA module for demo and walkthrough proof."
+    },
+    "touched_by": [
+      {
+        "actor_kind": "ai_model",
+        "actor_id": "codex",
+        "provider": "openai",
+        "model": "gpt-5-codex",
+        "role": "architect",
+        "timestamp": "2026-05-29T09:31:00Z",
+        "files_touched": [
+          "docs/SWEETSPOT_VISUAL_DEMO.md",
+          "docs/FRAMEWORK.md",
+          "docs/TERMINOLOGY.md",
+          "docs/BRICK_METADATA.md",
+          "examples/sweetspot-visual-demo.module.sweetspot.json"
+        ],
+        "verification": [
+          {
+            "command": "node tools/sma-validate.mjs --manifest examples/sweetspot-visual-demo.module.sweetspot.json",
+            "status": "pass",
+            "timestamp": "2026-05-29T09:31:00Z"
+          }
+        ],
+        "summary": "Strengthened SVD as an optional known SMA module contract with numbered proof claims, screenshot quality checks, clear annotations, and honest readiness labeling.",
+        "intent": "Make demo walkthrough proof reviewable, replayable, escapable, annotated, privacy-safe, valuable, and hard to fake with weak screenshots.",
+        "decision_rationale": "A normal optional module contract preserves SMA boundaries without adding a mandatory gate to every brick.",
+        "rejected_alternatives": [
+          {
+            "alternative": "Add SVD as a required sweetspot gate",
+            "reason": "Visual demos are valuable for UI and release proof but not universally required for every brick."
+          },
+          {
+            "alternative": "Document SVD only in Acme Desktop",
+            "reason": "The user asked for the module to exist in SMA core and the central SMA repo."
+          }
+        ],
+        "attestation": {
+          "method": "manual",
+          "reference": "current Codex session"
+        }
+      }
+    ],
+    "reviewed_by": [
+      {
+        "actor_kind": "human",
+        "actor_id": "sma-operator",
+        "role": "reviewer",
+        "timestamp": "2026-05-29T09:31:00Z",
+        "summary": "Requested valuable and honest proof, clear annotations, good screenshots, feature visibility checks, and numbered step-by-step claims linked to UI in screenshots."
+      }
+    ],
+    "source_chain": [
+      {
+        "project": "SMA",
+        "brick_id": "sweetspot.svd.visual-demo",
+        "path": "docs/SWEETSPOT_VISUAL_DEMO.md",
+        "event": "created",
+        "timestamp": "2026-05-28T00:00:00Z"
+      }
+    ]
+  }
+}

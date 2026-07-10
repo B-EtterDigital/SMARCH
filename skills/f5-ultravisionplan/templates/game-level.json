@@ -1,0 +1,33 @@
+{
+  "applies_to": "game-level",
+  "version": 1,
+  "notes": "Every level/scene/arena in inventories/*.game-level.json — visual products only. Vars: mechanic (the level's signature mechanic), mood.",
+  "steps": [
+    { "slug": "design", "title": "Design {name}: layout, pacing, teaching beat", "domain": "design", "complexity": "C3", "est_minutes": 90,
+      "description": "Design {name}: layout sketch, difficulty curve position, what it teaches or tests ({mechanic}), fail/retry loop feel, target duration, and mood ({mood}) per 04-DESIGN-LANGUAGE.md.",
+      "acceptance_criteria": ["design doc with layout + pacing + teaching intent", "fits the campaign difficulty curve"],
+      "gates": ["design review"] },
+    { "slug": "build", "title": "Build {name} playable", "domain": "frontend", "complexity": "C3", "depends_on": ["#design"], "est_minutes": 120,
+      "description": "Implement {name} at {path}: geometry/entities, triggers, win/fail conditions, checkpoint placement.",
+      "acceptance_criteria": ["completable start to finish", "fail states recover to checkpoint correctly"],
+      "gates": ["{module_gates}"] },
+    { "slug": "tune", "title": "Tune {name} difficulty and feel", "domain": "ux", "complexity": "C3", "milestone_min": "M2", "depends_on": ["#build"], "est_minutes": 60,
+      "description": "Playtest-tune {name}: timings, spacing, forgiveness windows; the {mechanic} beat must feel fair on first encounter and mastering it must feel earned.",
+      "acceptance_criteria": ["tester completes within target attempts", "no unfair deaths reported in tuning notes"],
+      "gates": ["playtest checklist"] },
+    { "slug": "dressing", "title": "Audio-visual dressing for {name}", "domain": "media", "complexity": "C2", "milestone_min": "M2", "depends_on": ["#build"], "est_minutes": 60,
+      "description": "Apply {name} mood ({mood}): lighting/palette pass, ambient audio hookup, transition stingers — assets come from the media-asset inventory (dep on its integrate tasks).",
+      "acceptance_criteria": ["mood readable within 3 seconds of entry", "all referenced assets registered in the manifest"],
+      "gates": ["asset manifest validation"] },
+    { "$ref": "perf-budget", "depends_on": ["#dressing"],
+      "description": "Measure {name} on the reference low-tier profile: frame time within budget through the heaviest moment; SOTA tier effects verified to disable cleanly.",
+      "acceptance_criteria": ["worst-case frame time within budget on baseline", "quality ladder tiers verified"] },
+    { "slug": "test", "title": "Automated completion test for {name}", "domain": "test", "complexity": "C2", "depends_on": ["#build"], "est_minutes": 40,
+      "description": "Scripted playthrough of {name} in CI: completability, win/fail triggers, checkpoint restore.",
+      "acceptance_criteria": ["headless completion test green in CI"],
+      "gates": ["e2e suite"] },
+    { "$ref": "telemetry", "depends_on": ["#build"],
+      "description": "Instrument {name}: attempts, completion time, death heatmap points, quit-without-finish; real errors breadcrumbed per SRS rules.",
+      "acceptance_criteria": ["funnel events verified in dev tooling", "telemetry audit passes"] }
+  ]
+}

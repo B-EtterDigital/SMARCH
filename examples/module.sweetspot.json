@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.0.0",
+  "brick": {
+    "id": "acme-studio.ssi.guard",
+    "name": "SSI Guard",
+    "kind": "guard",
+    "status": "candidate",
+    "version": "0.1.0",
+    "language": ["typescript", "tsx"],
+    "frameworks": ["react"],
+    "domain": ["runtime-isolation", "feature-gating"]
+  },
+  "hierarchy": {
+    "level": "brick",
+    "group_id": "acme-studio:apps/web/src/components:ssi",
+    "contains": ["module", "component", "hook"],
+    "component_policy": "internal_by_default",
+    "notes": "Components inside this guard are internal unless they receive their own manifest."
+  },
+  "source": {
+    "project": "acme-studio-workspace",
+    "repository": "",
+    "commit": "",
+    "paths": ["apps/web/src/components/ssi"]
+  },
+  "owner": {
+    "primary": "sma-operator",
+    "team": "Sweetspot",
+    "reviewers": []
+  },
+  "boundaries": {
+    "owned_paths": ["apps/web/src/components/ssi"],
+    "public_paths": ["apps/web/src/components/ssi/index.ts"],
+    "private_paths": ["apps/web/src/components/ssi/internal"],
+    "forbidden_imports": ["service-role-client", "direct-provider-secrets"],
+    "allowed_side_effects": ["render fallback UI", "report sanitized boundary errors"]
+  },
+  "classification": {
+    "data_classes": ["public", "user_private"],
+    "risk": "medium",
+    "notes": "Tier and feature gates may depend on authenticated user state."
+  },
+  "sweetspot": {
+    "ssa_v2": { "status": "passing", "score": 90, "evidence": ["No secrets in client-facing guard code."] },
+    "ssi": { "status": "passing", "score": 95, "evidence": ["Lazy safety, boundary, suspense, and gate pattern declared."] },
+    "sstf": { "status": "partial", "score": 70, "notes": "Needs reusable tests across cloned projects." },
+    "spe": { "status": "passing", "score": 90, "notes": "Guard must not fetch repeatedly per route." },
+    "srs": { "status": "partial", "score": 70, "notes": "Boundary errors should report through observability facade." },
+    "ssra": { "status": "partial", "score": 70 },
+    "sas": { "status": "partial", "score": 70, "notes": "Needs explicit multi-agent ownership metadata." },
+    "sva": { "status": "partial", "score": 75, "notes": "Needs automated VibeSec/Semgrep evidence." },
+    "srls": { "status": "not_applicable", "score": 100 },
+    "sev": { "status": "partial", "score": 80, "notes": "Feature flag env vars must be declared if used." },
+    "ssc": { "status": "partial", "score": 70, "notes": "Needs commit hash and lineage." },
+    "sai": { "status": "partial", "score": 80, "notes": "Needs agent-runner attestation for model touches." }
+  },
+  "interfaces": {
+    "public_api": ["SSIGuard", "safeLazy", "TierGate", "FeatureFlag"],
+    "adapters": ["featureFlagProvider", "tierProvider", "observabilityProvider"],
+    "forbidden_dependencies": ["direct-service-role-client"],
+    "required_dependencies": ["react"]
+  },
+  "security": {
+    "rls": {
+      "required": false,
+      "status": "not_applicable"
+    },
+    "env": {
+      "required": true,
+      "status": "partial",
+      "variables": [
+        {
+          "name": "VITE_FEATURE_FLAGS_ENABLED",
+          "scope": "public_client",
+          "required_in": ["local", "preview", "production"],
+          "forbidden_in": ["logs"],
+          "example": "true"
+        }
+      ]
+    },
+    "vulnerability_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "report_paths": []
+    }
+  },
+  "supply_chain": {
+    "dependencies": [
+      {
+        "name": "react",
+        "purpose": "Runtime component and boundary rendering.",
+        "risk": "low"
+      }
+    ],
+    "licenses": ["project-license"],
+    "checksums": [],
+    "sbom_path": ""
+  },
+  "quality": {
+    "score": 82,
+    "line_count": {
+      "max_file_lines": 220,
+      "over_600_count": 0
+    },
+    "code_budget": {
+      "status": "lean",
+      "feature_lines": 620,
+      "file_count": 5,
+      "dependency_count": 1,
+      "notes": "Guard uses small focused components and a single runtime dependency."
+    },
+    "test_commands": ["pnpm test -- ssi"],
+    "verification": [
+      {
+        "command": "pnpm test -- ssi",
+        "status": "skipped",
+        "notes": "Example manifest only."
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "guided",
+    "adaptation_points": ["feature flag provider", "tier provider", "observability facade", "route registry"],
+    "install_steps": [
+      "Copy the SSI guard files.",
+      "Wire the project feature flag and tier providers.",
+      "Wrap lazy route entry points.",
+      "Run SSI coverage audit and route smoke tests."
+    ],
+    "known_traps": [
+      "Do not fetch tier state once per route.",
+      "Do not swallow lazy import failures silently.",
+      "Do not gate admin pages only in the UI; backend authz is still required."
+    ]
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "human",
+      "actor_id": "sma-operator",
+      "role": "architect",
+      "timestamp": "2026-04-15T00:00:00Z",
+      "summary": "Initial Sweetspot SSI guard concept."
+    },
+    "touched_by": [
+      {
+        "actor_kind": "ai_model",
+        "actor_id": "codex",
+        "provider": "openai",
+        "model": "gpt-5-codex",
+        "role": "architect",
+        "timestamp": "2026-04-15T00:00:00Z",
+        "files_touched": ["SSA/SMA/FRAMEWORK.md", "SSA/SMA/brick.manifest.schema.json"],
+        "summary": "Added SMA manifest structure and model provenance fields.",
+        "attestation": {
+          "method": "manual",
+          "reference": "current Codex session"
+        }
+      }
+    ],
+    "reviewed_by": [],
+    "source_chain": [
+      {
+        "project": "acme-studio-workspace",
+        "brick_id": "acme-studio.ssi.guard",
+        "path": "apps/web/src/components/ssi",
+        "event": "created",
+        "timestamp": "2026-04-15T00:00:00Z"
+      }
+    ]
+  }
+}

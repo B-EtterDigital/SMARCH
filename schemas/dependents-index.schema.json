@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sma/schemas/dependents-index.schema.json",
+  "title": "SMA Dependents Index",
+  "description": "Inverted index built from every project's .smarch/import-lock.json and .smarch/reuse-receipts/*.json. Per source brick, lists every project that has a copy. Source brick UPGRADE flow uses this to fan out update plans. Generated; do NOT edit by hand.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "sources", "dependents", "stats"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "registry_snapshot_sha": { "type": "string", "description": "sha256 of the global registry that produced this index" },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "projects_scanned": { "type": "integer" },
+        "import_locks_found": { "type": "integer" },
+        "reuse_receipts_found": { "type": "integer" },
+        "unique_source_bricks": { "type": "integer" },
+        "total_dependent_links": { "type": "integer" }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "description": "Map: source_brick_id → metadata about the canonical brick (latest version, last_release_artifact, replication policy if declared).",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "source_project": { "type": "string" },
+          "source_path": { "type": "string" },
+          "latest_version": { "type": "string" },
+          "latest_release_artifact": { "type": "string" },
+          "replication_policy": { "enum": ["track-canonical", "pin-version", "fork-snapshot", "manual"] },
+          "dependent_count": { "type": "integer" }
+        }
+      }
+    },
+    "dependents": {
+      "type": "object",
+      "description": "Map: source_brick_id → array of dependent records.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["target_project", "target_root", "evidence_kind"],
+          "properties": {
+            "target_project": { "type": "string" },
+            "target_root": { "type": "string" },
+            "target_path": { "type": "string" },
+            "target_brick_id": { "type": "string" },
+            "version_imported": { "type": "string" },
+            "source_commit_imported": { "type": "string" },
+            "imported_at": { "type": "string", "format": "date-time" },
+            "evidence_kind": {
+              "enum": ["import-lock", "reuse-receipt", "provenance-source-chain", "manual"],
+              "description": "Where this link was discovered. import-lock is most authoritative."
+            },
+            "evidence_path": { "type": "string" },
+            "drift": {
+              "type": "object",
+              "description": "Populated when target's copy diverges from source HEAD.",
+              "properties": {
+                "loc_added": { "type": "integer" },
+                "loc_removed": { "type": "integer" },
+                "files_changed": { "type": "integer" },
+                "last_local_modification": { "type": "string", "format": "date-time" }
+              }
+            },
+            "upgrade_status": {
+              "enum": ["up-to-date", "behind-minor", "behind-major", "diverged", "unknown"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: sma-check
+        name: SMA syntax check
+        entry: npm run check
+        language: system
+        pass_filenames: false
+      - id: sma-security
+        name: SMA security gate
+        entry: node tools/sma-security-gate.mjs --root .
+        language: system
+        pass_filenames: false
+

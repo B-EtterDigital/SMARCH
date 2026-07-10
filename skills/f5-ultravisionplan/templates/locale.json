@@ -1,0 +1,27 @@
+{
+  "applies_to": "locale",
+  "version": 1,
+  "notes": "Applied to every target locale in inventories/locale.json once the i18n foundation (from 06-I18N-PLAN.md bespoke tasks) exists. The foundation tasks (framework, extraction pipeline, pseudo-locale) are bespoke, not templated per-locale.",
+  "steps": [
+    { "slug": "scaffold", "title": "Scaffold {name} locale", "domain": "i18n", "complexity": "C1", "est_minutes": 15,
+      "description": "Add {slug} locale files, plural rules config, and locale switcher entry for {name}.",
+      "acceptance_criteria": ["app boots in {slug} with fallback chain working"],
+      "gates": ["i18n lint", "{module_gates}"] },
+    { "slug": "translate", "title": "Translate full string catalog to {name}", "domain": "i18n", "complexity": "C2", "depends_on": ["#scaffold"], "est_minutes": 120,
+      "description": "Translate all namespaces to {name} with ICU plural/select forms; preserve placeholders and formatting tokens exactly.",
+      "acceptance_criteria": ["catalog 100% translated, zero missing-key warnings", "placeholder parity check passes"],
+      "gates": ["i18n completeness check"] },
+    { "slug": "formats", "title": "Locale-correct dates/numbers/currency for {name}", "domain": "i18n", "complexity": "C2", "depends_on": ["#scaffold"], "est_minutes": 30,
+      "description": "Verify Intl-based formatting for {slug}: dates, numbers, currency, sorting/collation in all surfaces that display them.",
+      "acceptance_criteria": ["format snapshot tests pass for {slug}"],
+      "gates": ["module test suite"] },
+    { "slug": "layout", "title": "Layout QA for {name} (expansion/RTL)", "domain": "i18n", "complexity": "C2", "depends_on": ["#translate"], "est_minutes": 45,
+      "description": "Walk every screen in {slug}: text expansion, truncation, wrapping, and RTL mirroring when applicable.",
+      "acceptance_criteria": ["no truncated or overlapping text on any screen", "RTL correct if {slug} is RTL"],
+      "gates": ["visual regression suite in {slug}"] },
+    { "slug": "review", "title": "Native-quality review of {name}", "domain": "i18n", "complexity": "C3", "depends_on": ["#translate", "#layout"], "est_minutes": 60,
+      "description": "Fluency/terminology review of {name}: consistent glossary, correct register for the product's voice, no machine-translation artifacts.",
+      "acceptance_criteria": ["glossary consistency check passes", "review notes resolved"],
+      "gates": ["i18n completeness check"] }
+  ]
+}

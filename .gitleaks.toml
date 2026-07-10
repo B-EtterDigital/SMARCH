@@ -1,0 +1,39 @@
+title = "SMA gitleaks rules"
+
+[[rules]]
+id = "generic-api-key-assignment"
+description = "Generic API key assignment"
+regex = '''(?i)(api[_-]?key|secret|token|service[_-]?role)[A-Z0-9_ -]*= *['"]?[A-Za-z0-9_\-]{20,}'''
+tags = ["key", "secret"]
+
+[[rules]]
+id = "private-key"
+description = "Private key block"
+regex = '''-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----'''
+tags = ["private-key"]
+
+[[rules]]
+id = "openai-key"
+description = "OpenAI style key"
+regex = '''sk-[A-Za-z0-9_-]{20,}'''
+tags = ["openai"]
+
+[[rules]]
+id = "supabase-service-role-env"
+description = "Supabase service role key in env"
+regex = '''SUPABASE_SERVICE_ROLE_KEY\s*=\s*[^\s#]+'''
+tags = ["supabase", "service-role"]
+
+[allowlist]
+description = "SMA placeholders and detection tooling (contains secret-shaped patterns by design)"
+regexTarget = "line"
+paths = [
+  '''tools/sma-security-gate\.mjs''',
+]
+regexes = [
+  '''replace-with''',
+  '''example''',
+  '''placeholder''',
+  '''featureToken'''
+]
+

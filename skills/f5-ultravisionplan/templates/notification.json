@@ -1,0 +1,22 @@
+{
+  "applies_to": "notification",
+  "version": 1,
+  "notes": "Every user-facing notification/email/push/toast in inventories/*.notification.json. Vars: channel (email|push|in-app|toast).",
+  "steps": [
+    { "slug": "copy", "title": "Write and design {name} content", "domain": "ux", "complexity": "C2", "est_minutes": 30,
+      "description": "Write {name} ({channel}) in the product voice per 04-DESIGN-LANGUAGE.md: clear subject/title, one action, honest urgency; all strings through i18n keys from day one.",
+      "acceptance_criteria": ["copy reviewed against design language voice", "strings keyed, no concatenated fragments"],
+      "gates": ["i18n lint"] },
+    { "slug": "impl", "title": "Implement {name} delivery", "domain": "backend", "complexity": "C2", "depends_on": ["#copy"], "est_minutes": 40,
+      "description": "Implement {name} on channel {channel} at {path}: trigger condition, template rendering, delivery with retry policy, and suppression rules (quiet hours, dedupe window).",
+      "acceptance_criteria": ["fires exactly once per trigger within the dedupe window", "delivery failure retried then telemetried"],
+      "gates": ["{module_gates}"] },
+    { "slug": "prefs", "title": "User preference/opt-out for {name}", "domain": "frontend", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 30,
+      "description": "Wire {name} into the notification preferences surface: per-category opt-out honored at send time, default per the product's consent posture.",
+      "acceptance_criteria": ["opted-out user never receives {name}", "preference change takes effect without redeploy"],
+      "gates": ["{module_gates}"] },
+    { "$ref": "unit-tests", "depends_on": ["#impl", "#prefs"] },
+    { "$ref": "telemetry", "depends_on": ["#impl"] },
+    { "$ref": "docs", "depends_on": ["#impl"] }
+  ]
+}

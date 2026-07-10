@@ -1,0 +1,4 @@
+interface:
+  display_name: "SMA Enforcer"
+  short_description: "Enforce SMA brick gates easily."
+  default_prompt: "Scan this project for SMA bricks, validate manifests, report health, and update the wiki."

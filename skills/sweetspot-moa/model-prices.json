@@ -1,0 +1,15 @@
+{
+  "asOf": "2026-07-02",
+  "note": "USD per million tokens. Verified against published pricing pages on asOf date. cacheWrite/cacheRead for Claude models derived from standard Anthropic multipliers (1.25x input / 0.1x input). Update this file when vendors reprice; the SMOA token summary refuses to price models missing from this table.",
+  "sources": [
+    "https://platform.claude.com/docs/en/about-claude/pricing",
+    "https://www.anthropic.com/news/claude-fable-5-mythos-5",
+    "https://developers.openai.com/api/docs/pricing"
+  ],
+  "perMTok": {
+    "claude-fable-5": { "input": 10, "output": 50, "cacheWrite": 12.5, "cacheRead": 1.0 },
+    "claude-opus-4-8": { "input": 5, "output": 25, "cacheWrite": 6.25, "cacheRead": 0.5 },
+    "claude-haiku-4-5": { "input": 1, "output": 5, "cacheWrite": 1.25, "cacheRead": 0.1 },
+    "gpt-5.5": { "input": 5, "cachedInput": 0.5, "output": 30 }
+  }
+}

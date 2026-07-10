@@ -1,0 +1,4 @@
+interface:
+  display_name: "SMA Course Builder"
+  short_description: "Build SMA wiki and courses."
+  default_prompt: "Turn this Sweetspot project or brick into a user-facing wiki page and beginner course."

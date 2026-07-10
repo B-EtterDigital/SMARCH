@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/project.index.schema.json",
+  "title": "Sweetspot Project Index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project", "modules"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "root"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "root": { "type": "string" },
+        "repository": { "type": "string" },
+        "commit": { "type": "string" },
+        "stack": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["brick_id", "manifest_path", "status"],
+        "properties": {
+          "brick_id": { "type": "string" },
+          "manifest_path": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["experimental", "project_bound", "variant", "duplicate", "legacy", "candidate", "canonical"]
+          },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sma/schemas/backlog.schema.json",
+  "title": "SMA Backlog",
+  "description": "Standard format for tracking imperfections that need to be cleaned up before a brick can be promoted, or that affect compliance/quality scores. One file per project (.smarch/backlog.json) plus a global aggregate at SMA/registry/backlog.generated.json.",
+  "type": "object",
+  "required": ["schema_version", "project", "generated_at", "entries"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "project": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "kind", "scope", "opened_at", "status"],
+        "properties": {
+          "id": { "type": "string", "description": "Stable id, e.g. acme-lang-001" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "severity": { "enum": ["blocker", "high", "medium", "low", "nit"] },
+          "kind": {
+            "enum": [
+              "typecheck_disabled",
+              "missing_types",
+              "dependency_drift",
+              "platform_coupling",
+              "test_missing",
+              "rls_missing",
+              "env_undeclared",
+              "manifest_drift",
+              "boundary_violation",
+              "supply_chain",
+              "performance",
+              "accessibility",
+              "documentation",
+              "naming",
+              "duplicate_brick",
+              "other"
+            ]
+          },
+          "scope": {
+            "type": "object",
+            "properties": {
+              "brick_id": { "type": "string" },
+              "package": { "type": "string" },
+              "files": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "blocks_promotion_to": {
+            "type": "array",
+            "items": { "enum": ["candidate", "verified", "canonical", "publishable"] }
+          },
+          "linked_to": {
+            "type": "object",
+            "properties": {
+              "reuse_receipt_id": { "type": "string" },
+              "github_issue": { "type": "string" },
+              "linear_id": { "type": "string" }
+            }
+          },
+          "opened_at": { "type": "string", "format": "date-time" },
+          "opened_by": { "type": "string" },
+          "closed_at": { "type": "string", "format": "date-time" },
+          "closed_by": { "type": "string" },
+          "resolution": { "type": "string" },
+          "status": { "enum": ["open", "in_progress", "blocked", "resolved", "wontfix"] },
+          "estimated_effort_hours": { "type": "number" },
+          "estimated_token_cost": {
+            "type": "integer",
+            "description": "Tokens to fix, estimated. Used by sma-state to surface low-effort/high-value cleanup."
+          }
+        }
+      }
+    }
+  }
+}

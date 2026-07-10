@@ -1,0 +1,24 @@
+{
+  "applies_to": "media-asset",
+  "version": 1,
+  "notes": "Applied to every generative asset in inventories/media-asset.json — ONLY for products classified visual/experiential per references/media-pipeline.md. Item vars: tool (higgsfield|fal|elevenlabs), asset_class, format, budget (size/loudness/resolution), prompt, style_ref (dep ID of the style-bible/anchor task). The style-bible itself is a bespoke task created first.",
+  "steps": [
+    { "slug": "gen", "title": "Generate {name}", "domain": "media", "complexity": "C2", "est_minutes": 30,
+      "description": "Generate {name} via {tool} using the prepared prompt and the style anchors from the style bible; produce {format} within budget {budget}.",
+      "acceptance_criteria": ["asset matches prompt spec and style anchors", "format and budget spec met"],
+      "gates": ["asset-lint"],
+      "paid_from_var": "tool", "prompt_from_var": "prompt", "depends_from_var": "style_ref" },
+    { "slug": "optimize", "title": "Post-process and optimize {name}", "domain": "media", "complexity": "C1", "depends_on": ["#gen"], "est_minutes": 15,
+      "description": "Compress/transcode {name} to the delivery spec from 07-PERFORMANCE-PLAN.md (codecs, sizes, quality-tier variants where the plan requires them).",
+      "acceptance_criteria": ["all required tier variants exist", "each within its size/loudness/resolution budget"],
+      "gates": ["asset-lint"] },
+    { "slug": "integrate", "title": "Wire {name} into the product", "domain": "media", "complexity": "C2", "depends_on": ["#optimize"], "est_minutes": 30,
+      "description": "Place {name} at {path}, register it in the asset manifest, and connect it to its consuming surface; record license/provenance metadata.",
+      "acceptance_criteria": ["manifest entry present with provenance", "consuming surface uses the asset at runtime"],
+      "gates": ["manifest validation", "{module_gates}"] },
+    { "slug": "verify", "title": "Runtime verification of {name}", "domain": "test", "complexity": "C1", "depends_on": ["#integrate"], "est_minutes": 15,
+      "description": "Verify {name} in the running product on the baseline device profile: loads, displays/plays correctly, honors the quality-tier ladder.",
+      "acceptance_criteria": ["verified in running product with evidence (screenshot/recording/log)", "no budget regression on baseline profile"],
+      "gates": ["perf check"] }
+  ]
+}

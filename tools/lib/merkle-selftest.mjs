@@ -1,0 +1,72 @@
+#!/usr/bin/env node
+/**
+ * Self-test for the Merkle anchor. Proves: the root is deterministic, every
+ * leaf produces a valid inclusion proof, a forged leaf fails its proof, and
+ * changing any leaf changes the root (so anchoring the root witnesses them all).
+ * Run: node tools/lib/merkle-selftest.mjs
+ */
+import assert from 'node:assert/strict';
+import { leafHash, buildMerkle, inclusionProof, verifyProof, verifyBrickInclusion } from './merkle.mjs';
+
+let n = 0;
+
+const mk = (count) => Array.from({ length: count }, (_, i) => leafHash(`brick-${i}`, `head-${i}`));
+
+// determinism
+for (const count of [1, 2, 3, 5, 8, 17, 100]) {
+  const leaves = mk(count);
+  const a = buildMerkle(leaves);
+  const b = buildMerkle(leaves);
+  assert.equal(a.root, b.root, `root deterministic for ${count}`);
+
+  // every leaf has a valid inclusion proof
+  for (let i = 0; i < count; i += 1) {
+    const proof = inclusionProof(a.layers, i);
+    assert.equal(verifyProof(leaves[i], proof, a.root), true, `proof verifies for leaf ${i}/${count}`);
+  }
+  n += 1;
+}
+
+// a forged leaf does NOT verify against the honest root
+{
+  const leaves = mk(9);
+  const { root, layers } = buildMerkle(leaves);
+  const proof = inclusionProof(layers, 3);
+  const forged = leafHash('brick-3', 'FORGED-head');
+  assert.equal(verifyProof(forged, proof, root), false, 'forged leaf must fail');
+  n += 1;
+}
+
+// changing one leaf changes the root (root witnesses every brick)
+{
+  const leaves = mk(50);
+  const root1 = buildMerkle(leaves).root;
+  const mutated = leaves.slice();
+  mutated[23] = leafHash('brick-23', 'tampered');
+  const root2 = buildMerkle(mutated).root;
+  assert.notEqual(root1, root2, 'any leaf change must change the root');
+  n += 1;
+}
+
+// wrong root rejects a valid proof
+{
+  const leaves = mk(16);
+  const { root, layers } = buildMerkle(leaves);
+  const proof = inclusionProof(layers, 7);
+  assert.equal(verifyProof(leaves[7], proof, `${root.slice(0, -1)}0`), false, 'wrong root must reject');
+  n += 1;
+}
+
+// verifyBrickInclusion re-derives the leaf from (brickId, head), so a caller
+// cannot substitute a forged leaf; only the true (brickId, head) verifies (F4).
+{
+  const leaves = mk(4);
+  const { root, layers } = buildMerkle(leaves);
+  const proof = inclusionProof(layers, 0);
+  assert.equal(verifyBrickInclusion('brick-0', 'head-0', proof, root), true, 'honest brick verifies');
+  assert.equal(verifyBrickInclusion('brick-0', 'WRONG', proof, root), false, 'wrong head rejected');
+  assert.equal(verifyBrickInclusion('other-brick', 'head-0', proof, root), false, 'wrong id rejected');
+  n += 1;
+}
+
+console.log(`merkle selftest: ${n} groups passed`);

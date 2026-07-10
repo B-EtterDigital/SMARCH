@@ -1,0 +1,22 @@
+{
+  "applies_to": "doc-page",
+  "version": 1,
+  "notes": "Every user-facing documentation page in inventories/*.doc-page.json (guides, references, onboarding). Vars: audience (new user|power user|developer).",
+  "steps": [
+    { "slug": "write", "title": "Write doc page: {name}", "domain": "docs", "complexity": "C2", "est_minutes": 60,
+      "description": "Write {name} at {path} for {audience}: task-oriented structure, runnable examples, screenshots/recordings where they remove ambiguity, product voice per 04-DESIGN-LANGUAGE.md.",
+      "acceptance_criteria": ["every example verified to work as written", "answers its target question without requiring other pages"],
+      "gates": ["docs build", "example verification"] },
+    { "slug": "accuracy", "title": "Evidence-check doc page: {name}", "domain": "docs", "complexity": "C1", "depends_on": ["#write"], "est_minutes": 20,
+      "description": "Verify every claim in {name} against the current build: flags, defaults, UI names, outputs. Docs are claims — SMA claims discipline applies.",
+      "acceptance_criteria": ["zero stale claims; each verified against the build or flagged with a task"],
+      "gates": ["docs build"] },
+    { "$ref": "i18n-extract", "milestone_min": "M3",
+      "description": "Prepare {name} for localization: source strings through the docs i18n pipeline, screenshots replaceable per locale, no text baked into images.",
+      "acceptance_criteria": ["page renders via the docs i18n pipeline", "locale-swappable screenshot slots"] },
+    { "slug": "linkcheck", "title": "Wire {name} into navigation and search", "domain": "docs", "complexity": "C1", "depends_on": ["#write"], "est_minutes": 15,
+      "description": "Add {name} to the docs nav/sidebar, cross-link related pages, verify internal links and search indexing.",
+      "acceptance_criteria": ["reachable from nav in <=2 clicks", "link checker green"],
+      "gates": ["docs build", "link check"] }
+  ]
+}

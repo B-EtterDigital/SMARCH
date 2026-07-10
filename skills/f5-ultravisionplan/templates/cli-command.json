@@ -1,0 +1,22 @@
+{
+  "applies_to": "cli-command",
+  "version": 1,
+  "notes": "Every CLI command/subcommand in inventories/*.cli-command.json. Vars: usage (e.g. 'tool sync --all').",
+  "steps": [
+    { "slug": "impl", "title": "Implement `{name}` command", "domain": "backend", "complexity": "C3", "est_minutes": 60,
+      "description": "Implement {name} at {path}: argument parsing with helpful errors, exit codes (0 success, distinct non-zero per failure class), quiet/verbose behavior consistent with the CLI's conventions.",
+      "acceptance_criteria": ["--help is accurate and includes examples", "exit codes documented and distinct per failure class"],
+      "gates": ["{module_gates}"] },
+    { "slug": "errors", "title": "Human-quality error output for `{name}`", "domain": "ux", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 30,
+      "description": "Every failure of {name} prints what happened, why, and the next command to try; machine-readable output (--json) stays clean on stderr/stdout separation.",
+      "acceptance_criteria": ["each failure mode shows actionable guidance", "stdout stays parseable in --json mode"],
+      "gates": ["{module_gates}"] },
+    { "$ref": "unit-tests", "depends_on": ["#impl"] },
+    { "slug": "e2e", "title": "End-to-end test of `{name}` against a real workspace", "domain": "test", "complexity": "C2", "depends_on": ["#impl"], "est_minutes": 40,
+      "description": "Run {name} against a fixture workspace in CI: happy path plus the top failure path; assert output and exit codes.",
+      "acceptance_criteria": ["fixture run green in CI", "failure path asserted"],
+      "gates": ["e2e suite"] },
+    { "$ref": "telemetry", "depends_on": ["#impl"] },
+    { "$ref": "docs", "depends_on": ["#impl"] }
+  ]
+}

@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/placement-map.schema.json",
+  "title": "Sweetspot Placement Map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "map",
+    "target",
+    "imports",
+    "placements"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_at"],
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "generated_by": {
+          "$ref": "#/$defs/actor_record"
+        },
+        "registry_snapshot_sha": {
+          "$ref": "#/$defs/hash_like"
+        },
+        "lockfile_path": {
+          "type": "string"
+        },
+        "imports_path": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "target_runtime": {
+          "type": "string"
+        }
+      }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["import_id", "artifact_type", "artifact_id", "release_version"],
+        "properties": {
+          "import_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
+          },
+          "artifact_type": {
+            "$ref": "#/$defs/artifact_type"
+          },
+          "artifact_id": {
+            "$ref": "#/$defs/artifact_id"
+          },
+          "release_version": {
+            "$ref": "#/$defs/semver"
+          },
+          "release_hash": {
+            "$ref": "#/$defs/hash_like"
+          },
+          "imported_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["installed", "adapted", "drifted", "disabled", "removed"]
+          },
+          "portable_doc_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "placements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "placement_id",
+          "import_id",
+          "kind",
+          "source_path",
+          "target_path",
+          "ownership"
+        ],
+        "properties": {
+          "placement_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
+          },
+          "import_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["file", "directory", "doc", "asset", "config", "migration", "test"]
+          },
+          "source_path": {
+            "type": "string"
+          },
+          "target_path": {
+            "type": "string"
+          },
+          "source_hash": {
+            "$ref": "#/$defs/hash_like"
+          },
+          "target_hash": {
+            "$ref": "#/$defs/hash_like"
+          },
+          "exported_symbols": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "kind"],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "function",
+                    "class",
+                    "type",
+                    "component",
+                    "hook",
+                    "constant",
+                    "route",
+                    "command",
+                    "other"
+                  ]
+                },
+                "source_export": {
+                  "type": "string"
+                },
+                "target_local": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "alias_rewrites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["from", "to"],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "env_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "surface", "required"],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "surface": {
+                  "type": "string",
+                  "enum": ["server", "client", "edge", "worker", "shared"]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "bound_to": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "adapter_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "kind", "required", "status"],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": ["api", "storage", "auth", "queue", "telemetry", "ui_slot", "event", "config", "other"]
+                },
+                "target_path": {
+                  "type": "string"
+                },
+                "target_symbol": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["pending", "bound", "customized", "skipped"]
+                }
+              }
+            }
+          },
+          "local_overrides": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "status"],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": ["patch", "wrapper", "rename", "config", "deleted", "other"]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["active", "merged", "stale"]
+                },
+                "notes": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "ownership": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode", "replaceable"],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": ["managed", "adapted", "forked", "local"]
+              },
+              "owner": {
+                "type": "string"
+              },
+              "replaceable": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "actor_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor"],
+      "properties": {
+        "actor": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,160}$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "enum": ["brick", "build"]
+    },
+    "hash_like": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{7,128}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    }
+  }
+}
