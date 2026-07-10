@@ -105,3 +105,31 @@
 {"ts": "2026-07-10T17:34:55+00:00", "action": "complete", "id": "UV-DO-lesson-11-the-graph-asking-questions-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
 {"ts": "2026-07-10T17:35:05+00:00", "action": "complete", "id": "UV-DO-lesson-12-agents-and-skills-setup-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
 {"ts": "2026-07-10T17:35:37+00:00", "action": "complete", "id": "UV-PR-skeptic2-ledger-refresh", "detail": "node tools/gen-public-ledger.mjs --verify"}
+{"ts": "2026-07-10T17:36:42+00:00", "action": "claim", "id": "UV-CM-submission-workflow", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:42+00:00", "action": "claim", "id": "UV-DO-code-of-conduct", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:42+00:00", "action": "claim", "id": "UV-DO-support-md", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:43+00:00", "action": "claim", "id": "UV-DO-colophon", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:43+00:00", "action": "claim", "id": "UV-DO-first-contribution", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:43+00:00", "action": "claim", "id": "UV-DO-attribution-sweep", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:44+00:00", "action": "claim", "id": "UV-DO-influences-verify", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:44+00:00", "action": "claim", "id": "UV-EV-bench", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:44+00:00", "action": "claim", "id": "UV-DO-lesson-13-contributing-your-first-brick-draft", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:45+00:00", "action": "claim", "id": "UV-DO-lesson-14-canonical-the-registry-story-draft", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:45+00:00", "action": "claim", "id": "UV-DO-lesson-15-mcp-connect-your-agent-draft", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:45+00:00", "action": "claim", "id": "UV-DO-lesson-16-glossary-safari-draft", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:45+00:00", "action": "claim", "id": "UV-DO-lesson-17-reading-the-plan-uvp-draft", "agent": "codex-w7"}
+{"ts": "2026-07-10T17:36:46+00:00", "action": "claim", "id": "UV-DO-lesson-18-your-first-agent-swarm-draft", "agent": "codex-w7"}
+{"ts": "2026-07-10T18:02:06+00:00", "action": "complete", "id": "UV-DO-lesson-13-contributing-your-first-brick-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T18:02:54+00:00", "action": "complete", "id": "UV-DO-lesson-14-canonical-the-registry-story-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T18:03:30+00:00", "action": "complete", "id": "UV-DO-lesson-15-mcp-connect-your-agent-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T18:04:11+00:00", "action": "complete", "id": "UV-DO-lesson-16-glossary-safari-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T18:04:49+00:00", "action": "complete", "id": "UV-DO-lesson-17-reading-the-plan-uvp-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T18:05:36+00:00", "action": "complete", "id": "UV-DO-lesson-18-your-first-agent-swarm-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T18:05:39+00:00", "action": "complete", "id": "UV-CM-submission-workflow", "detail": "node tools/sma-submit.mjs --selftest"}
+{"ts": "2026-07-10T18:05:40+00:00", "action": "complete", "id": "UV-DO-code-of-conduct", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T18:05:42+00:00", "action": "complete", "id": "UV-DO-support-md", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T18:05:44+00:00", "action": "complete", "id": "UV-DO-colophon", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T18:05:45+00:00", "action": "complete", "id": "UV-DO-first-contribution", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T18:05:46+00:00", "action": "complete", "id": "UV-DO-attribution-sweep", "detail": "node tools/sma-leak-gate.mjs"}
+{"ts": "2026-07-10T18:05:48+00:00", "action": "complete", "id": "UV-DO-influences-verify", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T18:06:38+00:00", "action": "complete", "id": "UV-EV-bench", "detail": "node tools/evals/bench.mjs --selftest"}

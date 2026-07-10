@@ -16,6 +16,7 @@ orchestrator — the intelligence lives in the aggregation layer, naive
 averaging regresses to the mean), OpenRouter Fusion (panel → judge →
 synthesizer returning consensus / contradictions / blind spots instead of a
 merge), Hermes MoA (published reference pairing beats either model alone).
+See `docs/INFLUENCES.md` for source links and SMARCH's specific adaptations.
 
 ## Hard Activation Rules — No Exceptions
 

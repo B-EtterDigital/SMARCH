@@ -50,6 +50,42 @@ manifest, gate, registry, canonical.
 
 See [SECURITY.md](SECURITY.md). Never publish exploit details before a fix.
 
+## Your first contribution in 30 minutes
+
+1. Fork `B-EtterDigital/SMARCH`, then clone your fork and install the repo:
+
+   ```bash
+   git clone https://github.com/<your-user>/SMARCH.git
+   cd SMARCH
+   npm install
+   npm run check
+   ```
+
+2. Pick an open
+   [`good first issue`](https://github.com/B-EtterDigital/SMARCH/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+   Comment on the issue before starting so another contributor knows it is in
+   flight. Ask through the
+   [`question` route](https://github.com/B-EtterDigital/SMARCH/issues/new?labels=question&title=Question%3A+)
+   if the scope is unclear.
+3. Make the smallest change that solves the issue. Keep one concern per commit,
+   update the relevant docs or tests, and run `npm run check` again.
+4. Push your branch and open a pull request that links the issue. State what
+   changed, which evidence you ran, and any limit you could not verify.
+
+Review here is kind and evidence-based. Expect questions about behavior,
+boundaries, tests, security, or reproducibility—not performances of cleverness.
+Address the evidence, keep unrelated changes out, and add a follow-up commit
+rather than rewriting someone else's work.
+
+After merge, your commit remains part of the repository's provenance. If your
+work adds or corrects an intellectual influence, update
+[INFLUENCES.md](docs/INFLUENCES.md) in the same pull request so the credit travels
+with the code.
+
+By participating, you agree to follow our
+[Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). For questions,
+bugs, and private vulnerability reports, see [SUPPORT.md](SUPPORT.md).
+
 ## License
 
 By contributing you agree your contributions are licensed under Apache-2.0.

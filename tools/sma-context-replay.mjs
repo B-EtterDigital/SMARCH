@@ -19,6 +19,7 @@
  *
  * The output is meant to be the file a new agent reads to pick up where
  * someone left off — Entire's "preserve why" pitch in concrete form.
+ * Lineage: see docs/INFLUENCES.md.
  */
 
 import { argv, exit } from 'node:process';

@@ -7,9 +7,10 @@
  * (b) be the seam we wire up the day a second SMARCH instance exists.
  *
  * Why a stub now:
- *   The Pierre / code.storage shape is `store.installRelease(id, version)` —
- *   programmatic, low-latency, no source repo required. sma-store.mjs already
- *   implements this locally. The hosted variant would let a second machine
+ *   SMARCH's local shape is `installRelease({ brickId, version, ... })`, adapting
+ *   Pierre / code.storage's SDK-first storage direction; see
+ *   docs/INFLUENCES.md. sma-store.mjs already implements this locally. The
+ *   hosted variant would let a second machine
  *   resolve a release purely by id+version against a shared HTTP endpoint.
  *   The federation primitives (registry_origin field, schema support) ship
  *   in batches 1+4. This file documents what's left.

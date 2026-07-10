@@ -5,6 +5,7 @@
  * For every brick with ≥ 2 releases, emit:
  *   wiki/gen3/<brick>/diff-<vA>__<vB>.html  (diffs.com renderer)
  *   wiki/gen3/<brick>/tree.html             (trees.software renderer)
+ * Renderer credit and current integration status: see docs/INFLUENCES.md.
  *
  * Standalone tool. Does not touch sma-wiki.mjs's outputs. Safe to run any time;
  * idempotent. Acquire a `wiki-regen` lease for `wiki/gen3` before running in a

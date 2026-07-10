@@ -2,6 +2,7 @@
  * gen3-renderers.mjs — small helpers for Pierre's open primitives:
  *   - diffs.com  → side-by-side diff renderer
  *   - trees.software → file-tree renderer
+ * Lineage and current integration status: see docs/INFLUENCES.md.
  *
  * Intentionally simple. We render minimal HTML with <script src="…cdn…"></script>
  * embeds. No npm deps. No build step. The page only renders interactively when

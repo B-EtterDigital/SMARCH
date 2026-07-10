@@ -163,7 +163,9 @@ For small code-only edits that do not affect SMA manifests, module ownership, or
 
 ## Standalone SMA Discipline
 
-This is the primary skill. Do not require Superpowers for SMA Gen3 work.
+This is the primary skill. Superpowers remains part of SMARCH's skill-
+distribution lineage; see `docs/INFLUENCES.md`. Do not require Superpowers for
+SMA Gen3 work.
 
 If a legacy session still injects Superpowers context, treat it as optional background only. Follow `$sma-gen3`, project agent docs, `sma.gen3.json`, SRS/telemetry rules, mandatory module Graphify, and the SMA scanner wrappers as the current standard.
 

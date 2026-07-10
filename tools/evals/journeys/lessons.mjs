@@ -84,6 +84,81 @@ const LESSON_CONTRACTS = new Map([
       "tools/evals/fixtures/portfolio",
       "tools/install-agent-skills.mjs"
     ]
+  }],
+  ["13-contributing-your-first-brick.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-bootstrap-manifests.mjs"
+    ]
+  }],
+  ["14-canonical-the-registry-story.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-canonicalization.mjs"
+    ]
+  }],
+  ["15-mcp-connect-your-agent.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/mcp/server.mjs"
+    ]
+  }],
+  ["16-glossary-safari.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-scan.mjs"
+    ]
+  }],
+  ["17-reading-the-plan-uvp.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "~/.claude/skills/f5-ultravisionplan/scripts/uvp.py",
+      "git archive HEAD .UltraVision"
+    ]
+  }],
+  ["18-your-first-agent-swarm.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "SMA_AGENT=\"swarm-blue\"",
+      "tools/sma-start-edit.mjs",
+      "conflict_detected"
+    ]
   }]
 ]);
 

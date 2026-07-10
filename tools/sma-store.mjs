@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * sma-store.mjs — local release-store API. The Pierre / code.storage shape,
- * scoped to your machine first.
+ * sma-store.mjs — local release-store API: SMARCH's versioned-release
+ * adaptation of Pierre / code.storage's SDK-first storage direction.
+ * Lineage: see docs/INFLUENCES.md.
  *
  * The point: today, "install a brick" requires `sma-clone --brick X --target Y`,
  * which assumes the source repo is already on disk and resolved by id from a
  * registry scan. This tool exposes the same operation but addressed by
- * (brick_id, version) — same shape Pierre's `store.installRelease(id, version)`
- * pitches. Hosted Supabase variant is deferred until a second instance exists;
+ * (brick_id, version) through SMARCH's own `installRelease` API. Hosted
+ * Supabase variant is deferred until a second instance exists;
  * everything below is local-only.
  *
  * Subcommands:

@@ -1,0 +1,96 @@
+name: Community brick submission
+description: Submit a locally verified SMA brick bundle for curator review.
+title: "[Brick submission]: "
+labels:
+  - brick-submission
+  - community
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Package the brick with `node tools/sma-submit.mjs --brick <directory>` before opening this issue. Attach the generated `.tar.gz`; source archives assembled by hand are not accepted.
+
+  - type: input
+    id: brick_id
+    attributes:
+      label: Brick ID
+      description: The exact `brick.id` from the submitted manifest.
+      placeholder: example.adapter
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Brick version
+      description: The exact `brick.version` from the submitted manifest.
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: repository
+    attributes:
+      label: Source repository
+      description: Public repository and revision that the bundle represents.
+      placeholder: https://github.com/owner/repository/tree/commit
+    validations:
+      required: true
+
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: SPDX identifier declared by the brick, such as Apache-2.0 or MIT.
+      placeholder: Apache-2.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: bundle
+    attributes:
+      label: Submission bundle
+      description: Drag the generated `.tar.gz` archive here, then include the SHA-256 printed by `sma-submit`.
+      placeholder: Attach archive here and paste its SHA-256.
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What the brick does
+      description: Describe the reusable capability, intended consumers, public interface, and important boundaries.
+      placeholder: This brick provides...
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification notes
+      description: List any warnings, platform requirements, test commands beyond the bundled gates, and known limitations.
+      placeholder: Local bundle verification passed. Additional checks...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: attestations
+    attributes:
+      label: Submitter attestations
+      options:
+        - label: I am authorized to submit and license every file in this bundle.
+          required: true
+        - label: The bundle was produced by `sma-submit` and passes its own verification.
+          required: true
+        - label: I reviewed the bundle for secrets, private data, generated dependencies, and unrelated files.
+          required: true
+        - label: I understand that local checks do not replace trusted automated gates or curator review.
+          required: true
+
+  - type: checkboxes
+    id: conduct
+    attributes:
+      label: Community agreement
+      options:
+        - label: I agree to follow this repository's contribution and community rules.
+          required: true

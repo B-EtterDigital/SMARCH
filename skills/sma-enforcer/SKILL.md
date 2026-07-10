@@ -54,6 +54,7 @@ Renew long jobs with `sma-lease.mjs renew --lease <id>`. Release on completion w
 Every meaningful agent action on a brick should append an event to that brick's
 agent-context log. This is the durable "why" that survives across sessions and
 agents — the Entire-shaped layer that git does not give you.
+See `docs/INFLUENCES.md` for the lineage.
 
 ```bash
 node ~/DEV/SMARCH/tools/sma-context.mjs append \
@@ -102,7 +103,8 @@ node ~/DEV/SMARCH/tools/sma-store.mjs install \
   --brick <brick_id> --version <v> --target <project_path> --write
 ```
 
-This is the local Pierre-shape primitive. Hosted variant deferred.
+This is SMARCH's local id+version release primitive, inspired by Pierre's
+SDK-first storage direction; see `docs/INFLUENCES.md`. Hosted variant deferred.
 
 ## Validation Commands
 

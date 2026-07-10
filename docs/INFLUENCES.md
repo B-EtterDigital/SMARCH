@@ -4,9 +4,9 @@ SMARCH grew from practical work and from ideas shared openly by other builders. 
 
 ## Pierre / code.storage, diffs.com, and trees.software
 
-[Code Storage](https://code.storage/changelog/introducing-code-storage), [diffs.com](https://diffs.com/), and [trees.software](https://trees.software/) are Pierre Computer Company tools for code storage, diff display, and file-tree display.
+[Code Storage](https://code.storage/changelog/introducing-code-storage), [diffs.com](https://diffs.com/), and [trees.software](https://trees.software/) are Pierre Computer Company tools for managed Git infrastructure, diff rendering, and file-tree rendering.
 
-SMARCH borrowed the `installRelease(id, version)` API shape for `sma-store`, so a brick release is addressed by identity and version. Its Gen-3 wiki loads the published diffs.com and trees.software renderer packages from their CDNs and calls their documented APIs; SMARCH deliberately does not reimplement either renderer (rendering falls back gracefully when the packages are unavailable).
+SMARCH's `sma-store` uses its own `installRelease({ brickId, version, ... })` API to install a brick release by identity and version. That is SMARCH's local adaptation of Pierre's SDK-first, identity-addressed storage direction, not a Code Storage API signature. The Gen-3 wiki also contains experimental wrappers for diffs.com and trees.software. Their configured CDN URLs currently return 404, so the static fallback renderers are the only evidenced path today; SMARCH does not reimplement the upstream renderers.
 
 ## Sakana Fugu
 
@@ -40,9 +40,9 @@ Its emphasis on preserving why, not only what changed, informed SMARCH's append-
 
 Zed helped sharpen SMARCH's framing of the multi-agent coordination gap: running several agents is easier than keeping their ownership, in-flight intent, and collisions understandable. SMARCH addresses that gap with leases, agent-context records, conflict reports, and controller views.
 
-## Theo Browne / t3.gg and Lakebed
+## Theo Browne / Ping Labs / Lakebed
 
-[Theo Browne](https://t3.gg/) is a developer and public commentator on agent-assisted software, and [Lakebed](https://docs.lakebed.dev/) is an adjacent constraint-first, agent-native runtime for small full-stack applications called capsules.
+[Theo Browne](https://t3.gg/) is a developer and public commentator on agent-assisted software and a founder of [Ping Labs](https://ping.gg/dashboard/announcements/yc-announcement). Ping Labs' [Lakebed](https://docs.lakebed.dev/) is an adjacent constraint-first, agent-native runtime for small full-stack applications called capsules.
 
 Theo's commentary helped sharpen the public description of the Gen-3 coordination gap. Lakebed's tightly bounded capsule model inspired the capsule-grade brick tier on SMARCH's roadmap (planned, not yet shipped — see `.UltraVision/`), while remaining a separate project with a different runtime scope.
 
@@ -56,7 +56,7 @@ It demonstrated that engineering methodology can be packaged and shared through 
 
 [GSD, or Get Shit Done](https://github.com/gsd-build/get-shit-done), by Lex Christopherson is a spec-driven planning and execution system for coding agents.
 
-Its approach to durable specifications, phased plans, and context recovery is part of the planning lineage behind SUP and UltraVision. SMARCH applies that lineage within its own brick, gate, lease, and evidence model.
+The linked original repository is archived and now points readers to Open GSD. Its approach to durable specifications, phased plans, and context recovery is part of the planning lineage behind SUP and UltraVision. SMARCH applies that lineage within its own brick, gate, lease, and evidence model.
 
 ## tree-sitter
 
@@ -84,8 +84,10 @@ SMARCH draws inspiration from fault isolation and checklist discipline. This is 
 
 ## AGENTS.md standard
 
-[AGENTS.md](https://github.com/openai/agents.md) is an OpenAI-originated, open repository convention for giving coding agents project-specific instructions.
+[AGENTS.md](https://github.com/openai/agents.md) is an OpenAI-originated, open repository convention for giving coding agents project-specific instructions. The original URL now redirects to the community `agentsmd` organization.
 
 SMARCH adopts the convention as the predictable entry point for agent guidance. Project rules can therefore travel with the repository and be read by tools that support the standard.
+
+Link status was last checked on 2026-07-11: all 21 external URLs returned HTTP 200 after redirects, and both repository-relative links resolved locally.
 
 If we missed an influence or described one incompletely, please open a pull request so we can correct the record.

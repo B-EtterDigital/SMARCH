@@ -165,7 +165,7 @@ Multi-agent:
   sma merge         divergence proposals
 
 Release & propagation:
-  sma store         install by id+version  (Pierre-shape)
+  sma store         install by id+version  (Pierre-inspired; see docs/INFLUENCES.md)
   sma release       cut a release artifact
   sma clone         copy a brick/build into a project
   sma propagate     push a release to dependents
