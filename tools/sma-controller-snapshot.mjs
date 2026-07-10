@@ -284,6 +284,7 @@ async function buildSnapshot() {
     actor: event.actor_id,
     intent: event.intent,
   })));
+  /** @type {any[]} */
   const actionItems = buildActionItems(projects);
   const activeDirtyScopeItems = actionItems.filter((item) => item.kind === 'active-dirty-scope');
   const parallelWave = buildParallelWave(actionItems);

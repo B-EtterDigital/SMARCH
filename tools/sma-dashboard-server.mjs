@@ -181,6 +181,7 @@ async function copyProjectReports(projectRoot, registryPath, securityPath = "") 
 
 async function updateProjectMetadata(projectRoot, registry, security = null) {
   const projectFile = path.join(projectRoot, ".sweetspot", "project.json");
+  /** @type {{schema_version?: string, project?: any, sma?: any, [key: string]: any}} */
   let metadata = {};
 
   try {

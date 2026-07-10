@@ -572,7 +572,6 @@ function decoratePacketReport(report, { includeProgress = false } = {}) {
     summary: {
       ...cleanupScopedSummary(report.summary || {}, scopedPackets, {
         includeProgress,
-        baseSummary: report.summary || {},
       }),
       packet_age_seconds: freshness.age_seconds,
       packet_max_age_seconds: freshness.max_age_seconds,

@@ -38,6 +38,24 @@ export class ExportBlockedError extends Error {
 }
 
 let _index = null;
+
+/**
+ * @typedef {object} ExportEvaluationOptions
+ * @property {any[]} [brickIds]
+ * @property {string | null} [project]
+ * @property {string} [targetVisibility]
+ * @property {any} [index]
+ */
+
+/**
+ * @typedef {ExportEvaluationOptions & {
+ *   operation: string,
+ *   allowClosed?: boolean,
+ *   requireOwner?: boolean,
+ *   actor?: string
+ * }} ExportAssertionOptions
+ */
+
 export function loadLicenseIndex() {
   if (_index) return _index;
   if (!existsSync(LICENSE_LEDGER)) { _index = buildLicenseIndex([]); _index._missing = true; return _index; }
@@ -64,6 +82,7 @@ export function resolveComponents(brickIds, project, index = loadLicenseIndex())
 /**
  * Evaluate whether exporting `brickIds` to `targetVisibility` is permitted.
  * Returns { ok, meet_openness, meet_visibility, components, violations, ledger_missing }.
+ * @param {ExportEvaluationOptions} options
  */
 export function evaluateExport({ brickIds = [], project = null, targetVisibility = 'community', index }) {
   const idx = index || loadLicenseIndex();
@@ -100,6 +119,7 @@ export function evaluateExport({ brickIds = [], project = null, targetVisibility
  * Assert an export is allowed, else throw ExportBlockedError. Always writes an
  * audit line. `allowClosed` is the explicit, recorded acknowledgment that lets
  * an authorized operator export closed source anyway.
+ * @param {ExportAssertionOptions} options
  */
 export function assertExportAllowed({ operation, brickIds = [], project = null, targetVisibility = 'community', allowClosed = false, requireOwner = false, actor, index }) {
   const who = actor || process.env.SMA_ACTOR_ID || process.env.USER || 'unknown';

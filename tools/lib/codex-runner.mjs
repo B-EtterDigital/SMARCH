@@ -31,6 +31,16 @@ import { spawn } from "node:child_process";
 const DEFAULT_MODEL = "gpt-5.4";
 const CACHE_DIR = path.join(os.homedir(), ".cache", "sma-codex");
 
+/**
+ * @typedef {object} CodexOptions
+ * @property {string} [prompt]
+ * @property {any} [schema]
+ * @property {string} [model]
+ * @property {number} [timeoutMs]
+ * @property {boolean} [noCache]
+ * @property {string} [label]
+ */
+
 async function ensureCache() {
   await fs.mkdir(CACHE_DIR, { recursive: true });
 }
@@ -105,6 +115,7 @@ function spawnCodex({ prompt, schemaPath, model, timeoutMs, lastMessageFile, cwd
   });
 }
 
+/** @param {CodexOptions} [options] */
 export async function codex({
   prompt,
   schema = null,
@@ -191,6 +202,10 @@ export async function codex({
 /**
  * Run many codex calls with bounded concurrency. Items is an array of
  * { id, prompt, schema, ...overrides } — yields { id, result } as each completes.
+ */
+/**
+ * @param {Array<CodexOptions & {id: string}>} items
+ * @param {{concurrency?: number, model?: string, timeoutMs?: number, onResult?: ((result: any) => void) | null}} [options]
  */
 export async function codexBatch(items, { concurrency = 3, model = DEFAULT_MODEL, timeoutMs = 240000, onResult = null } = {}) {
   const queue = items.slice();

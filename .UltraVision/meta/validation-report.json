@@ -1,6 +1,6 @@
 {
   "generated": "2026-07-10T15:03:25+00:00",
-  "root": "/home/bdd-main/DEV/SMARCH/.UltraVision",
+  "root": ".UltraVision",
   "strict": true,
   "pedantic": false,
   "pass": true,

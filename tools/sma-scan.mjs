@@ -8,19 +8,17 @@ import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/s
 import { validateManifest } from "./sma-validate.mjs";
 import { PROJECTS_ROOT } from "./lib/sma-paths.mjs";
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
 const defaultOptions = {
   root: PROJECTS_ROOT,
   out: path.join(smaRoot, "registry", "global-modules.generated.json"),
   projectId: "",
   excludeRoots: [],
   check: false,
+  force: false,
   strict: false,
   json: false
 };
-
 let activeExcludedRoots = [];
-
 const excludedDirs = new Set([
   ".git",
   "node_modules",
@@ -50,7 +48,6 @@ const excludedDirs = new Set([
   "archived",
   ".archive"
 ]);
-
 const archiveDirPatterns = [
   "corrupt-backup",
   "stream_preview_release",
@@ -306,50 +303,42 @@ function isExcludedPath(targetPath) {
 
 function parseArgs(argv) {
   const options = { ...defaultOptions, excludeRoots: [] };
-
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const next = argv[i + 1];
-
     if (arg === "--root" && next) {
       options.root = path.resolve(next);
       i += 1;
       continue;
     }
-
     if (arg === "--out" && next) {
       options.out = path.resolve(next);
       i += 1;
       continue;
     }
-
     if (arg === "--project-id" && next) {
       options.projectId = next;
       i += 1;
       continue;
     }
-
     if (arg === "--exclude-root" && next) {
       options.excludeRoots.push(path.resolve(next));
       i += 1;
       continue;
     }
-
     if (arg === "--check") {
       options.check = true;
       continue;
     }
-
+    if (arg === "--force") { options.force = true; continue; }
     if (arg === "--strict") {
       options.strict = true;
       continue;
     }
-
     if (arg === "--json") {
       options.json = true;
       continue;
     }
-
     if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
@@ -371,6 +360,7 @@ Options:
   --project-id Force all results to a single project id
   --exclude-root Skip a nested subtree while scanning (repeatable)
   --check Exit non-zero when manifest validation errors exist
+  --force Write a rejected registry despite manifest errors
   --strict Exit non-zero when validation warnings exist
   --json  Print machine-readable summary
 `);
@@ -640,7 +630,7 @@ async function hasManifest(dir) {
 // File-level brick patterns. Match whenever the file is named *<Suffix>.ext AND
 // EITHER the parent dir name matches the corresponding plural kind dir, OR any
 // ancestor up to 3 levels above does (catches src/renderer/pipelines/whisperFlow/WhisperFlowPipeline.ts).
-const fileBrickPatterns = [
+/** @type {Array<[RegExp, RegExp, string]>} */ const fileBrickPatterns = [
   [/^(providers?)$/, /([A-Za-z0-9]+Provider)\.(t|j)sx?$/i, "provider_file"],
   [/^(handlers?)$/, /([A-Za-z0-9]+Handler)\.(t|j)sx?$/i, "handler_file"],
   [/^(adapters?)$/, /([A-Za-z0-9]+Adapter)\.(t|j)sx?$/i, "adapter_file"],
@@ -4520,6 +4510,7 @@ async function main() {
 
   const bricks = [];
   const failures = [];
+  const validationFailures = [];
   const unmanifested = [];
   const projects = [];
   const projectRefactorReports = [];
@@ -4538,6 +4529,7 @@ async function main() {
       try {
         const manifest = await readManifest(manifestPath);
         const validation = validateManifest(manifestPath, manifest);
+        if (validation.errors.length > 0) validationFailures.push({ manifest_path: manifestPath, brick_id: validation.brick_id, errors: validation.errors });
         const brick = compactBrick(projectRoot.root, manifestPath, manifest, validation, projectRoot.id);
         bricks.push(brick);
         projectBricks.push(brick);
@@ -4648,6 +4640,14 @@ async function main() {
     failures
   };
 
+  if (failures.length > 0 || errorCount > 0) {
+    const rejectedOut = `${options.out}.rejected.json`;
+    await writeJsonIfMeaningfulChanged(rejectedOut, { schema_version: "1.0.0", generated_at: output.generated_at, registry_out: options.out,
+      forced: options.force, failure_count: failures.length, validation_error_count: errorCount, failures, validation_failures: validationFailures },
+    { normalize: normalizeRegistrySnapshot });
+    console.error(`[sma-scan] ${options.force ? "WARN --force replaced registry despite manifest errors" : "ERROR manifest errors rejected registry replacement"}; report=${rejectedOut}`);
+    if (!options.force) process.exit(options.check ? 1 : 2);
+  }
   await writeJsonIfMeaningfulChanged(options.out, output, {
     normalize: normalizeRegistrySnapshot,
   });
@@ -4721,7 +4721,7 @@ async function main() {
     console.log(`Wrote ${options.out}`);
   }
 
-  if (options.check && (failures.length > 0 || errorCount > 0 || (options.strict && warningCount > 0))) {
+  if (options.check && options.strict && warningCount > 0 && !options.force) {
     process.exit(1);
   }
 }

@@ -166,6 +166,7 @@ export function scanDirectory(absDir, { maxFiles = 2000 } = {}) {
     primary = mostCommon(byLicense);
   }
 
+  /** @type {'low'|'medium'|'high'} */
   let confidence = 'low';
   if (hasLicenseFile && (spdxTagFiles > 0 || evidenceFiles > 1)) confidence = 'high';
   else if (hasLicenseFile || spdxTagFiles > 0 || evidenceFiles > 0) confidence = 'medium';
@@ -216,6 +217,7 @@ export function evaluateDeclarationMismatch(declaredSpdx, evidence) {
   }
 
   const opennessEscalation = opennessRank(declared.openness) > opennessRank(actual.openness);
+  /** @type {'high'|'medium'} */
   let severity;
   if (opennessEscalation) {
     // declaring open/source-available over closed/source-available evidence

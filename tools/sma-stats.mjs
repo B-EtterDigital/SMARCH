@@ -359,7 +359,7 @@ function bucketKey(iso, by) {
   if (by === 'week') {
     const d = new Date(iso);
     const yearStart = new Date(d.getUTCFullYear(), 0, 1);
-    const week = Math.floor(((d - yearStart) / 86400000 + yearStart.getUTCDay() + 1) / 7);
+    const week = Math.floor(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getUTCDay() + 1) / 7);
     return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
   }
   return iso.slice(0, 10);

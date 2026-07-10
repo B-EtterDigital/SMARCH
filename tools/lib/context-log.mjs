@@ -61,6 +61,26 @@ export const KINDS = new Set([
 export const ACTOR_KINDS = new Set(['human', 'ai_model', 'agent', 'automation', 'tool']);
 export const VERIFY_STATUSES = new Set(['pass', 'fail', 'skipped', 'blocked']);
 
+/**
+ * @typedef {object} ContextEventInput
+ * @property {string} project
+ * @property {string} brick
+ * @property {string} kind
+ * @property {string} intent
+ * @property {string} [actorKind]
+ * @property {string} [actorId]
+ * @property {string} [model]
+ * @property {string} [sessionId]
+ * @property {string} [taskId]
+ * @property {string} [leaseId]
+ * @property {string} [decisionRationale]
+ * @property {Array<string | {alternative?: string, reason?: string}>} [rejectedAlternatives]
+ * @property {any[]} [linkedBacklog]
+ * @property {string[]} [filesTouched]
+ * @property {string} [commit]
+ * @property {{status?: string, [key: string]: any}} [verification]
+ */
+
 const SESSION_ENV_KEYS = [
   'SMA_SESSION',
   'SMA_SESSION_ID',
@@ -113,6 +133,7 @@ export function readContextLog(projectId, brickId) {
 /**
  * Append an event. Returns the event written (with auto-filled fields).
  * Throws on validation problems. Never rewrites or mutates an existing line.
+ * @param {ContextEventInput} input
  */
 export function appendContextEvent({
   project,

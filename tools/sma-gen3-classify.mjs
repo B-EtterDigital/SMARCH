@@ -163,7 +163,7 @@ function assertClassification(config, path, expected) {
 }
 
 function fail(message, exitCode) {
-  const error = new Error(message);
+  const error = /** @type {Error & {exitCode?: number}} */ (new Error(message));
   error.exitCode = exitCode;
   throw error;
 }

@@ -156,11 +156,11 @@ function globStaticRoot(projectRoot, pattern) {
 
 function structuredStalenessError(operation, error) {
   if (error?.code === "SMA_GRAPH_STALENESS_ERROR") return error;
-  const structured = new Error(JSON.stringify({
+  const structured = /** @type {Error & {code?: string}} */ (new Error(JSON.stringify({
     event: "graph_staleness_error",
     operation,
     message: error instanceof Error ? error.message : String(error),
-  }));
+  })));
   structured.code = "SMA_GRAPH_STALENESS_ERROR";
   structured.cause = error;
   return structured;

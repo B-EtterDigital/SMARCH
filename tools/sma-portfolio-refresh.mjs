@@ -40,6 +40,33 @@ const DEFAULTS = {
   pollSeconds: 5,
 };
 
+/**
+ * @typedef {object} PortfolioRefreshArgs
+ * @property {string[]} projects
+ * @property {string[]} changedFiles
+ * @property {string} root
+ * @property {string} registry
+ * @property {string} portfolioRegistry
+ * @property {string} state
+ * @property {string} dashboard
+ * @property {string} leases
+ * @property {number|string} scanFreshSeconds
+ * @property {number|string} projectScanFreshSeconds
+ * @property {number|string} stateFreshSeconds
+ * @property {number|string} dashboardFreshSeconds
+ * @property {number|string} waitSeconds
+ * @property {number|string} pollSeconds
+ * @property {number|string} [provenanceFreshSeconds]
+ * @property {number|string} [anchorFreshSeconds]
+ * @property {boolean} [help]
+ * @property {boolean} [force]
+ * @property {boolean} [json]
+ * @property {boolean} [noScan]
+ * @property {boolean} [noState]
+ * @property {boolean} [noDashboard]
+ * @property {boolean} [noProvenance]
+ */
+
 const args = parseArgs(process.argv.slice(2));
 
 try {
@@ -52,7 +79,7 @@ try {
   else printSummary(summary);
 } catch (err) {
   console.error(`sma-portfolio-refresh: ${err.message}`);
-  exit(err.code || 1);
+  exit(/** @type {Error & {code?: number}} */ (err).code || 1);
 }
 
 function usage() {
@@ -311,7 +338,7 @@ async function waitForLeaseClear(phase, active) {
     if (!current) return;
   }
 
-  const err = new Error(`${phase.name}: timed out waiting for ${active.resource_kind}:${active.resource_id} (${active.lease_id})`);
+  const err = /** @type {Error & {code?: number}} */ (new Error(`${phase.name}: timed out waiting for ${active.resource_kind}:${active.resource_id} (${active.lease_id})`));
   err.code = 10;
   throw err;
 }
@@ -339,7 +366,7 @@ function runLeasedPhase(phase) {
   if (res.status !== 0) {
     if (res.stdout) process.stdout.write(res.stdout);
     if (res.stderr) process.stderr.write(res.stderr);
-    const err = new Error(`${phase.name} refresh failed with exit ${res.status}`);
+    const err = /** @type {Error & {code?: number}} */ (new Error(`${phase.name} refresh failed with exit ${res.status}`));
     err.code = res.status || 1;
     throw err;
   }
@@ -397,7 +424,9 @@ function printSummary(summary) {
   }
 }
 
+/** @returns {PortfolioRefreshArgs} */
 function parseArgs(list) {
+  /** @type {PortfolioRefreshArgs} */
   const out = { ...DEFAULTS, projects: [], changedFiles: [] };
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];

@@ -22,3 +22,7 @@
 {"ts": "2026-07-10T15:32:21+00:00", "action": "complete", "id": "UV-GA-leak-gate-tool", "detail": "node tools/sma-leak-gate.mjs"}
 {"ts": "2026-07-10T15:32:31+00:00", "action": "complete", "id": "UV-SY-sync-public-tool", "detail": "node tools/sma-sync-public.mjs --selftest"}
 {"ts": "2026-07-10T15:32:40+00:00", "action": "complete", "id": "UV-EV-fixture-portfolio", "detail": "node tools/evals/fixtures/gen.mjs --selftest"}
+{"ts": "2026-07-10T15:54:09+00:00", "action": "complete", "id": "UV-CI-ts-foundation-tsconfig", "detail": "npx tsc --noEmit"}
+{"ts": "2026-07-10T15:54:10+00:00", "action": "complete", "id": "UV-MC-server-scaffold", "detail": "node tools/mcp/selftest.mjs"}
+{"ts": "2026-07-10T15:54:12+00:00", "action": "complete", "id": "UV-RG-skeptic-scan-fail-closed", "detail": "node --check tools/sma-scan.mjs"}
+{"ts": "2026-07-10T15:54:16+00:00", "action": "complete", "id": "UV-DO-doc-glossary-write", "detail": "npm run source:size:gate"}

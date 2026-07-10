@@ -1784,9 +1784,9 @@ function main() {
   if (options.command === "query") return commandQuery(options);
   if (options.command === "path") return commandPath(options);
   if (options.command === "explain") return commandExplain(options);
-  if (options.command === "global-list") return commandGlobalList(options);
-  if (options.command === "global-path") return commandGlobalPath(options);
-  if (options.command === "selftest") return commandSelftest(options);
+  if (options.command === "global-list") return commandGlobalList();
+  if (options.command === "global-path") return commandGlobalPath();
+  if (options.command === "selftest") return commandSelftest();
 
   throw new Error(`Unknown command: ${options.command}`);
 }

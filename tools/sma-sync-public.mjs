@@ -340,7 +340,7 @@ function printError(code, message) {
 }
 
 function codedError(code, message) {
-  const error = new Error(message);
+  const error = /** @type {Error & {code?: string, exitCode?: number, report?: any}} */ (new Error(message));
   error.code = code;
   return error;
 }

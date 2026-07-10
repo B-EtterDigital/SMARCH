@@ -35,7 +35,9 @@ const args = parseArgs(process.argv.slice(2));
 const root = resolve(args.root || SMA_ROOT);
 const maxLines = positiveInt(args.maxLines, 1900);
 const threshold = maxLines;
-const baselinePath = args.baseline === false ? null : resolve(root, args.baseline || DEFAULT_BASELINE);
+const baselinePath = args.baseline === false
+  ? null
+  : resolve(root, typeof args.baseline === 'string' ? args.baseline : DEFAULT_BASELINE);
 const sourceRoots = (args.sourceRoot || DEFAULT_SOURCE_ROOTS).map((item) => resolve(root, item));
 
 try {
@@ -186,7 +188,19 @@ function positiveInt(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
+/**
+ * @returns {{
+ * root?: string,
+ * maxLines?: string | boolean,
+ * baseline?: string | false,
+ * sourceRoot?: string[],
+ * updateBaseline?: boolean,
+ * json?: boolean,
+ * gate?: boolean
+ * }}
+ */
 function parseArgs(list) {
+  /** @type {any} */
   const out = {};
   for (let index = 0; index < list.length; index += 1) {
     const arg = list[index];

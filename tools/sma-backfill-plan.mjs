@@ -49,7 +49,7 @@ const PRIORITY_TIER = new Set([
 ]);
 
 const TOP10_BY_BRICK_COUNT = new Set([
-  'acme-desktop', 'acme-studio', 'acme-factory', 'acme-desktop', 'acme-agent',
+  'acme-desktop', 'acme-studio', 'acme-factory', 'acme-agent',
   'acme-mcc', 'acme-agent-standalone', 'acme-labs', 'acme-cleaner', 'acme-strudel',
 ]);
 
@@ -112,6 +112,20 @@ function runGenerate() {
 
   const allBricks = Array.isArray(registry.bricks) ? registry.bricks : [];
 
+  /** @type {Array<{
+   * id: any,
+   * name: any,
+   * kind: any,
+   * status: any,
+   * project: any,
+   * score: any,
+   * manifest_path: any,
+   * source_paths: any[],
+   * data_classes: any[],
+   * composite_score: number,
+   * signals: any[],
+   * phase?: number
+   * }>} */
   const ranked = [];
   for (const brick of allBricks) {
     if (args.project && brick.project !== args.project) continue;

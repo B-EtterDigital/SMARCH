@@ -272,10 +272,10 @@ function doAcquire({ force }) {
       (l) => l.resource_kind === args.resourceKind && l.resource_id === args.resource,
     );
     if (existing && !force) {
-      const err = new Error(
+      const err = /** @type {Error & {code?: number}} */ (new Error(
         `resource is leased: ${args.resourceKind}:${args.resource} → held by ${existing.agent_id} ` +
         `(lease ${existing.lease_id}, expires ${existing.expires_at}, intent: ${existing.intent})`,
-      );
+      ));
       err.code = 10;
       throw err;
     }
@@ -331,7 +331,7 @@ function doRenew(leaseId, ttl) {
     pruneExpired(reg);
     const lease = reg.leases.find((l) => l.lease_id === leaseId);
     if (!lease) {
-      const err = new Error(`lease not found (or already expired): ${leaseId}`);
+      const err = /** @type {Error & {code?: number}} */ (new Error(`lease not found (or already expired): ${leaseId}`));
       err.code = 12;
       throw err;
     }
@@ -356,7 +356,7 @@ function doRelease(leaseId) {
     const reg = loadRegistry();
     const idx = reg.leases.findIndex((l) => l.lease_id === leaseId);
     if (idx < 0) {
-      const err = new Error(`lease not found: ${leaseId}`);
+      const err = /** @type {Error & {code?: number}} */ (new Error(`lease not found: ${leaseId}`));
       err.code = 12;
       throw err;
     }

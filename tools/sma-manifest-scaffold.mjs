@@ -315,6 +315,13 @@ function collectMissingDeclaredDocs(build) {
 }
 
 function buildCompanionStubs(build, missingDocs, buildSlug) {
+  /** @type {Array<{
+   * kind: string,
+   * path: string,
+   * template_ref?: string,
+   * template?: {title: string, sections: string[]},
+   * reason: string
+   * }>} */
   const stubs = [
     {
       kind: "verification_record",

@@ -60,6 +60,7 @@ function countTokensInFile(file) {
   if (METHOD === 'tiktoken') {
     // Optional path; falls back to heuristic if unavailable.
     try {
+      // @ts-expect-error Optional tiktoken dependency is intentionally absent; runtime falls back to heuristic.
       const { encoding_for_model } = require('tiktoken');
       const enc = encoding_for_model('gpt-4o');
       const n = enc.encode(buf).length;

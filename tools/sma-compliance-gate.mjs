@@ -133,6 +133,7 @@ async function main() {
   const { COMPLIANCE_CONTROLS } = await import('./lib/compliance-controls.mjs');
   const ctx = await buildContext();
 
+  /** @type {Array<{control: any, status: string, evidence?: string, note?: string}>} */
   const results = COMPLIANCE_CONTROLS.map((control) => {
     let r;
     try {

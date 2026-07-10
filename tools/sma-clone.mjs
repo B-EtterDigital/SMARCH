@@ -1555,7 +1555,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
       .filter((action) => action.kind === "copy_dir" || action.kind === "copy_file")
       .map((action) => relFrom(opts.target, action.dst)));
     const portableDocPaths = uniqStrings(placementRecords
-      .filter((placement) => placement.content_kind === "portable_doc")
+      .filter((placement) => placement.kind === "doc")
       .map((placement) => placement.target_path));
     const checklistRelPath = relFrom(opts.target, checklistPath);
 

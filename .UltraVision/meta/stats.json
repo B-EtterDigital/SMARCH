@@ -1,28 +1,29 @@
 {
-  "generated": "2026-07-10T15:05:45+00:00",
+  "generated": "2026-07-10T15:34:15+00:00",
   "totals": {
-    "tasks": 1684,
-    "active": 1683,
-    "done": 0,
+    "tasks": 1685,
+    "active": 1684,
+    "done": 6,
     "obsolete": 1,
-    "percent_complete": 0.0,
-    "est_minutes_remaining": 47320
+    "percent_complete": 0.36,
+    "est_minutes_remaining": 47050
   },
   "by_status": {
-    "claimed": 7,
+    "claimed": 1,
+    "done": 6,
     "obsolete": 1,
-    "todo": 1676
+    "todo": 1677
   },
   "by_complexity": {
     "C1": 953,
     "C2": 476,
-    "C3": 228,
+    "C3": 229,
     "C4": 27
   },
   "by_model_tier": {
     "haiku": 953,
     "opus": 27,
-    "sonnet": 704
+    "sonnet": 705
   },
   "by_module": {
     "capsule": 30,
@@ -32,7 +33,7 @@
     "dash": 284,
     "docs": 381,
     "evals": 57,
-    "gates": 53,
+    "gates": 54,
     "graph": 21,
     "mcp": 89,
     "prov": 98,
@@ -45,7 +46,7 @@
   },
   "by_domain": {
     "a11y": 21,
-    "backend": 265,
+    "backend": 266,
     "data": 38,
     "design": 20,
     "docs": 706,
@@ -61,10 +62,10 @@
   },
   "by_lane": {
     "shared-hot-path": 185,
-    "single-module": 1499
+    "single-module": 1500
   },
   "by_milestone": {
-    "M0": 139,
+    "M0": 140,
     "M1": 630,
     "M2": 544,
     "M3": 371

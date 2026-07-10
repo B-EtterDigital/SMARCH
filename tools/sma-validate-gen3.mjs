@@ -232,7 +232,6 @@ function resolveProjects() {
   if (args.project) return [args.project];
   // Discover projects with .smarch dirs
   const out = [];
-  const PROJECTS_ROOT = PROJECTS_ROOT;
   try {
     for (const ent of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
       if (!ent.isDirectory()) continue;

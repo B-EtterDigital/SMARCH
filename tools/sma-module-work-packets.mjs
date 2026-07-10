@@ -296,7 +296,6 @@ function buildClaimReceipt({ config, module, baseModule, effectiveModule, partit
     agentSlot: number(dispatchAssignment?.agent_slot) || 1,
     graph,
     held: null,
-    selectedModules: [],
     task: args.task,
   });
   const resolvedClaimCommand = dispatchAssignment?.claim_command
@@ -440,7 +439,7 @@ function releaseClaimNextLease(lease) {
 
 function runObserve() {
   const dispatch = loadDispatch(args.dispatch || 'latest');
-  const observation = observeDispatch(dispatch);
+  const observation = /** @type {ReturnType<typeof observeDispatch> & {observation_manifest?: any}} */ (observeDispatch(dispatch));
   if (args.write) observation.observation_manifest = writeObservation(observation);
   if (args.json) {
     console.log(JSON.stringify(observation, null, 2));
@@ -528,7 +527,6 @@ function buildPlan() {
       graph: candidate.graph,
       held,
       dirtyScope,
-      selectedModules,
       overlap,
       task: requestedTask,
     });

@@ -504,8 +504,8 @@ function validateLockedArtifacts(recorder, artifacts, expectedArtifactType, code
 
 function validateBuildLock(doc, recorder, targetRoot) {
   const summary = {
-    selected_builds: [],
-    resolved_bricks: [],
+    selected_builds: { import_ids: [], artifacts: [] },
+    resolved_bricks: { import_ids: [], artifacts: [] },
     graph_node_ids: new Set(),
     graph_nodes: [],
     graph_edge_records: [],

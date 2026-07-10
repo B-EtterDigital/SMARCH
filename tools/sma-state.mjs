@@ -155,6 +155,7 @@ function numberOrFallback(primary, fallback) {
     : Number(fallback);
 }
 
+/** @param {(absolutePath: string, entryName: string) => boolean} [predicate] */
 async function collectJsonFiles(rootPath, predicate = () => true) {
   const stat = await fs.stat(rootPath).catch(() => null);
   if (!stat || !stat.isDirectory()) return [];

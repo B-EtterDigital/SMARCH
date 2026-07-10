@@ -162,7 +162,7 @@
     "attest:verify": "node tools/sma-attest-verify.mjs",
     "similarity:scan": "node tools/sma-similarity-scan.mjs",
     "gen3:selftest": "node tools/sma-controller-snapshot.mjs --selftest && node tools/sma-graphify.mjs selftest && node tools/sma-module-work-packets.mjs selftest && node tools/sma-parallel-preflight.mjs --selftest && node tools/sma-end-edit.mjs --selftest && node tools/sma-codex-profile.mjs selftest && node tools/sma-goal-progress.mjs --selftest && node tools/sma-operator-packet.mjs --selftest && node tools/sma-stable-generated-selftest.mjs && npm run provenance:selftest",
-    "check": "npm run source:size:gate && npm run gen3:selftest && bash -c 'find tools -name \"*.mjs\" -print0 | xargs -0 -n 50 node --check'",
+    "check": "npm run source:size:gate && npm run typecheck && npm run gen3:selftest && bash -c 'find tools -name \"*.mjs\" -print0 | xargs -0 -n 50 node --check'",
     "gate:compliance": "node tools/sma-compliance-gate.mjs --root . --gate",
     "compliance": "node tools/sma-compliance-gate.mjs --root .",
     "test": "npm run check",

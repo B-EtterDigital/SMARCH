@@ -242,6 +242,25 @@ function saveManifest(path, manifest) {
   renameSync(tmp, abs);
 }
 
+/**
+ * @param {{
+ * actorKind: string,
+ * actorId: string,
+ * role: string,
+ * intent: string,
+ * summary?: string,
+ * decisionRationale?: string,
+ * rejectedAlternatives?: Array<{alternative: string, reason: string}>,
+ * linkedBacklog?: any[],
+ * commit?: string,
+ * model?: string,
+ * sessionId?: string,
+ * taskId?: string,
+ * leaseId?: string,
+ * attestation?: {method: string, reference: string},
+ * timestamp?: string
+ * }} input
+ */
 function buildTouchEvent({
   actorKind,
   actorId,

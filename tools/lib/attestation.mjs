@@ -150,6 +150,18 @@ export function spdxDocument(brick, components = [], timestamp = null) {
   const mainId = `SPDXRef-Package-${brickTag}`;
   const namespaceSeed = contentHash || sha256Hex(brick.brick_id);
 
+  /** @type {Array<{
+   * SPDXID: string,
+   * name: string,
+   * downloadLocation: string,
+   * filesAnalyzed: boolean,
+   * licenseConcluded: string,
+   * licenseDeclared: string,
+   * copyrightText: string,
+   * supplier?: string,
+   * checksums: Array<{algorithm: string, checksumValue: string}>,
+   * versionInfo?: string
+   * }>} */
   const packages = [{
     SPDXID: mainId,
     name: brick.brick_id,

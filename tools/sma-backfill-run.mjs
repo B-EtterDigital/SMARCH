@@ -50,7 +50,6 @@ const PROJECT_OVERRIDES = {
   'acme-studio': 'acme-studio-workspace/acme-studio',
   'acme-cms': 'acme-cms',
   'acme-travel': 'acme-travel',
-  'acme-desktop': 'acme-desktop',
   'acme-agent': 'acme-agent',
   'acme-mcc': 'ACME_MCC',
   'acme-agent-standalone': 'acme-agent-standalone',

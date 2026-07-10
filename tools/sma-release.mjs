@@ -646,6 +646,7 @@ function reviewedByRecords(manifest, createdAt) {
 }
 
 function buildSourceChain({ manifest, manifestPathRelative, artifactType, artifactId, manifestHash, sourceCommit, registryRef, registryHash }) {
+  /** @type {Array<{kind: string, ref: any, hash?: any}>} */
   const chain = [
     {
       kind: "manifest",
