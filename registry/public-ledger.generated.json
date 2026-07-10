@@ -1,0 +1,108 @@
+{
+ "schema": "smarch-public-ledger-v1",
+ "generated_at": "2026-07-10T14:42:19.074Z",
+ "repo": "B-EtterDigital/SMARCH",
+ "branch": "main",
+ "algo": "sha256-chain-v2",
+ "note": "Self-ledger over the tools of this repository. Verify: hash the raw file, recompute the anchor, fold the events, compare the head. All inputs are public.",
+ "bricks": [
+  {
+   "brick_id": "smarch.tools.sma-ci",
+   "path": "tools/sma-ci.mjs",
+   "content_hash": "235b6c0af0273ffd06eb1418879418840882e4f5126a8c778ba1eb5579f59b14",
+   "anchor": "90b4c0b9b9590470b82e7948a954590606c545dd0052392339f075a43d0d86cb",
+   "head": "5f004d9f39ba5b560e22250d3db16e2b23cc6e2bc2872e75bfa08b641853da4c",
+   "chain_length": 1,
+   "events": [
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "architect",
+     "timestamp": "2026-07-10T19:56:58+07:00",
+     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
+     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    }
+   ]
+  },
+  {
+   "brick_id": "smarch.tools.sma-scan",
+   "path": "tools/sma-scan.mjs",
+   "content_hash": "5902d3badc970724d63e344eb27b2d9998a3b1a0c9a736b20e032b874d53bf56",
+   "anchor": "71276f19db8b139114da151090c1f2f62db6c6b39df6ed6223bcc75bf8755752",
+   "head": "c8dd54de89e9cf65f8e8dbf14618f3de88250445089a59d7e25d2ee90345c2cf",
+   "chain_length": 2,
+   "events": [
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "architect",
+     "timestamp": "2026-07-10T19:56:58+07:00",
+     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
+     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-10T21:26:34+07:00",
+     "commit": "8c03e8cdd67d5bc3dd87c85d4ee571ee33f5fa96",
+     "summary": "scrub: replace remaining real project identifiers with acme-* codenames"
+    }
+   ]
+  },
+  {
+   "brick_id": "smarch.tools.install-agent-skills",
+   "path": "tools/install-agent-skills.mjs",
+   "content_hash": "407ea90274660a402f1eeaee37ff4ffd34cde2d0487c230cc5f80ea605fe5961",
+   "anchor": "f7ca8cb13993c51e7ce3f03f615c3d9976880c4996f0b6e6d75af3bf08d94e81",
+   "head": "bd0d3b3150477b8199e5a62bef8dabae32ce2854869b56378d2fe29a6a3e7ba6",
+   "chain_length": 1,
+   "events": [
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "architect",
+     "timestamp": "2026-07-10T19:56:58+07:00",
+     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
+     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    }
+   ]
+  },
+  {
+   "brick_id": "smarch.tools.provenance-seal",
+   "path": "tools/lib/provenance-seal.mjs",
+   "content_hash": "3c92afc1c05b8e60eaa6e1f5fd69b54ee1d21394eec7d63cb03878607509747d",
+   "anchor": "da65c231d4ccb0fb78b0da87c4997794cebc457792e799fa77ab2eafb5eeea46",
+   "head": "52bf12a03b7b54c611c3d73be56e071322cf5fe60c7e2b97e231899417a7ac07",
+   "chain_length": 1,
+   "events": [
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "architect",
+     "timestamp": "2026-07-10T19:56:58+07:00",
+     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
+     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    }
+   ]
+  },
+  {
+   "brick_id": "smarch.tools.license-lattice",
+   "path": "tools/lib/license-lattice.mjs",
+   "content_hash": "f2684d2ea79b3a7e134278c7593831afae6864545f23e7793e3626bba48ab0ee",
+   "anchor": "9e5dc4e34d802c7b4c5f6ac16346fdc3081f741fb25293bbaa4c27e1eb212cf5",
+   "head": "2c285700cb4c64c27cd1c94531e0c16b4ba6400f147b3ba341506fd9ebdbf2be",
+   "chain_length": 1,
+   "events": [
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "architect",
+     "timestamp": "2026-07-10T19:56:58+07:00",
+     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
+     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    }
+   ]
+  }
+ ]
+}
