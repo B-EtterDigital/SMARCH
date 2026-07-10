@@ -7,9 +7,9 @@ Adapt `module.sweetspot.json`, implement `src/index.ts`, and keep `fixtures/run.
 Run it from the SMARCH repository:
 
 ```bash
-node tools/sma-brick-run.mjs path/to/capsule
+node tools/sma-brick-run.mjs --strict-sandbox path/to/capsule
 ```
 
-Capsules run with a cleared declared-only environment, no network, and a read-only filesystem jail on Node runtimes that support permissions. Use `--allow-net` only for a capsule whose fixture intentionally exercises a declared network boundary.
+Strict mode refuses runtimes that cannot enforce the documented permission, import-resolution, and network boundaries. Default mode remains available for compatibility and warns when it falls back. Use `--allow-net` only for a capsule whose fixture intentionally exercises a declared network boundary.
 
 Read `CONSTRAINTS.md` before adding imports, environment variables, or files.

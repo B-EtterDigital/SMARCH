@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 export const NO_LOCAL_EMBEDDER_WARNING = "WARN no local embedder available; using substring ranking";
@@ -229,22 +230,22 @@ function cosineRows(index, queryVector, topK) {
 }
 
 function searchTokens(value) {
-  return String(value ?? "").toLocaleLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? [];
+  return String(value ?? "").toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? [];
 }
 
 export function substringIdfHits(graph, question) {
   const nodes = graphNodes(graph).filter((node) => nodeId(node));
   const terms = [...new Set(searchTokens(question))];
   if (!terms.length) return [];
-  const documents = nodes.map((node) => `${nodeLabel(node)} ${nodeId(node)} ${node?.source_file ?? ""}`.toLocaleLowerCase());
+  const documents = nodes.map((node) => `${nodeLabel(node)} ${nodeId(node)} ${node?.source_file ?? ""}`.toLowerCase());
   const idf = new Map(terms.map((term) => {
     const matches = documents.reduce((count, document) => count + Number(document.includes(term)), 0);
     return [term, Math.log((nodes.length + 1) / (matches + 1)) + 1];
   }));
   return nodes.map((node, index) => {
-    const label = nodeLabel(node).toLocaleLowerCase();
-    const id = nodeId(node).toLocaleLowerCase();
-    const source = String(node?.source_file ?? "").toLocaleLowerCase();
+    const label = nodeLabel(node).toLowerCase();
+    const id = nodeId(node).toLowerCase();
+    const source = String(node?.source_file ?? "").toLowerCase();
     let lexicalScore = 0;
     for (const term of terms) {
       const weight = idf.get(term);
@@ -308,6 +309,7 @@ function hashString(value) {
 }
 
 export function createDeterministicHashEmbedder({ dims = 32, aliases = {} } = {}) {
+  assertLocaleStableSelftest();
   return {
     backend: "stub",
     model: "deterministic-hash-v1",
@@ -324,4 +326,32 @@ export function createDeterministicHashEmbedder({ dims = 32, aliases = {} } = {}
       });
     },
   };
+}
+
+let localeStableSelftestComplete = false;
+
+function assertLocaleStableSelftest() {
+  if (localeStableSelftestComplete
+    || process.argv[2] !== "selftest"
+    || process.env.SMA_GRAPH_EMBEDDINGS_LOCALE_PROBE === "1") return;
+  localeStableSelftestComplete = true;
+
+  const probe = `
+    import { createDeterministicHashEmbedder } from ${JSON.stringify(import.meta.url)};
+    const embedder = createDeterministicHashEmbedder();
+    process.stdout.write(JSON.stringify(await embedder.embed(["Iİ"])));
+  `;
+  const outputs = ["C", "tr_TR.UTF-8"].map((locale) => {
+    const result = spawnSync(process.execPath, ["--input-type=module", "--eval", probe], {
+      encoding: "utf8",
+      env: { ...process.env, LC_ALL: locale, SMA_GRAPH_EMBEDDINGS_LOCALE_PROBE: "1" },
+    });
+    if (result.status !== 0) {
+      throw new Error(`stub embedder locale selftest failed under LC_ALL=${locale}: ${result.stderr.trim()}`);
+    }
+    return result.stdout;
+  });
+  if (outputs[0] !== outputs[1]) {
+    throw new Error("stub embedder tokenization changed across LC_ALL variants");
+  }
 }

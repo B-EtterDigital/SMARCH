@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
 import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery, substringIdfHits } from "./lib/graph-embeddings.mjs";
 import { queryGlobalGraph, selftestGlobalQuery } from "./lib/graph-global.mjs";
+import { communitySummaryBlock, generateCommunitySummaries, selftestCommunitySummaries } from "./lib/graph-summaries.mjs";
 import { sourceFreshness } from "./lib/graph-staleness.mjs";
 import { mergeNamespacedGraphs, namespaceGraph, resolveGraphNodeInput } from "./lib/graph-union.mjs";
 
@@ -1291,7 +1292,12 @@ function commandTargetFixes(options) {
   return 0;
 }
 
-function commandRefresh(options) {
+async function summarizeSemanticGraph(status, options) {
+  if (!options.semantic || options.noCluster || !status.graphReady) return;
+  const summaries = await generateCommunitySummaries({ graphPath: status.graphPath, semantic: true });
+  if (summaries.summaryCount && !options.quiet) console.log(`community summaries: ${summaries.summaryCount} (${summaries.generated} generated, ${summaries.reused} cached)`);
+}
+async function commandRefresh(options) {
   const status = graphStatus(options);
   if (!status.graphifyAvailable) throw new Error("graphify CLI is not on PATH");
   if (!status.targetExists) throw new Error(`Graphify target is missing: ${status.targetRoot}`);
@@ -1316,6 +1322,8 @@ function commandRefresh(options) {
     return result.status;
   }
   if (!options.semantic && result.stdout) console.log(result.stdout.trim());
+
+  await summarizeSemanticGraph(graphStatus(options), options);
 
   if (options.global) {
     const refreshed = graphStatus(options);
@@ -1345,7 +1353,7 @@ function commandRefresh(options) {
   return commandCheck({ ...options, strict: false });
 }
 
-function commandRefreshModules(options) {
+async function commandRefreshModules(options) {
   const projectRoot = resolveProjectRoot(options);
   ensureGraphifyOutLocalExclude(projectRoot);
   const graphify = graphifyBin();
@@ -1423,11 +1431,15 @@ function commandRefreshModules(options) {
     const cached = readyByTargetRoot.get(targetKey);
     if (cached && cached.graphPath !== status.graphPath) {
       copyGraphArtifacts(cached, status);
-      const refreshed = graphStatusForTarget(options, projectRoot, module, graphify);
+      let refreshed = graphStatusForTarget(options, projectRoot, module, graphify);
       if (!refreshed.graphReady) {
         failed += 1;
         console.log(`FAIL graph reuse did not produce a ready graph for ${module.id}`);
         continue;
+      }
+      if (options.semantic && !options.noCluster) {
+        await summarizeSemanticGraph(refreshed, options);
+        refreshed = graphStatusForTarget(options, projectRoot, module, graphify);
       }
       reused += 1;
       console.log(`REUSE ${module.id}: ${refreshed.nodeCount} nodes, ${refreshed.edgeCount} edges from ${cached.module?.id || targetKey}`);
@@ -1441,6 +1453,7 @@ function commandRefreshModules(options) {
         { ...options, stdio: options.quiet ? "pipe" : "inherit" },
       )
       : runCodeOnlyGraphify(status, options);
+    const semanticSummaryEligible = options.semantic && !options.noCluster && result.status === 0;
     if (result.status !== 0) {
       const mode = options.semantic ? "graphify extract" : "local code-only extraction";
       console.log(`FAIL ${mode} exited ${result.status} for ${module.id}`);
@@ -1495,6 +1508,11 @@ function commandRefreshModules(options) {
         console.log(`WARN local code-only graph is still empty or unreadable: ${refreshed.graphPath}`);
         continue;
       }
+    }
+
+    if (semanticSummaryEligible) {
+      await summarizeSemanticGraph(refreshed, options);
+      refreshed = graphStatusForTarget(options, projectRoot, module, graphify);
     }
 
     built += 1;
@@ -1638,7 +1656,24 @@ async function commandQuery(options) {
   const ranked = options.semanticRank
     ? await semanticRerankQuery({ graphPath: status.graphPath, question })
     : { expandedQuestion: question };
-  const result = runGraphify(["query", ranked.expandedQuestion, "--graph", status.graphPath, "--budget", String(options.budget)]);
+  const result = runGraphify(["query", ranked.expandedQuestion, "--graph", status.graphPath, "--budget", String(options.budget)],
+    { ...options, stdio: "pipe" });
+  if (result.status !== 0) {
+    printSpawnDetails(result);
+    return result.status;
+  }
+  const communityBlock = communitySummaryBlock({
+    graphPath: status.graphPath,
+    question,
+    hits: ranked.hits,
+    traversalOutput: result.stdout,
+  });
+  if (communityBlock) {
+    console.log(communityBlock);
+    console.log("\n## Traversal result");
+  }
+  if (result.stdout) console.log(result.stdout.trim());
+  if (result.stderr) console.log(result.stderr.trim());
   return result.status;
 }
 
@@ -1817,6 +1852,8 @@ async function commandSelftest() {
     });
     assertSelftest(!missingEmbedder.built && warnings.length === 1, "missing local embedder should warn exactly once and skip");
     assertSelftest(parseArgs(["query", "--no-semantic-rank", "--", "question"]).semanticRank === false, "query should allow semantic ranking opt-out");
+
+    await selftestCommunitySummaries({ fixtureRoot, assert: assertSelftest });
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }

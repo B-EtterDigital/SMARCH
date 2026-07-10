@@ -1,6 +1,6 @@
 {
  "schema": "smarch-public-ledger-v1",
- "generated_at": "2026-07-10T14:42:19.074Z",
+ "generated_at": "2026-07-10T17:35:37.431Z",
  "repo": "B-EtterDigital/SMARCH",
  "branch": "main",
  "algo": "sha256-chain-v2",
@@ -27,10 +27,10 @@
   {
    "brick_id": "smarch.tools.sma-scan",
    "path": "tools/sma-scan.mjs",
-   "content_hash": "5902d3badc970724d63e344eb27b2d9998a3b1a0c9a736b20e032b874d53bf56",
-   "anchor": "71276f19db8b139114da151090c1f2f62db6c6b39df6ed6223bcc75bf8755752",
-   "head": "c8dd54de89e9cf65f8e8dbf14618f3de88250445089a59d7e25d2ee90345c2cf",
-   "chain_length": 2,
+   "content_hash": "28a44fa031f42bba7ca8e9523f0969f3da7d0103935bdc10940443b8065e85d2",
+   "anchor": "1ebd76e7dfa494cd93a7cd4cbc6cd37fb2b950aa3b3bda1a4ce57478ade1f291",
+   "head": "fa43abcbd5db218a80aa74b5d4d6e49d6ff2e934aac92fbe08da8ed6c7cb0c8b",
+   "chain_length": 3,
    "events": [
     {
      "actor_kind": "human",
@@ -47,16 +47,24 @@
      "timestamp": "2026-07-10T21:26:34+07:00",
      "commit": "8c03e8cdd67d5bc3dd87c85d4ee571ee33f5fa96",
      "summary": "scrub: replace remaining real project identifiers with acme-* codenames"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-10T22:55:20+07:00",
+     "commit": "92ca3d3848658b9145248eec8c81494e80640cc4",
+     "summary": "SMOA wave-2: typecheck green (95→0 + 5 real bug fixes), fail-closed scanner, MCP server, GLOSSARY, leak scrubs"
     }
    ]
   },
   {
    "brick_id": "smarch.tools.install-agent-skills",
    "path": "tools/install-agent-skills.mjs",
-   "content_hash": "407ea90274660a402f1eeaee37ff4ffd34cde2d0487c230cc5f80ea605fe5961",
-   "anchor": "f7ca8cb13993c51e7ce3f03f615c3d9976880c4996f0b6e6d75af3bf08d94e81",
-   "head": "bd0d3b3150477b8199e5a62bef8dabae32ce2854869b56378d2fe29a6a3e7ba6",
-   "chain_length": 1,
+   "content_hash": "188757a0b35573a1530966eb7f87da50ed99f4f21b59ef1f7eeeb38d971aec58",
+   "anchor": "5e07534e583feadc1c3275ff7a7c7623fb5c0ac2a0f7080e856a79747b448d2b",
+   "head": "14d1a55f21ab1b4bc31c93ef220eaafc756f74c41b24c06e4a3d4351d8ed4a97",
+   "chain_length": 2,
    "events": [
     {
      "actor_kind": "human",
@@ -65,6 +73,14 @@
      "timestamp": "2026-07-10T19:56:58+07:00",
      "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
      "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-10T23:48:12+07:00",
+     "commit": "43370a2a6a54b0e0c5760e623b7f6e4d120794df",
+     "summary": "SMOA waves 3+4: security-hardened sync, workforce lib, ambient hooks, embeddings, capsule tier, schema types, intro lane opens"
     }
    ]
   },

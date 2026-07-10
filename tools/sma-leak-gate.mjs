@@ -54,6 +54,24 @@ function scanLeaks(options, repoRoot) {
   let allowedCount = 0;
 
   for (const file of files) {
+    for (const entry of patterns) {
+      for (const matchIndex of findMatchIndexes(file.toLowerCase(), entry.normalized)) {
+        const hit = {
+          check: 'pathname',
+          path: file,
+          line: 0,
+          column: matchIndex + 1,
+          pattern: entry.pattern,
+          category: entry.category,
+        };
+        if (isAllowed(hit, exceptions)) {
+          allowedCount += 1;
+        } else {
+          hits.push(hit);
+        }
+      }
+    }
+
     if (file === patternRegistryPath || file === allowPath || SELF_EXCLUDE.has(file)) continue;
     const absolutePath = resolve(repoRoot, file);
     if (!existsSync(absolutePath) || !lstatSync(absolutePath).isFile()) continue;
@@ -67,6 +85,7 @@ function scanLeaks(options, repoRoot) {
         for (const matchIndex of findMatchIndexes(line.toLowerCase(), entry.normalized)) {
           if (isSafePlaceholder(line, matchIndex, entry.pattern)) continue;
           const hit = {
+            check: 'content',
             path: file,
             line: lineIndex + 1,
             column: matchIndex + 1,
@@ -205,24 +224,29 @@ function runSelftest() {
     mkdirSync(fixtureRoot, { recursive: true });
     execFileSync('git', ['init', '-q'], { cwd: fixtureRoot, stdio: 'ignore' });
     const fixturePath = resolve(fixtureRoot, 'mixed.txt');
+    const pathnameFixture = resolve(fixtureRoot, 'docs/@gmail.com/clean.txt');
+    mkdirSync(dirname(pathnameFixture), { recursive: true });
+    writeFileSync(pathnameFixture, 'clean fixture\n');
     writeFileSync(
       fixturePath,
       'placeholder=/home/[redacted] real=/home/private\n'
       + 'public=[team@gmail.com](mailto:team@gmail.com) private=owner@gmail.com\n',
     );
-    execFileSync('git', ['add', '--', 'mixed.txt'], { cwd: fixtureRoot, stdio: 'ignore' });
+    execFileSync('git', ['add', '--', 'mixed.txt', 'docs/@gmail.com/clean.txt'], { cwd: fixtureRoot, stdio: 'ignore' });
 
     const failed = spawnTool(fixtureRoot);
     assert(failed.status === 1, `leak hits must exit 1, received ${failed.status}`);
     const failedResult = JSON.parse(failed.stdout);
-    assert(failedResult.hit_count === 2, `expected two real per-match hits, received ${failedResult.hit_count}`);
+    assert(failedResult.hit_count === 3, `expected one pathname and two content hits, received ${failedResult.hit_count}`);
+    assert(failedResult.hits.filter((hit) => hit.check === 'pathname').length === 1, 'private identifier in a tracked pathname must produce a pathname hit');
     assert(failedResult.hits.every((hit) => hit.column > 1), 'per-match hits must include their columns');
 
+    rmSync(resolve(fixtureRoot, 'docs'), { recursive: true, force: true });
     writeFileSync(
       fixturePath,
       'placeholder=/home/[redacted]\npublic=[team@gmail.com](mailto:team@gmail.com)\n',
     );
-    execFileSync('git', ['add', '--', 'mixed.txt'], { cwd: fixtureRoot, stdio: 'ignore' });
+    execFileSync('git', ['add', '-A'], { cwd: fixtureRoot, stdio: 'ignore' });
     const passed = spawnTool(fixtureRoot);
     assert(passed.status === 0, `placeholder-only fixture must exit 0, received ${passed.status}`);
     assert(JSON.parse(passed.stdout).hit_count === 0, 'placeholder-only fixture produced a hit');
@@ -245,7 +269,10 @@ function assert(condition, message) {
 function printResult(result) {
   console.log(`SMA leak gate: ${result.status}`);
   console.log(`tracked text files: ${result.tracked_text_file_count} | hits: ${result.hit_count} | allowed: ${result.allowed_count}`);
-  for (const hit of result.hits) console.log(`${hit.path}:${hit.line}:${hit.pattern}`);
+  for (const hit of result.hits) {
+    const location = hit.check === 'pathname' ? 'pathname' : hit.line;
+    console.log(`${hit.path}:${location}:${hit.pattern}`);
+  }
 }
 
 function printError(code, message) {

@@ -31,6 +31,7 @@ import { SMA_ROOT } from "./lib/sma-paths.mjs";
 import {
   readFileSync,
   existsSync,
+  mkdirSync,
   realpathSync,
   readdirSync,
   statSync,
@@ -252,25 +253,17 @@ export function installRelease(options = {}) {
     '--target',
     targetRoot,
   ];
-  if (options.write) cloneArgs.push('--write');
   if (options.force) cloneArgs.push('--force');
 
   options.logger?.log?.(`install ${brick}@${version} → ${target}${options.write ? ' (writing)' : ' (dry-run)'}`);
-  const res = spawnSync('node', cloneArgs, {
-    encoding: options.stdio === 'inherit' ? undefined : 'utf8',
-    stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
-  });
-  if (res.error) throw res.error;
-  if (res.status !== 0) {
-    const detail = String(res.stderr || '').trim();
-    throw new Error(`sma-clone exited with status ${res.status}${detail ? `: ${detail}` : ''}`);
+  if (options.write) {
+    const preview = runClone(cloneArgs, 'pipe');
+    const previewClone = parseCloneOutput(preview.stdout);
+    validateCloneWritePlan(targetRoot, previewClone?.plan);
   }
+  const res = runClone(options.write ? [...cloneArgs, '--write'] : cloneArgs, options.stdio);
 
-  let clone = null;
-  if (typeof res.stdout === 'string' && res.stdout.trim()) {
-    try { clone = JSON.parse(res.stdout); }
-    catch { clone = { output: res.stdout.trim() }; }
-  }
+  const clone = parseCloneOutput(res.stdout, false);
   return {
     ok: true,
     brick,
@@ -283,13 +276,109 @@ export function installRelease(options = {}) {
 }
 
 function canonicalTargetRoot(target) {
+  const requestedTarget = resolve(target);
   try {
-    return realpathSync(resolve(target));
+    mkdirSync(requestedTarget, { recursive: true });
+    return realpathSync(requestedTarget);
   } catch (error) {
     throw new StoreInstallRefusedError('target-root-unresolvable', {
       target,
       cause: error instanceof Error ? error.message : String(error),
     });
+  }
+}
+
+function runClone(cloneArgs, stdio = 'pipe') {
+  const inherit = stdio === 'inherit';
+  const result = spawnSync('node', cloneArgs, {
+    encoding: inherit ? undefined : 'utf8',
+    stdio: inherit ? 'inherit' : 'pipe',
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    const detail = String(result.stderr || '').trim();
+    throw new Error(`sma-clone exited with status ${result.status}${detail ? `: ${detail}` : ''}`);
+  }
+  return result;
+}
+
+function parseCloneOutput(stdout, required = true) {
+  if (typeof stdout !== 'string' || !stdout.trim()) {
+    if (!required) return null;
+    throw new StoreInstallRefusedError('write-plan-missing');
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch (error) {
+    if (!required) return { output: stdout.trim() };
+    throw new StoreInstallRefusedError('write-plan-invalid', {
+      cause: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+function validateCloneWritePlan(targetRoot, plan) {
+  if (!plan || typeof plan !== 'object' || !Array.isArray(plan.actions)) {
+    throw new StoreInstallRefusedError('write-plan-invalid');
+  }
+
+  for (const [index, action] of plan.actions.entries()) {
+    if (typeof action?.dst !== 'string' || !action.dst.trim()) continue;
+    validateWriteDestination(targetRoot, action.dst, `action[${index}].dst`);
+  }
+
+  if (plan.control_plane !== undefined && (
+    !plan.control_plane
+    || typeof plan.control_plane !== 'object'
+    || Array.isArray(plan.control_plane)
+  )) {
+    throw new StoreInstallRefusedError('write-plan-invalid');
+  }
+  for (const [name, destination] of Object.entries(plan.control_plane || {})) {
+    if (typeof destination !== 'string' || !destination.trim()) {
+      throw new StoreInstallRefusedError('write-plan-invalid', {
+        write_label: `control_plane.${name}`,
+      });
+    }
+    validateWriteDestination(targetRoot, destination, `control_plane.${name}`);
+  }
+}
+
+function validateWriteDestination(targetRoot, destination, label) {
+  const lexicalDestination = resolve(targetRoot, destination);
+  const details = {
+    write_destination: destination,
+    write_label: label,
+    target_root: targetRoot,
+    resolved_path: lexicalDestination,
+  };
+  if (!isContainedPath(targetRoot, lexicalDestination)) {
+    throw new StoreInstallRefusedError('write-path-outside-target', details);
+  }
+
+  const segments = relative(targetRoot, lexicalDestination).split(sep).filter(Boolean);
+  let canonicalCursor = targetRoot;
+  for (const segment of segments) {
+    const next = resolve(canonicalCursor, segment);
+    if (!existsSync(next)) {
+      canonicalCursor = next;
+      continue;
+    }
+    try {
+      canonicalCursor = realpathSync(next);
+    } catch (error) {
+      throw new StoreInstallRefusedError('write-path-unresolvable', {
+        ...details,
+        resolved_path: next,
+        cause: error instanceof Error ? error.message : String(error),
+      });
+    }
+    if (!isContainedPath(targetRoot, canonicalCursor)) {
+      throw new StoreInstallRefusedError('write-symlink-outside-target', {
+        ...details,
+        resolved_path: canonicalCursor,
+      });
+    }
   }
 }
 

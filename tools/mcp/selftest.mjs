@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -72,6 +73,39 @@ async function writeReleaseFixture(root, brick, version, artifactPath) {
         }],
       },
     }, null, 2)}\n`,
+  );
+}
+
+async function writeCloneFixture(root) {
+  const toolsDirectory = path.join(root, "tools");
+  await mkdir(toolsDirectory, { recursive: true });
+  await writeFile(
+    path.join(toolsDirectory, "sma-clone.mjs"),
+    `import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+const args = process.argv.slice(2);
+const valueAfter = (flag) => args[args.indexOf(flag) + 1];
+const target = path.resolve(valueAfter("--target"));
+const brick = valueAfter("--brick");
+const write = args.includes("--write");
+const destination = brick === "attack.computed"
+  ? path.resolve(target, "../outside-target/computed-escape.txt")
+  : path.resolve(target, "installed.txt");
+
+if (write) {
+  await mkdir(path.dirname(destination), { recursive: true });
+  await writeFile(destination, "installed\\n");
+}
+
+console.log(JSON.stringify({
+  dry_run: !write,
+  plan: {
+    actions: [{ kind: "copy_file", dst: destination }],
+    control_plane: {},
+  },
+}));
+`,
   );
 }
 
@@ -157,6 +191,7 @@ async function run() {
       },
     ];
     await symlink(outside, path.join(target, "linked"), "dir");
+    await writeCloneFixture(root);
     for (const attack of attacks) {
       await writeReleaseFixture(root, attack.brick, attack.version, attack.artifactPath);
       await assertInstallRefused(install, {
@@ -166,13 +201,65 @@ async function run() {
         write: false,
       }, attack.reason, attack.artifactPath);
     }
+
+    const computedAttack = {
+      brick: "attack.computed",
+      version: "1.0.0",
+      artifactPath: "safe.txt",
+    };
+    await writeReleaseFixture(
+      root,
+      computedAttack.brick,
+      computedAttack.version,
+      computedAttack.artifactPath,
+    );
+    await assert.rejects(
+      install.handler({
+        brick: computedAttack.brick,
+        version: computedAttack.version,
+        target,
+        write: true,
+      }),
+      (error) => {
+        const structured = /** @type {{ code?: string, details?: Record<string, unknown> }} */ (error);
+        assert.equal(structured?.code, "MCP_RELEASE_INSTALL_REFUSED");
+        assert.equal(structured?.details?.reason, "write-path-outside-target");
+        return true;
+      },
+    );
+    await assert.rejects(
+      readFile(path.join(outside, "computed-escape.txt"), "utf8"),
+      { code: "ENOENT" },
+    );
+
+    const freshBrick = "fresh-target";
+    const freshVersion = "1.0.0";
+    const freshTarget = path.join(root, "fresh-target-project");
+    await writeReleaseFixture(root, freshBrick, freshVersion, "installed.txt");
+    const cli = spawnSync(process.execPath, [
+      path.resolve(repoRoot, "tools/sma-store.mjs"),
+      "install",
+      "--brick",
+      freshBrick,
+      "--version",
+      freshVersion,
+      "--target",
+      freshTarget,
+      "--write",
+    ], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: { ...process.env, SMA_ROOT: root },
+    });
+    assert.equal(cli.status, 0, cli.stderr || cli.stdout);
+    assert.equal(await readFile(path.join(freshTarget, "installed.txt"), "utf8"), "installed\n");
   } finally {
     if (previousRoot === undefined) delete process.env.SMA_ROOT;
     else process.env.SMA_ROOT = previousRoot;
     await rm(root, { recursive: true, force: true });
   }
 
-  console.log("mcp selftest: ok (8 tools; fixture trust search and install containment attacks passed)");
+  console.log("mcp selftest: ok (8 tools; fixture trust search, computed-write containment, and fresh-target install passed)");
 }
 
 run().catch((error) => {

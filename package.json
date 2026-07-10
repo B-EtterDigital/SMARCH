@@ -161,7 +161,7 @@
     "attest": "node tools/sma-attest.mjs",
     "attest:verify": "node tools/sma-attest-verify.mjs",
     "similarity:scan": "node tools/sma-similarity-scan.mjs",
-    "gen3:selftest": "node tools/sma-controller-snapshot.mjs --selftest && node tools/sma-graphify.mjs selftest && node tools/sma-module-work-packets.mjs selftest && node tools/sma-parallel-preflight.mjs --selftest && node tools/sma-end-edit.mjs --selftest && node tools/sma-codex-profile.mjs selftest && node tools/sma-goal-progress.mjs --selftest && node tools/sma-operator-packet.mjs --selftest && node tools/sma-stable-generated-selftest.mjs && npm run provenance:selftest",
+    "gen3:selftest": "node tools/sma-controller-snapshot.mjs --selftest && node tools/sma-graphify.mjs selftest && node tools/sma-module-work-packets.mjs selftest && node tools/sma-parallel-preflight.mjs --selftest && node tools/sma-end-edit.mjs --selftest && node tools/sma-codex-profile.mjs selftest && node tools/sma-goal-progress.mjs --selftest && node tools/sma-operator-packet.mjs --selftest && node tools/sma-stable-generated-selftest.mjs && npm run provenance:selftest && node tools/sma-lease.mjs selftest",
     "check": "npm run source:size:gate && npm run typecheck && npm run gen3:selftest && bash -c 'find tools -name \"*.mjs\" -print0 | xargs -0 -n 50 node --check'",
     "gate:compliance": "node tools/sma-compliance-gate.mjs --root . --gate",
     "compliance": "node tools/sma-compliance-gate.mjs --root .",
@@ -175,7 +175,9 @@
     "mcp:serve": "node tools/mcp/server.mjs",
     "types:gen": "node tools/lib/schema-types/generate.mjs",
     "types:check": "node tools/lib/schema-types/generate.mjs --check",
-    "gate:docs": "node tools/sma-doc-lint.mjs"
+    "gate:docs": "node tools/sma-doc-lint.mjs",
+    "ledger:verify": "node tools/gen-public-ledger.mjs --verify",
+    "plugin:check": "node tools/sma-plugin-sync.mjs --check"
   },
   "description": "SMARCH \u2014 Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
   "license": "Apache-2.0",

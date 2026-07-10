@@ -8,6 +8,7 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  cpSync,
   copyFileSync,
   existsSync,
   lstatSync,
@@ -16,9 +17,9 @@ import {
   readFileSync,
   readdirSync,
   realpathSync,
+  renameSync,
   rmSync,
   symlinkSync,
-  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -30,6 +31,7 @@ const SMA_ROOT = resolve(dirname(TOOL_PATH), '..');
 const LEAK_GATE_PATH = resolve(SMA_ROOT, 'tools/sma-leak-gate.mjs');
 const DEFAULT_CONFIG = 'registry/sync-public.config.json';
 const GITLEAKS_CONFIG = '.gitleaks.toml';
+const APPLY_JOURNAL_VERSION = 1;
 
 let args = {};
 try {
@@ -63,6 +65,7 @@ function executeSync(options, execution = {}) {
   if (containsPath(fromRoot, toRoot) || containsPath(toRoot, fromRoot)) {
     throw codedError('ROOTS_OVERLAP', 'source and target roots must not be ancestors or descendants of each other');
   }
+  recoverPendingApply(toRoot, options.write);
 
   const configPath = resolve(options.config || join(fromRoot, DEFAULT_CONFIG));
   const config = readConfig(configPath);
@@ -103,7 +106,7 @@ function executeSync(options, execution = {}) {
       const targetPath = resolve(toRoot, file);
       if (!existsSync(targetPath)) {
         adds.push(file);
-      } else if (!readFileSync(resolve(stageRoot, file)).equals(readFileSync(targetPath))) {
+      } else if (!lstatSync(targetPath).isFile() || !readFileSync(resolve(stageRoot, file)).equals(readFileSync(targetPath))) {
         changes.push(file);
       }
     }
@@ -160,7 +163,7 @@ function executeSync(options, execution = {}) {
       throw error;
     }
 
-    if (options.write) applyChanges(stageRoot, toRoot, adds, changes, removes);
+    if (options.write) applyChanges(stageRoot, toRoot, adds, changes, removes, execution);
     report.status = 'passed';
     if (!execution.silent) return report;
     return report;
@@ -307,18 +310,183 @@ function containsPath(parentPath, childPath) {
   return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel));
 }
 
-function applyChanges(stageRoot, toRoot, adds, changes, removes) {
-  mkdirSync(toRoot, { recursive: true });
-  for (const file of removes) {
-    const targetPath = resolve(toRoot, file);
-    if (existsSync(targetPath)) unlinkSync(targetPath);
+function applyChanges(stageRoot, toRoot, adds, changes, removes, execution = {}) {
+  const affectedFiles = [...new Set([...adds, ...changes, ...removes])].sort();
+  const topLevelEntries = [...new Set(affectedFiles.map((file) => file.split('/')[0]))].sort();
+  if (topLevelEntries.length === 0) return;
+
+  const targetParent = dirname(toRoot);
+  mkdirSync(targetParent, { recursive: true });
+  const transactionRoot = mkdtempSync(join(targetParent, `.${basename(toRoot)}.sma-sync-public-`));
+  const transactionStage = join(transactionRoot, 'stage');
+  const backupRoot = join(transactionRoot, 'backup');
+  mkdirSync(transactionStage, { recursive: true });
+  mkdirSync(backupRoot, { recursive: true });
+
+  const journalPath = applyJournalPath(toRoot);
+  const journal = {
+    version: APPLY_JOURNAL_VERSION,
+    state: 'preparing',
+    target_root: toRoot,
+    target_root_existed: existsSync(toRoot),
+    transaction_root: transactionRoot,
+    entries: topLevelEntries.map((name) => ({
+      name,
+      had_original: existsSync(join(toRoot, name)),
+      staged: false,
+      state: 'pending',
+    })),
+  };
+
+  try {
+    for (const entry of journal.entries) {
+      prepareTopLevelEntry(stageRoot, toRoot, transactionStage, entry.name, adds, changes, removes);
+      entry.staged = existsSync(join(transactionStage, entry.name));
+      entry.state = 'prepared';
+    }
+    journal.state = 'applying';
+    writeApplyJournal(journalPath, journal);
+    mkdirSync(toRoot, { recursive: true });
+
+    let swapsCompleted = 0;
+    for (const entry of journal.entries) {
+      const targetPath = join(toRoot, entry.name);
+      const backupPath = join(backupRoot, entry.name);
+      const stagedPath = join(transactionStage, entry.name);
+      entry.state = 'swapping';
+      writeApplyJournal(journalPath, journal);
+      if (entry.had_original) {
+        renameSync(targetPath, backupPath);
+        entry.state = 'old-moved';
+        writeApplyJournal(journalPath, journal);
+      }
+      if (entry.staged) renameSync(stagedPath, targetPath);
+      entry.state = 'new-installed';
+      writeApplyJournal(journalPath, journal);
+      swapsCompleted += 1;
+      injectApplyCrash(swapsCompleted, execution);
+    }
+
+    journal.state = 'applied';
+    writeApplyJournal(journalPath, journal);
+    rmSync(journalPath, { force: true });
+    rmSync(transactionRoot, { recursive: true, force: true });
+  } catch (error) {
+    try {
+      if (existsSync(journalPath)) rollbackApplyJournal(journalPath, toRoot);
+      else rmSync(transactionRoot, { recursive: true, force: true });
+    } catch (rollbackError) {
+      throw codedError('APPLY_ROLLBACK_FAILED', `${error.message}; rollback failed: ${rollbackError.message}`);
+    }
+    throw error;
   }
-  for (const file of [...adds, ...changes]) {
-    const sourcePath = resolve(stageRoot, file);
-    const targetPath = resolve(toRoot, file);
-    mkdirSync(dirname(targetPath), { recursive: true });
+}
+
+function prepareTopLevelEntry(stageRoot, toRoot, transactionStage, topLevel, adds, changes, removes) {
+  const currentPath = join(toRoot, topLevel);
+  const stagedPath = join(transactionStage, topLevel);
+  if (existsSync(currentPath)) cpSync(currentPath, stagedPath, { recursive: true, preserveTimestamps: true });
+
+  for (const file of removes.filter((candidate) => candidate === topLevel || candidate.startsWith(`${topLevel}/`))) {
+    rmSync(join(transactionStage, file), { recursive: true, force: true });
+  }
+  for (const file of [...adds, ...changes].filter((candidate) => candidate === topLevel || candidate.startsWith(`${topLevel}/`))) {
+    const sourcePath = join(stageRoot, file);
+    const targetPath = join(transactionStage, file);
+    ensureDirectory(dirname(targetPath), transactionStage);
+    if (existsSync(targetPath) && lstatSync(targetPath).isDirectory()) {
+      rmSync(targetPath, { recursive: true, force: true });
+    }
     copyFileSync(sourcePath, targetPath);
   }
+}
+
+function ensureDirectory(directory, boundary) {
+  if (directory === boundary) return;
+  if (existsSync(directory)) {
+    if (lstatSync(directory).isDirectory()) return;
+    rmSync(directory, { recursive: true, force: true });
+  }
+  ensureDirectory(dirname(directory), boundary);
+  mkdirSync(directory);
+}
+
+function recoverPendingApply(toRoot, write) {
+  const journalPath = applyJournalPath(toRoot);
+  if (!existsSync(journalPath)) return;
+  if (!write) {
+    throw codedError('APPLY_RECOVERY_REQUIRED', `interrupted sync journal found; rerun with --write to recover: ${journalPath}`);
+  }
+  rollbackApplyJournal(journalPath, toRoot);
+}
+
+function rollbackApplyJournal(journalPath, expectedTargetRoot) {
+  let journal;
+  try {
+    journal = JSON.parse(readFileSync(journalPath, 'utf8'));
+  } catch (error) {
+    throw codedError('APPLY_JOURNAL_INVALID', `cannot read rollback journal: ${error.message}`);
+  }
+  validateApplyJournal(journal, expectedTargetRoot);
+  journal.state = 'rolling-back';
+  writeApplyJournal(journalPath, journal);
+  const backupRoot = join(journal.transaction_root, 'backup');
+
+  for (const entry of [...journal.entries].reverse()) {
+    const targetPath = join(expectedTargetRoot, entry.name);
+    const backupPath = join(backupRoot, entry.name);
+    if (existsSync(backupPath)) {
+      rmSync(targetPath, { recursive: true, force: true });
+      renameSync(backupPath, targetPath);
+    } else if (!entry.had_original) {
+      rmSync(targetPath, { recursive: true, force: true });
+    } else if (!existsSync(targetPath)) {
+      throw codedError('APPLY_RECOVERY_FAILED', `original entry is missing without a backup: ${entry.name}`);
+    }
+    entry.state = 'rolled-back';
+    writeApplyJournal(journalPath, journal);
+  }
+
+  if (!journal.target_root_existed) rmSync(expectedTargetRoot, { recursive: true, force: true });
+  rmSync(journalPath, { force: true });
+  rmSync(journal.transaction_root, { recursive: true, force: true });
+}
+
+function validateApplyJournal(journal, expectedTargetRoot) {
+  const transactionParent = dirname(expectedTargetRoot);
+  if (journal?.version !== APPLY_JOURNAL_VERSION || journal.target_root !== expectedTargetRoot) {
+    throw codedError('APPLY_JOURNAL_INVALID', 'rollback journal does not match the requested target');
+  }
+  const transactionPrefix = `.${basename(expectedTargetRoot)}.sma-sync-public-`;
+  if (
+    typeof journal.transaction_root !== 'string'
+    || !containsPath(transactionParent, journal.transaction_root)
+    || journal.transaction_root === transactionParent
+    || !basename(journal.transaction_root).startsWith(transactionPrefix)
+  ) {
+    throw codedError('APPLY_JOURNAL_INVALID', 'rollback journal transaction root is outside the target parent');
+  }
+  if (!Array.isArray(journal.entries) || journal.entries.some((entry) => (
+    !entry || typeof entry.name !== 'string' || !entry.name || entry.name.includes('/') || entry.name === '.' || entry.name === '..'
+  ))) {
+    throw codedError('APPLY_JOURNAL_INVALID', 'rollback journal contains an invalid top-level entry');
+  }
+}
+
+function writeApplyJournal(journalPath, journal) {
+  const temporaryPath = `${journalPath}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(journal, null, 2)}\n`);
+  renameSync(temporaryPath, journalPath);
+}
+
+function applyJournalPath(toRoot) {
+  return join(dirname(toRoot), `.${basename(toRoot)}.sma-sync-public.journal.json`);
+}
+
+function injectApplyCrash(swapsCompleted, execution) {
+  const configured = execution.crashAfterSwaps ?? Number.parseInt(process.env.SMA_SYNC_PUBLIC_TEST_CRASH_AFTER_SWAPS || '', 10);
+  if (!Number.isInteger(configured) || configured < 1 || swapsCompleted !== configured) return;
+  process.kill(process.pid, 'SIGKILL');
 }
 
 function decodeText(buffer) {
@@ -425,6 +593,43 @@ function runSelftest() {
     writeFileSync(join(gateSource, 'leak.txt'), 'owner=public-user\n');
     executeSync({ from: gateSource, to: gateTarget, config: gateConfig, write: true }, passingGitleaks);
     assert(readFileSync(join(gateTarget, 'leak.txt'), 'utf8') === 'owner=public-user\n', 'clean tree did not sync');
+
+    const atomicSource = join(fixtureRoot, 'atomic-source');
+    const atomicTarget = join(fixtureRoot, 'atomic-target');
+    mkdirSync(join(atomicSource, 'alpha'), { recursive: true });
+    mkdirSync(join(atomicSource, 'beta'), { recursive: true });
+    mkdirSync(join(atomicTarget, 'alpha'), { recursive: true });
+    mkdirSync(join(atomicTarget, 'beta'), { recursive: true });
+    writeFileSync(join(atomicSource, 'alpha', 'value.txt'), 'new-alpha\n');
+    writeFileSync(join(atomicSource, 'beta', 'value.txt'), 'new-beta\n');
+    writeFileSync(join(atomicTarget, 'alpha', 'value.txt'), 'old-alpha\n');
+    writeFileSync(join(atomicTarget, 'beta', 'value.txt'), 'old-beta\n');
+    writeFileSync(join(atomicTarget, 'alpha', 'keep.bin'), 'unselected\n');
+    const crashedApply = spawnSync(process.execPath, [
+      TOOL_PATH,
+      '--from', atomicSource,
+      '--to', atomicTarget,
+      '--config', gateConfig,
+      '--write',
+      '--allow-no-gitleaks',
+    ], {
+      encoding: 'utf8',
+      env: { ...process.env, SMA_SYNC_PUBLIC_TEST_CRASH_AFTER_SWAPS: '1' },
+    });
+    assert(crashedApply.signal === 'SIGKILL', 'injected mid-apply crash did not kill the sync child');
+    const atomicJournal = join(dirname(atomicTarget), `.${basename(atomicTarget)}.sma-sync-public.journal.json`);
+    assert(existsSync(atomicJournal), 'mid-apply crash did not leave a rollback journal');
+    assert(readFileSync(join(atomicTarget, 'alpha', 'value.txt'), 'utf8') === 'new-alpha\n', 'first top-level swap was not installed before the crash');
+    assert(readFileSync(join(atomicTarget, 'beta', 'value.txt'), 'utf8') === 'old-beta\n', 'later top-level entry changed before its swap');
+    expectErrorCode(
+      () => executeSync({ from: atomicSource, to: atomicTarget, config: gateConfig }, passingGitleaks),
+      'APPLY_RECOVERY_REQUIRED',
+    );
+    executeSync({ from: atomicSource, to: atomicTarget, config: gateConfig, write: true }, passingGitleaks);
+    assert(readFileSync(join(atomicTarget, 'alpha', 'value.txt'), 'utf8') === 'new-alpha\n', 'recovery did not finish alpha');
+    assert(readFileSync(join(atomicTarget, 'beta', 'value.txt'), 'utf8') === 'new-beta\n', 'recovery did not finish beta');
+    assert(readFileSync(join(atomicTarget, 'alpha', 'keep.bin'), 'utf8') === 'unselected\n', 'top-level swap removed an unselected file');
+    assert(!existsSync(atomicJournal), 'successful recovery did not remove the rollback journal');
 
     const missingWarnings = [];
     const missingGitleaks = mockMissingGitleaks(missingWarnings);

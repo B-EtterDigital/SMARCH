@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { isDeepStrictEqual } from "node:util";
 import { access, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const FIXTURE_TIMEOUT_MS = 30_000;
 const RESULT_MARKER = "__SMA_CAPSULE_RESULT__";
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 let isolationFallbackWarned = false;
+let cachedIsolationCapabilities;
 
 class CapsuleError extends Error {
   constructor(code, message) {
@@ -27,25 +29,30 @@ async function main() {
     return;
   }
 
-  const results = await runCapsule(options.capsulePath || process.cwd(), { allowNet: options.allowNet });
+  const results = await runCapsule(options.capsulePath || process.cwd(), {
+    allowNet: options.allowNet,
+    strictSandbox: options.strictSandbox,
+  });
   if (results.some((result) => result.status === "FAIL")) process.exitCode = 1;
 }
 
 function parseArgs(args) {
-  const options = { allowNet: false, selftest: false, capsulePath: "" };
+  const options = { allowNet: false, selftest: false, strictSandbox: false, capsulePath: "" };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--selftest") {
       options.selftest = true;
     } else if (arg === "--allow-net") {
       options.allowNet = true;
+    } else if (arg === "--strict-sandbox") {
+      options.strictSandbox = true;
     } else if (arg === "--capsule") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) throw new CapsuleError("USAGE", "--capsule requires a directory path");
       options.capsulePath = value;
       index += 1;
     } else if (arg === "--help" || arg === "-h") {
-      console.log("Usage: node tools/sma-brick-run.mjs [--allow-net] [--capsule] <capsule-directory> | --selftest");
+      console.log("Usage: node tools/sma-brick-run.mjs [--strict-sandbox] [--allow-net] [--capsule] <capsule-directory> | --selftest");
       process.exit(0);
     } else if (arg.startsWith("--")) {
       throw new CapsuleError("USAGE", `Unknown option: ${arg}`);
@@ -60,30 +67,39 @@ function parseArgs(args) {
 
 async function runCapsule(capsulePath, options = {}) {
   const root = path.resolve(capsulePath);
+  if (options.strictSandbox === true) assertStrictSandboxAvailable();
   const manifest = await readJson(path.join(root, "module.sweetspot.json"), "capsule manifest");
   const fixtureDocument = await readJson(path.join(root, "fixtures", "run.json"), "capsule fixture file");
   const fixtures = validateFixtures(fixtureDocument);
   await enforceConstraints(root, manifest);
 
-  const env = childEnvironment(manifest);
-  const results = [];
-  for (const fixture of fixtures) {
-    let result;
-    try {
-      const actual = await executeFixture(root, fixture.inputs, env, options.timeoutMs || FIXTURE_TIMEOUT_MS, {
-        allowNet: options.allowNet === true,
-      });
-      const passed = isDeepStrictEqual(actual, fixture.expected_outputs);
-      result = passed
-        ? { fixture: fixture.name, status: "PASS" }
-        : { fixture: fixture.name, status: "FAIL", expected_outputs: fixture.expected_outputs, actual_outputs: actual };
-    } catch (error) {
-      result = { fixture: fixture.name, status: "FAIL", error: errorMessage(error) };
+  const runtimeTemp = await mkdtemp(path.join(tmpdir(), "sma-capsule-runtime-"));
+  try {
+    const env = childEnvironment(manifest, runtimeTemp);
+    const results = [];
+    for (const fixture of fixtures) {
+      let result;
+      try {
+        const actual = await executeFixture(root, fixture.inputs, env, options.timeoutMs || FIXTURE_TIMEOUT_MS, {
+          allowNet: options.allowNet === true,
+          allowedPorts: manifest.interfaces.ports,
+          runtimeTemp,
+          strictSandbox: options.strictSandbox === true,
+        });
+        const passed = isDeepStrictEqual(actual, fixture.expected_outputs);
+        result = passed
+          ? { fixture: fixture.name, status: "PASS" }
+          : { fixture: fixture.name, status: "FAIL", expected_outputs: fixture.expected_outputs, actual_outputs: actual };
+      } catch (error) {
+        result = { fixture: fixture.name, status: "FAIL", error: errorMessage(error) };
+      }
+      results.push(result);
+      if (options.emit !== false) printResult(result);
     }
-    results.push(result);
-    if (options.emit !== false) printResult(result);
+    return results;
+  } finally {
+    await rm(runtimeTemp, { recursive: true, force: true });
   }
-  return results;
 }
 
 async function readJson(filePath, label) {
@@ -222,12 +238,16 @@ function validateSpecifier({ root, sourceRoot, filePath, specifier, allowedPorts
   }
 }
 
-function childEnvironment(manifest) {
+function childEnvironment(manifest, runtimeTemp) {
   const variables = manifest?.security?.env?.variables ?? [];
   if (!Array.isArray(variables)) {
     throw new CapsuleError("INVALID_MANIFEST", "module.sweetspot.json security.env.variables must be an array");
   }
-  const env = {};
+  const env = {
+    TMPDIR: runtimeTemp,
+    TMP: runtimeTemp,
+    TEMP: runtimeTemp,
+  };
   for (const variable of variables) {
     const name = typeof variable === "string" ? variable : variable?.name;
     if (typeof name !== "string" || !name.trim()) {
@@ -239,9 +259,49 @@ function childEnvironment(manifest) {
 }
 
 function executeFixture(root, inputs, env, timeoutMs, options = {}) {
+  const isolation = runtimeIsolationPlan({
+    allowNet: options.allowNet === true,
+    root,
+    runtimeTemp: options.runtimeTemp,
+    strictSandbox: options.strictSandbox === true,
+  });
+  const sourceRootUrl = pathToFileURL(`${path.join(root, "src")}${path.sep}`).href;
   const childProgram = `
 const marker = ${JSON.stringify(RESULT_MARKER)};
 const allowNet = ${JSON.stringify(options.allowNet === true)};
+const allowedPorts = new Set(${JSON.stringify(options.allowedPorts ?? [])});
+const sourceRootUrl = ${JSON.stringify(sourceRootUrl)};
+const useRuntimeHooks = ${JSON.stringify(isolation.useRuntimeHooks)};
+if (useRuntimeHooks) {
+  const { registerHooks } = await import("node:module");
+  const deny = (message) => {
+    throw Object.assign(new Error(message), { code: "ERR_ACCESS_DENIED" });
+  };
+  registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (/^(?:data|file|https?):/i.test(specifier) || specifier.startsWith("/") || /^[A-Za-z]:/.test(specifier)) {
+        return deny("Capsule import denied by the runtime resolver: " + specifier);
+      }
+      if (specifier.startsWith(".")) {
+        const resolved = nextResolve(specifier, context);
+        if (typeof resolved?.url !== "string" || !resolved.url.startsWith(sourceRootUrl)) {
+          return deny("Capsule relative import escaped src/: " + specifier);
+        }
+        return resolved;
+      }
+      if (!allowedPorts.has(specifier)) {
+        return deny("Capsule import is not a declared port: " + specifier);
+      }
+      return nextResolve(specifier, context);
+    },
+  });
+  const denyBinding = () => deny("process.binding APIs are disabled inside capsule fixtures");
+  for (const property of ["binding", "_linkedBinding"]) {
+    if (property in process) {
+      Object.defineProperty(process, property, { value: denyBinding, configurable: false, enumerable: false, writable: false });
+    }
+  }
+}
 if (!allowNet) {
   const denyNetwork = () => Promise.reject(Object.assign(new Error("Capsule network access is disabled; rerun with --allow-net to opt in"), { code: "ERR_ACCESS_DENIED" }));
   Object.defineProperty(globalThis, "fetch", { value: denyNetwork, configurable: false, writable: false });
@@ -264,7 +324,7 @@ try {
 
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [
-      ...runtimeIsolationArguments(root, options.allowNet === true),
+      ...isolation.args,
       "--input-type=module",
       "--eval",
       childProgram,
@@ -322,31 +382,93 @@ try {
   });
 }
 
-function runtimeIsolationArguments(root, allowNet) {
-  const allowedFlags = process.allowedNodeEnvironmentFlags;
-  const permissionFlag = allowedFlags?.has("--permission")
-    ? "--permission"
-    : allowedFlags?.has("--experimental-permission")
-      ? "--experimental-permission"
-      : "";
+function runtimeIsolationPlan({ root, runtimeTemp, allowNet, strictSandbox }) {
+  const capabilities = isolationCapabilities();
+  if (strictSandbox) assertStrictSandboxAvailable(capabilities);
 
-  if (!permissionFlag) {
-    warnIsolationFallback("this Node runtime has no permission model; filesystem isolation is limited to source-specifier checks and symlink rejection");
-    return [];
+  if (!capabilities.permissionFlag) {
+    warnIsolationFallback("this Node runtime has no compatible permission model; filesystem, child-process, worker, and low-level network enforcement are unavailable");
+    return { args: [], useRuntimeHooks: false };
   }
 
   const args = [
-    permissionFlag,
+    capabilities.permissionFlag,
     `--allow-fs-read=${root}`,
-    `--allow-fs-read=${path.join(root, "*")}`,
+    `--allow-fs-read=${runtimeTemp}`,
+    `--allow-fs-write=${runtimeTemp}`,
   ];
-  if (allowNet) {
-    if (allowedFlags.has("--allow-net")) args.push("--allow-net");
-    else warnIsolationFallback("this Node permission model has no --allow-net flag; network opt-in depends on the runtime's legacy behavior");
-  } else if (!allowedFlags.has("--allow-net")) {
-    warnIsolationFallback("this Node permission model cannot deny all network APIs; global fetch is disabled, but declared low-level network ports remain a documented fallback boundary");
+  if (allowNet && capabilities.netPermission) args.push("--allow-net");
+  else if (allowNet) warnIsolationFallback("this Node permission model has no compatible --allow-net capability; network behavior follows the runtime's legacy default");
+  else if (!capabilities.netPermission) warnIsolationFallback("this Node permission model cannot deny low-level network APIs; only global fetch is disabled");
+
+  if (!capabilities.syncModuleHooks) {
+    warnIsolationFallback("synchronous node:module resolver hooks are unavailable; computed import enforcement falls back to the permission model and the fast-feedback source scan");
   }
-  return args;
+
+  return {
+    args,
+    useRuntimeHooks: capabilities.syncModuleHooks,
+  };
+}
+
+function isolationCapabilities() {
+  if (cachedIsolationCapabilities) return cachedIsolationCapabilities;
+  const permissionFlag = ["--permission", "--experimental-permission"]
+    .find((flag) => probeNode([
+      flag,
+      "--input-type=module",
+      "--eval",
+      "if (!process.permission || process.permission.has('fs.read') || process.permission.has('fs.write') || process.permission.has('child') || process.permission.has('worker')) process.exit(1)",
+    ])) ?? "";
+
+  const syncModuleHooks = Boolean(permissionFlag) && probeNode([
+    permissionFlag,
+    "--input-type=module",
+    "--eval",
+    "const api = await import('node:module'); if (typeof api.registerHooks !== 'function') process.exit(1)",
+  ]);
+  const netPermission = Boolean(permissionFlag)
+    && probeNode([
+      permissionFlag,
+      "--input-type=module",
+      "--eval",
+      "if (!process.permission || process.permission.has('net')) process.exit(1)",
+    ])
+    && probeNode([
+      permissionFlag,
+      "--allow-net",
+      "--input-type=module",
+      "--eval",
+      "if (!process.permission?.has('net')) process.exit(1)",
+    ]);
+
+  cachedIsolationCapabilities = {
+    permissionFlag,
+    syncModuleHooks,
+    netPermission,
+  };
+  return cachedIsolationCapabilities;
+}
+
+function probeNode(args) {
+  const result = spawnSync(process.execPath, args, {
+    env: {},
+    stdio: "ignore",
+    timeout: 5_000,
+  });
+  return result.status === 0 && !result.error;
+}
+
+function assertStrictSandboxAvailable(capabilities = isolationCapabilities()) {
+  const missing = [];
+  if (!capabilities.permissionFlag) missing.push("Node permission model (--permission; experimental form accepted)");
+  if (!capabilities.syncModuleHooks) missing.push("synchronous module.registerHooks (Node >=22.15.0 or >=23.5.0)");
+  if (!capabilities.netPermission) missing.push("permission-scoped network control (--allow-net; standard in Node >=25.0.0, compatible backports accepted)");
+  if (missing.length === 0) return;
+  throw new CapsuleError(
+    "STRICT_SANDBOX_UNSUPPORTED",
+    `--strict-sandbox is unavailable on ${process.version}; missing: ${missing.join("; ")}. Upgrade Node or run without strict mode and accept the documented fallback limits.`,
+  );
 }
 
 function warnIsolationFallback(message) {
@@ -384,19 +506,32 @@ export default function run(inputs: { value: number }) {
       }],
     };
     await writeFile(path.join(root, "fixtures", "run.json"), JSON.stringify(passingFixture));
-    const passing = await runCapsule(root, { emit: false });
+    const passing = await runCapsule(root, { emit: false, strictSandbox: true });
     assertSelftest(passing[0]?.status === "PASS", "passing fixture was not detected");
+
+    let strictRefusal = "";
+    try {
+      assertStrictSandboxAvailable({ permissionFlag: "", syncModuleHooks: false, netPermission: false });
+    } catch (error) {
+      strictRefusal = `${error?.code ?? ""}: ${errorMessage(error)}`;
+    }
+    assertSelftest(
+      strictRefusal.includes("STRICT_SANDBOX_UNSUPPORTED")
+        && strictRefusal.includes("--strict-sandbox")
+        && strictRefusal.includes(process.version),
+      "unsupported strict sandbox did not refuse with an honest versioned message",
+    );
 
     const failingFixture = structuredClone(passingFixture);
     failingFixture.fixtures[0].expected_outputs.value = 8;
     await writeFile(path.join(root, "fixtures", "run.json"), JSON.stringify(failingFixture));
-    const failing = await runCapsule(root, { emit: false });
+    const failing = await runCapsule(root, { emit: false, strictSandbox: true });
     assertSelftest(failing[0]?.status === "FAIL", "failing fixture was not detected");
 
     await writeFile(path.join(root, "src", "index.ts"), `import "node:fs"; export default function run(value) { return value; }\n`);
     let constraintMessage = "";
     try {
-      await runCapsule(root, { emit: false });
+      await runCapsule(root, { emit: false, strictSandbox: true });
     } catch (error) {
       constraintMessage = errorMessage(error);
     }
@@ -404,6 +539,20 @@ export default function run(inputs: { value: number }) {
       constraintMessage.includes("node:fs") && constraintMessage.includes("interfaces.ports") && constraintMessage.includes("src/index.ts"),
       "undeclared import did not produce an actionable constraint error",
     );
+
+    await writeSelftestCapsule(root, {
+      ports: ["node:fs/promises", "node:path"],
+      source: `import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+export default async function run() {
+  const target = join(process.env.TMPDIR, "allowed.txt");
+  await writeFile(target, "private-temp");
+  return { value: await readFile(target, "utf8") };
+}\n`,
+      expectedOutputs: { value: "private-temp" },
+    });
+    const tempWriting = await runCapsule(root, { emit: false, strictSandbox: true });
+    assertSelftest(tempWriting[0]?.status === "PASS", "private runtime temp was not writable and readable");
 
     const escapeChecks = await runEscapeSelftests({ root, workspace });
     const escaped = Object.entries(escapeChecks)
@@ -417,11 +566,20 @@ export default function run(inputs: { value: number }) {
       checks: [
         "fixture-pass",
         "fixture-fail",
+        "strict-sandbox-refusal",
         "declared-port",
         "constraint-rejection",
         "environment-read-denied",
         "network-denied-by-default",
         "network-allow-opt-in",
+        "low-level-network-denied",
+        "low-level-network-allow-opt-in",
+        "computed-dynamic-import-denied",
+        "worker-thread-denied",
+        "data-url-import-denied",
+        "process-binding-denied",
+        "parent-read-denied",
+        "private-temp-write-allowed",
         "parent-write-denied",
         "symlink-write-denied",
       ],
@@ -451,12 +609,91 @@ async function runEscapeSelftests({ root, workspace }) {
     });
     checks.fetch = await escapeAttemptFailed(root);
     assertSelftest(network.requests() === 0, "network-denied fixture reached the local server");
-    const allowedNetwork = await runCapsule(root, { allowNet: true, emit: false });
+    const allowedNetwork = await runCapsule(root, { allowNet: true, emit: false, strictSandbox: true });
     assertSelftest(allowedNetwork[0]?.status === "PASS", "--allow-net did not opt in to network access");
     assertSelftest(network.requests() === 1, "--allow-net fixture did not reach the local server exactly once");
+
+    await writeSelftestCapsule(root, {
+      ports: ["node:http"],
+      source: `export default async function run(inputs: { url: string }) {
+  const prefix = "node:";
+  const { get } = await import(prefix + "http");
+  const body = await new Promise((resolve, reject) => {
+    const request = get(inputs.url, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    });
+    request.on("error", reject);
+  });
+  return { body };
+}\n`,
+      inputs: { url: network.url },
+      expectedOutputs: { body: "network-escaped" },
+    });
+    checks["low-level-network"] = await escapeAttemptFailed(root);
+    assertSelftest(network.requests() === 1, "network-denied low-level fixture reached the local server");
+    const allowedLowLevelNetwork = await runCapsule(root, { allowNet: true, emit: false, strictSandbox: true });
+    assertSelftest(allowedLowLevelNetwork[0]?.status === "PASS", "--allow-net did not opt in to low-level network access");
+    assertSelftest(network.requests() === 2, "--allow-net low-level fixture did not reach the local server exactly once");
   } finally {
     await network.close();
   }
+
+  const childEscape = path.join(workspace, "child-process-escape.txt");
+  await writeSelftestCapsule(root, {
+    ports: ["node:child_process"],
+    source: `export default async function run(inputs: { target: string }) {
+  const prefix = "node:";
+  const { spawnSync } = await import(prefix + "child_process");
+  const child = spawnSync(process.execPath, ["--eval", "require('node:fs').writeFileSync(process.argv[1], 'escaped')", inputs.target]);
+  return { status: child.status };
+}\n`,
+    inputs: { target: childEscape },
+    expectedOutputs: { status: 0 },
+  });
+  checks["computed-dynamic-import"] = await escapeAttemptFailed(root);
+  assertSelftest(!await pathExists(childEscape), "computed dynamic import spawned a child process outside the permission boundary");
+
+  await writeSelftestCapsule(root, {
+    ports: ["node:worker_threads"],
+    source: `export default async function run() {
+  const prefix = "node:";
+  const { Worker } = await import(prefix + "worker_threads");
+  const worker = new Worker("0", { eval: true });
+  await new Promise((resolve, reject) => { worker.once("online", resolve); worker.once("error", reject); });
+  await worker.terminate();
+  return { started: true };
+}\n`,
+    expectedOutputs: { started: true },
+  });
+  checks["worker-thread"] = await escapeAttemptFailed(root);
+
+  await writeSelftestCapsule(root, {
+    source: `export default async function run() {
+  const scheme = "da" + "ta:";
+  const loaded = await import(scheme + "text/javascript,export default 'escaped'");
+  return { value: loaded.default };
+}\n`,
+    expectedOutputs: { value: "escaped" },
+  });
+  checks["data-url-import"] = await escapeAttemptFailed(root);
+
+  await writeSelftestCapsule(root, {
+    source: `export default function run() { return { exposed: typeof process.binding("fs") === "object" }; }\n`,
+    expectedOutputs: { exposed: true },
+  });
+  checks["process-binding"] = await escapeAttemptFailed(root);
+
+  const outsideRead = path.join(workspace, "outside-read.txt");
+  await writeFile(outsideRead, "escaped-read");
+  await writeSelftestCapsule(root, {
+    ports: ["node:fs/promises"],
+    source: `import { readFile } from "node:fs/promises"; export default async function run(inputs: { target: string }) { return { value: await readFile(inputs.target, "utf8") }; }\n`,
+    inputs: { target: outsideRead },
+    expectedOutputs: { value: "escaped-read" },
+  });
+  checks["parent-read"] = await escapeAttemptFailed(root);
 
   const parentEscape = path.join(workspace, "parent-escape.txt");
   await writeSelftestCapsule(root, {
@@ -495,7 +732,7 @@ async function writeSelftestCapsule(root, { source, expectedOutputs, inputs = {}
 
 async function escapeAttemptFailed(root) {
   try {
-    const results = await runCapsule(root, { emit: false });
+    const results = await runCapsule(root, { emit: false, strictSandbox: true });
     return results[0]?.status === "FAIL";
   } catch {
     return true;

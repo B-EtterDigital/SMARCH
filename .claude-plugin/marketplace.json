@@ -1,0 +1,23 @@
+{
+  "name": "smarch-plugins",
+  "description": "SMA Gen3 architecture, planning, enforcement, orchestration, frontend quality, and course-building skills for Claude Code.",
+  "owner": {
+    "name": "B-EtterDigital"
+  },
+  "plugins": [
+    {
+      "name": "smarch",
+      "source": "./",
+      "description": "SMA Gen3 architecture, planning, enforcement, orchestration, frontend quality, and course-building skills for Claude Code.",
+      "version": "0.1.0",
+      "skills": [
+        "./skills/f5-ultravisionplan",
+        "./skills/sma-course-builder",
+        "./skills/sma-enforcer",
+        "./skills/sma-gen3",
+        "./skills/sweetspot-frontend-fix",
+        "./skills/sweetspot-moa"
+      ]
+    }
+  ]
+}

@@ -71,3 +71,37 @@
 {"ts": "2026-07-10T17:12:11+00:00", "action": "complete", "id": "UV-GR-skeptic-union-namespace", "detail": "node tools/sma-graphify.mjs selftest"}
 {"ts": "2026-07-10T17:12:12+00:00", "action": "complete", "id": "UV-GA-doc-lint-tool", "detail": "node tools/sma-doc-lint.mjs --selftest"}
 {"ts": "2026-07-10T17:12:19+00:00", "action": "complete", "id": "UV-GA-fresh-install-empty-state", "detail": "npm run gate:all"}
+{"ts": "2026-07-10T17:14:15+00:00", "action": "claim", "id": "UV-CO-skeptic2-lease-atomicity", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:16+00:00", "action": "claim", "id": "UV-CP-review4-sandbox-honesty", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:17+00:00", "action": "claim", "id": "UV-RG-review4-store-write-containment", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:17+00:00", "action": "claim", "id": "UV-RG-review4-store-cli-parity", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:18+00:00", "action": "claim", "id": "UV-CO-skeptic2-hooks-fail-closed", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:19+00:00", "action": "claim", "id": "UV-GA-skeptic2-leak-pathnames", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:20+00:00", "action": "claim", "id": "UV-GR-review4-locale-tokenize", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:21+00:00", "action": "claim", "id": "UV-SY-skeptic2-atomic-apply", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:21+00:00", "action": "claim", "id": "UV-PR-skeptic2-ledger-refresh", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:22+00:00", "action": "claim", "id": "UV-GR-community-summaries", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:23+00:00", "action": "claim", "id": "UV-SK-plugin-manifest", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:24+00:00", "action": "claim", "id": "UV-DO-lesson-07-provenance-and-seals-draft", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:25+00:00", "action": "claim", "id": "UV-DO-lesson-08-leases-working-alongside-agents-draft", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:26+00:00", "action": "claim", "id": "UV-DO-lesson-09-conflicts-are-normal-draft", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:26+00:00", "action": "claim", "id": "UV-DO-lesson-10-your-first-capsule-draft", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:27+00:00", "action": "claim", "id": "UV-DO-lesson-11-the-graph-asking-questions-draft", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:14:28+00:00", "action": "claim", "id": "UV-DO-lesson-12-agents-and-skills-setup-draft", "agent": "codex-w6"}
+{"ts": "2026-07-10T17:33:44+00:00", "action": "complete", "id": "UV-CO-skeptic2-lease-atomicity", "detail": "node tools/sma-lease.mjs selftest"}
+{"ts": "2026-07-10T17:33:46+00:00", "action": "complete", "id": "UV-CP-review4-sandbox-honesty", "detail": "node tools/sma-brick-run.mjs --selftest"}
+{"ts": "2026-07-10T17:33:47+00:00", "action": "complete", "id": "UV-RG-review4-store-write-containment", "detail": "node tools/mcp/selftest.mjs"}
+{"ts": "2026-07-10T17:33:47+00:00", "action": "complete", "id": "UV-RG-review4-store-cli-parity", "detail": "node tools/mcp/selftest.mjs"}
+{"ts": "2026-07-10T17:33:47+00:00", "action": "complete", "id": "UV-CO-skeptic2-hooks-fail-closed", "detail": "bash -n tools/hooks/ambient/pre-write.sh"}
+{"ts": "2026-07-10T17:33:48+00:00", "action": "complete", "id": "UV-GA-skeptic2-leak-pathnames", "detail": "node tools/sma-leak-gate.mjs --selftest"}
+{"ts": "2026-07-10T17:33:50+00:00", "action": "complete", "id": "UV-GR-review4-locale-tokenize", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-10T17:33:51+00:00", "action": "complete", "id": "UV-SY-skeptic2-atomic-apply", "detail": "node tools/sma-sync-public.mjs --selftest"}
+{"ts": "2026-07-10T17:33:53+00:00", "action": "complete", "id": "UV-GR-community-summaries", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-10T17:33:54+00:00", "action": "complete", "id": "UV-SK-plugin-manifest", "detail": "node tools/sma-plugin-sync.mjs --check"}
+{"ts": "2026-07-10T17:34:04+00:00", "action": "complete", "id": "UV-DO-lesson-07-provenance-and-seals-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:34:12+00:00", "action": "complete", "id": "UV-DO-lesson-08-leases-working-alongside-agents-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:34:22+00:00", "action": "complete", "id": "UV-DO-lesson-09-conflicts-are-normal-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:34:42+00:00", "action": "complete", "id": "UV-DO-lesson-10-your-first-capsule-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:34:55+00:00", "action": "complete", "id": "UV-DO-lesson-11-the-graph-asking-questions-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:35:05+00:00", "action": "complete", "id": "UV-DO-lesson-12-agents-and-skills-setup-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:35:37+00:00", "action": "complete", "id": "UV-PR-skeptic2-ledger-refresh", "detail": "node tools/gen-public-ledger.mjs --verify"}

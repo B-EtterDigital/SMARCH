@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "smarch",
+  "displayName": "SMARCH Agent Skills",
+  "version": "0.1.0",
+  "description": "SMA Gen3 architecture, planning, enforcement, orchestration, frontend quality, and course-building skills for Claude Code.",
+  "author": {
+    "name": "B-EtterDigital",
+    "url": "https://github.com/B-EtterDigital"
+  },
+  "homepage": "https://github.com/B-EtterDigital/SMARCH",
+  "repository": "https://github.com/B-EtterDigital/SMARCH",
+  "keywords": [
+    "sma",
+    "architecture",
+    "agent-skills",
+    "claude-code"
+  ],
+  "skills": [
+    "./skills/f5-ultravisionplan",
+    "./skills/sma-course-builder",
+    "./skills/sma-enforcer",
+    "./skills/sma-gen3",
+    "./skills/sweetspot-frontend-fix",
+    "./skills/sweetspot-moa"
+  ]
+}

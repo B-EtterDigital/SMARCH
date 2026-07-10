@@ -11,6 +11,81 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, "../../..");
 const INTRO_DIR = path.join(REPO_ROOT, "docs", "intro");
 const BLOCK_TIMEOUT_MS = 5 * 60 * 1000;
 const FAILURE_OUTPUT_LIMIT = 4_000;
+const LESSON_CONTRACTS = new Map([
+  ["07-provenance-and-seals.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/lib/provenance-seal.mjs"
+    ]
+  }],
+  ["08-leases-working-alongside-agents.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-start-edit.mjs",
+      "tools/sma-end-edit.mjs"
+    ]
+  }],
+  ["09-conflicts-are-normal.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-conflict.mjs"
+    ]
+  }],
+  ["10-your-first-capsule.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-brick-run.mjs"
+    ]
+  }],
+  ["11-the-graph-asking-questions.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/sma-graphify.mjs query"
+    ]
+  }],
+  ["12-agents-and-skills-setup.md", {
+    requiredSnippets: [
+      "## Why this matters",
+      "## The idea",
+      "## Try it",
+      "## What you just did",
+      "## Where to go next",
+      "SMARCH_FIXTURE_PORTFOLIO",
+      "tools/evals/fixtures/portfolio",
+      "tools/install-agent-skills.mjs"
+    ]
+  }]
+]);
 
 function usage() {
   console.log(`SMARCH intro lesson journey
@@ -65,6 +140,12 @@ function parseBashBlocks(markdown) {
   }
 
   return blocks;
+}
+
+function validateLessonContract(filename, markdown) {
+  const contract = LESSON_CONTRACTS.get(filename);
+  if (!contract) return [];
+  return contract.requiredSnippets.filter((snippet) => !markdown.includes(snippet));
 }
 
 function matchesSelector(filename, selector) {
@@ -148,6 +229,12 @@ async function runJourney(selectors) {
     for (const filename of filenames) {
       const markdown = await fs.readFile(path.join(INTRO_DIR, filename), "utf8");
       const blocks = parseBashBlocks(markdown);
+      const missingSnippets = validateLessonContract(filename, markdown);
+
+      if (missingSnippets.length > 0) {
+        console.error(`FAIL ${filename} is missing lesson contract text: ${missingSnippets.join(", ")}`);
+        failures += 1;
+      }
 
       if (blocks.length === 0) {
         if (selectors.size > 0) {

@@ -2,11 +2,12 @@
 // Generate the PUBLIC self-ledger: provenance seals over this repo's own tools,
 // verifiable by anyone (including in a browser) from raw.githubusercontent.com.
 // Inputs are 100% public: file bytes + git history of this repository.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { computeSeal } from './lib/provenance-seal.mjs';
 
+const LEDGER_PATH = 'registry/public-ledger.generated.json';
 const FILES = [
   'tools/sma-ci.mjs',
   'tools/sma-scan.mjs',
@@ -15,6 +16,12 @@ const FILES = [
   'tools/lib/license-lattice.mjs',
 ];
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
+
+const args = process.argv.slice(2);
+if (args.length > 1 || args.some((arg) => arg !== '--verify' && arg !== '--selftest')) {
+  console.error('usage: node tools/gen-public-ledger.mjs [--verify|--selftest]');
+  process.exit(2);
+}
 
 function gitEvents(path) {
   const raw = execSync(
@@ -35,22 +42,84 @@ function gitEvents(path) {
   });
 }
 
-const bricks = FILES.map((path) => {
-  const content_hash = sha256(readFileSync(path));
-  const brick_id = 'smarch.tools.' + path.split('/').pop().replace(/\.mjs$/, '');
-  const events = gitEvents(path);
-  const seal = computeSeal({ brick_id, content_hash, events });
-  return { brick_id, path, content_hash, anchor: seal.anchor, head: seal.head, chain_length: seal.chain_length, events };
-});
+function buildBundle(generatedAt = new Date().toISOString()) {
+  const bricks = FILES.map((path) => {
+    const content_hash = sha256(readFileSync(path));
+    const brick_id = 'smarch.tools.' + path.split('/').pop().replace(/\.mjs$/, '');
+    const events = gitEvents(path);
+    const seal = computeSeal({ brick_id, content_hash, events });
+    return { brick_id, path, content_hash, anchor: seal.anchor, head: seal.head, chain_length: seal.chain_length, events };
+  });
+  return {
+    schema: 'smarch-public-ledger-v1',
+    generated_at: generatedAt,
+    repo: 'B-EtterDigital/SMARCH',
+    branch: 'main',
+    algo: 'sha256-chain-v2',
+    note: 'Self-ledger over the tools of this repository. Verify: hash the raw file, recompute the anchor, fold the events, compare the head. All inputs are public.',
+    bricks,
+  };
+}
 
-const bundle = {
-  schema: 'smarch-public-ledger-v1',
-  generated_at: new Date().toISOString(),
-  repo: 'B-EtterDigital/SMARCH',
-  branch: 'main',
-  algo: 'sha256-chain-v2',
-  note: 'Self-ledger over the tools of this repository. Verify: hash the raw file, recompute the anchor, fold the events, compare the head. All inputs are public.',
-  bricks,
-};
-writeFileSync('registry/public-ledger.generated.json', JSON.stringify(bundle, null, 1) + '\n');
-console.log('public ledger:', bricks.length, 'bricks,', bricks.reduce((a, b) => a + b.chain_length, 0), 'events');
+function verifyLedger() {
+  if (!existsSync(LEDGER_PATH)) {
+    console.error(`public ledger verify: missing ${LEDGER_PATH}; regenerate with node tools/gen-public-ledger.mjs`);
+    process.exit(1);
+  }
+  let current;
+  try {
+    current = JSON.parse(readFileSync(LEDGER_PATH, 'utf8'));
+  } catch (error) {
+    console.error(`public ledger verify: invalid ${LEDGER_PATH}: ${error.message}`);
+    process.exit(1);
+  }
+  const mismatch = ledgerMismatch(current);
+  if (mismatch) {
+    console.error(`public ledger verify: ${mismatch}`);
+    process.exit(1);
+  }
+  printSummary('verified', current.bricks);
+}
+
+function ledgerMismatch(current) {
+  if (
+    typeof current?.generated_at !== 'string'
+    || !Number.isFinite(Date.parse(current.generated_at))
+    || new Date(current.generated_at).toISOString() !== current.generated_at
+  ) {
+    return 'generated_at must be an ISO timestamp';
+  }
+  const expected = buildBundle(current.generated_at);
+  if (JSON.stringify(current) !== JSON.stringify(expected)) {
+    return `stale ${LEDGER_PATH}; regenerate with node tools/gen-public-ledger.mjs`;
+  }
+  return '';
+}
+
+function runSelftest() {
+  const current = buildBundle('2026-01-01T00:00:00.000Z');
+  if (ledgerMismatch(current)) throw new Error('fresh ledger did not verify');
+  const stale = structuredClone(current);
+  stale.bricks[0].content_hash = '0'.repeat(64);
+  if (!ledgerMismatch(stale).startsWith('stale ')) throw new Error('stale ledger was not rejected');
+  const invalidTimestamp = structuredClone(current);
+  invalidTimestamp.generated_at = 'not-a-date';
+  if (ledgerMismatch(invalidTimestamp) !== 'generated_at must be an ISO timestamp') {
+    throw new Error('invalid generated_at was not rejected');
+  }
+  console.log('public ledger selftest: passed');
+}
+
+function printSummary(action, bricks) {
+  console.log(`public ledger ${action}:`, bricks.length, 'bricks,', bricks.reduce((sum, brick) => sum + brick.chain_length, 0), 'events');
+}
+
+if (args.includes('--selftest')) {
+  runSelftest();
+} else if (args.includes('--verify')) {
+  verifyLedger();
+} else {
+  const bundle = buildBundle();
+  writeFileSync(LEDGER_PATH, JSON.stringify(bundle, null, 1) + '\n');
+  printSummary('generated', bundle.bricks);
+}

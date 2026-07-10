@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "plugin": {
+    "name": "smarch",
+    "displayName": "SMARCH Agent Skills",
+    "description": "SMA Gen3 architecture, planning, enforcement, orchestration, frontend quality, and course-building skills for Claude Code.",
+    "author": {
+      "name": "B-EtterDigital",
+      "url": "https://github.com/B-EtterDigital"
+    },
+    "homepage": "https://github.com/B-EtterDigital/SMARCH",
+    "repository": "https://github.com/B-EtterDigital/SMARCH",
+    "keywords": [
+      "sma",
+      "architecture",
+      "agent-skills",
+      "claude-code"
+    ]
+  },
+  "marketplace": {
+    "name": "smarch-plugins",
+    "owner": {
+      "name": "B-EtterDigital"
+    },
+    "source": "./"
+  },
+  "skills": [
+    {
+      "name": "f5-ultravisionplan",
+      "bundle": true,
+      "reason": "Public ultra-granular planning skill requested for the Claude plugin bundle."
+    },
+    {
+      "name": "sma-agent-composer",
+      "bundle": false,
+      "reason": "Internal composition helper; not part of the requested public plugin skill set."
+    },
+    {
+      "name": "sma-course-builder",
+      "bundle": true,
+      "reason": "Public SMA wiki and course generation skill requested for the Claude plugin bundle."
+    },
+    {
+      "name": "sma-enforcer",
+      "bundle": true,
+      "reason": "Public SMA validation and enforcement skill requested for the Claude plugin bundle."
+    },
+    {
+      "name": "sma-gen3",
+      "bundle": true,
+      "reason": "Core SMA Gen3 operating skill requested for the Claude plugin bundle."
+    },
+    {
+      "name": "sma-token-backlog",
+      "bundle": false,
+      "reason": "Internal token-accounting helper; not part of the requested public plugin skill set."
+    },
+    {
+      "name": "sweetspot-frontend-fix",
+      "bundle": true,
+      "reason": "Public frontend design-excellence skill requested for the Claude plugin bundle."
+    },
+    {
+      "name": "sweetspot-moa",
+      "bundle": true,
+      "reason": "Public multi-agent orchestration skill requested for the Claude plugin bundle."
+    }
+  ]
+}
