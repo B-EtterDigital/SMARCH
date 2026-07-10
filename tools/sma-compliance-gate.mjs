@@ -92,8 +92,14 @@ async function buildContext() {
     return text;
   };
 
+  const applicationRoots = ['src', 'supabase', 'website', 'legal'].map((dir) => path.join(REPO_ROOT, dir));
+  const applicationFileCount = files.filter((file) => applicationRoots.some((dir) => file.startsWith(`${dir}${path.sep}`))).length;
+  const manifestCount = await countFiles(path.join(REPO_ROOT, 'builds'), (file) => file.endsWith('.build.sweetspot.json'));
+
   return {
     repoRoot: REPO_ROOT,
+    applicationFileCount,
+    manifestCount,
     fileExists: (rel) => existsSync(path.join(REPO_ROOT, rel)),
     readFile: (rel) => readCached(rel),
     hasScript: (name) => {
@@ -126,12 +132,36 @@ async function buildContext() {
   };
 }
 
+async function countFiles(dir, include) {
+  let count = 0;
+  if (!existsSync(dir)) return count;
+  for await (const file of walk(dir)) if (include(file)) count += 1;
+  return count;
+}
+
 const STATUS_ORDER = { missing: 0, partial: 1, covered: 2 };
 const ICON = { covered: '✅', partial: '🟡', missing: '❌' };
 
 async function main() {
-  const { COMPLIANCE_CONTROLS } = await import('./lib/compliance-controls.mjs');
   const ctx = await buildContext();
+  if (ctx.applicationFileCount === 0 && ctx.manifestCount === 0) {
+    const warning = 'nothing to check; run npm run scan to discover manifests, then rerun this gate';
+    if (JSON_OUT) {
+      console.log(JSON.stringify({
+        status: 'warn',
+        generatedFor: path.basename(REPO_ROOT),
+        warning,
+        summary: { total: 0, covered: 0, partial: 0, missing: 0, blockersMissing: 0, requiredUnmet: 0 },
+        controls: [],
+      }, null, 2));
+    } else {
+      console.log(`[compliance-gate] WARN — ${warning}`);
+    }
+    process.exitCode = 0;
+    return;
+  }
+
+  const { COMPLIANCE_CONTROLS } = await import('./lib/compliance-controls.mjs');
 
   /** @type {Array<{control: any, status: string, evidence?: string, note?: string}>} */
   const results = COMPLIANCE_CONTROLS.map((control) => {

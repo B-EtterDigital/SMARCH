@@ -49,3 +49,25 @@
 {"ts": "2026-07-10T16:47:49+00:00", "action": "complete", "id": "UV-DO-start-here", "detail": "npm run source:size:gate"}
 {"ts": "2026-07-10T16:47:51+00:00", "action": "complete", "id": "UV-DO-orientation-zero", "detail": "npm run source:size:gate"}
 {"ts": "2026-07-10T16:47:53+00:00", "action": "complete", "id": "UV-MC-skeptic-install-path-escape", "detail": "node tools/mcp/selftest.mjs"}
+{"ts": "2026-07-10T16:49:21+00:00", "action": "claim", "id": "UV-GR-global-query", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:22+00:00", "action": "claim", "id": "UV-CP-skeptic-sandbox-escape", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:22+00:00", "action": "claim", "id": "UV-GR-skeptic-union-namespace", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:23+00:00", "action": "claim", "id": "UV-GA-doc-lint-tool", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:24+00:00", "action": "claim", "id": "UV-GA-fresh-install-empty-state", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:24+00:00", "action": "claim", "id": "UV-DO-lesson-01-what-is-a-brick-draft", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:25+00:00", "action": "claim", "id": "UV-DO-lesson-02-your-first-scan-draft", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:25+00:00", "action": "claim", "id": "UV-DO-lesson-03-reading-the-brick-wall-draft", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:27+00:00", "action": "claim", "id": "UV-DO-lesson-04-manifests-explained-draft", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:27+00:00", "action": "claim", "id": "UV-DO-lesson-05-gates-what-blocks-and-why-draft", "agent": "codex-w5"}
+{"ts": "2026-07-10T16:49:29+00:00", "action": "claim", "id": "UV-DO-lesson-06-your-first-clone-draft", "agent": "codex-w5"}
+{"ts": "2026-07-10T17:11:03+00:00", "action": "complete", "id": "UV-DO-lesson-01-what-is-a-brick-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:11:11+00:00", "action": "complete", "id": "UV-DO-lesson-02-your-first-scan-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:11:20+00:00", "action": "complete", "id": "UV-DO-lesson-03-reading-the-brick-wall-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:11:28+00:00", "action": "complete", "id": "UV-DO-lesson-04-manifests-explained-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:11:38+00:00", "action": "complete", "id": "UV-DO-lesson-05-gates-what-blocks-and-why-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:11:53+00:00", "action": "complete", "id": "UV-DO-lesson-06-your-first-clone-draft", "detail": "node tools/evals/journeys/lessons.mjs"}
+{"ts": "2026-07-10T17:12:01+00:00", "action": "complete", "id": "UV-GR-global-query", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-10T17:12:05+00:00", "action": "complete", "id": "UV-CP-skeptic-sandbox-escape", "detail": "node tools/sma-brick-run.mjs --selftest"}
+{"ts": "2026-07-10T17:12:11+00:00", "action": "complete", "id": "UV-GR-skeptic-union-namespace", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-10T17:12:12+00:00", "action": "complete", "id": "UV-GA-doc-lint-tool", "detail": "node tools/sma-doc-lint.mjs --selftest"}
+{"ts": "2026-07-10T17:12:19+00:00", "action": "complete", "id": "UV-GA-fresh-install-empty-state", "detail": "npm run gate:all"}

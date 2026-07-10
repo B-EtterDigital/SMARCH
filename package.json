@@ -174,7 +174,8 @@
     "journey:quickstart": "node tools/evals/journeys/quickstart.mjs",
     "mcp:serve": "node tools/mcp/server.mjs",
     "types:gen": "node tools/lib/schema-types/generate.mjs",
-    "types:check": "node tools/lib/schema-types/generate.mjs --check"
+    "types:check": "node tools/lib/schema-types/generate.mjs --check",
+    "gate:docs": "node tools/sma-doc-lint.mjs"
   },
   "description": "SMARCH \u2014 Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
   "license": "Apache-2.0",

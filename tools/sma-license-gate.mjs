@@ -46,9 +46,17 @@ try {
 }
 
 function main() {
+  const builds = collectBuildManifests(BUILDS_DIR);
+  if (builds.length === 0 && !existsSync(LICENSE_LEDGER)) {
+    const report = emptyReport();
+    writeReport(report);
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    else printReport(report);
+    return;
+  }
+
   const ledger = loadLedger();
   const theftByBrick = loadTheft();
-  const builds = collectBuildManifests(BUILDS_DIR);
 
   const results = [];
   for (const buildPath of builds) {
@@ -86,6 +94,21 @@ function main() {
   }
 
   if (args.gate && status === 'failed') process.exit(4);
+}
+
+function emptyReport() {
+  return {
+    schema_version: '1.0.0',
+    generated_at: new Date().toISOString(),
+    status: 'warn',
+    warning: 'nothing to check; run npm run scan to discover manifests, then rerun this gate',
+    build_count: 0,
+    blocking_count: 0,
+    warning_count: 0,
+    theft_risk_count: 0,
+    builds: [],
+    theft_findings: [],
+  };
 }
 
 function evaluateBuild(buildPath, ledger, theftByBrick) {
@@ -221,6 +244,7 @@ function writeReport(report) {
 
 function printReport(report) {
   console.log(`SMA license-lattice gate: ${report.status}`);
+  if (report.warning) console.log(`WARN — ${report.warning}`);
   console.log(`builds: ${report.build_count} | blocking: ${report.blocking_count} | warnings: ${report.warning_count} | theft-risk: ${report.theft_risk_count}`);
   for (const b of report.builds) {
     const flag = b.ok ? 'OK  ' : 'FAIL';

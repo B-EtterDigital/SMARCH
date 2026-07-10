@@ -51,21 +51,21 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) { console.log(HELP); process.exit(0); }
   const manifests = await resolveManifests(opts);
-  if (manifests.length === 0) {
-    console.error("[scope-drift] no manifests to check");
-    process.exit(2);
-  }
 
   const reports = [];
   for (const m of manifests) reports.push(await driftOne(m, opts));
 
   const combined = {
     generated_at: new Date().toISOString(),
+    status: reports.length === 0 ? "warn" : "checked",
     manifests: reports.length,
     total_missing: reports.reduce((a, r) => a + r.summary.missing, 0),
     total_blocking: reports.reduce((a, r) => a + (r.summary.blocking || 0), 0),
     total_warning: reports.reduce((a, r) => a + (r.summary.warning || 0), 0),
     total_extra: reports.reduce((a, r) => a + r.summary.extra, 0),
+    warnings: reports.length === 0
+      ? ["nothing to check; run npm run scan to discover manifests, then rerun this gate"]
+      : [],
     reports,
   };
 
@@ -76,6 +76,10 @@ async function main() {
     process.stdout.write(JSON.stringify(combined, null, 2) + "\n");
   } else {
     printSummary(combined);
+  }
+
+  if (combined.status === "warn" && (opts.report || opts.json)) {
+    console.error("[scope-drift] WARN — nothing to check; run npm run scan to discover manifests, then rerun this gate");
   }
 
   if (combined.total_blocking > 0 && !opts.warnOnly) process.exit(1);
@@ -296,6 +300,10 @@ async function resolveProjectRoot(manifest, _projectsRoot) {
 }
 
 function printSummary(combined) {
+  if (combined.status === "warn") {
+    console.log("[scope-drift] WARN — nothing to check; run npm run scan to discover manifests, then rerun this gate");
+    return;
+  }
   const verdict = combined.total_blocking === 0 ? "PASS" : "DRIFT";
   console.log(`[scope-drift] ${verdict} — ${combined.manifests} manifest(s), ${combined.total_blocking} blocking, ${combined.total_warning} warning`);
   for (const r of combined.reports) {

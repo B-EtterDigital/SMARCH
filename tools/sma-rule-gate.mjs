@@ -143,10 +143,6 @@ async function main() {
   if (opts.help) { console.log(HELP); process.exit(0); }
 
   const manifests = await resolveManifests(opts);
-  if (manifests.length === 0) {
-    console.error("[rule-gate] no manifests to check");
-    process.exit(2);
-  }
 
   const reports = [];
   for (const manifestPath of manifests) {
@@ -156,9 +152,13 @@ async function main() {
 
   const combined = {
     generated_at: new Date().toISOString(),
+    status: reports.length === 0 ? "warn" : "checked",
     manifests: reports.length,
     blocking: reports.reduce((a, r) => a + r.blockingFindings, 0),
     warning: reports.reduce((a, r) => a + r.warningFindings, 0),
+    warnings: reports.length === 0
+      ? ["nothing to check; run npm run scan to discover manifests, then rerun this gate"]
+      : [],
     reports,
   };
 
@@ -169,6 +169,10 @@ async function main() {
     process.stdout.write(JSON.stringify(combined, null, 2) + "\n");
   } else {
     printSummary(combined);
+  }
+
+  if (combined.status === "warn" && (opts.report || opts.json)) {
+    console.error("[rule-gate] WARN — nothing to check; run npm run scan to discover manifests, then rerun this gate");
   }
 
   if (combined.blocking > 0 && !opts.warnOnly) process.exit(1);
@@ -311,6 +315,10 @@ function isInJsdocExample(lines, i) {
 }
 
 function printSummary(combined) {
+  if (combined.status === "warn") {
+    console.log("[rule-gate] WARN — nothing to check; run npm run scan to discover manifests, then rerun this gate");
+    return;
+  }
   const verdict = combined.blocking === 0 ? "PASS" : "BLOCK";
   console.log(`[rule-gate] ${verdict} — ${combined.manifests} manifest(s), ${combined.blocking} blocking, ${combined.warning} warning`);
   for (const r of combined.reports) {

@@ -10,6 +10,9 @@ The fixture runner enforces these rules mechanically:
 6. Only source files below `src/` are scanned for static imports, re-exports, dynamic imports, and CommonJS `require()` calls.
 7. Each fixture runs in a child Node process with the capsule as its working directory and a 30-second timeout.
 8. The child environment is cleared. Only variables named by `security.env.variables` are copied from the runner environment.
-9. Fixture outputs must be JSON-serializable and deeply equal `expected_outputs`; every fixture emits one JSON `PASS` or `FAIL` result.
+9. Network access is denied by default. `--allow-net` is the explicit per-run opt-in.
+10. On Node runtimes with the permission model, filesystem reads are jailed to the capsule directory and filesystem writes are denied. Capsule trees containing symbolic links are rejected so links cannot escape the jail.
+11. On older Node runtimes without compatible permission flags, the runner warns that filesystem enforcement is limited to import-specifier checks, environment clearing, default `fetch` denial, and symlink rejection. That fallback is not an OS sandbox.
+12. Fixture outputs must be JSON-serializable and deeply equal `expected_outputs`; every fixture emits one JSON `PASS` or `FAIL` result.
 
 Keep the TypeScript erasable: types may be stripped, but runtime TypeScript features that require transformation are outside this tier.

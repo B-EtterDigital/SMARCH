@@ -1,0 +1,77 @@
+# Your first [scan](../GLOSSARY.md#registry)
+
+## Why this matters
+
+You can inspect one brick by opening one manifest, but a group of projects can
+hold hundreds of them. A scan finds those records for you and counts problems
+that deserve a closer look. You can learn what exists before choosing where to
+work.
+
+*Made with love for creators of all kind.*
+
+## The idea
+
+A scan searches for [manifests](../GLOSSARY.md#manifest) without changing them.
+The scanner collects what it finds in a
+[registry](../GLOSSARY.md#registry), a searchable inventory of
+[bricks](../GLOSSARY.md#brick) and their evidence. A warning is a note worth
+checking; it does not stop this practice
+scan from finishing.
+
+Picture a librarian walking through three small rooms. The librarian reads
+each book label, writes one catalog entry per book, and notes any damaged
+covers. The scan does the same kind of inventory work for code.
+
+## Try it
+
+Run this block from the SMARCH folder. It regenerates the practice projects,
+scans their manifests, and writes the registry to a temporary folder so your
+working files stay tidy.
+
+```bash
+SMARCH_DIR="${SMARCH_DIR:-$PWD}"
+SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
+SMARCH_LESSON_TMP="${SMARCH_LESSON_TMP:-$(mktemp -d)}"
+SMARCH_FIXTURE_REGISTRY="$SMARCH_LESSON_TMP/lesson-02.registry.json"
+export SMARCH_FIXTURE_REGISTRY
+cd "$SMARCH_DIR"
+
+npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
+node tools/sma-scan.mjs \
+  --root "$SMARCH_FIXTURE_PORTFOLIO" \
+  --out "$SMARCH_FIXTURE_REGISTRY"
+
+node --input-type=module <<'NODE'
+import fs from "node:fs";
+
+const registry = JSON.parse(fs.readFileSync(process.env.SMARCH_FIXTURE_REGISTRY, "utf8"));
+const projects = new Set(registry.bricks.map((brick) => brick.project));
+console.log(`Projects: ${projects.size}`);
+console.log(`Bricks: ${registry.bricks.length}`);
+console.log(`Warnings: ${registry.validation_warning_count}`);
+NODE
+```
+
+Expected output includes:
+
+```text
+SMA scan complete: 40 manifest brick(s), ... 3 warning(s) ...
+Wrote .../lesson-02.registry.json
+Projects: 3
+Bricks: 40
+Warnings: 3
+```
+
+The practice projects include three planted warnings. They give later lessons
+something real to investigate, so their presence means the exercise worked.
+
+## What you just did
+
+You asked the scanner to search three practice projects. It found 40 brick
+manifests, kept their details in one registry file, and reported three warnings
+without changing the project code.
+
+## Where to go next
+
+Continue to [03: Reading the brick wall](03-reading-the-brick-wall.md). You will
+turn the registry into a visual catalog and learn what its first numbers mean.

@@ -1,0 +1,197 @@
+#!/usr/bin/env node
+
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(SCRIPT_DIR, "../../..");
+const INTRO_DIR = path.join(REPO_ROOT, "docs", "intro");
+const BLOCK_TIMEOUT_MS = 5 * 60 * 1000;
+const FAILURE_OUTPUT_LIMIT = 4_000;
+
+function usage() {
+  console.log(`SMARCH intro lesson journey
+
+Usage:
+  node tools/evals/journeys/lessons.mjs
+  node tools/evals/journeys/lessons.mjs --lesson 01
+  node tools/evals/journeys/lessons.mjs --lessons 01,02,03
+
+The runner executes fenced bash blocks in docs/intro/NN-*.md. Use --lesson
+for one lesson or --lessons for a comma-separated group. With no filter, the
+runner checks every numbered lesson that contains a bash block.
+`);
+}
+
+function addSelectors(target, value) {
+  for (const selector of value.split(",")) {
+    const normalized = selector.trim();
+    if (normalized) target.add(/^\d+$/.test(normalized) ? normalized.padStart(2, "0") : normalized);
+  }
+}
+
+function parseArgs(argv) {
+  const selectors = new Set();
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    const next = argv[index + 1];
+
+    if ((arg === "--lesson" || arg === "--lessons") && next) {
+      addSelectors(selectors, next);
+      index += 1;
+    } else if (arg === "--help" || arg === "-h") {
+      usage();
+      process.exit(0);
+    } else {
+      throw new Error(`Unknown or incomplete argument: ${arg}`);
+    }
+  }
+
+  return selectors;
+}
+
+function parseBashBlocks(markdown) {
+  const blocks = [];
+  const pattern = /```bash[ \t]*\r?\n([\s\S]*?)\r?\n```/g;
+  let match;
+
+  while ((match = pattern.exec(markdown)) !== null) {
+    const line = markdown.slice(0, match.index).split(/\r?\n/).length;
+    blocks.push({ code: match[1], line });
+  }
+
+  return blocks;
+}
+
+function matchesSelector(filename, selector) {
+  const basename = filename.replace(/\.md$/, "");
+  return basename === selector || basename.startsWith(`${selector}-`);
+}
+
+async function findLessons(selectors) {
+  const entries = (await fs.readdir(INTRO_DIR))
+    .filter((name) => /^\d\d-.*\.md$/.test(name))
+    .sort();
+
+  if (selectors.size === 0) return entries;
+
+  const selected = [];
+  for (const selector of selectors) {
+    const matches = entries.filter((name) => matchesSelector(name, selector));
+    if (matches.length === 0) {
+      throw new Error(`No intro lesson matches: ${selector}`);
+    }
+    selected.push(...matches);
+  }
+
+  return [...new Set(selected)].sort();
+}
+
+function tail(value) {
+  const text = String(value || "").trim();
+  return text.length <= FAILURE_OUTPUT_LIMIT
+    ? text
+    : text.slice(text.length - FAILURE_OUTPUT_LIMIT);
+}
+
+function executeBlock({ block, filename, index, total, lessonTemp, env }) {
+  const result = spawnSync(
+    "bash",
+    ["-c", `set -euo pipefail\n${block.code}`],
+    {
+      cwd: REPO_ROOT,
+      env: {
+        ...env,
+        SMARCH_LESSON_TMP: lessonTemp,
+        SMARCH_FIXTURE_PORTFOLIO: path.join(lessonTemp, "portfolio"),
+        SMARCH_CLONE_TARGET: path.join(lessonTemp, "first-clone")
+      },
+      encoding: "utf8",
+      timeout: BLOCK_TIMEOUT_MS,
+      maxBuffer: 16 * 1024 * 1024
+    }
+  );
+
+  const label = `${filename}:${block.line} block ${index + 1}/${total}`;
+  if (result.status === 0 && !result.error) {
+    console.log(`PASS ${label}`);
+    return true;
+  }
+
+  console.error(`FAIL ${label}`);
+  if (result.error) console.error(result.error.message);
+  const output = tail([result.stdout, result.stderr].filter(Boolean).join("\n"));
+  if (output) console.error(output);
+  return false;
+}
+
+async function runJourney(selectors) {
+  const filenames = await findLessons(selectors);
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "smarch-lessons-"));
+  const env = {
+    ...process.env,
+    CI: "1",
+    NO_COLOR: "1",
+    npm_config_audit: "false",
+    npm_config_fund: "false",
+    SMARCH_REPO: REPO_ROOT,
+    SMARCH_DIR: REPO_ROOT
+  };
+  let failures = 0;
+  let executedBlocks = 0;
+
+  try {
+    for (const filename of filenames) {
+      const markdown = await fs.readFile(path.join(INTRO_DIR, filename), "utf8");
+      const blocks = parseBashBlocks(markdown);
+
+      if (blocks.length === 0) {
+        if (selectors.size > 0) {
+          console.error(`FAIL ${filename} contains no fenced bash blocks`);
+          failures += 1;
+        } else {
+          console.log(`SKIP ${filename} contains no fenced bash blocks`);
+        }
+        continue;
+      }
+
+      const lessonTemp = path.join(tempRoot, filename.replace(/\.md$/, ""));
+      await fs.mkdir(lessonTemp, { recursive: true });
+      for (let index = 0; index < blocks.length; index += 1) {
+        executedBlocks += 1;
+        if (!executeBlock({
+          block: blocks[index],
+          filename,
+          index,
+          total: blocks.length,
+          lessonTemp,
+          env
+        })) {
+          failures += 1;
+        }
+      }
+    }
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+
+  if (failures > 0) {
+    console.error(`Lesson journey failed: ${failures} failure(s), ${executedBlocks} block(s) run.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`Lesson journey passed: ${filenames.length} lesson(s), ${executedBlocks} block(s).`);
+}
+
+try {
+  const selectors = parseArgs(process.argv.slice(2));
+  await runJourney(selectors);
+} catch (error) {
+  console.error(`Lesson journey error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exitCode = 1;
+}

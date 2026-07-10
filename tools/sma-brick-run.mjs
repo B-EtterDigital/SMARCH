@@ -2,13 +2,15 @@
 
 import { spawn } from "node:child_process";
 import { isDeepStrictEqual } from "node:util";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 const FIXTURE_TIMEOUT_MS = 30_000;
 const RESULT_MARKER = "__SMA_CAPSULE_RESULT__";
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+let isolationFallbackWarned = false;
 
 class CapsuleError extends Error {
   constructor(code, message) {
@@ -25,23 +27,25 @@ async function main() {
     return;
   }
 
-  const results = await runCapsule(options.capsulePath || process.cwd());
+  const results = await runCapsule(options.capsulePath || process.cwd(), { allowNet: options.allowNet });
   if (results.some((result) => result.status === "FAIL")) process.exitCode = 1;
 }
 
 function parseArgs(args) {
-  const options = { selftest: false, capsulePath: "" };
+  const options = { allowNet: false, selftest: false, capsulePath: "" };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--selftest") {
       options.selftest = true;
+    } else if (arg === "--allow-net") {
+      options.allowNet = true;
     } else if (arg === "--capsule") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) throw new CapsuleError("USAGE", "--capsule requires a directory path");
       options.capsulePath = value;
       index += 1;
     } else if (arg === "--help" || arg === "-h") {
-      console.log("Usage: node tools/sma-brick-run.mjs [--capsule] <capsule-directory> | --selftest");
+      console.log("Usage: node tools/sma-brick-run.mjs [--allow-net] [--capsule] <capsule-directory> | --selftest");
       process.exit(0);
     } else if (arg.startsWith("--")) {
       throw new CapsuleError("USAGE", `Unknown option: ${arg}`);
@@ -66,7 +70,9 @@ async function runCapsule(capsulePath, options = {}) {
   for (const fixture of fixtures) {
     let result;
     try {
-      const actual = await executeFixture(root, fixture.inputs, env, options.timeoutMs || FIXTURE_TIMEOUT_MS);
+      const actual = await executeFixture(root, fixture.inputs, env, options.timeoutMs || FIXTURE_TIMEOUT_MS, {
+        allowNet: options.allowNet === true,
+      });
       const passed = isDeepStrictEqual(actual, fixture.expected_outputs);
       result = passed
         ? { fixture: fixture.name, status: "PASS" }
@@ -119,6 +125,7 @@ function validateFixtures(document) {
 }
 
 async function enforceConstraints(root, manifest) {
+  await rejectSymbolicLinks(root, root);
   const sourceRoot = path.join(root, "src");
   const entryPath = path.join(sourceRoot, "index.ts");
   try {
@@ -139,6 +146,26 @@ async function enforceConstraints(root, manifest) {
     for (const specifier of importSpecifiers(source)) {
       validateSpecifier({ root, sourceRoot, filePath, specifier, allowedPorts });
     }
+  }
+}
+
+async function rejectSymbolicLinks(directory, root) {
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    throw new CapsuleError("CONSTRAINT_VIOLATION", `Cannot inspect capsule directory ${directory}: ${errorMessage(error)}`);
+  }
+  for (const entry of entries) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isSymbolicLink()) {
+      const relativePath = path.relative(root, entryPath).replaceAll(path.sep, "/");
+      throw new CapsuleError(
+        "CONSTRAINT_VIOLATION",
+        `${relativePath} is a symbolic link; capsule trees must not contain symlinks because they can escape the cwd jail`,
+      );
+    }
+    if (entry.isDirectory()) await rejectSymbolicLinks(entryPath, root);
   }
 }
 
@@ -211,9 +238,14 @@ function childEnvironment(manifest) {
   return env;
 }
 
-function executeFixture(root, inputs, env, timeoutMs) {
+function executeFixture(root, inputs, env, timeoutMs, options = {}) {
   const childProgram = `
 const marker = ${JSON.stringify(RESULT_MARKER)};
+const allowNet = ${JSON.stringify(options.allowNet === true)};
+if (!allowNet) {
+  const denyNetwork = () => Promise.reject(Object.assign(new Error("Capsule network access is disabled; rerun with --allow-net to opt in"), { code: "ERR_ACCESS_DENIED" }));
+  Object.defineProperty(globalThis, "fetch", { value: denyNetwork, configurable: false, writable: false });
+}
 const chunks = [];
 process.stdin.setEncoding("utf8");
 for await (const chunk of process.stdin) chunks.push(chunk);
@@ -231,7 +263,12 @@ try {
 }`;
 
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--input-type=module", "--eval", childProgram], {
+    const child = spawn(process.execPath, [
+      ...runtimeIsolationArguments(root, options.allowNet === true),
+      "--input-type=module",
+      "--eval",
+      childProgram,
+    ], {
       cwd: root,
       env,
       stdio: ["pipe", "pipe", "pipe"],
@@ -285,8 +322,42 @@ try {
   });
 }
 
+function runtimeIsolationArguments(root, allowNet) {
+  const allowedFlags = process.allowedNodeEnvironmentFlags;
+  const permissionFlag = allowedFlags?.has("--permission")
+    ? "--permission"
+    : allowedFlags?.has("--experimental-permission")
+      ? "--experimental-permission"
+      : "";
+
+  if (!permissionFlag) {
+    warnIsolationFallback("this Node runtime has no permission model; filesystem isolation is limited to source-specifier checks and symlink rejection");
+    return [];
+  }
+
+  const args = [
+    permissionFlag,
+    `--allow-fs-read=${root}`,
+    `--allow-fs-read=${path.join(root, "*")}`,
+  ];
+  if (allowNet) {
+    if (allowedFlags.has("--allow-net")) args.push("--allow-net");
+    else warnIsolationFallback("this Node permission model has no --allow-net flag; network opt-in depends on the runtime's legacy behavior");
+  } else if (!allowedFlags.has("--allow-net")) {
+    warnIsolationFallback("this Node permission model cannot deny all network APIs; global fetch is disabled, but declared low-level network ports remain a documented fallback boundary");
+  }
+  return args;
+}
+
+function warnIsolationFallback(message) {
+  if (isolationFallbackWarned) return;
+  isolationFallbackWarned = true;
+  process.stderr.write(`sma brick-run isolation warning: ${message}\n`);
+}
+
 async function runSelftest() {
-  const root = await mkdtemp(path.join(tmpdir(), "sma-capsule-selftest-"));
+  const workspace = await mkdtemp(path.join(tmpdir(), "sma-capsule-selftest-"));
+  const root = path.join(workspace, "capsule");
   const previousAllowed = process.env.CAPSULE_ALLOWED;
   const previousSecret = process.env.CAPSULE_SECRET;
   try {
@@ -334,15 +405,134 @@ export default function run(inputs: { value: number }) {
       "undeclared import did not produce an actionable constraint error",
     );
 
+    const escapeChecks = await runEscapeSelftests({ root, workspace });
+    const escaped = Object.entries(escapeChecks)
+      .filter(([, blocked]) => !blocked)
+      .map(([name]) => name);
+    assertSelftest(escaped.length === 0, `sandbox escape attempts unexpectedly succeeded: ${escaped.join(", ")}`);
+
     printResult({
       fixture: "--selftest",
       status: "PASS",
-      checks: ["fixture-pass", "fixture-fail", "declared-env-only", "declared-port", "constraint-rejection"],
+      checks: [
+        "fixture-pass",
+        "fixture-fail",
+        "declared-port",
+        "constraint-rejection",
+        "environment-read-denied",
+        "network-denied-by-default",
+        "network-allow-opt-in",
+        "parent-write-denied",
+        "symlink-write-denied",
+      ],
     });
   } finally {
     restoreEnvironment("CAPSULE_ALLOWED", previousAllowed);
     restoreEnvironment("CAPSULE_SECRET", previousSecret);
-    await rm(root, { recursive: true, force: true });
+    await rm(workspace, { recursive: true, force: true });
+  }
+}
+
+async function runEscapeSelftests({ root, workspace }) {
+  const checks = {};
+
+  await writeSelftestCapsule(root, {
+    source: `export default function run() { return { leaked: process.env.CAPSULE_SECRET ?? null }; }\n`,
+    expectedOutputs: { leaked: "must-not-leak" },
+  });
+  checks["environment-read"] = await escapeAttemptFailed(root);
+
+  const network = await startSelftestServer();
+  try {
+    await writeSelftestCapsule(root, {
+      source: `export default async function run(inputs: { url: string }) { const response = await fetch(inputs.url); return { body: await response.text() }; }\n`,
+      inputs: { url: network.url },
+      expectedOutputs: { body: "network-escaped" },
+    });
+    checks.fetch = await escapeAttemptFailed(root);
+    assertSelftest(network.requests() === 0, "network-denied fixture reached the local server");
+    const allowedNetwork = await runCapsule(root, { allowNet: true, emit: false });
+    assertSelftest(allowedNetwork[0]?.status === "PASS", "--allow-net did not opt in to network access");
+    assertSelftest(network.requests() === 1, "--allow-net fixture did not reach the local server exactly once");
+  } finally {
+    await network.close();
+  }
+
+  const parentEscape = path.join(workspace, "parent-escape.txt");
+  await writeSelftestCapsule(root, {
+    ports: ["node:fs/promises"],
+    source: `import { writeFile } from "node:fs/promises"; export default async function run() { await writeFile("../parent-escape.txt", "escaped"); return { wrote: true }; }\n`,
+    expectedOutputs: { wrote: true },
+  });
+  checks["parent-write"] = await escapeAttemptFailed(root);
+  assertSelftest(!await pathExists(parentEscape), "parent write created a file outside the capsule cwd");
+
+  const outside = path.join(workspace, "outside");
+  await mkdir(outside, { recursive: true });
+  await symlink(outside, path.join(root, "escape-link"), "dir");
+  await writeSelftestCapsule(root, {
+    ports: ["node:fs/promises"],
+    source: `import { writeFile } from "node:fs/promises"; export default async function run() { await writeFile("./escape-link/symlink-escape.txt", "escaped"); return { wrote: true }; }\n`,
+    expectedOutputs: { wrote: true },
+  });
+  checks["symlink-write"] = await escapeAttemptFailed(root);
+  assertSelftest(!await pathExists(path.join(outside, "symlink-escape.txt")), "symlink write created a file outside the capsule cwd");
+
+  return checks;
+}
+
+async function writeSelftestCapsule(root, { source, expectedOutputs, inputs = {}, ports = [] }) {
+  await writeFile(path.join(root, "module.sweetspot.json"), JSON.stringify({
+    interfaces: { ports },
+    security: { env: { variables: [{ name: "CAPSULE_ALLOWED" }] } },
+  }));
+  await writeFile(path.join(root, "src", "index.ts"), source);
+  await writeFile(path.join(root, "fixtures", "run.json"), JSON.stringify({
+    schema_version: "1.0.0",
+    fixtures: [{ name: "escape attempt", inputs, expected_outputs: expectedOutputs }],
+  }));
+}
+
+async function escapeAttemptFailed(root) {
+  try {
+    const results = await runCapsule(root, { emit: false });
+    return results[0]?.status === "FAIL";
+  } catch {
+    return true;
+  }
+}
+
+async function startSelftestServer() {
+  let requestCount = 0;
+  const sockets = new Set();
+  const server = createServer((socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+    requestCount += 1;
+    socket.end("HTTP/1.1 200 OK\r\nContent-Length: 15\r\nConnection: close\r\n\r\nnetwork-escaped");
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") throw new CapsuleError("SELFTEST", "Could not determine local test server address");
+  return {
+    url: `http://127.0.0.1:${address.port}/`,
+    requests: () => requestCount,
+    close: () => new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+      for (const socket of sockets) socket.destroy();
+    }),
+  };
+}
+
+async function pathExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
   }
 }
 

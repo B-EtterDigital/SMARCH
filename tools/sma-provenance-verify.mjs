@@ -46,14 +46,21 @@ try {
 }
 
 function main() {
+  const registryPath = resolve(SMA_ROOT, args.registry || DEFAULT_REGISTRY);
+  const discoveredBricks = loadRegistry(registryPath);
   if (!existsSync(PROV_LEDGER)) {
+    if (discoveredBricks.size === 0) {
+      const report = emptyReport();
+      if (args.json) console.log(JSON.stringify(report, null, 2));
+      else printReport(report);
+      return;
+    }
     throw new Error(`provenance ledger not found: ${relative(SMA_ROOT, PROV_LEDGER)}. Run: node tools/sma-provenance-ledger.mjs`);
   }
   const ledger = JSON.parse(readFileSync(PROV_LEDGER, 'utf8'));
   const fpMap = loadFingerprints();
   const publicPem = ledger.signed ? loadPublicKey(ledger.signing_key_id) : null;
-  const registryPath = resolve(SMA_ROOT, args.registry || DEFAULT_REGISTRY);
-  const brickMap = (args.recheckSource || args.coverage) ? loadRegistry(registryPath) : null;
+  const brickMap = (args.recheckSource || args.coverage) ? discoveredBricks : null;
 
   const failures = [];
   let signatureChecked = 0;
@@ -178,6 +185,22 @@ function main() {
   if (args.gate && status === 'failed') process.exit(4);
 }
 
+function emptyReport() {
+  return {
+    status: 'warn',
+    warning: 'nothing to check; run npm run scan to discover manifests, then rerun this gate',
+    total: 0,
+    verified: 0,
+    failed: 0,
+    signed: false,
+    signature_checked: 0,
+    source_rechecked: 0,
+    coverage: { registry_bricks: 0, ledgered: 0, missing: 0, missing_sample: [] },
+    trust_notes: [],
+    failures: [],
+  };
+}
+
 function recheckSource(brickId, brickMap, seal) {
   const brick = brickMap.get(brickId);
   if (!brick?.projectAbs) return null;
@@ -224,6 +247,7 @@ function loadPublicKey(keyId) {
 
 function printReport(report) {
   console.log(`SMA provenance-verify: ${report.status}`);
+  if (report.warning) console.log(`  WARN — ${report.warning}`);
   console.log(`  seals: ${report.verified}/${report.total} verified` + (report.failed ? `, ${report.failed} FAILED` : ''));
   console.log(`  signed: ${report.signed ? `yes (${report.signature_checked} signatures checked)` : 'no (unsigned hash-chain)'}`);
   if (report.coverage) {

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "mode": "full",
   "budget": null,
-  "updated": "2026-07-10T15:55:00Z",
+  "updated": "2026-07-11T00:20:00Z",
   "orchestration": "SMOA (Fable 5 planner/arbiter/gatekeeper; codex gpt-5.6-sol xhigh executors, cap 10)",
   "lease": "lease-1783690386828-381572d8 (project sma, brick ultravision-plan)",
   "sma_spec_resolution": "no sma.gen3.json in SMARCH; resolved via $sma-gen3 skill + bundled references/sma-gen3-spec.md; SMARCH is itself the control plane (project_id sma)",
@@ -57,9 +57,10 @@
     "P8.5": {
       "status": "in-progress",
       "clean_rounds": {
-        "group1-ci-gates-sync-schemas-coord-prov": 1
+        "group1": 1,
+        "group1-r2-partial": "ci+schemas clean; gates/sync/coord/prov new findings"
       },
-      "notes": "round 1: 12 real findings converted to tasks (2 blockers: scan fail-open, untrusted submissions); groups 2+3 need a clean round 2 after fixes"
+      "notes": "r1: 12 findings\u2192tasks (10 fixed or in flight). r2 g1: 5 findings\u2192tasks incl. lease-atomicity blocker; ci+schemas clean. review-w4: 4 findings\u2192tasks (sandbox honesty critical)."
     },
     "P9": {
       "status": "done",

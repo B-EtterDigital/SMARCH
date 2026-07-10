@@ -6,7 +6,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
 import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery, substringIdfHits } from "./lib/graph-embeddings.mjs";
+import { queryGlobalGraph, selftestGlobalQuery } from "./lib/graph-global.mjs";
 import { sourceFreshness } from "./lib/graph-staleness.mjs";
+import { mergeNamespacedGraphs, namespaceGraph, resolveGraphNodeInput } from "./lib/graph-union.mjs";
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRegistry = path.join(smaRoot, "registry", "global-modules.generated.json");
@@ -90,6 +92,9 @@ function parseArgs(argv) {
     } else if (arg === "--as" && next) {
       options.as = next;
       i += 1;
+    } else if (arg === "--tags" && next) {
+      options.tags = next;
+      i += 1;
     } else if (arg === "--budget" && next) {
       options.budget = next;
       i += 1;
@@ -118,8 +123,9 @@ Usage:
   node tools/sma-graphify.mjs query [--project <id>|--project-root <path>] [--module <id-or-name>] [--budget 1500] [--no-semantic-rank] -- "question"
   node tools/sma-graphify.mjs path [--project <id>|--project-root <path>] [--module <id-or-name>] -- "A" "B"
   node tools/sma-graphify.mjs explain [--project <id>|--project-root <path>] [--module <id-or-name>] -- "Node"
-  node tools/sma-graphify.mjs global-list
-  node tools/sma-graphify.mjs global-path
+  node tools/sma-graphify.mjs global list
+  node tools/sma-graphify.mjs global path
+  node tools/sma-graphify.mjs global query "question" [--tags a,b] [--budget N]
   node tools/sma-graphify.mjs selftest
 
 Project lookup reads registry/global-modules.generated.json plus the merged portfolio registry by default.
@@ -1318,7 +1324,7 @@ function commandRefresh(options) {
     if (preflightReason) {
       console.log(`WARN graphify global add skipped: ${preflightReason}`);
     } else {
-      const globalResult = runGraphify(["global", "add", refreshed.graphPath, "--as", refreshed.projectTag], {
+      const globalResult = runGlobalGraphAdd(refreshed.graphPath, refreshed.projectTag, {
         ...options,
         stdio: "pipe",
       });
@@ -1383,8 +1389,9 @@ function commandRefreshModules(options) {
       globalSkipped += 1;
       return;
     }
-    const globalResult = runGraphify(
-      ["global", "add", refreshed.graphPath, "--as", refreshed.projectTag],
+    const globalResult = runGlobalGraphAdd(
+      refreshed.graphPath,
+      refreshed.projectTag,
       { ...options, stdio: options.quiet ? "pipe" : "inherit" },
     );
     if (globalResult.status === 0) return;
@@ -1502,35 +1509,15 @@ function commandRefreshModules(options) {
   return commandCheckModules({ ...options, strict: false, projectRoot });
 }
 
-function graphArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function graphNodes(graph) {
-  return graphArray(graph.nodes ?? graph.elements?.nodes);
-}
-
-function graphEdges(graph) {
-  return graphArray(graph.edges ?? graph.links ?? graph.elements?.edges);
-}
-
-function graphHyperedges(graph) {
-  return graphArray(graph.hyperedges);
-}
-
-function edgeKey(edge) {
-  return [
-    edge.source,
-    edge.target,
-    edge.relation,
-    edge.context,
-    edge.source_file,
-    edge.source_location,
-  ].map((value) => String(value ?? "")).join("\0");
-}
-
-function hyperedgeKey(edge) {
-  return JSON.stringify(edge);
+function runGlobalGraphAdd(graphPath, tag, options) {
+  const unionPath = path.join(path.dirname(graphPath), `.sma-global-union-${slug(tag)}.json`);
+  const graph = namespaceGraph(readJson(graphPath), tag);
+  writeFileSync(unionPath, JSON.stringify(graph, null, 2) + "\n");
+  try {
+    return runGraphify(["global", "add", unionPath, "--as", tag], options);
+  } finally {
+    rmSync(unionPath, { force: true });
+  }
 }
 
 function commandProjectFromModules(options) {
@@ -1551,29 +1538,13 @@ function commandProjectFromModules(options) {
     throw new Error(`No ready module graphs found for ${projectRoot}`);
   }
 
-  const nodes = new Map();
-  const edges = new Map();
-  const hyperedges = new Map();
-  let inputTokens = 0;
-  let outputTokens = 0;
+  const graphEntries = [];
   let readFailures = 0;
 
   for (const status of readyStatuses) {
     try {
       const graph = readJson(status.graphPath);
-      for (const node of graphNodes(graph)) {
-        if (!node?.id) continue;
-        nodes.set(String(node.id), node);
-      }
-      for (const edge of graphEdges(graph)) {
-        if (!edge?.source || !edge?.target) continue;
-        edges.set(edgeKey(edge), edge);
-      }
-      for (const edge of graphHyperedges(graph)) {
-        hyperedges.set(hyperedgeKey(edge), edge);
-      }
-      inputTokens += Number(graph.input_tokens || 0);
-      outputTokens += Number(graph.output_tokens || 0);
+      graphEntries.push({ graph, namespace: status.projectTag });
     } catch (err) {
       readFailures += 1;
       console.log(`WARN could not read module graph ${status.graphPath}: ${err.message}`);
@@ -1586,12 +1557,13 @@ function commandProjectFromModules(options) {
   mkdirSync(graphRoot, { recursive: true });
 
   const statusSummary = moduleGraphStatus(options);
+  const union = mergeNamespacedGraphs(graphEntries);
   const merged = {
-    nodes: [...nodes.values()],
-    edges: [...edges.values()],
-    hyperedges: [...hyperedges.values()],
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
+    nodes: union.nodes,
+    edges: union.edges,
+    hyperedges: union.hyperedges,
+    input_tokens: union.inputTokens,
+    output_tokens: union.outputTokens,
     metadata: {
       sma_status: "project_from_module_graphs",
       project: options.project || path.basename(projectRoot),
@@ -1616,22 +1588,23 @@ function commandProjectFromModules(options) {
     `Module graphs ready: ${statusSummary.moduleCount - statusSummary.missingCount}/${statusSummary.moduleCount}`,
     `Known empty graphs: ${statusSummary.knownEmptyCount}`,
     `Missing targets: ${statusSummary.missingTargetCount}`,
-    `Nodes: ${nodes.size}`,
-    `Edges: ${edges.size}`,
-    `Hyperedges: ${hyperedges.size}`,
+    `Nodes: ${union.nodes.length}`,
+    `Edges: ${union.edges.length}`,
+    `Hyperedges: ${union.hyperedges.length}`,
     "",
     "Generated by the SMA Graphify bridge from existing local module graphs. This path does not call external LLM APIs.",
   ].join("\n") + "\n");
 
-  console.log(`project graph from modules: ${nodes.size} nodes, ${edges.size} edges, ${readyStatuses.length - readFailures} module graphs`);
+  console.log(`project graph from modules: ${union.nodes.length} nodes, ${union.edges.length} edges, ${readyStatuses.length - readFailures} module graphs`);
 
   if (options.global) {
     const preflightReason = graphifyGlobalAddPreflightReason();
     if (preflightReason) {
       console.log(`WARN graphify global add skipped: ${preflightReason}`);
     } else {
-      const globalResult = runGraphify(
-        ["global", "add", graphPath, "--as", projectTag(options, projectRoot)],
+      const globalResult = runGlobalGraphAdd(
+        graphPath,
+        projectTag(options, projectRoot),
         { ...options, stdio: options.quiet ? "pipe" : "inherit" },
       );
       if (globalResult.status !== 0) {
@@ -1672,7 +1645,10 @@ async function commandQuery(options) {
 function commandPath(options) {
   const status = requireGraph(options);
   if (options.rest.length < 2) throw new Error("path requires two node labels after --");
-  const result = runGraphify(["path", options.rest[0], options.rest[1], "--graph", status.graphPath]);
+  const graph = readJson(status.graphPath);
+  const source = resolveGraphNodeInput(graph, options.rest[0]);
+  const target = resolveGraphNodeInput(graph, options.rest[1]);
+  const result = runGraphify(["path", source, target, "--graph", status.graphPath]);
   return result.status;
 }
 
@@ -1680,7 +1656,8 @@ function commandExplain(options) {
   const status = requireGraph(options);
   const label = options.rest.join(" ").trim();
   if (!label) throw new Error("explain requires a node label after --");
-  const result = runGraphify(["explain", label, "--graph", status.graphPath]);
+  const resolved = resolveGraphNodeInput(readJson(status.graphPath), label);
+  const result = runGraphify(["explain", resolved, "--graph", status.graphPath]);
   return result.status;
 }
 
@@ -1692,7 +1669,17 @@ function commandGlobalPath() {
   return runGraphify(["global", "path"]).status;
 }
 
+function commandGlobal(options) {
+  const [subcommand, ...rest] = options.rest;
+  if (subcommand === "list") return commandGlobalList();
+  if (subcommand === "path") return commandGlobalPath();
+  if (subcommand !== "query") throw new Error("global requires one of: list, path, query");
+  console.log(queryGlobalGraph({ question: rest.join(" "), tags: options.tags, budget: options.budget, graphifyPath: graphifyBin() }));
+  return 0;
+}
+
 async function commandSelftest() {
+  selftestGlobalQuery({ graphifyPath: graphifyBin() });
   const stderrCap = graphifyGlobalCapMessage({
     stderr: "Error: global graph exceeds GRAPHIFY_MAX_GRAPH_BYTES 512MB",
     stdout: "",
@@ -1710,6 +1697,38 @@ async function commandSelftest() {
   assertSelftest(noCap === "", "non-cap failures must not be downgraded");
   assertSelftest(parseByteLimit("1GB") === 1024 ** 3, "GB byte limit parsing failed");
   assertSelftest(parseByteLimit("512MB") === 512 * 1024 ** 2, "MB byte limit parsing failed");
+
+  const collisionUnion = mergeNamespacedGraphs([
+    {
+      namespace: "module-a",
+      graph: {
+        nodes: [{ id: "shared", label: "Shared A" }, { id: "only-a", label: "Only A" }],
+        edges: [{ source: "shared", target: "only-a", relation: "calls" }],
+        hyperedges: [{ id: "flow", nodes: ["shared", "only-a"], relation: "participate_in" }],
+      },
+    },
+    {
+      namespace: "module-b",
+      graph: {
+        nodes: [{ id: "shared", label: "Shared B" }, { id: "only-b", label: "Only B" }],
+        edges: [{ source: "shared", target: "only-b", relation: "calls" }],
+      },
+    },
+  ]);
+  assertSelftest(collisionUnion.nodes.length === 4, "same raw node id from separate modules must not merge");
+  assertSelftest(collisionUnion.nodes.some((node) => node.id === "module-a::shared" && node.original_id === "shared"), "module A node must retain its original id");
+  assertSelftest(collisionUnion.nodes.some((node) => node.id === "module-b::shared" && node.original_id === "shared"), "module B node must retain its original id");
+  assertSelftest(collisionUnion.edges.some((edge) => edge.source === "module-a::shared" && edge.target === "module-a::only-a"), "edge endpoints must follow namespaced node ids");
+  assertSelftest(collisionUnion.hyperedges[0]?.nodes?.includes("module-a::shared"), "hyperedge members must follow namespaced node ids");
+  assertSelftest(resolveGraphNodeInput(collisionUnion, "module-a::shared") === "module-a::shared", "qualified node ids must resolve directly");
+  assertSelftest(resolveGraphNodeInput(collisionUnion, "only-a") === "module-a::only-a", "unique original node ids must resolve to their qualified form");
+  let ambiguousOriginalRejected = false;
+  try {
+    resolveGraphNodeInput(collisionUnion, "shared");
+  } catch (error) {
+    ambiguousOriginalRejected = error.message.includes("module-a::shared") && error.message.includes("module-b::shared");
+  }
+  assertSelftest(ambiguousOriginalRejected, "ambiguous original node ids must require a qualified form");
 
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), "sma-graphify-staleness-"));
   try {
@@ -1827,6 +1846,7 @@ async function main() {
   if (options.command === "query") return commandQuery(options);
   if (options.command === "path") return commandPath(options);
   if (options.command === "explain") return commandExplain(options);
+  if (options.command === "global") return commandGlobal(options);
   if (options.command === "global-list") return commandGlobalList();
   if (options.command === "global-path") return commandGlobalPath();
   if (options.command === "selftest") return commandSelftest();

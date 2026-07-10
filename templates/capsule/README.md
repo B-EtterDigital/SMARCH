@@ -10,4 +10,6 @@ Run it from the SMARCH repository:
 node tools/sma-brick-run.mjs path/to/capsule
 ```
 
+Capsules run with a cleared declared-only environment, no network, and a read-only filesystem jail on Node runtimes that support permissions. Use `--allow-net` only for a capsule whose fixture intentionally exercises a declared network boundary.
+
 Read `CONSTRAINTS.md` before adding imports, environment variables, or files.
