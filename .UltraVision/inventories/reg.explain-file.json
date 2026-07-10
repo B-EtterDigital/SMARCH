@@ -1,0 +1,1085 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-adoption-utils",
+      "name": "adoption-utils.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/adoption-utils.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/adoption-utils.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-controller-action-report",
+      "name": "controller-action-report.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/controller-action-report.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/controller-action-report.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-curated-build-utils",
+      "name": "curated-build-utils.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/curated-build-utils.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/curated-build-utils.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-feature-clusters",
+      "name": "feature-clusters.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/feature-clusters.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/feature-clusters.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-gen3-goal-progress",
+      "name": "gen3-goal-progress.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/gen3-goal-progress.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/gen3-goal-progress.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-module-work-agent-packets",
+      "name": "module-work-agent-packets.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/module-work-agent-packets.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/module-work-agent-packets.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-module-work-observations",
+      "name": "module-work-observations.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/module-work-observations.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/module-work-observations.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-module-work-paths",
+      "name": "module-work-paths.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/module-work-paths.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/module-work-paths.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-module-work-renderers",
+      "name": "module-work-renderers.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/module-work-renderers.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/module-work-renderers.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-module-work-selftest",
+      "name": "module-work-selftest.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/module-work-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/module-work-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-ownership",
+      "name": "ownership.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/ownership.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/ownership.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-packet-freshness",
+      "name": "packet-freshness.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/packet-freshness.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/packet-freshness.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-portfolio-projects",
+      "name": "portfolio-projects.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/portfolio-projects.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/portfolio-projects.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-project-paths",
+      "name": "project-paths.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/project-paths.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/project-paths.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-adoption",
+      "name": "sma-adoption.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/sma-adoption.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/sma-adoption.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-source-path-resolver",
+      "name": "source-path-resolver.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/source-path-resolver.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/source-path-resolver.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-stable-generated",
+      "name": "stable-generated.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/lib/stable-generated.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/stable-generated.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-backfill-bulk",
+      "name": "sma-backfill-bulk.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-backfill-bulk.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-backfill-bulk.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-backfill-plan",
+      "name": "sma-backfill-plan.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-backfill-plan.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-backfill-plan.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-backfill-run",
+      "name": "sma-backfill-run.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-backfill-run.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-backfill-run.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-backfill-summary",
+      "name": "sma-backfill-summary.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-backfill-summary.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-backfill-summary.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-backlog",
+      "name": "sma-backlog.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-backlog.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-backlog.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-bootstrap-manifests",
+      "name": "sma-bootstrap-manifests.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-bootstrap-manifests.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-bootstrap-manifests.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-build-index",
+      "name": "sma-build-index.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-build-index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-build-index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-build-packets",
+      "name": "sma-build-packets.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-build-packets.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-build-packets.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-build-promote",
+      "name": "sma-build-promote.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-build-promote.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-build-promote.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-build-verify",
+      "name": "sma-build-verify.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-build-verify.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-build-verify.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-canonicalization",
+      "name": "sma-canonicalization.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-canonicalization.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-canonicalization.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-clone-smoke",
+      "name": "sma-clone-smoke.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-clone-smoke.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-clone-smoke.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-clone",
+      "name": "sma-clone.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-clone.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-clone.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-compact",
+      "name": "sma-compact.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-compact.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-compact.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-dependents-index",
+      "name": "sma-dependents-index.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-dependents-index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-dependents-index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-doctor",
+      "name": "sma-doctor.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-doctor.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-doctor.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-enrich",
+      "name": "sma-enrich.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-enrich.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-enrich.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-filter",
+      "name": "sma-filter.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-filter.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-filter.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-goal-progress",
+      "name": "sma-goal-progress.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-goal-progress.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-goal-progress.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-import-verify",
+      "name": "sma-import-verify.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-import-verify.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-import-verify.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-init-project",
+      "name": "sma-init-project.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-init-project.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-init-project.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-manifest-scaffold",
+      "name": "sma-manifest-scaffold.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-manifest-scaffold.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-manifest-scaffold.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-match",
+      "name": "sma-match.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-match.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-match.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-merge-registries",
+      "name": "sma-merge-registries.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-merge-registries.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-merge-registries.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-module-work-packets",
+      "name": "sma-module-work-packets.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-module-work-packets.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-module-work-packets.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-operator-packet",
+      "name": "sma-operator-packet.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-operator-packet.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-operator-packet.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-portfolio-refresh",
+      "name": "sma-portfolio-refresh.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-portfolio-refresh.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-portfolio-refresh.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-portfolio-scan",
+      "name": "sma-portfolio-scan.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-portfolio-scan.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-portfolio-scan.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-promote",
+      "name": "sma-promote.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-promote.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-promote.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-propagate",
+      "name": "sma-propagate.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-propagate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-propagate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-publish-index",
+      "name": "sma-publish-index.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-publish-index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-publish-index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-publish-leaks",
+      "name": "sma-publish-leaks.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-publish-leaks.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-publish-leaks.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-publish",
+      "name": "sma-publish.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-publish.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-publish.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-recommend-builds",
+      "name": "sma-recommend-builds.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-recommend-builds.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-recommend-builds.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-refresh-manifest-budgets",
+      "name": "sma-refresh-manifest-budgets.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-refresh-manifest-budgets.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-refresh-manifest-budgets.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-release-drafts",
+      "name": "sma-release-drafts.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-release-drafts.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-release-drafts.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-release-index",
+      "name": "sma-release-index.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-release-index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-release-index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-release",
+      "name": "sma-release.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-release.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-release.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-repo-queues",
+      "name": "sma-repo-queues.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-repo-queues.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-repo-queues.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-reuse-receipt",
+      "name": "sma-reuse-receipt.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-reuse-receipt.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-reuse-receipt.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-scan",
+      "name": "sma-scan.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-scan.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-scan.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-score",
+      "name": "sma-score.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-score.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-score.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-similarity-scan",
+      "name": "sma-similarity-scan.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-similarity-scan.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-similarity-scan.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-stable-generated-selftest",
+      "name": "sma-stable-generated-selftest.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-stable-generated-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-stable-generated-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-state",
+      "name": "sma-state.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-state.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-state.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-stats",
+      "name": "sma-stats.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-stats.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-stats.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-store-remote",
+      "name": "sma-store-remote.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-store-remote.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-store-remote.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-store",
+      "name": "sma-store.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-store.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-store.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-sup-status",
+      "name": "sma-sup-status.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-sup-status.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-sup-status.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-token-count",
+      "name": "sma-token-count.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-token-count.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-token-count.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-touch-backfill",
+      "name": "sma-touch-backfill.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-touch-backfill.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-touch-backfill.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-update-plan",
+      "name": "sma-update-plan.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-update-plan.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-update-plan.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-wave-monitor",
+      "name": "sma-wave-monitor.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-wave-monitor.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-wave-monitor.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-wave-observe",
+      "name": "sma-wave-observe.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-wave-observe.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-wave-observe.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-why-blocked",
+      "name": "sma-why-blocked.mjs",
+      "module": "reg",
+      "milestone": "M1",
+      "path": "tools/sma-why-blocked.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-why-blocked.mjs",
+      "vars": {}
+    }
+  ]
+}

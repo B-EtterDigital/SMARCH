@@ -1,0 +1,117 @@
+{
+  "type": "ts-file",
+  "items": [
+    {
+      "slug": "gen3-renderers",
+      "name": "gen3-renderers.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/lib/gen3-renderers.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/lib/gen3-renderers.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-brick-wall-lego",
+      "name": "sma-brick-wall-lego.mjs",
+      "module": "dash",
+      "milestone": "M2",
+      "path": "tools/sma-brick-wall-lego.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-brick-wall-lego.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-dashboard-server",
+      "name": "sma-dashboard-server.mjs",
+      "module": "dash",
+      "milestone": "M2",
+      "path": "tools/sma-dashboard-server.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-dashboard-server.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-gen3-dashboard",
+      "name": "sma-gen3-dashboard.mjs",
+      "module": "dash",
+      "milestone": "M2",
+      "path": "tools/sma-gen3-dashboard.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-gen3-dashboard.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-wiki-gen3",
+      "name": "sma-wiki-gen3.mjs",
+      "module": "dash",
+      "milestone": "M2",
+      "path": "tools/sma-wiki-gen3.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-wiki-gen3.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-wiki-html",
+      "name": "sma-wiki-html.mjs",
+      "module": "dash",
+      "milestone": "M2",
+      "path": "tools/sma-wiki-html.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-wiki-html.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-wiki",
+      "name": "sma-wiki.mjs",
+      "module": "dash",
+      "milestone": "M3",
+      "path": "tools/sma-wiki.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05",
+        "G-16"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-wiki.mjs",
+      "vars": {},
+      "overrides": {
+        "convert": {
+          "complexity": "C4",
+          "est_minutes": 240
+        }
+      }
+    }
+  ]
+}

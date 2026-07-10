@@ -1,0 +1,200 @@
+{
+  "type": "doc-intro",
+  "items": [
+    {
+      "slug": "ann-active-leases-schema",
+      "name": "annotate active-leases.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/active-leases.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema active-leases.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-agent-context-event-schema",
+      "name": "annotate agent-context-event.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/agent-context-event.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema agent-context-event.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-backlog-schema",
+      "name": "annotate backlog.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/backlog.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema backlog.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-brick-manifest-schema",
+      "name": "annotate brick.manifest.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/brick.manifest.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema brick.manifest.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-build-manifest-schema",
+      "name": "annotate build.manifest.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/build.manifest.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema build.manifest.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-dependents-index-schema",
+      "name": "annotate dependents-index.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/dependents-index.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema dependents-index.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-global-registry-schema",
+      "name": "annotate global.registry.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/global.registry.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema global.registry.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-import-lock-schema",
+      "name": "annotate import-lock.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/import-lock.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema import-lock.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-merge-proposal-schema",
+      "name": "annotate merge-proposal.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/merge-proposal.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema merge-proposal.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-placement-map-schema",
+      "name": "annotate placement-map.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/placement-map.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema placement-map.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-project-index-schema",
+      "name": "annotate project.index.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/project.index.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema project.index.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-release-schema",
+      "name": "annotate release.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/release.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema release.schema.json",
+      "vars": {}
+    },
+    {
+      "slug": "ann-reuse-receipt-schema",
+      "name": "annotate reuse-receipt.schema.json",
+      "module": "schemas",
+      "milestone": "M2",
+      "path": "schemas/reuse-receipt.schema.json",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "schema reuse-receipt.schema.json",
+      "vars": {}
+    }
+  ]
+}

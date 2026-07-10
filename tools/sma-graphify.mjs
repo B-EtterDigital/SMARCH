@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
+import { sourceFreshness } from "./lib/graph-staleness.mjs";
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRegistry = path.join(smaRoot, "registry", "global-modules.generated.json");
@@ -16,6 +18,7 @@ function parseArgs(argv) {
     rest: [],
     json: false,
     strict: false,
+    staleOk: false,
     global: false,
     noCluster: false,
     missingOnly: false,
@@ -43,6 +46,8 @@ function parseArgs(argv) {
       options.summaryJson = true;
     } else if (arg === "--strict") {
       options.strict = true;
+    } else if (arg === "--stale-ok") {
+      options.staleOk = true;
     } else if (arg === "--global") {
       options.global = true;
     } else if (arg === "--no-cluster") {
@@ -98,9 +103,9 @@ function printHelp() {
   console.log(`SMA Graphify bridge
 
 Usage:
-  node tools/sma-graphify.mjs check [--project <id>|--project-root <path>] [--strict] [--json]
-  node tools/sma-graphify.mjs check-modules [--project <id>|--project-root <path>] [--strict] [--json|--summary-json] [--verbose]
-  node tools/sma-graphify.mjs check [--project <id>] [--module <id-or-name>] [--strict] [--json]
+  node tools/sma-graphify.mjs check [--project <id>|--project-root <path>] [--strict] [--stale-ok] [--json]
+  node tools/sma-graphify.mjs check-modules [--project <id>|--project-root <path>] [--strict] [--stale-ok] [--json|--summary-json] [--verbose]
+  node tools/sma-graphify.mjs check [--project <id>] [--module <id-or-name>] [--strict] [--stale-ok] [--json]
   node tools/sma-graphify.mjs refresh [--project <id>|--project-root <path>] [--module <id-or-name>] [--global] [--as <tag>] [--no-cluster] [--semantic] [--timeout-seconds N]
   node tools/sma-graphify.mjs refresh-modules [--project <id>|--project-root <path>] [--global] [--no-cluster] [--missing-only] [--limit N] [--quiet] [--semantic] [--timeout-seconds N]
   node tools/sma-graphify.mjs project-from-modules [--project <id>|--project-root <path>] [--global]
@@ -433,6 +438,11 @@ function readGraphCounts(graphPath) {
   }
 }
 
+function readGen3Config(projectRoot) {
+  const configPath = path.join(projectRoot, "sma.gen3.json");
+  return existsSync(configPath) ? readJson(configPath) : null;
+}
+
 function graphStatusForTarget(options, projectRoot, moduleTarget = null, graphifyPath = null) {
   const graphify = graphifyPath ?? graphifyBin();
   const graphRoot = moduleTarget
@@ -445,6 +455,9 @@ function graphStatusForTarget(options, projectRoot, moduleTarget = null, graphif
   const graphCounts = readGraphCounts(graphPath);
   const graphReady = Boolean(graphStat && graphCounts.graphReadable && graphCounts.nodeCount > 0);
   const graphKnownEmpty = Boolean(graphStat && graphCounts.graphReadable && graphCounts.nodeCount === 0 && graphCounts.emptyReason);
+  const freshness = graphReady
+    ? sourceFreshness(projectRoot, moduleTarget, graphStat, options.gen3Config ?? readGen3Config(projectRoot))
+    : { graphFreshness: null, graphFresh: null, graphStale: false, sourceUpdatedAt: null, sourceGlobs: [] };
   const sourceRoot = moduleTarget?.root || projectRoot;
   const targetRoot = moduleTarget?.scanRoot || moduleTarget?.root || projectRoot;
   const targetExists = existsSync(targetRoot);
@@ -453,7 +466,7 @@ function graphStatusForTarget(options, projectRoot, moduleTarget = null, graphif
     : projectTag(options, projectRoot);
 
   return {
-    ok: Boolean(graphify && graphReady),
+    ok: Boolean(graphify && graphReady && (!freshness.graphStale || options.staleOk)),
     graphifyAvailable: Boolean(graphify),
     graphify,
     projectRoot,
@@ -468,6 +481,7 @@ function graphStatusForTarget(options, projectRoot, moduleTarget = null, graphif
     graphPath,
     graphExists: Boolean(graphStat),
     graphReady,
+    ...freshness,
     graphKnownEmpty,
     graphEmptyReason: graphCounts.emptyReason,
     graphReadable: graphCounts.graphReadable,
@@ -572,9 +586,11 @@ function graphStatus(options) {
 function moduleGraphStatus(options) {
   const projectRoot = resolveProjectRoot(options);
   const graphify = graphifyBin();
+  const gen3Config = readGen3Config(projectRoot);
   const modules = moduleTargetsForProject(options, projectRoot)
-    .map((module) => graphStatusForTarget(options, projectRoot, module, graphify));
+    .map((module) => graphStatusForTarget({ ...options, gen3Config }, projectRoot, module, graphify));
   const missing = modules.filter((status) => !status.graphReady);
+  const stale = modules.filter((status) => status.graphStale);
   const unavailable = modules.filter((status) => !status.graphifyAvailable);
   const missingTargets = modules.filter((status) => !status.targetExists);
   const knownEmpty = modules.filter((status) => status.graphKnownEmpty);
@@ -588,12 +604,17 @@ function moduleGraphStatus(options) {
     ...unavailable,
     ...missingTargets,
     ...missingGraphs,
+    ...(options.staleOk ? [] : stale),
   ]);
   return {
     ok: actionableGaps.length === 0,
     projectRoot,
     moduleCount: modules.length,
-    satisfiedCount: modules.filter((status) => status.graphReady || status.graphKnownEmpty).length,
+    satisfiedCount: modules.filter((status) => (
+      (status.graphReady && (!status.graphStale || options.staleOk)) || status.graphKnownEmpty
+    )).length,
+    freshCount: modules.filter((status) => status.graphFresh).length,
+    staleCount: stale.length,
     missingCount: missing.length,
     missingGraphCount: missingGraphs.length,
     knownEmptyCount: knownEmpty.length,
@@ -1058,12 +1079,15 @@ function outputStatus(status, options) {
     return;
   }
 
-  console.log(`${status.ok ? "OK" : "WARN"} graphify ${status.graphReady ? "ready" : status.graphExists ? "empty/unreadable" : "missing"} for ${status.projectTag}`);
+  const freshness = status.graphFreshness ? ` (${status.graphFreshness})` : "";
+  console.log(`${status.ok ? "OK" : "WARN"} graphify ${status.graphReady ? "ready" : status.graphExists ? "empty/unreadable" : "missing"}${freshness} for ${status.projectTag}`);
   console.log(`project: ${status.projectRoot}`);
   if (status.module) console.log(`module: ${status.module.id} (${status.module.sourcePath})`);
   if (status.module) console.log(`target: ${status.targetRoot}`);
   console.log(`graph: ${status.graphPath}`);
   if (status.graphExists) console.log(`nodes: ${status.nodeCount} edges: ${status.edgeCount}`);
+  if (status.graphFreshness) console.log(`freshness: ${status.graphFreshness}`);
+  if (status.sourceUpdatedAt) console.log(`newest source: ${status.sourceUpdatedAt}`);
   if (status.graphUpdatedAt) console.log(`updated: ${status.graphUpdatedAt}`);
   if (!status.graphifyAvailable) console.log("graphify CLI is not on PATH");
   if (!status.targetExists) console.log(`target is missing: ${status.targetRoot}`);
@@ -1079,6 +1103,10 @@ function requireGraph(options) {
 function commandCheck(options) {
   const status = graphStatus(options);
   outputStatus(status, options);
+  return checkExitCode(options, status);
+}
+
+function checkExitCode(options, status) {
   return options.strict && !status.ok ? 1 : 0;
 }
 
@@ -1090,13 +1118,15 @@ function commandCheckModules(options) {
     console.log(JSON.stringify(status, null, 2));
   } else if (options.quiet) {
     console.log(`${status.ok ? "OK" : "FAIL"} graphify module graphs ${status.satisfiedCount}/${status.moduleCount} satisfied`);
+    if (status.freshCount) console.log(`fresh graphs: ${status.freshCount}`);
+    if (status.staleCount) console.log(`stale graphs: ${status.staleCount}`);
     if (status.missingGraphCount) console.log(`missing graphs: ${status.missingGraphCount}`);
     if (status.missingTargetCount) console.log(`missing targets: ${status.missingTargetCount}`);
     if (status.knownEmptyCount) console.log(`known empty graphs: ${status.knownEmptyCount}`);
   } else {
     console.log(`${status.ok ? "OK" : "FAIL"} graphify module graphs ${status.satisfiedCount}/${status.moduleCount} satisfied`);
     console.log(`project: ${status.projectRoot}`);
-    console.log(`ready: ${status.moduleCount - status.missingCount} ready, ${status.knownEmptyCount} known empty, ${status.actionableGapCount} actionable gaps`);
+    console.log(`ready: ${status.freshCount} fresh, ${status.staleCount} stale, ${status.knownEmptyCount} known empty, ${status.actionableGapCount} actionable gaps`);
     if (status.missingGraphCount) console.log(`missing graphs: ${status.missingGraphCount}`);
     if (status.missingTargetCount) console.log(`missing targets: ${status.missingTargetCount}`);
     if (status.graphifyUnavailableCount) console.log(`graphify unavailable: ${status.graphifyUnavailableCount}`);
@@ -1107,13 +1137,16 @@ function commandCheckModules(options) {
     for (const moduleStatus of rows.slice(0, rowLimit)) {
       const marker = !moduleStatus.graphifyAvailable
         ? "NO_GRAPHIFY"
+        : moduleStatus.graphStale
+          ? "STALE"
         : moduleStatus.graphReady
           ? "OK"
           : moduleStatus.graphKnownEmpty
             ? "EMPTY"
             : moduleStatus.targetExists ? "MISSING" : "STALE_TARGET";
       const counts = moduleStatus.graphExists ? ` (${moduleStatus.nodeCount} nodes, ${moduleStatus.edgeCount} edges)` : "";
-      console.log(`- ${marker} ${moduleStatus.module?.id}: ${moduleStatus.graphPath}${counts}`);
+      const freshness = moduleStatus.graphFreshness ? ` [${moduleStatus.graphFreshness}]` : "";
+      console.log(`- ${marker} ${moduleStatus.module?.id}: ${moduleStatus.graphPath}${counts}${freshness}`);
       if (!moduleStatus.targetExists) {
         console.log(`  target: ${moduleStatus.targetRoot}`);
         for (const candidate of moduleStatus.targetCandidates || []) {
@@ -1132,7 +1165,7 @@ function commandCheckModules(options) {
       console.log(`repair: npm run graphify:refresh:modules --${projectHint} --missing-only --limit 25 --global`);
     }
   }
-  return options.strict && !status.ok ? 1 : 0;
+  return checkExitCode(options, status);
 }
 
 function moduleGraphSummary(status) {
@@ -1148,6 +1181,8 @@ function moduleGraphSummary(status) {
     moduleCount: status.moduleCount,
     satisfiedCount: status.satisfiedCount,
     readyCount: readyModules.length,
+    freshCount: status.freshCount,
+    staleCount: status.staleCount,
     knownEmptyCount: status.knownEmptyCount,
     actionableGapCount: status.actionableGapCount,
     missingGraphCount: status.missingGraphCount,
@@ -1167,6 +1202,8 @@ function moduleGraphSummary(status) {
         ? "graphify unavailable"
         : !item.targetExists
           ? "target missing"
+          : item.graphStale
+            ? "graph stale"
           : item.graphKnownEmpty
             ? `known empty: ${item.graphEmptyReason || "empty graph"}`
             : "graph missing or unreadable",
@@ -1657,6 +1694,72 @@ function commandSelftest() {
   assertSelftest(noCap === "", "non-cap failures must not be downgraded");
   assertSelftest(parseByteLimit("1GB") === 1024 ** 3, "GB byte limit parsing failed");
   assertSelftest(parseByteLimit("512MB") === 512 * 1024 ** 2, "MB byte limit parsing failed");
+
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), "sma-graphify-staleness-"));
+  try {
+    const sourceRoot = path.join(fixtureRoot, "src", "fixture");
+    const moduleTarget = {
+      id: "fixture-module",
+      name: "Fixture module",
+      root: sourceRoot,
+      scanRoot: sourceRoot,
+      sourceKind: "directory",
+      sourcePath: "src/fixture",
+    };
+    mkdirSync(sourceRoot, { recursive: true });
+    const sourcePath = path.join(sourceRoot, "index.mjs");
+    writeFileSync(sourcePath, "export const fixture = true;\n");
+
+    const strictOptions = { ...parseArgs(["check", "--strict"]), projectRoot: fixtureRoot };
+    const initialStatus = graphStatusForTarget(strictOptions, fixtureRoot, moduleTarget, process.execPath);
+    mkdirSync(path.dirname(initialStatus.graphPath), { recursive: true });
+    writeFileSync(initialStatus.graphPath, JSON.stringify({ nodes: [{ id: "fixture" }], edges: [] }) + "\n");
+
+    const oldTime = new Date(Date.now() - 20_000);
+    const newTime = new Date(Date.now() - 10_000);
+    utimesSync(initialStatus.graphPath, oldTime, oldTime);
+    utimesSync(sourcePath, newTime, newTime);
+
+    const staleStatus = graphStatusForTarget(strictOptions, fixtureRoot, moduleTarget, process.execPath);
+    assertSelftest(staleStatus.graphStale && staleStatus.graphFreshness === "stale", "newer fallback source should make the graph stale");
+    assertSelftest(checkExitCode(strictOptions, staleStatus) === 1, "strict check should fail for a stale graph");
+
+    const staleOkOptions = { ...parseArgs(["check", "--strict", "--stale-ok"]), projectRoot: fixtureRoot };
+    const staleOkStatus = graphStatusForTarget(staleOkOptions, fixtureRoot, moduleTarget, process.execPath);
+    assertSelftest(staleOkStatus.graphStale && checkExitCode(staleOkOptions, staleOkStatus) === 0, "--stale-ok should accept a stale graph");
+
+    const freshTime = new Date(Date.now());
+    utimesSync(initialStatus.graphPath, freshTime, freshTime);
+    const freshStatus = graphStatusForTarget(strictOptions, fixtureRoot, moduleTarget, process.execPath);
+    assertSelftest(freshStatus.graphFresh && freshStatus.graphFreshness === "fresh", "newer graph should be fresh");
+    assertSelftest(checkExitCode(strictOptions, freshStatus) === 0, "strict check should pass for a fresh graph");
+
+    const unownedPath = path.join(sourceRoot, "unowned.mjs");
+    writeFileSync(unownedPath, "export const unowned = true;\n");
+    utimesSync(unownedPath, new Date(Date.now() + 10_000), new Date(Date.now() + 10_000));
+    const gen3Config = {
+      modules: [{ id: moduleTarget.id, label: moduleTarget.name, paths: ["src/fixture/index.mjs"] }],
+    };
+    writeFileSync(path.join(fixtureRoot, "sma.gen3.json"), JSON.stringify(gen3Config, null, 2) + "\n");
+    const ownershipStatus = graphStatusForTarget({ ...strictOptions, gen3Config }, fixtureRoot, moduleTarget, process.execPath);
+    assertSelftest(ownershipStatus.graphFresh, "repo-root ownership globs should ignore newer unowned files");
+    const newestTime = new Date(Date.now() + 20_000);
+    utimesSync(sourcePath, newestTime, newestTime);
+    const ownedStaleStatus = graphStatusForTarget({ ...strictOptions, gen3Config }, fixtureRoot, moduleTarget, process.execPath);
+    assertSelftest(ownedStaleStatus.graphStale, "newer owned source should make the graph stale");
+
+    writeFileSync(initialStatus.graphPath, JSON.stringify({
+      nodes: [],
+      edges: [],
+      metadata: { sma_status: "empty", reason: "fixture has no source nodes" },
+    }) + "\n");
+    utimesSync(initialStatus.graphPath, oldTime, oldTime);
+    const emptyStatus = graphStatusForTarget(strictOptions, fixtureRoot, moduleTarget, process.execPath);
+    assertSelftest(emptyStatus.graphKnownEmpty && !emptyStatus.graphStale, "known-empty graphs must keep existing semantics");
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+
   console.log("OK sma-graphify selftest");
   return 0;
 }

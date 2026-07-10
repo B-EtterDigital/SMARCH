@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "items": [
+    {
+      "slug": "skills",
+      "name": "skills",
+      "module": "skills",
+      "milestone": "M0",
+      "path": "skills/**",
+      "vision": [
+        "V-12"
+      ],
+      "gaps": [
+        "G-07"
+      ],
+      "evidence": "modules.json + 03-TARGET-ARCHITECTURE.md module table",
+      "vars": {}
+    }
+  ]
+}

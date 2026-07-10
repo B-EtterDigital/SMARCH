@@ -1,0 +1,94 @@
+{
+  "applies_to": "lesson-page",
+  "version": 1,
+  "steps": [
+    {
+      "slug": "draft",
+      "domain": "docs",
+      "complexity": "C2",
+      "est_minutes": 40,
+      "title": "Write lesson: {name}",
+      "description": "Write {path} for a coder with LOW experience: friendly, zero-assumed-knowledge, every concept introduced before use, every term glossary-linked on first use. Structure: why this matters (2-3 sentences), the idea (plain words + one analogy), try it (commands against tools/evals/fixtures/portfolio with expected output), what you just did, where to go next. Warm, nerdy, encouraging tone \u2014 'made with love for creators of all kind' is the voice of this lane.",
+      "acceptance_criteria": [
+        "structure followed",
+        "no unexplained term",
+        "try-it commands target the fixture portfolio"
+      ],
+      "gates": [
+        "npm run source:size:gate"
+      ]
+    },
+    {
+      "slug": "tryit",
+      "domain": "test",
+      "complexity": "C1",
+      "est_minutes": 15,
+      "depends_on": [
+        "#draft"
+      ],
+      "title": "Verify every try-it block in {name}",
+      "description": "Run each fenced command in {path} against the fixture portfolio; fix drift; register the lesson in the doc-journey runner so CI re-verifies it.",
+      "acceptance_criteria": [
+        "all blocks execute with the documented output",
+        "lesson registered in the journey runner"
+      ],
+      "gates": [
+        "npm run source:size:gate"
+      ]
+    },
+    {
+      "slug": "beginner-review",
+      "domain": "ux",
+      "complexity": "C1",
+      "est_minutes": 15,
+      "depends_on": [
+        "#draft"
+      ],
+      "title": "Beginner-lens review of {name}",
+      "description": "Re-read {path} as someone who has never used a terminal beyond basics: flag and fix every leap of logic, missing prerequisite, or intimidating phrasing. Add a 'stuck? this is normal' note where failure is likely.",
+      "acceptance_criteria": [
+        "no unexplained leap remains",
+        "at least one reassurance note at the likeliest failure point"
+      ],
+      "gates": [
+        "npm run source:size:gate"
+      ]
+    },
+    {
+      "slug": "quiz",
+      "domain": "docs",
+      "complexity": "C1",
+      "est_minutes": 10,
+      "depends_on": [
+        "#beginner-review"
+      ],
+      "title": "Self-check for {name}",
+      "description": "Append 3 self-check questions with hidden (details-tag) answers that test understanding, not memory.",
+      "acceptance_criteria": [
+        "3 questions, answers in <details>",
+        "answerable purely from the lesson"
+      ],
+      "gates": [
+        "npm run source:size:gate"
+      ]
+    },
+    {
+      "slug": "nav",
+      "domain": "docs",
+      "complexity": "C1",
+      "est_minutes": 10,
+      "depends_on": [
+        "#quiz"
+      ],
+      "title": "Wire {name} into the intro-lane path",
+      "description": "Prev/next links + entry in docs/intro/START_HERE.md index; the whole lane must be walkable start to finish without dead ends.",
+      "acceptance_criteria": [
+        "prev/next correct",
+        "indexed in START_HERE.md"
+      ],
+      "gates": [
+        "npm run source:size:gate"
+      ]
+    }
+  ]
+}

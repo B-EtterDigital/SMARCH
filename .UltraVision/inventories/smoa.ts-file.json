@@ -1,0 +1,185 @@
+{
+  "type": "ts-file",
+  "items": [
+    {
+      "slug": "codex-runner",
+      "name": "codex-runner.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/lib/codex-runner.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/lib/codex-runner.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-all",
+      "name": "sma-codex-all.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-all.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-all.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-connect",
+      "name": "sma-codex-connect.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-connect.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-connect.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-enrich",
+      "name": "sma-codex-enrich.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-enrich.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-enrich.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-profile",
+      "name": "sma-codex-profile.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-profile.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-profile.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-rank",
+      "name": "sma-codex-rank.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-rank.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-rank.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-scan-helper",
+      "name": "sma-codex-scan-helper.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-scan-helper.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-scan-helper.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-test",
+      "name": "sma-codex-test.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-test.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-test.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-wiki-index",
+      "name": "sma-codex-wiki-index.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-wiki-index.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-wiki-index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex-wiki",
+      "name": "sma-codex-wiki.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex-wiki.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex-wiki.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-codex",
+      "name": "sma-codex.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-codex.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-codex.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-smoa-token-summary",
+      "name": "sma-smoa-token-summary.mjs",
+      "module": "smoa",
+      "milestone": "M2",
+      "path": "tools/sma-smoa-token-summary.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-smoa-token-summary.mjs",
+      "vars": {}
+    }
+  ]
+}

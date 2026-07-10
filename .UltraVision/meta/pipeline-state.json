@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "mode": "full",
+  "budget": null,
+  "updated": "2026-07-10T15:55:00Z",
+  "orchestration": "SMOA (Fable 5 planner/arbiter/gatekeeper; codex gpt-5.6-sol xhigh executors, cap 10)",
+  "lease": "lease-1783690386828-381572d8 (project sma, brick ultravision-plan)",
+  "sma_spec_resolution": "no sma.gen3.json in SMARCH; resolved via $sma-gen3 skill + bundled references/sma-gen3-spec.md; SMARCH is itself the control plane (project_id sma)",
+  "phases": {
+    "P0": {
+      "status": "done",
+      "notes": "clean tree on main@origin; codex-cli 0.144.1 reachable; fresh full mode"
+    },
+    "P1": {
+      "status": "done",
+      "notes": "15 pillars (3 source, 9 elevated, 3 user); philosophy-conflict register with 5 conflicts/resolutions; TS/Rust strategy decided as typed-native + optional oxidation; G1 packet assembled"
+    },
+    "G1": {
+      "status": "approved",
+      "by": "user",
+      "notes": "all 15 pillars approved; 3 user pillars added at missing-vision round (V-16 monetization, V-17 community, V-18 hosted dashboard); language = full phased TS migration + Rust smarch-core kernel"
+    },
+    "P2": {
+      "status": "done",
+      "notes": "01-CURRENT-STATE.md \u2014 17-module inventory, quality dimensions, strengths"
+    },
+    "P3": {
+      "status": "done",
+      "notes": "02-GAP-ANALYSIS.md \u2014 G-01..G-17, coverage matrix complete"
+    },
+    "P4": {
+      "status": "done",
+      "notes": "modules.json (17 modules, self-hosted control plane ~/DEV/SMARCH, media_class utility) + 03-TARGET-ARCHITECTURE.md; G2 pending"
+    },
+    "P5": {
+      "status": "done",
+      "notes": "04-08 strategy docs (Blueprint Ledger direction, utility media verdict, i18n reasoned N/A, perf budgets, milestone DoDs)"
+    },
+    "P6": {
+      "status": "done",
+      "notes": "276 base + extension inventories; extractor found 0 (CLI repo), curated from repo file lists"
+    },
+    "G3": {
+      "status": "approved",
+      "by": "user",
+      "notes": "user asked for MORE volume via /goal (+501 extension); no volume objection possible",
+      "projected_tasks": 1684
+    },
+    "P7": {
+      "status": "done",
+      "notes": "1,684 tasks incl. 46 bespoke + 501 goal extension (V-19 intro lane, V-20 literate) + 12 skeptic tasks"
+    },
+    "P8": {
+      "status": "done",
+      "notes": "validate --strict PASS (post-skeptic revalidation pending in same session)"
+    },
+    "P8.5": {
+      "status": "in-progress",
+      "clean_rounds": {
+        "group1-ci-gates-sync-schemas-coord-prov": 1
+      },
+      "notes": "round 1: 12 real findings converted to tasks (2 blockers: scan fail-open, untrusted submissions); groups 2+3 need a clean round 2 after fixes"
+    },
+    "P9": {
+      "status": "done",
+      "notes": "INDEX.md rendered with index-notes (execution guide, SMA-P1..P3 attestations, known gaps). Plan of record complete at 1,684 tasks; execution wave 1 in flight."
+    },
+    "G2": {
+      "status": "pending"
+    },
+    "goal_extension": {
+      "status": "done",
+      "notes": "/goal 2026-07-10: +501 tasks, V-19/V-20, G-18/G-19, 3 new templates"
+    },
+    "M0_wave_1": {
+      "status": "in-progress",
+      "notes": "codex lanes a/b/d/e running; lane-c (INFLUENCES.md) done pending cross-review"
+    }
+  }
+}

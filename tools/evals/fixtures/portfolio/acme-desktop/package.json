@@ -1,0 +1,7 @@
+{
+  "name": "acme-desktop",
+  "version": "1.0.0-fixture",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic desktop operations fixture."
+}

@@ -1,0 +1,159 @@
+{
+  "V-01": {
+    "origin": "source",
+    "sources": [
+      "README.md",
+      "docs/FRAMEWORK.md",
+      "docs/PUBLIC_POSITIONING.md"
+    ],
+    "hashes": {
+      "README.md": "2d80af7cff2f9dc5",
+      "docs/FRAMEWORK.md": "c0928b8dfe0c2ebd",
+      "docs/PUBLIC_POSITIONING.md": "2a7db3bbf4ce747d"
+    }
+  },
+  "V-02": {
+    "origin": "source",
+    "sources": [
+      "docs/MULTI_AGENT_OPERATIONS.md",
+      "tools/sma-lease.mjs",
+      "tools/sma-conflict.mjs"
+    ],
+    "hashes": {
+      "docs/MULTI_AGENT_OPERATIONS.md": "101da82c3bd9d11c",
+      "tools/sma-lease.mjs": "ca4e93a06616143a",
+      "tools/sma-conflict.mjs": "a4d2a93fb9f300c7"
+    }
+  },
+  "V-03": {
+    "origin": "source",
+    "sources": [
+      "tools/sma-attest.mjs",
+      "tools/sma-attest-verify.mjs",
+      "tools/lib/license-lattice-selftest.mjs"
+    ],
+    "hashes": {
+      "tools/sma-attest.mjs": "90ff14a88b858dba",
+      "tools/sma-attest-verify.mjs": "534e7e3098aa54fd",
+      "tools/lib/license-lattice-selftest.mjs": "ade45e6db7ecba43"
+    }
+  },
+  "V-04": {
+    "origin": "elevated",
+    "sources": [
+      "docs/CODEX_INTEGRATION.md",
+      "tools/sma-graphify.mjs"
+    ],
+    "hashes": {
+      "docs/CODEX_INTEGRATION.md": "62f1a5f398111c89",
+      "tools/sma-graphify.mjs": "4d7939fe95080254"
+    }
+  },
+  "V-05": {
+    "origin": "elevated",
+    "sources": [
+      "tools/sma-store.mjs",
+      "tools/sma-store-remote.mjs"
+    ],
+    "hashes": {
+      "tools/sma-store.mjs": "413bca565d81d3ca",
+      "tools/sma-store-remote.mjs": "256565b4509b4359"
+    }
+  },
+  "V-06": {
+    "origin": "elevated",
+    "sources": [
+      "schemas/brick.manifest.schema.json"
+    ],
+    "hashes": {
+      "schemas/brick.manifest.schema.json": "6c701eabacc84a65"
+    }
+  },
+  "V-07": {
+    "origin": "user",
+    "sources": [],
+    "hashes": {}
+  },
+  "V-08": {
+    "origin": "elevated",
+    "sources": [
+      "tools/lib/sma-paths.mjs",
+      "package.json"
+    ],
+    "hashes": {
+      "tools/lib/sma-paths.mjs": "1c49316c974146e2",
+      "package.json": "392433e7e116d6f9"
+    }
+  },
+  "V-09": {
+    "origin": "elevated",
+    "sources": [
+      "skills/sweetspot-moa/SKILL.md",
+      "tools/sma-codex.mjs"
+    ],
+    "hashes": {
+      "skills/sweetspot-moa/SKILL.md": "8ad5a0c82b09ee4b",
+      "tools/sma-codex.mjs": "f3275d2a3acc1e84"
+    }
+  },
+  "V-10": {
+    "origin": "elevated",
+    "sources": [
+      "package.json",
+      ".gitleaks.toml"
+    ],
+    "hashes": {
+      "package.json": "392433e7e116d6f9",
+      ".gitleaks.toml": "cdf64a2022b7f3d8"
+    }
+  },
+  "V-11": {
+    "origin": "elevated",
+    "sources": [
+      "tools/sma-seed.mjs",
+      "tools/sma-stats.mjs"
+    ],
+    "hashes": {
+      "tools/sma-seed.mjs": "5d46ed74870dd5b8",
+      "tools/sma-stats.mjs": "c7f36e335f9c097b"
+    }
+  },
+  "V-12": {
+    "origin": "elevated",
+    "sources": [
+      "agent-skills/README.md"
+    ],
+    "hashes": {
+      "agent-skills/README.md": "6f4f7328b8daa438"
+    }
+  },
+  "V-13": {
+    "origin": "user",
+    "sources": [],
+    "hashes": {}
+  },
+  "V-14": {
+    "origin": "elevated",
+    "sources": [
+      "tools/sma-start-edit.mjs"
+    ],
+    "hashes": {
+      "tools/sma-start-edit.mjs": "8193d42339ad7564"
+    }
+  },
+  "V-15": {
+    "origin": "user",
+    "sources": [],
+    "hashes": {}
+  },
+  "V-19": {
+    "origin": "user",
+    "sources": [],
+    "hashes": {}
+  },
+  "V-20": {
+    "origin": "user",
+    "sources": [],
+    "hashes": {}
+  }
+}

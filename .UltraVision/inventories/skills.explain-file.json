@@ -1,0 +1,20 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-install-agent-skills",
+      "name": "install-agent-skills.mjs",
+      "module": "skills",
+      "milestone": "M1",
+      "path": "tools/install-agent-skills.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/install-agent-skills.mjs",
+      "vars": {}
+    }
+  ]
+}

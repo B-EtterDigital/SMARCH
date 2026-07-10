@@ -83,6 +83,9 @@ function walk(dir, files) {
     if (entry.name.startsWith('.') && entry.name !== '.well-known') continue;
     if (entry.isDirectory()) {
       if (SKIP_DIRS.has(entry.name)) continue;
+      // Fixture trees are test data, not source: planted violations there must
+      // not trip the repo's own gate (they exist for scanners to find).
+      if (entry.name === 'fixtures' && dir.includes('evals')) continue;
       walk(resolve(dir, entry.name), files);
       continue;
     }

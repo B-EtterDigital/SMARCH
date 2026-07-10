@@ -1,0 +1,20 @@
+{
+  "type": "cli-command",
+  "items": [
+    {
+      "slug": "cmd-evals-run",
+      "name": "sma evals-run",
+      "module": "evals",
+      "milestone": "M3",
+      "path": "tools/evals/run.mjs",
+      "vision": [
+        "V-11"
+      ],
+      "gaps": [
+        "G-08"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-08: run seeded agent-performance evals and report trends",
+      "vars": {}
+    }
+  ]
+}

@@ -1,0 +1,350 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-gen-public-ledger",
+      "name": "gen-public-ledger.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/gen-public-ledger.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/gen-public-ledger.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-attestation-selftest",
+      "name": "attestation-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/attestation-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/attestation-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-attestation",
+      "name": "attestation.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/attestation.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/attestation.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-export-coverage-selftest",
+      "name": "export-coverage-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/export-coverage-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/export-coverage-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-export-guard-selftest",
+      "name": "export-guard-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/export-guard-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/export-guard-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-export-guard",
+      "name": "export-guard.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/export-guard.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/export-guard.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-ledger-resolve",
+      "name": "ledger-resolve.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/ledger-resolve.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/ledger-resolve.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-license-evidence-selftest",
+      "name": "license-evidence-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/license-evidence-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/license-evidence-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-license-evidence",
+      "name": "license-evidence.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/license-evidence.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/license-evidence.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-license-lattice-selftest",
+      "name": "license-lattice-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/license-lattice-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/license-lattice-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-license-lattice",
+      "name": "license-lattice.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/license-lattice.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/license-lattice.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-merkle-selftest",
+      "name": "merkle-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/merkle-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/merkle-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-merkle",
+      "name": "merkle.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/merkle.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/merkle.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-provenance-seal-selftest",
+      "name": "provenance-seal-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/provenance-seal-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/provenance-seal-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-provenance-seal",
+      "name": "provenance-seal.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/provenance-seal.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/provenance-seal.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-similarity-selftest",
+      "name": "similarity-selftest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/similarity-selftest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/similarity-selftest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-similarity",
+      "name": "similarity.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/lib/similarity.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/similarity.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-anchor",
+      "name": "sma-anchor.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/sma-anchor.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-anchor.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-attest-verify",
+      "name": "sma-attest-verify.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/sma-attest-verify.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-attest-verify.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-attest",
+      "name": "sma-attest.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/sma-attest.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-attest.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-provenance-ledger",
+      "name": "sma-provenance-ledger.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/sma-provenance-ledger.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-provenance-ledger.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-provenance-summary",
+      "name": "sma-provenance-summary.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/sma-provenance-summary.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-provenance-summary.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-provenance-verify",
+      "name": "sma-provenance-verify.mjs",
+      "module": "prov",
+      "milestone": "M1",
+      "path": "tools/sma-provenance-verify.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-provenance-verify.mjs",
+      "vars": {}
+    }
+  ]
+}

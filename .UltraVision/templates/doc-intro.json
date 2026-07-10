@@ -1,0 +1,21 @@
+{
+  "applies_to": "doc-intro",
+  "version": 1,
+  "steps": [
+    {
+      "slug": "intro",
+      "domain": "docs",
+      "complexity": "C1",
+      "est_minutes": 15,
+      "title": "Add an explained intro to {name}",
+      "description": "Add a 3-5 sentence plain-language intro at the top of {path}: what this document is, who needs it, when to read it, and the one thing to remember. Glossary-link the first use of every acronym in the doc while there.",
+      "acceptance_criteria": [
+        "intro present, plain, accurate",
+        "first acronym uses glossary-linked"
+      ],
+      "gates": [
+        "npm run source:size:gate"
+      ]
+    }
+  ]
+}

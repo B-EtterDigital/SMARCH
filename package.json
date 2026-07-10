@@ -52,7 +52,7 @@
     "anchor": "node tools/sma-anchor.mjs",
     "anchor:verify": "node tools/sma-anchor.mjs --verify",
     "gate:license": "node tools/sma-license-gate.mjs --gate",
-    "gate:all": "npm run gate:rules && npm run gate:scope && npm run source:size:gate && npm run gate:compliance && npm run gate:license && npm run provenance:verify",
+    "gate:all": "npm run gate:rules && npm run gate:scope && npm run source:size:gate && npm run gate:compliance && npm run gate:license && npm run provenance:verify && npm run gate:leaks",
     "gate:promote": "npm run gate:all && npm run build:promote",
     "build:packets": "node tools/sma-build-packets.mjs",
     "release": "node tools/sma-release.mjs",
@@ -165,12 +165,20 @@
     "check": "npm run source:size:gate && npm run gen3:selftest && bash -c 'find tools -name \"*.mjs\" -print0 | xargs -0 -n 50 node --check'",
     "gate:compliance": "node tools/sma-compliance-gate.mjs --root . --gate",
     "compliance": "node tools/sma-compliance-gate.mjs --root .",
-    "test": "npm run check"
+    "test": "npm run check",
+    "typecheck": "tsc --noEmit",
+    "gate:leaks": "node tools/sma-leak-gate.mjs",
+    "fixtures:gen": "node tools/evals/fixtures/gen.mjs",
+    "sync:public": "node tools/sma-sync-public.mjs"
   },
   "description": "SMARCH \u2014 Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/B-EtterDigital/SMARCH.git"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^24.0.0"
   }
 }

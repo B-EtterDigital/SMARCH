@@ -1,0 +1,169 @@
+#!/usr/bin/env node
+
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { argv, exit } from 'node:process';
+
+const CONFIG_PATH = resolve('sma.gen3.json');
+
+try {
+  const args = parseArgs(argv.slice(2));
+  const config = readConfig(CONFIG_PATH);
+
+  if (args.selftest) {
+    runSelftest(config);
+    exit(0);
+  }
+
+  if (!args.changedFile) {
+    fail('missing required --changed-file <path>', 2);
+  }
+
+  console.log(JSON.stringify(classifyPath(config, args.changedFile)));
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(JSON.stringify({ error: message }));
+  exit(typeof error?.exitCode === 'number' ? error.exitCode : 1);
+}
+
+function parseArgs(values) {
+  const parsed = {
+    changedFile: null,
+    json: false,
+    selftest: false,
+  };
+
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+
+    if (value === '--changed-file') {
+      const changedFile = values[index + 1];
+      if (!changedFile || changedFile.startsWith('--')) {
+        fail('missing value for --changed-file', 2);
+      }
+      parsed.changedFile = changedFile;
+      index += 1;
+      continue;
+    }
+
+    if (value === '--json') {
+      parsed.json = true;
+      continue;
+    }
+
+    if (value === '--selftest') {
+      parsed.selftest = true;
+      continue;
+    }
+
+    fail(`unknown argument: ${value}`, 2);
+  }
+
+  return parsed;
+}
+
+function readConfig(path) {
+  const config = JSON.parse(readFileSync(path, 'utf8'));
+
+  if (!Array.isArray(config.modules)) {
+    throw new Error('sma.gen3.json must define a modules array');
+  }
+
+  if (!Array.isArray(sharedHotPaths(config))) {
+    throw new Error('sma.gen3.json must define a shared hot paths array');
+  }
+
+  return config;
+}
+
+function classifyPath(config, changedFile) {
+  const normalizedPath = normalizePath(changedFile);
+  const module = config.modules.find((candidate) =>
+    pathsFor(candidate).some((pattern) => matchesPath(normalizedPath, pattern)),
+  );
+
+  const isSharedHotPath = sharedHotPaths(config).some((candidate) =>
+    pathsFor(candidate).some((pattern) => matchesPath(normalizedPath, pattern)),
+  );
+
+  if (isSharedHotPath) {
+    return {
+      module: module?.id ?? null,
+      lane: 'shared-hot-path',
+    };
+  }
+
+  if (module) {
+    return {
+      module: module.id,
+      lane: module.lane_default ?? module.laneDefault ?? 'single-module',
+    };
+  }
+
+  return {
+    module: null,
+    lane: 'unmapped',
+  };
+}
+
+function sharedHotPaths(config) {
+  return config.hot_paths ?? config.shared_hot_paths ?? config.sharedHotPaths;
+}
+
+function pathsFor(entry) {
+  if (Array.isArray(entry.paths)) return entry.paths;
+  if (typeof entry.path === 'string') return [entry.path];
+  return [];
+}
+
+function matchesPath(path, pattern) {
+  const normalizedPattern = normalizePath(pattern);
+  const expression = normalizedPattern
+    .split('**')
+    .map((part) => part
+      .replace(/[.+^$(){}|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '[^/]*')
+      .replace(/\?/g, '[^/]'))
+    .join('.*');
+
+  return new RegExp(`^${expression}$`).test(path);
+}
+
+function normalizePath(path) {
+  return String(path)
+    .replaceAll('\\\\', '/')
+    .replace(/^\.\//, '')
+    .replace(/^\/+/, '');
+}
+
+function runSelftest(config) {
+  assertClassification(config, 'tools/sma-lease.mjs', {
+    module: 'coord',
+    lane: 'single-module',
+  });
+  assertClassification(config, 'package.json', {
+    module: null,
+    lane: 'shared-hot-path',
+  });
+  assertClassification(config, 'nonexistent', {
+    module: null,
+    lane: 'unmapped',
+  });
+
+  console.log(JSON.stringify({ ok: true, assertions: 3 }));
+}
+
+function assertClassification(config, path, expected) {
+  const actual = classifyPath(config, path);
+  if (actual.module !== expected.module || actual.lane !== expected.lane) {
+    throw new Error(
+      `selftest failed for ${path}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
+  }
+}
+
+function fail(message, exitCode) {
+  const error = new Error(message);
+  error.exitCode = exitCode;
+  throw error;
+}

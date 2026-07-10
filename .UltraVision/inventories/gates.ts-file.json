@@ -1,0 +1,155 @@
+{
+  "type": "ts-file",
+  "items": [
+    {
+      "slug": "compliance-controls",
+      "name": "compliance-controls.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/lib/compliance-controls.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/lib/compliance-controls.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-ci",
+      "name": "sma-ci.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-ci.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-ci.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-compliance-gate",
+      "name": "sma-compliance-gate.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-compliance-gate.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-compliance-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-license-gate",
+      "name": "sma-license-gate.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-license-gate.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-license-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-rule-gate",
+      "name": "sma-rule-gate.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-rule-gate.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-rule-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-scope-drift",
+      "name": "sma-scope-drift.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-scope-drift.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-scope-drift.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-security-gate",
+      "name": "sma-security-gate.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-security-gate.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-security-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-source-size-gate",
+      "name": "sma-source-size-gate.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-source-size-gate.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-source-size-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-validate-gen3",
+      "name": "sma-validate-gen3.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-validate-gen3.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-validate-gen3.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "sma-validate",
+      "name": "sma-validate.mjs",
+      "module": "gates",
+      "milestone": "M2",
+      "path": "tools/sma-validate.mjs",
+      "vision": [
+        "V-08"
+      ],
+      "gaps": [
+        "G-05"
+      ],
+      "evidence": "01-CURRENT-STATE.md quality dims / tools/sma-validate.mjs",
+      "vars": {}
+    }
+  ]
+}

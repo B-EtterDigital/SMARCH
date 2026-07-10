@@ -1,0 +1,7 @@
+{
+  "name": "acme-studio",
+  "version": "1.0.0-fixture",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic media studio fixture."
+}

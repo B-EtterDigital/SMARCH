@@ -1,0 +1,40 @@
+{
+  "applies_to": "explain-file",
+  "version": 1,
+  "steps": [
+    {
+      "slug": "header",
+      "domain": "docs",
+      "complexity": "C1",
+      "est_minutes": 15,
+      "title": "Add a WHY header to {name}",
+      "description": "Top-of-file comment block (6-14 lines) for {path}: WHAT it does in one plain sentence, WHY it exists (which real problem/pillar), HOW it fits (inputs, outputs, who calls it), and one copy-paste usage line. Written for a curious newcomer: no acronym without a docs/GLOSSARY.md link, no insider references. Keep the existing first-line shebang/imports untouched.",
+      "acceptance_criteria": [
+        "header present and factually accurate",
+        "a newcomer can state the file's purpose after reading only the header",
+        "no undefined acronyms"
+      ],
+      "gates": [
+        "{module_gates}"
+      ]
+    },
+    {
+      "slug": "example",
+      "domain": "docs",
+      "complexity": "C1",
+      "est_minutes": 15,
+      "depends_on": [
+        "#header"
+      ],
+      "title": "Add a runnable example for {name} to the commands reference",
+      "description": "Ensure docs/COMMANDS.md has an entry for {name} (CLI tools) or an @example doc-comment (lib files): 1-2 line description + one copy-paste command with expected-output snippet, verified against the fixture portfolio where applicable.",
+      "acceptance_criteria": [
+        "entry/example exists and the command actually runs",
+        "expected output shown"
+      ],
+      "gates": [
+        "{module_gates}"
+      ]
+    }
+  ]
+}

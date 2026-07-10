@@ -1,0 +1,233 @@
+{
+  "schema_version": "1.0.0",
+  "brick": {
+    "id": "acme-desktop.export-queue",
+    "name": "Export Queue",
+    "kind": "module",
+    "status": "project_bound",
+    "version": "1.0.0-fixture",
+    "language": [
+      "JavaScript"
+    ],
+    "frameworks": [
+      "Node.js"
+    ],
+    "domain": [
+      "desktop",
+      "evaluation"
+    ]
+  },
+  "hierarchy": {
+    "level": "module",
+    "contains": [
+      "utility",
+      "file"
+    ],
+    "component_policy": "internal_by_default",
+    "notes": "Public-safe deterministic evaluation fixture."
+  },
+  "source": {
+    "project": "acme-desktop",
+    "archive_hash": "f5d741e66547e9ddb16e7d505ac936b0c19fd398fe463d61254a09328441b3b5",
+    "paths": [
+      "src/modules/export-queue"
+    ]
+  },
+  "owner": {
+    "primary": "fixture-evals",
+    "team": "SMA Evaluation"
+  },
+  "boundaries": {
+    "owned_paths": [
+      "src/modules/export-queue/**"
+    ],
+    "public_paths": [
+      "src/modules/export-queue/index.mjs"
+    ],
+    "private_paths": [],
+    "forbidden_imports": [],
+    "allowed_side_effects": []
+  },
+  "classification": {
+    "data_classes": [
+      "public"
+    ],
+    "risk": "low",
+    "notes": "Contains synthetic fixture data only."
+  },
+  "sweetspot": {
+    "ssa_v2": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "ssi": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "sstf": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "spe": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "srs": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "ssra": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "sas": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "sva": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "srls": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "sev": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "ssc": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    },
+    "sai": {
+      "status": "passing",
+      "score": 92,
+      "evidence": [
+        "deterministic fixture generation"
+      ]
+    }
+  },
+  "interfaces": {
+    "public_api": [
+      "src/modules/export-queue/index.mjs"
+    ],
+    "adapters": [],
+    "forbidden_dependencies": [],
+    "required_dependencies": []
+  },
+  "security": {
+    "rls": {
+      "required": false,
+      "status": "not_applicable",
+      "negative_tests": []
+    },
+    "env": {
+      "required": false,
+      "status": "not_applicable",
+      "variables": []
+    },
+    "vulnerability_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "report_paths": []
+    }
+  },
+  "supply_chain": {
+    "dependencies": [],
+    "licenses": [
+      "MIT"
+    ],
+    "checksums": []
+  },
+  "quality": {
+    "score": 92,
+    "line_count": {
+      "max_file_lines": 10,
+      "over_600_count": 0
+    },
+    "code_budget": {
+      "status": "lean",
+      "feature_lines": 10,
+      "file_count": 1,
+      "dependency_count": 0,
+      "notes": "Bounded synthetic module fixture."
+    },
+    "test_commands": [
+      "node --check src/modules/*/index.mjs"
+    ],
+    "verification": [
+      {
+        "command": "node tools/evals/fixtures/gen.mjs --selftest",
+        "status": "pass",
+        "timestamp": "2026-01-15T00:00:00.000Z"
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "guided",
+    "adaptation_points": [
+      "fixture project id"
+    ],
+    "install_steps": [
+      "Copy the fixture module into an isolated evaluation workspace."
+    ],
+    "known_traps": [
+      "Intentional findings must remain isolated from production sources."
+    ]
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "automation",
+      "actor_id": "tools/evals/fixtures/gen.mjs",
+      "role": "implementer",
+      "timestamp": "2026-01-15T00:00:00.000Z",
+      "summary": "Generated public-safe acme-desktop.export-queue evaluation fixture."
+    },
+    "touched_by": [],
+    "reviewed_by": [],
+    "source_chain": [
+      {
+        "project": "acme-desktop",
+        "brick_id": "acme-desktop.export-queue",
+        "event": "created",
+        "timestamp": "2026-01-15T00:00:00.000Z"
+      }
+    ]
+  }
+}

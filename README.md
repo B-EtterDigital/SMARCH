@@ -72,24 +72,17 @@ license arrives by email while checkout is built:
 | `templates/` | Files to copy into new projects and modules |
 | `SPE/`, `SRS/`, `SSTF-v1/` | Performance, observability, and test-framework source material |
 
-## Quick Start
+## Pointing it at your own code
 
 ```bash
-git clone https://github.com/B-EtterDigital/SMARCH.git ~/DEV/SMARCH
-cd ~/DEV/SMARCH && npm install
-
-# Point SMA at your project portfolio (defaults to ../Projects)
+# Where your projects live (defaults to ../Projects next to this repo)
 export SMA_PROJECTS_ROOT=~/DEV/Projects
 
 # Optionally describe priority projects / path overrides
 cp registry/portfolio.config.example.json registry/portfolio.config.json
 
 # Index your portfolio, then check global health
-npm run scan
-npm run doctor
-
-# The umbrella CLI dispatches to every tool
-npm run sma -- list
+npm run scan && npm run doctor
 ```
 
 All tools resolve paths from `SMA_ROOT`, `SMA_DEV_ROOT`, and
@@ -137,6 +130,15 @@ performance expectations, SRS observability, security audit, RLS/storage
 matrix (when data access applies), env and secret contract, provenance
 record, and clone instructions.
 
+## Influences
+
+SMARCH stands on named shoulders — Pierre, Sakana Fugu, OpenRouter Fusion,
+Hermes MoA, Entire, Zed, Theo/t3.gg & Lakebed, Superpowers, GSD, and the
+supply-chain standards it implements. The full credit roll, with what each
+one taught us: [docs/INFLUENCES.md](docs/INFLUENCES.md).
+
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE). Copyright 2026 Better Digital LLC.
+
+*Made with love, for creators of all kind.*

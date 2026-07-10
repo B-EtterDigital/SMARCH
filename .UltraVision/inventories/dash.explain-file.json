@@ -1,0 +1,110 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-gen3-renderers",
+      "name": "gen3-renderers.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/lib/gen3-renderers.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/gen3-renderers.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-brick-wall-lego",
+      "name": "sma-brick-wall-lego.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/sma-brick-wall-lego.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-brick-wall-lego.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-dashboard-server",
+      "name": "sma-dashboard-server.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/sma-dashboard-server.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-dashboard-server.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-gen3-dashboard",
+      "name": "sma-gen3-dashboard.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/sma-gen3-dashboard.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-gen3-dashboard.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-wiki-gen3",
+      "name": "sma-wiki-gen3.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/sma-wiki-gen3.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-wiki-gen3.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-wiki-html",
+      "name": "sma-wiki-html.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/sma-wiki-html.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-wiki-html.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-wiki",
+      "name": "sma-wiki.mjs",
+      "module": "dash",
+      "milestone": "M1",
+      "path": "tools/sma-wiki.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-wiki.mjs",
+      "vars": {}
+    }
+  ]
+}

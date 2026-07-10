@@ -1,0 +1,24 @@
+{"ts": "2026-07-10T14:15:09+00:00", "action": "expand", "id": "-", "detail": "new=1269 kept=0 updated=0 problems=0"}
+{"ts": "2026-07-10T14:20:13+00:00", "action": "expand", "id": "-", "detail": "new=0 kept=1269 updated=0 problems=0"}
+{"ts": "2026-07-10T14:21:20+00:00", "action": "expand", "id": "-", "detail": "new=15 kept=1264 updated=0 problems=0"}
+{"ts": "2026-07-10T14:24:28+00:00", "action": "expand", "id": "-", "detail": "new=1088 kept=0 updated=0 problems=0"}
+{"ts": "2026-07-10T14:25:47+00:00", "action": "expand", "id": "-", "detail": "new=1125 kept=0 updated=0 problems=37"}
+{"ts": "2026-07-10T14:26:51+00:00", "action": "expand", "id": "-", "detail": "new=1125 kept=0 updated=0 problems=0"}
+{"ts": "2026-07-10T14:31:53+00:00", "action": "obsolete", "id": "UV-DO-influences-md", "detail": "duplicate of templated UV-DO-doc-influences-* (bespoke spec folded into the dispatch packet)"}
+{"ts": "2026-07-10T14:31:58+00:00", "action": "claim", "id": "UV-CI-ts-foundation-tsconfig", "agent": "codex-lane-a"}
+{"ts": "2026-07-10T14:32:00+00:00", "action": "claim", "id": "UV-CI-gen3-bootstrap-adopt", "agent": "codex-lane-a"}
+{"ts": "2026-07-10T14:32:01+00:00", "action": "claim", "id": "UV-GA-leak-gate-tool", "agent": "codex-lane-b"}
+{"ts": "2026-07-10T14:32:06+00:00", "action": "claim", "id": "UV-SY-sync-public-tool", "agent": "codex-lane-b"}
+{"ts": "2026-07-10T14:32:10+00:00", "action": "claim", "id": "UV-DO-doc-influences-write", "agent": "codex-lane-c"}
+{"ts": "2026-07-10T14:32:17+00:00", "action": "claim", "id": "UV-GR-staleness-check", "agent": "codex-lane-d"}
+{"ts": "2026-07-10T14:32:25+00:00", "action": "claim", "id": "UV-EV-fixture-portfolio", "agent": "codex-lane-e"}
+{"ts": "2026-07-10T14:56:16+00:00", "action": "expand", "id": "-", "detail": "new=451 kept=1125 updated=0 problems=0"}
+{"ts": "2026-07-10T14:57:43+00:00", "action": "expand", "id": "-", "detail": "new=8 kept=1570 updated=0 problems=0"}
+{"ts": "2026-07-10T14:59:03+00:00", "action": "expand", "id": "-", "detail": "new=33 kept=1578 updated=0 problems=0"}
+{"ts": "2026-07-10T14:59:53+00:00", "action": "expand", "id": "-", "detail": "new=12 kept=1599 updated=0 problems=0"}
+{"ts": "2026-07-10T15:22:54+00:00", "action": "complete", "id": "UV-GR-staleness-check", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-10T15:22:55+00:00", "action": "complete", "id": "UV-DO-doc-influences-write", "detail": "npm run source:size:gate"}
+{"ts": "2026-07-10T15:32:14+00:00", "action": "complete", "id": "UV-CI-gen3-bootstrap-adopt", "detail": "node tools/sma-gen3-classify.mjs --selftest"}
+{"ts": "2026-07-10T15:32:21+00:00", "action": "complete", "id": "UV-GA-leak-gate-tool", "detail": "node tools/sma-leak-gate.mjs"}
+{"ts": "2026-07-10T15:32:31+00:00", "action": "complete", "id": "UV-SY-sync-public-tool", "detail": "node tools/sma-sync-public.mjs --selftest"}
+{"ts": "2026-07-10T15:32:40+00:00", "action": "complete", "id": "UV-EV-fixture-portfolio", "detail": "node tools/evals/fixtures/gen.mjs --selftest"}

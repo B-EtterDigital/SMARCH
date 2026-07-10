@@ -1,0 +1,80 @@
+{
+  "type": "api-endpoint",
+  "items": [
+    {
+      "slug": "dash-api-leases",
+      "name": "dashboard api-leases",
+      "module": "dash",
+      "milestone": "M3",
+      "path": "tools/lib/dash-api/api-leases.mjs",
+      "vision": [
+        "V-18"
+      ],
+      "gaps": [
+        "G-15"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-15 target",
+      "vars": {}
+    },
+    {
+      "slug": "dash-api-conflicts",
+      "name": "dashboard api-conflicts",
+      "module": "dash",
+      "milestone": "M3",
+      "path": "tools/lib/dash-api/api-conflicts.mjs",
+      "vision": [
+        "V-18"
+      ],
+      "gaps": [
+        "G-15"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-15 target",
+      "vars": {}
+    },
+    {
+      "slug": "dash-api-registry",
+      "name": "dashboard api-registry",
+      "module": "dash",
+      "milestone": "M3",
+      "path": "tools/lib/dash-api/api-registry.mjs",
+      "vision": [
+        "V-18"
+      ],
+      "gaps": [
+        "G-15"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-15 target",
+      "vars": {}
+    },
+    {
+      "slug": "dash-api-graph",
+      "name": "dashboard api-graph",
+      "module": "dash",
+      "milestone": "M3",
+      "path": "tools/lib/dash-api/api-graph.mjs",
+      "vision": [
+        "V-18"
+      ],
+      "gaps": [
+        "G-15"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-15 target",
+      "vars": {}
+    },
+    {
+      "slug": "dash-api-events-sse",
+      "name": "dashboard api-events-sse",
+      "module": "dash",
+      "milestone": "M3",
+      "path": "tools/lib/dash-api/api-events-sse.mjs",
+      "vision": [
+        "V-18"
+      ],
+      "gaps": [
+        "G-15"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-15 target",
+      "vars": {}
+    }
+  ]
+}

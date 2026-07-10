@@ -1,0 +1,11 @@
+{
+  "allowlist_globs": [],
+  "exclude_globs": [],
+  "replacements": [
+    {
+      "from": "PRIVATE_VALUE",
+      "to": "PUBLIC_VALUE"
+    }
+  ],
+  "target_root": ""
+}

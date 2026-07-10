@@ -1,0 +1,838 @@
+{
+  "type": "doc-page",
+  "items": [
+    {
+      "slug": "doc-adoption-roadmap",
+      "name": "ADOPTION_ROADMAP.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/ADOPTION_ROADMAP.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc ADOPTION_ROADMAP.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-agent-skills",
+      "name": "AGENT_SKILLS.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/AGENT_SKILLS.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc AGENT_SKILLS.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-brick-metadata",
+      "name": "BRICK_METADATA.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/BRICK_METADATA.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc BRICK_METADATA.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-build-layer-implementation-plan",
+      "name": "BUILD_LAYER_IMPLEMENTATION_PLAN.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc BUILD_LAYER_IMPLEMENTATION_PLAN.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-canonicalization-playbook",
+      "name": "CANONICALIZATION_PLAYBOOK.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/CANONICALIZATION_PLAYBOOK.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc CANONICALIZATION_PLAYBOOK.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-codex-integration",
+      "name": "CODEX_INTEGRATION.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/CODEX_INTEGRATION.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc CODEX_INTEGRATION.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-compact-brick-cards",
+      "name": "COMPACT_BRICK_CARDS.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/COMPACT_BRICK_CARDS.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc COMPACT_BRICK_CARDS.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-compliance-layer",
+      "name": "COMPLIANCE-LAYER.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/COMPLIANCE-LAYER.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc COMPLIANCE-LAYER.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-curated-build-acceptance-definitions",
+      "name": "CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-curated-build-lifecycle-playbook",
+      "name": "CURATED_BUILD_LIFECYCLE_PLAYBOOK.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc CURATED_BUILD_LIFECYCLE_PLAYBOOK.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-curated-build-private-publish-lane",
+      "name": "CURATED_BUILD_PRIVATE_PUBLISH_LANE.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/CURATED_BUILD_PRIVATE_PUBLISH_LANE.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc CURATED_BUILD_PRIVATE_PUBLISH_LANE.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-enforcement",
+      "name": "ENFORCEMENT.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/ENFORCEMENT.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc ENFORCEMENT.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-engineering-review-response",
+      "name": "ENGINEERING_REVIEW_RESPONSE.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/ENGINEERING_REVIEW_RESPONSE.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc ENGINEERING_REVIEW_RESPONSE.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-first-time-setup",
+      "name": "FIRST_TIME_SETUP.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/FIRST_TIME_SETUP.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc FIRST_TIME_SETUP.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-framework",
+      "name": "FRAMEWORK.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/FRAMEWORK.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc FRAMEWORK.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-governance",
+      "name": "GOVERNANCE.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/GOVERNANCE.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc GOVERNANCE.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-hierarchy",
+      "name": "HIERARCHY.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/HIERARCHY.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc HIERARCHY.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-maturity",
+      "name": "MATURITY.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/MATURITY.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc MATURITY.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-multi-agent-operations",
+      "name": "MULTI_AGENT_OPERATIONS.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/MULTI_AGENT_OPERATIONS.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc MULTI_AGENT_OPERATIONS.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-privacy",
+      "name": "PRIVACY.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/PRIVACY.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc PRIVACY.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-provenance-seal-license-lattice",
+      "name": "PROVENANCE_SEAL_LICENSE_LATTICE.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/PROVENANCE_SEAL_LICENSE_LATTICE.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc PROVENANCE_SEAL_LICENSE_LATTICE.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-public-positioning",
+      "name": "PUBLIC_POSITIONING.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/PUBLIC_POSITIONING.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc PUBLIC_POSITIONING.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-registry-workflow",
+      "name": "REGISTRY_WORKFLOW.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/REGISTRY_WORKFLOW.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc REGISTRY_WORKFLOW.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-roadmap-100",
+      "name": "ROADMAP_100.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/ROADMAP_100.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc ROADMAP_100.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-scanner-edge-cases",
+      "name": "SCANNER_EDGE_CASES.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SCANNER_EDGE_CASES.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SCANNER_EDGE_CASES.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-scat-sweetspot-core-agent-testloop",
+      "name": "SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-security-and-swarm-gates",
+      "name": "SECURITY_AND_SWARM_GATES.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SECURITY_AND_SWARM_GATES.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SECURITY_AND_SWARM_GATES.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-sff-sweetspot-frontend-fix",
+      "name": "SFF_SWEETSPOT_FRONTEND_FIX.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SFF_SWEETSPOT_FRONTEND_FIX.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SFF_SWEETSPOT_FRONTEND_FIX.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-smoa-sweetspot-moa",
+      "name": "SMOA_SWEETSPOT_MOA.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SMOA_SWEETSPOT_MOA.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SMOA_SWEETSPOT_MOA.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-ssa-v2-base-rules",
+      "name": "SSA_V2_BASE_RULES.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SSA_V2_BASE_RULES.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SSA_V2_BASE_RULES.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-sup-sweetspot-ultra-plan",
+      "name": "SUP_SWEETSPOT_ULTRA_PLAN.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SUP_SWEETSPOT_ULTRA_PLAN.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SUP_SWEETSPOT_ULTRA_PLAN.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-sweetspot-visual-demo",
+      "name": "SWEETSPOT_VISUAL_DEMO.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/SWEETSPOT_VISUAL_DEMO.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc SWEETSPOT_VISUAL_DEMO.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-terminology",
+      "name": "TERMINOLOGY.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/TERMINOLOGY.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc TERMINOLOGY.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-token-accounting-and-backlog",
+      "name": "TOKEN_ACCOUNTING_AND_BACKLOG.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/TOKEN_ACCOUNTING_AND_BACKLOG.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc TOKEN_ACCOUNTING_AND_BACKLOG.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-transparency",
+      "name": "TRANSPARENCY.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/TRANSPARENCY.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc TRANSPARENCY.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-update-propagation",
+      "name": "UPDATE_PROPAGATION.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/UPDATE_PROPAGATION.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc UPDATE_PROPAGATION.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-user-wiki-and-course",
+      "name": "USER_WIKI_AND_COURSE.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/USER_WIKI_AND_COURSE.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "existing doc USER_WIKI_AND_COURSE.md \u2014 write step = the V-13 refresh/genericize pass",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-influences",
+      "name": "INFLUENCES.md",
+      "module": "docs",
+      "milestone": "M0",
+      "path": "docs/INFLUENCES.md",
+      "vision": [
+        "V-07"
+      ],
+      "gaps": [
+        "G-04"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-04",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-glossary",
+      "name": "GLOSSARY.md",
+      "module": "docs",
+      "milestone": "M1",
+      "path": "docs/GLOSSARY.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-10",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-quickstart",
+      "name": "QUICKSTART.md",
+      "module": "docs",
+      "milestone": "M1",
+      "path": "docs/QUICKSTART.md",
+      "vision": [
+        "V-13"
+      ],
+      "gaps": [
+        "G-10"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-10",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-mcp",
+      "name": "MCP_SERVER.md",
+      "module": "docs",
+      "milestone": "M1",
+      "path": "docs/MCP_SERVER.md",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-capsule",
+      "name": "CAPSULE_BRICKS.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/CAPSULE_BRICKS.md",
+      "vision": [
+        "V-06"
+      ],
+      "gaps": [
+        "G-03"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-03",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-sync-runbook",
+      "name": "SYNC_RUNBOOK.md",
+      "module": "docs",
+      "milestone": "M0",
+      "path": "docs/SYNC_RUNBOOK.md",
+      "vision": [
+        "V-15"
+      ],
+      "gaps": [
+        "G-12"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-12",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-community-onboarding",
+      "name": "community/ONBOARDING.md",
+      "module": "docs",
+      "milestone": "M3",
+      "path": "docs/community/ONBOARDING.md",
+      "vision": [
+        "V-17"
+      ],
+      "gaps": [
+        "G-14"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-14",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-community-showcase",
+      "name": "community/SHOWCASE.md",
+      "module": "docs",
+      "milestone": "M3",
+      "path": "docs/community/SHOWCASE.md",
+      "vision": [
+        "V-17"
+      ],
+      "gaps": [
+        "G-14"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-14",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-monetization",
+      "name": "MONETIZATION_LANE.md",
+      "module": "docs",
+      "milestone": "M3",
+      "path": "docs/MONETIZATION_LANE.md",
+      "vision": [
+        "V-16"
+      ],
+      "gaps": [
+        "G-13"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-13",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-workforce",
+      "name": "WORKFORCE_BACKENDS.md",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/WORKFORCE_BACKENDS.md",
+      "vision": [
+        "V-09"
+      ],
+      "gaps": [
+        "G-06"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-06",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-evals",
+      "name": "AGENT_EVALS.md",
+      "module": "docs",
+      "milestone": "M3",
+      "path": "docs/AGENT_EVALS.md",
+      "vision": [
+        "V-11"
+      ],
+      "gaps": [
+        "G-08"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-08",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    },
+    {
+      "slug": "doc-dashboard",
+      "name": "DASHBOARD.md",
+      "module": "docs",
+      "milestone": "M3",
+      "path": "docs/DASHBOARD.md",
+      "vision": [
+        "V-18"
+      ],
+      "gaps": [
+        "G-15"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-15",
+      "vars": {
+        "audience": "framework users and contributing agents"
+      }
+    }
+  ]
+}

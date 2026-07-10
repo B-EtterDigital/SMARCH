@@ -1,0 +1,185 @@
+{
+  "type": "doc-intro",
+  "items": [
+    {
+      "slug": "in-skill-sma-gen3",
+      "name": "skills/sma-gen3 explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sma-gen3/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-f5-ultravisionplan",
+      "name": "skills/f5-ultravisionplan explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/f5-ultravisionplan/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-sweetspot-frontend-fix",
+      "name": "skills/sweetspot-frontend-fix explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sweetspot-frontend-fix/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-sweetspot-moa",
+      "name": "skills/sweetspot-moa explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sweetspot-moa/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-sma-enforcer",
+      "name": "skills/sma-enforcer explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sma-enforcer/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-sma-course-builder",
+      "name": "skills/sma-course-builder explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sma-course-builder/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-sma-token-backlog",
+      "name": "skills/sma-token-backlog explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sma-token-backlog/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-skill-sma-agent-composer",
+      "name": "skills/sma-agent-composer explainer",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "skills/sma-agent-composer/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-agents-claude-code",
+      "name": "agent-skills/claude-code guide intro",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "agent-skills/claude-code/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-agents-codex",
+      "name": "agent-skills/codex guide intro",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "agent-skills/codex/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-agents-opencode",
+      "name": "agent-skills/opencode guide intro",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "agent-skills/opencode/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    },
+    {
+      "slug": "in-agents-root",
+      "name": "agent-skills overview intro",
+      "module": "skills",
+      "milestone": "M2",
+      "path": "agent-skills/README.md",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension round 2: every surface explained",
+      "vars": {}
+    }
+  ]
+}

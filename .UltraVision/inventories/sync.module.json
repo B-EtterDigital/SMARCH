@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "items": [
+    {
+      "slug": "sync",
+      "name": "sync",
+      "module": "sync",
+      "milestone": "M0",
+      "path": "tools/sma-sync-public.mjs",
+      "vision": [
+        "V-15"
+      ],
+      "gaps": [
+        "G-07"
+      ],
+      "evidence": "modules.json + 03-TARGET-ARCHITECTURE.md module table",
+      "vars": {}
+    }
+  ]
+}

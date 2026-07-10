@@ -1,0 +1,122 @@
+{
+  "gate": "G1",
+  "decided_at": "2026-07-10T14:05:00Z",
+  "rounds": {
+    "missing_vision": "user added three pillars: monetization lane (V-16), community layer (V-17), hosted dashboard (V-18)",
+    "ballot": "V-04+V-05 both approved; V-06,V-09,V-10,V-11,V-12,V-14 all approved; language strategy = full TypeScript migration (phased, erasable-syntax, zero-build) + Rust smarch-core kernel (M3)",
+    "goal_extension": "user /goal 2026-07-10: +500 improvement tasks, new-coder lane, full attribution, open-source love"
+  },
+  "pillars": [
+    {
+      "id": "V-01",
+      "status": "approved",
+      "origin": "source"
+    },
+    {
+      "id": "V-02",
+      "status": "approved",
+      "origin": "source"
+    },
+    {
+      "id": "V-03",
+      "status": "approved",
+      "origin": "source"
+    },
+    {
+      "id": "V-04",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-05",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-06",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-07",
+      "status": "approved",
+      "origin": "user"
+    },
+    {
+      "id": "V-08",
+      "status": "approved",
+      "origin": "user",
+      "note": "upgraded at G1: full phased TS migration + Rust smarch-core kernel (user ballot '2 & 3')"
+    },
+    {
+      "id": "V-09",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-10",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-11",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-12",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-13",
+      "status": "approved",
+      "origin": "user"
+    },
+    {
+      "id": "V-14",
+      "status": "approved",
+      "origin": "elevated"
+    },
+    {
+      "id": "V-15",
+      "status": "approved",
+      "origin": "user"
+    },
+    {
+      "id": "V-16",
+      "status": "approved",
+      "origin": "user",
+      "note": "monetization lane: paid/licensed premium bricks on the license lattice"
+    },
+    {
+      "id": "V-17",
+      "status": "approved",
+      "origin": "user",
+      "note": "community layer: onboarding, showcase, public brick submissions with gated review"
+    },
+    {
+      "id": "V-18",
+      "status": "approved",
+      "origin": "user",
+      "note": "hosted/self-hosted web dashboard beyond generated HTML"
+    },
+    {
+      "id": "V-19",
+      "status": "approved",
+      "origin": "user",
+      "note": "new-coder intro lane: zero-assumed-knowledge guided course (docs/intro), verified try-it commands on the fixture portfolio"
+    },
+    {
+      "id": "V-20",
+      "status": "approved",
+      "origin": "user",
+      "note": "literate, lovingly-explained open source: WHY headers in every tool, explained doc intros, first-contribution path, code of conduct, made-with-love identity"
+    }
+  ],
+  "non_goals": [
+    "hosted SaaS registry federation service (M4+ research; V-18 dashboard is the only hosted surface)",
+    "publishing the marketing site / SMA-landing in the public repo",
+    "cloud lease service (M4+ research)"
+  ]
+}

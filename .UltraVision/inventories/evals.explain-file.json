@@ -1,0 +1,620 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-gen",
+      "name": "gen.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/gen.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/gen.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/approval-flow/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/approval-flow/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/asset-library/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/asset-library/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/audit-reader/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/audit-reader/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/content-editor/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/content-editor/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/entry-index/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/entry-index/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/locale-router/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/locale-router/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/media-policy/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/media-policy/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/navigation-tree/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/navigation-tree/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/publish-queue/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/publish-queue/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/revision-store/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/revision-store/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/schema-registry/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/schema-registry/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/silent-parser/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/silent-parser/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-cms/src/modules/slug-service/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-cms/src/modules/slug-service/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/activity-feed/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/activity-feed/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/app-shell/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/app-shell/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/command-palette/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/command-palette/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/desktop-bridge/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/desktop-bridge/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/device-status/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/device-status/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/document-cache/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/document-cache/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/env-probe/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/env-probe/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/export-queue/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/export-queue/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/notification-center/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/notification-center/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/oversized-catalog/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/oversized-catalog/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/search-index/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/search-index/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/session-store/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/session-store/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/timeline-core/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/timeline-core/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-desktop/src/modules/workspace-router/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-desktop/src/modules/workspace-router/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/asset-browser/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/asset-browser/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/audio-mixer/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/audio-mixer/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/caption-track/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/caption-track/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/clip-inspector/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/clip-inspector/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/color-pipeline/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/color-pipeline/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/export-preset/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/export-preset/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/media-bin/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/media-bin/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/preview-renderer/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/preview-renderer/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/project-timeline/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/project-timeline/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/render-queue/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/render-queue/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/scene-library/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/scene-library/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/timeline-core/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/timeline-core/index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-index",
+      "name": "index.mjs",
+      "module": "evals",
+      "milestone": "M1",
+      "path": "tools/evals/fixtures/portfolio/acme-studio/src/modules/transition-engine/index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/evals/fixtures/portfolio/acme-studio/src/modules/transition-engine/index.mjs",
+      "vars": {}
+    }
+  ]
+}

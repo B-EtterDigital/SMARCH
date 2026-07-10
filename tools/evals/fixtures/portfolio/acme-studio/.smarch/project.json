@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0.0",
+  "project": "acme-studio",
+  "fixture_seed": "smarch-public-eval-fixtures-v1",
+  "public_safe": true
+}

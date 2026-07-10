@@ -1,0 +1,20 @@
+{
+  "type": "cli-command",
+  "items": [
+    {
+      "slug": "cmd-mcp-serve",
+      "name": "sma mcp-serve",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/serve-cli.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02: start the SMARCH MCP server (stdio)",
+      "vars": {}
+    }
+  ]
+}

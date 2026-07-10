@@ -1,0 +1,73 @@
+{
+  "generated": "2026-07-10T15:05:45+00:00",
+  "totals": {
+    "tasks": 1684,
+    "active": 1683,
+    "done": 0,
+    "obsolete": 1,
+    "percent_complete": 0.0,
+    "est_minutes_remaining": 47320
+  },
+  "by_status": {
+    "claimed": 7,
+    "obsolete": 1,
+    "todo": 1676
+  },
+  "by_complexity": {
+    "C1": 953,
+    "C2": 476,
+    "C3": 228,
+    "C4": 27
+  },
+  "by_model_tier": {
+    "haiku": 953,
+    "opus": 27,
+    "sonnet": 704
+  },
+  "by_module": {
+    "capsule": 30,
+    "ci": 12,
+    "commun": 16,
+    "coord": 77,
+    "dash": 284,
+    "docs": 381,
+    "evals": 57,
+    "gates": 53,
+    "graph": 21,
+    "mcp": 89,
+    "prov": 98,
+    "reg": 300,
+    "rust": 12,
+    "schemas": 154,
+    "skills": 25,
+    "smoa": 59,
+    "sync": 16
+  },
+  "by_domain": {
+    "a11y": 21,
+    "backend": 265,
+    "data": 38,
+    "design": 20,
+    "docs": 706,
+    "frontend": 42,
+    "i18n": 69,
+    "infra": 35,
+    "perf": 70,
+    "release": 1,
+    "security": 16,
+    "telemetry": 67,
+    "test": 309,
+    "ux": 25
+  },
+  "by_lane": {
+    "shared-hot-path": 185,
+    "single-module": 1499
+  },
+  "by_milestone": {
+    "M0": 139,
+    "M1": 630,
+    "M2": 544,
+    "M3": 371
+  },
+  "paid_tasks": 0
+}

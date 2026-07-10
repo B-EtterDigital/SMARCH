@@ -1,0 +1,185 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-compliance-controls",
+      "name": "compliance-controls.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/lib/compliance-controls.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/compliance-controls.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-ci",
+      "name": "sma-ci.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-ci.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-ci.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-compliance-gate",
+      "name": "sma-compliance-gate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-compliance-gate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-compliance-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-gen3-classify",
+      "name": "sma-gen3-classify.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-gen3-classify.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-gen3-classify.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-leak-gate",
+      "name": "sma-leak-gate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-leak-gate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-leak-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-license-gate",
+      "name": "sma-license-gate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-license-gate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-license-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-rule-gate",
+      "name": "sma-rule-gate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-rule-gate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-rule-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-scope-drift",
+      "name": "sma-scope-drift.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-scope-drift.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-scope-drift.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-security-gate",
+      "name": "sma-security-gate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-security-gate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-security-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-source-size-gate",
+      "name": "sma-source-size-gate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-source-size-gate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-source-size-gate.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-validate-gen3",
+      "name": "sma-validate-gen3.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-validate-gen3.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-validate-gen3.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-validate",
+      "name": "sma-validate.mjs",
+      "module": "gates",
+      "milestone": "M1",
+      "path": "tools/sma-validate.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-validate.mjs",
+      "vars": {}
+    }
+  ]
+}

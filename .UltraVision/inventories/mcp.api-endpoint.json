@@ -1,0 +1,125 @@
+{
+  "type": "api-endpoint",
+  "items": [
+    {
+      "slug": "mcp-brick-search",
+      "name": "MCP tool brick-search",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/brick-search.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-brick-get",
+      "name": "MCP tool brick-get",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/brick-get.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-brick-trust",
+      "name": "MCP tool brick-trust",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/brick-trust.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-registry-doctor",
+      "name": "MCP tool registry-doctor",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/registry-doctor.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-registry-why-blocked",
+      "name": "MCP tool registry-why-blocked",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/registry-why-blocked.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-release-install",
+      "name": "MCP tool release-install",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/release-install.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-build-list",
+      "name": "MCP tool build-list",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/build-list.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    },
+    {
+      "slug": "mcp-server-card",
+      "name": "MCP tool server-card",
+      "module": "mcp",
+      "milestone": "M1",
+      "path": "tools/mcp/tools/server-card.mjs",
+      "vision": [
+        "V-05"
+      ],
+      "gaps": [
+        "G-02"
+      ],
+      "evidence": "02-GAP-ANALYSIS.md G-02 target list",
+      "vars": {}
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "type": "module",
+  "items": [
+    {
+      "slug": "schemas",
+      "name": "schemas",
+      "module": "schemas",
+      "milestone": "M0",
+      "path": "schemas/**",
+      "vision": [
+        "V-01",
+        "V-02"
+      ],
+      "gaps": [
+        "G-07"
+      ],
+      "evidence": "modules.json + 03-TARGET-ARCHITECTURE.md module table",
+      "vars": {}
+    }
+  ]
+}

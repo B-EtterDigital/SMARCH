@@ -1,0 +1,275 @@
+{
+  "type": "lesson-page",
+  "items": [
+    {
+      "slug": "lesson-01-what-is-a-brick",
+      "name": "what is a brick",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/01-what-is-a-brick.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-02-your-first-scan",
+      "name": "your first scan",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/02-your-first-scan.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-03-reading-the-brick-wall",
+      "name": "reading the brick wall",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/03-reading-the-brick-wall.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-04-manifests-explained",
+      "name": "manifests explained",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/04-manifests-explained.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-05-gates-what-blocks-and-why",
+      "name": "gates what blocks and why",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/05-gates-what-blocks-and-why.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-06-your-first-clone",
+      "name": "your first clone",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/06-your-first-clone.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-07-provenance-and-seals",
+      "name": "provenance and seals",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/07-provenance-and-seals.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-08-leases-working-alongside-agents",
+      "name": "leases working alongside agents",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/08-leases-working-alongside-agents.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-09-conflicts-are-normal",
+      "name": "conflicts are normal",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/09-conflicts-are-normal.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-10-your-first-capsule",
+      "name": "your first capsule",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/10-your-first-capsule.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-11-the-graph-asking-questions",
+      "name": "the graph asking questions",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/11-the-graph-asking-questions.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-12-agents-and-skills-setup",
+      "name": "agents and skills setup",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/12-agents-and-skills-setup.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-13-contributing-your-first-brick",
+      "name": "contributing your first brick",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/13-contributing-your-first-brick.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-14-canonical-the-registry-story",
+      "name": "canonical the registry story",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/14-canonical-the-registry-story.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-15-mcp-connect-your-agent",
+      "name": "mcp connect your agent",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/15-mcp-connect-your-agent.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-16-glossary-safari",
+      "name": "glossary safari",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/16-glossary-safari.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension 2026-07-10: new-coder intro lane",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-17-reading-the-plan-uvp",
+      "name": "reading the plan uvp",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/17-reading-the-plan-uvp.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension round 2: advanced intro-lane lessons",
+      "vars": {}
+    },
+    {
+      "slug": "lesson-18-your-first-agent-swarm",
+      "name": "your first agent swarm",
+      "module": "docs",
+      "milestone": "M2",
+      "path": "docs/intro/18-your-first-agent-swarm.md",
+      "vision": [
+        "V-19"
+      ],
+      "gaps": [
+        "G-18"
+      ],
+      "evidence": "goal extension round 2: advanced intro-lane lessons",
+      "vars": {}
+    }
+  ]
+}

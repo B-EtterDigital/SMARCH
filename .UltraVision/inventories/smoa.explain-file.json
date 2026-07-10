@@ -1,0 +1,185 @@
+{
+  "type": "explain-file",
+  "items": [
+    {
+      "slug": "x-codex-runner",
+      "name": "codex-runner.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/lib/codex-runner.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/lib/codex-runner.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-all",
+      "name": "sma-codex-all.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-all.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-all.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-connect",
+      "name": "sma-codex-connect.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-connect.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-connect.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-enrich",
+      "name": "sma-codex-enrich.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-enrich.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-enrich.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-profile",
+      "name": "sma-codex-profile.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-profile.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-profile.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-rank",
+      "name": "sma-codex-rank.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-rank.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-rank.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-scan-helper",
+      "name": "sma-codex-scan-helper.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-scan-helper.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-scan-helper.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-test",
+      "name": "sma-codex-test.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-test.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-test.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-wiki-index",
+      "name": "sma-codex-wiki-index.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-wiki-index.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-wiki-index.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex-wiki",
+      "name": "sma-codex-wiki.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex-wiki.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex-wiki.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-codex",
+      "name": "sma-codex.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-codex.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-codex.mjs",
+      "vars": {}
+    },
+    {
+      "slug": "x-sma-smoa-token-summary",
+      "name": "sma-smoa-token-summary.mjs",
+      "module": "smoa",
+      "milestone": "M1",
+      "path": "tools/sma-smoa-token-summary.mjs",
+      "vision": [
+        "V-20"
+      ],
+      "gaps": [
+        "G-19"
+      ],
+      "evidence": "goal extension 2026-07-10 / tools/sma-smoa-token-summary.mjs",
+      "vars": {}
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "items": [
+    {
+      "slug": "capsule",
+      "name": "capsule",
+      "module": "capsule",
+      "milestone": "M0",
+      "path": "templates/capsule/**",
+      "vision": [
+        "V-06"
+      ],
+      "gaps": [
+        "G-07"
+      ],
+      "evidence": "modules.json + 03-TARGET-ARCHITECTURE.md module table",
+      "vars": {}
+    }
+  ]
+}

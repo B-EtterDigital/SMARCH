@@ -1,0 +1,7 @@
+{
+  "name": "acme-cms",
+  "version": "1.0.0-fixture",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic content management fixture."
+}
