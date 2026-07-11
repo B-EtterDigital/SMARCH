@@ -1,4 +1,13 @@
 /**
+ * WHAT: Declares the reusable European and Swiss compliance controls checked before release.
+ * WHY: Projects need one auditable catalog so legal obligations cannot disappear between separate gate implementations.
+ * HOW: The compliance gate supplies repository context to each detector and receives status, evidence, and remediation.
+ * Each entry carries a stable identifier, regulation, severity, human requirement, detector, and repair guidance.
+ * Adding or changing an obligation is therefore a catalog edit rather than hidden checker logic.
+ * Regulation abbreviations are defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { COMPLIANCE_CONTROLS } from './tools/lib/compliance-controls.mjs'; console.log(COMPLIANCE_CONTROLS.map(c => c.id))"
+ */
+/**
  * complianceControls.mjs — declarative EU/Swiss compliance control catalog.
  *
  * THE REUSABLE SMA COMPLIANCE LAYER. This catalog is the single source of truth

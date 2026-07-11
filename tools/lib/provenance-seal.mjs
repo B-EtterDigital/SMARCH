@@ -1,4 +1,13 @@
 /**
+ * WHAT: Fingerprints source trees and builds verifiable provenance hash chains and signatures.
+ * WHY: Exact source identity and recorded authorship must reveal later code or history tampering.
+ * HOW: Normalizes eligible files, hashes ordered events, and optionally signs the resulting chain head.
+ * INPUTS: A file or directory, brick identity, content hash, provenance events, and optional keys.
+ * OUTPUTS: Fingerprints, seals, verification reasons, key pairs, signatures, and stable key identifiers.
+ * CALLERS: Provenance ledger, verification, anchor, attestation, and self-test tools share these primitives.
+ * @example node --input-type=module -e "import { computeSeal } from './tools/lib/provenance-seal.mjs'; console.log(computeSeal({ brick_id: 'demo', content_hash: 'abc', events: [] }).head);"
+ */
+/**
  * provenance-seal.mjs — content fingerprints + tamper-evident provenance seals.
  *
  * Two independent integrity primitives:

@@ -1,56 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-store-remote.mjs — SKELETON for the hosted release-store.
- *
- * Status: stub. NO network calls. NO Supabase deployment. This file exists
- * to (a) define the API surface for the hosted variant of sma-store, and
- * (b) be the seam we wire up the day a second SMARCH instance exists.
- *
- * Why a stub now:
- *   SMARCH's local shape is `installRelease({ brickId, version, ... })`, adapting
- *   Pierre / code.storage's SDK-first storage direction; see
- *   docs/INFLUENCES.md. sma-store.mjs already implements this locally. The
- *   hosted variant would let a second machine
- *   resolve a release purely by id+version against a shared HTTP endpoint.
- *   The federation primitives (registry_origin field, schema support) ship
- *   in batches 1+4. This file documents what's left.
- *
- * Subcommands (all currently --dry-run only):
- *   resolve   --brick <id> --version <v> --origin <url>
- *             → would: GET <origin>/v1/releases/<id>/<v>.json
- *
- *   install   --brick <id> --version <v> --target <project> --origin <url>
- *             → would: resolve, then delegate to local sma-clone with the
- *               fetched release artifact
- *
- *   list-versions --brick <id> --origin <url>
- *             → would: GET <origin>/v1/releases/<id>/
- *
- *   publish   --release-path releases/<brick>/<v>.json --origin <url>
- *             → would: PUT release JSON + content artifacts to <origin>
- *
- * Hosted backend shape (Supabase, deferred):
- *   - Edge Function: GET /v1/releases/:brick/:version → returns release JSON
- *   - Edge Function: PUT /v1/releases/:brick/:version → upserts (auth required)
- *   - Storage bucket: releases/<brick>/<version>/{release.json, artifacts/...}
- *   - Postgres: a `releases` table mirrors the JSON for query/index
- *   - Postgres: a `release_attestations` table records who installed what where
- *   - RLS: read public; write requires service_role or signed token
- *
- * Auth shape (deferred):
- *   - SMA_REGISTRY_TOKEN env var — short-lived bearer for write
- *   - Public read by default; private repos pass a read token
- *
- * Federation rules (already enforced today by sma-import-verify):
- *   - Every release JSON SHOULD have `release.registry_origin`
- *   - Every import-lock SHOULD have `lock.registry_origin`
- *   - When env SMA_REGISTRY_ORIGIN is set, mismatches warn
- *
- * To turn this into a working tool:
- *   1. Decide the host (Supabase project, Cloudflare Worker, etc.)
- *   2. Replace the `simulate*` helpers below with real fetch calls
- *   3. Add request signing for PUT
- *   4. Wire into sma-store.mjs as `--origin <url>` to delegate hosted lookups
+ * WHAT: Simulates the command contract for a future hosted release store.
+ * WHY: Federation needs a stable seam before a second deployed store justifies networking.
+ * HOW: Parses remote-store inputs and prints planned requests without making network calls.
+ * OUTPUTS: Emits stub actions for resolve, install, list, publish, and health operations.
+ * CALLERS: The sma command router exposes it for contract testing and deployment planning.
+ * USAGE: `node tools/sma-store-remote.mjs health --origin http://127.0.0.1:54321`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import { argv, exit, env } from 'node:process';

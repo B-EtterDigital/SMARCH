@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Builds an inverse index from source bricks to the projects that depend on them.
+ * WHY: Source releases cannot be propagated safely without knowing every locked copy and fork.
+ * HOW: Scans import locks, reuse receipts, and manifests, then groups evidence by source brick.
+ * INPUTS: Portfolio project roots and an optional source-brick filter.
+ * OUTPUTS: A dependency report on standard output or the generated dependents index file.
+ * CALLERS: Release propagation commands and maintainers planning downstream updates.
+ * Usage: `node tools/sma-dependents-index.mjs --source-brick example.brick --json`
+ */
+/**
  * sma-dependents-index.mjs — build the inverted "who has copies of which brick" index.
  *
  * Reads (does not modify):

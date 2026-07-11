@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Sends one prompt to the shared Codex runner and prints the structured result.
+ * WHY: Developers need a minimal command for testing runner configuration, caching, and response schemas outside larger pipelines.
+ * HOW: Reads a prompt from an argument, file, or standard input and delegates to the runner used by the other Codex tools.
+ * Usage: `node tools/sma-codex.mjs --prompt "Reply with PONG"`
+ */
+/**
  * Thin CLI for the codex-runner. Useful for ad-hoc shell tests.
  *
  *   node tools/sma-codex.mjs --prompt "Summarize the SMA framework in one sentence"

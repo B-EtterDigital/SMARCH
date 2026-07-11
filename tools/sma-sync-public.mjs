@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
- * SMA private-to-public tree sync.
- *
- * Dry-run is the default. A write is applied only after the transformed
- * staging tree passes tools/sma-leak-gate.mjs.
+ * WHAT: Prepares and optionally applies a filtered private-to-public tree sync.
+ * WHY: Public mirrors must exclude private files and secrets before any target changes.
+ * HOW: Reads source, target, and sync configuration, transforms a staging tree, then runs leak gates.
+ * OUTPUTS: Prints a dry-run report by default and applies the staged tree only with --write.
+ * CALLERS: Release operators use it to maintain the public repository safely.
+ * USAGE: `node tools/sma-sync-public.mjs --selftest`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';

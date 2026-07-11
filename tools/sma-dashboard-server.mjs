@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Serves generated dashboard files and bounded maintenance endpoints over local web access.
+ * WHY: Operators need a browser surface for scans and reports without exposing unsafe mutations.
+ * HOW: Serves a wiki root and delegates approved scan, wiki, and security commands.
+ * INPUTS: Wiki and scan directories, network binding options, and mutation authorization settings.
+ * OUTPUTS: Static pages and structured endpoint responses from a local web server.
+ * CALLERS: Dashboard launch scripts and operators inspecting or refreshing project reports.
+ * Usage: `node tools/sma-dashboard-server.mjs --wiki wiki --port 4777`
+ */
 import { spawn } from "node:child_process";
 import { timingSafeEqual } from "node:crypto";
 import fs from "node:fs/promises";

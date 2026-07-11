@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Appends and reads the per-brick [agent-context](../docs/GLOSSARY.md#agent-context) event stream.
+ * WHY: Git records file changes but not the intent, decisions, rejected options, verification, and handoff needed by the next agent.
+ * HOW: Accepts project and brick subcommands, reads or appends line-oriented events, and is called by edit, conflict, and audit workflows.
+ * Usage: `node tools/sma-context.mjs list-bricks --project sma`
+ */
+/**
  * sma-context.mjs — append-only agent-context log per brick.
  *
  * Path:    <project>/.smarch/agent-context/<brick-id>.ndjson

@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Builds source fingerprints plus creator, license, and provenance ledgers.
+ * Why: Reused code needs verifiable attribution, visibility, and tamper evidence across projects.
+ * How: Reads the scan registry, source trees, and Git history, then writes generated ledgers.
+ * Callers: Trust, publishing, and provenance-verification workflows consume these ledgers.
+ * Example: `node tools/sma-provenance-ledger.mjs --limit 1 --json`
+ */
+/**
  * SMA provenance ledger — the backfill engine for the creator trail, license
  * lattice, and provenance seals.
  *

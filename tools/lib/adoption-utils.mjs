@@ -1,3 +1,11 @@
+/**
+ * WHAT: Shared parsing, ranking, formatting, and registry-loading helpers for adoption tools.
+ * WHY: Adoption commands otherwise drift when they interpret the same project and registry data separately.
+ * HOW: Callers pass command arguments or loaded state; these functions return normalized values and ranked entries.
+ * Callers include the doctor, blocked-work explainer, curated-build helpers, and tool server.
+ * This module performs no writes and uses the adoption module's canonical default paths.
+ * @example node --input-type=module -e "import { formatNumber } from './tools/lib/adoption-utils.mjs'; console.log(formatNumber(1234))"
+ */
 import path from "node:path";
 import { defaultPaths, maybeReadJson } from "./sma-adoption.mjs";
 

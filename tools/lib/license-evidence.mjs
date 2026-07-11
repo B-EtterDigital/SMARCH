@@ -1,4 +1,13 @@
 /**
+ * WHAT: Scans source bytes for declared tags and license text, then compares evidence with a declaration.
+ * WHY: A permissive manifest can otherwise conceal restricted source and launder it through later gates.
+ * HOW: Callers pass text or a directory; scanners return detected licenses, source locations, and mismatch findings.
+ * Missing or contradictory evidence is flagged rather than silently treated as proof of an open license.
+ * The provenance ledger consumes these findings before export and composition policy is evaluated.
+ * License abbreviations are defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { scanText } from './tools/lib/license-evidence.mjs'; console.log(scanText('// SPDX-License-Identifier: MIT'))"
+ */
+/**
  * license-evidence.mjs — scan source files for LICENSE EVIDENCE so a brick's
  * DECLARED license can be checked against what its code actually contains.
  *

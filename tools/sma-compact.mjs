@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Compresses enriched brick semantics into small agent-readable cards and a line-oriented catalog.
+ * WHY: Agents must compare hundreds of bricks without spending their context budget on full manifests and prose descriptions.
+ * HOW: Reads enriched candidates and manifests, asks Codex for bounded fields, then updates compact metadata and the shared card catalog.
+ * Usage: `node tools/sma-compact.mjs --limit 1 --dry-run`
+ */
+/**
  * sma-compact: produce token-efficient brick cards so agents can load hundreds
  * at once without blowing their context window.
  *

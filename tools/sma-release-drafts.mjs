@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Explains why curated build releases remain drafts.
+ * Why: A draft label alone does not tell operators which blockers must be cleared next.
+ * How: Reads curated-build state, groups blocker codes, and writes a draft-status handoff.
+ * Callers: Release operators and dashboards use it to prioritize remediation.
+ * Example: `node tools/sma-release-drafts.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

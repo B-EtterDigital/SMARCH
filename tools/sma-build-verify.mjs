@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/**
+ * WHAT: Verifies curated build manifests, component bricks, checks, release evidence, and portability claims.
+ * WHY: Promotion needs a current, machine-readable answer about whether a build is actually installable and release-backed.
+ * HOW: Reads builds, the [registry](../docs/GLOSSARY.md#registry), and releases, then emits a report consumed by promotion and packet tools.
+ * Usage: `node tools/sma-build-verify.mjs --help`
+ */
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";

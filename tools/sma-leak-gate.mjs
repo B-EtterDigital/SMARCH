@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Scans tracked text files for configured private-data leak patterns.
+ * WHY: Secrets and machine-specific paths must be blocked before publication or reuse.
+ * HOW: Reads tracked files, applies pattern rules, and subtracts explicitly reviewed exceptions.
+ * INPUTS: A repository root, optional exception file, and report or self-test options.
+ * OUTPUTS: A pass-or-fail leak report with matched paths and exception counts.
+ * CALLERS: Publication checks, release pipelines, and maintainers reviewing possible leaks.
+ * Usage: `node tools/sma-leak-gate.mjs --selftest`
+ */
+/**
  * SMA private-data leak gate.
  *
  * Scans tracked text files with the patterns in registry/leak-patterns.json.

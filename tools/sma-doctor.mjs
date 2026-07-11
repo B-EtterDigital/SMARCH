@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Diagnoses portfolio or project health from generated registry and state snapshots.
+ * WHY: Operators need actionable causes and next commands instead of isolated health metrics.
+ * HOW: Joins registry, state, lease, build, and adoption summaries for the requested scope.
+ * INPUTS: Optional project, snapshot-path, result-limit, and structured-output options.
+ * OUTPUTS: A concise diagnosis with prioritized repair actions or structured data.
+ * CALLERS: Human operators and troubleshooting workflows investigating blocked progress.
+ * Usage: `node tools/sma-doctor.mjs --help`
+ */
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";

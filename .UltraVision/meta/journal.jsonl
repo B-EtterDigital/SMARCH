@@ -336,3 +336,600 @@
 {"ts": "2026-07-11T00:59:43+00:00", "action": "complete", "id": "UV-RG-skeptic2b-discovery-fail-closed", "detail": "node tools/lib/portfolio-projects.mjs --selftest"}
 {"ts": "2026-07-11T00:59:44+00:00", "action": "complete", "id": "UV-RG-skeptic2b-install-race", "detail": "node tools/mcp/selftest.mjs"}
 {"ts": "2026-07-11T00:59:44+00:00", "action": "complete", "id": "UV-SK-skeptic3-plugin-smoke", "detail": "node tools/sma-plugin-sync.mjs --check"}
+{"ts": "2026-07-11T01:00:53+00:00", "action": "claim", "id": "UV-RG-x-adoption-utils-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:53+00:00", "action": "claim", "id": "UV-RG-x-adoption-utils-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:54+00:00", "action": "claim", "id": "UV-PR-x-attestation-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:54+00:00", "action": "claim", "id": "UV-PR-x-attestation-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:54+00:00", "action": "claim", "id": "UV-PR-x-attestation-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:55+00:00", "action": "claim", "id": "UV-PR-x-attestation-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:55+00:00", "action": "claim", "id": "UV-SM-x-codex-runner-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:55+00:00", "action": "claim", "id": "UV-SM-x-codex-runner-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:56+00:00", "action": "claim", "id": "UV-GA-x-compliance-controls-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:56+00:00", "action": "claim", "id": "UV-GA-x-compliance-controls-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:56+00:00", "action": "claim", "id": "UV-CO-x-context-log-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:57+00:00", "action": "claim", "id": "UV-CO-x-context-log-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:57+00:00", "action": "claim", "id": "UV-RG-x-controller-action-report-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:57+00:00", "action": "claim", "id": "UV-RG-x-controller-action-report-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:58+00:00", "action": "claim", "id": "UV-RG-x-curated-build-utils-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:58+00:00", "action": "claim", "id": "UV-RG-x-curated-build-utils-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:59+00:00", "action": "claim", "id": "UV-PR-x-export-coverage-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:59+00:00", "action": "claim", "id": "UV-PR-x-export-coverage-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:00:59+00:00", "action": "claim", "id": "UV-PR-x-export-guard-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:00+00:00", "action": "claim", "id": "UV-PR-x-export-guard-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:00+00:00", "action": "claim", "id": "UV-PR-x-export-guard-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:01+00:00", "action": "claim", "id": "UV-PR-x-export-guard-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:01+00:00", "action": "claim", "id": "UV-RG-x-feature-clusters-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:02+00:00", "action": "claim", "id": "UV-RG-x-feature-clusters-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:02+00:00", "action": "claim", "id": "UV-EV-x-gen-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:03+00:00", "action": "claim", "id": "UV-EV-x-gen-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:03+00:00", "action": "claim", "id": "UV-PR-x-gen-public-ledger-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:03+00:00", "action": "claim", "id": "UV-PR-x-gen-public-ledger-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:04+00:00", "action": "claim", "id": "UV-RG-x-gen3-goal-progress-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:04+00:00", "action": "claim", "id": "UV-RG-x-gen3-goal-progress-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:05+00:00", "action": "claim", "id": "UV-DA-x-gen3-renderers-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:05+00:00", "action": "claim", "id": "UV-DA-x-gen3-renderers-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:05+00:00", "action": "claim", "id": "UV-CO-x-gen3-state-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:06+00:00", "action": "claim", "id": "UV-CO-x-gen3-state-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:06+00:00", "action": "claim", "id": "UV-EV-x-index-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:07+00:00", "action": "claim", "id": "UV-EV-x-index-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:07+00:00", "action": "claim", "id": "UV-SK-x-install-agent-skills-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:07+00:00", "action": "claim", "id": "UV-SK-x-install-agent-skills-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:08+00:00", "action": "claim", "id": "UV-PR-x-ledger-resolve-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:08+00:00", "action": "claim", "id": "UV-PR-x-ledger-resolve-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:08+00:00", "action": "claim", "id": "UV-PR-x-license-evidence-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:09+00:00", "action": "claim", "id": "UV-PR-x-license-evidence-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:09+00:00", "action": "claim", "id": "UV-PR-x-license-evidence-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:10+00:00", "action": "claim", "id": "UV-PR-x-license-evidence-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:10+00:00", "action": "claim", "id": "UV-PR-x-license-lattice-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:10+00:00", "action": "claim", "id": "UV-PR-x-license-lattice-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:11+00:00", "action": "claim", "id": "UV-PR-x-license-lattice-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:11+00:00", "action": "claim", "id": "UV-PR-x-license-lattice-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:11+00:00", "action": "claim", "id": "UV-PR-x-merkle-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:12+00:00", "action": "claim", "id": "UV-PR-x-merkle-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:12+00:00", "action": "claim", "id": "UV-PR-x-merkle-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:12+00:00", "action": "claim", "id": "UV-PR-x-merkle-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:13+00:00", "action": "claim", "id": "UV-RG-x-module-work-agent-packets-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:13+00:00", "action": "claim", "id": "UV-RG-x-module-work-agent-packets-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:13+00:00", "action": "claim", "id": "UV-RG-x-module-work-observations-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:14+00:00", "action": "claim", "id": "UV-RG-x-module-work-observations-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:14+00:00", "action": "claim", "id": "UV-RG-x-module-work-paths-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:14+00:00", "action": "claim", "id": "UV-RG-x-module-work-paths-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:15+00:00", "action": "claim", "id": "UV-RG-x-module-work-renderers-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:15+00:00", "action": "claim", "id": "UV-RG-x-module-work-renderers-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:16+00:00", "action": "claim", "id": "UV-RG-x-module-work-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:16+00:00", "action": "claim", "id": "UV-RG-x-module-work-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:16+00:00", "action": "claim", "id": "UV-RG-x-ownership-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:17+00:00", "action": "claim", "id": "UV-RG-x-ownership-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:17+00:00", "action": "claim", "id": "UV-RG-x-packet-freshness-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:17+00:00", "action": "claim", "id": "UV-RG-x-packet-freshness-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:18+00:00", "action": "claim", "id": "UV-CO-x-parallel-preflight-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:18+00:00", "action": "claim", "id": "UV-CO-x-parallel-preflight-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:18+00:00", "action": "claim", "id": "UV-RG-x-portfolio-projects-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:19+00:00", "action": "claim", "id": "UV-RG-x-portfolio-projects-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:19+00:00", "action": "claim", "id": "UV-RG-x-project-paths-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:19+00:00", "action": "claim", "id": "UV-RG-x-project-paths-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:20+00:00", "action": "claim", "id": "UV-PR-x-provenance-seal-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:20+00:00", "action": "claim", "id": "UV-PR-x-provenance-seal-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:20+00:00", "action": "claim", "id": "UV-PR-x-provenance-seal-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:21+00:00", "action": "claim", "id": "UV-PR-x-provenance-seal-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:21+00:00", "action": "claim", "id": "UV-PR-x-similarity-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:21+00:00", "action": "claim", "id": "UV-PR-x-similarity-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:22+00:00", "action": "claim", "id": "UV-PR-x-similarity-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:22+00:00", "action": "claim", "id": "UV-PR-x-similarity-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:22+00:00", "action": "claim", "id": "UV-RG-x-sma-adoption-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:23+00:00", "action": "claim", "id": "UV-RG-x-sma-adoption-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:23+00:00", "action": "claim", "id": "UV-PR-x-sma-anchor-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:23+00:00", "action": "claim", "id": "UV-PR-x-sma-anchor-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:24+00:00", "action": "claim", "id": "UV-PR-x-sma-attest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:24+00:00", "action": "claim", "id": "UV-PR-x-sma-attest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:24+00:00", "action": "claim", "id": "UV-PR-x-sma-attest-verify-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:25+00:00", "action": "claim", "id": "UV-PR-x-sma-attest-verify-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:25+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-bulk-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:26+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-bulk-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:26+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-plan-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:26+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-plan-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:27+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-run-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:27+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-run-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:27+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-summary-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:27+00:00", "action": "claim", "id": "UV-RG-x-sma-backfill-summary-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:28+00:00", "action": "claim", "id": "UV-RG-x-sma-backlog-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:28+00:00", "action": "claim", "id": "UV-RG-x-sma-backlog-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:28+00:00", "action": "claim", "id": "UV-RG-x-sma-bootstrap-manifests-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:29+00:00", "action": "claim", "id": "UV-RG-x-sma-bootstrap-manifests-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:29+00:00", "action": "claim", "id": "UV-DA-x-sma-brick-wall-lego-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:29+00:00", "action": "claim", "id": "UV-DA-x-sma-brick-wall-lego-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:30+00:00", "action": "claim", "id": "UV-RG-x-sma-build-index-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:30+00:00", "action": "claim", "id": "UV-RG-x-sma-build-index-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:30+00:00", "action": "claim", "id": "UV-RG-x-sma-build-packets-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:30+00:00", "action": "claim", "id": "UV-RG-x-sma-build-packets-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:31+00:00", "action": "claim", "id": "UV-RG-x-sma-build-promote-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:31+00:00", "action": "claim", "id": "UV-RG-x-sma-build-promote-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:32+00:00", "action": "claim", "id": "UV-RG-x-sma-build-verify-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:32+00:00", "action": "claim", "id": "UV-RG-x-sma-build-verify-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:32+00:00", "action": "claim", "id": "UV-RG-x-sma-canonicalization-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:32+00:00", "action": "claim", "id": "UV-RG-x-sma-canonicalization-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:33+00:00", "action": "claim", "id": "UV-GA-x-sma-ci-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:33+00:00", "action": "claim", "id": "UV-GA-x-sma-ci-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:33+00:00", "action": "claim", "id": "UV-CO-x-sma-cleanup-packets-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:34+00:00", "action": "claim", "id": "UV-CO-x-sma-cleanup-packets-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:34+00:00", "action": "claim", "id": "UV-RG-x-sma-clone-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:34+00:00", "action": "claim", "id": "UV-RG-x-sma-clone-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:35+00:00", "action": "claim", "id": "UV-RG-x-sma-clone-smoke-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:35+00:00", "action": "claim", "id": "UV-RG-x-sma-clone-smoke-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:35+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:36+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:36+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-all-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:36+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-all-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:36+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-connect-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:37+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-connect-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:37+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-enrich-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:37+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-enrich-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:38+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-profile-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:38+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-profile-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:38+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-rank-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:39+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-rank-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:39+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-scan-helper-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:39+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-scan-helper-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:40+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-test-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:40+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-test-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:40+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-wiki-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:41+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-wiki-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:41+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-wiki-index-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:41+00:00", "action": "claim", "id": "UV-SM-x-sma-codex-wiki-index-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:42+00:00", "action": "claim", "id": "UV-RG-x-sma-compact-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:42+00:00", "action": "claim", "id": "UV-RG-x-sma-compact-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:42+00:00", "action": "claim", "id": "UV-GA-x-sma-compliance-gate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:43+00:00", "action": "claim", "id": "UV-GA-x-sma-compliance-gate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:43+00:00", "action": "claim", "id": "UV-CO-x-sma-conflict-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:43+00:00", "action": "claim", "id": "UV-CO-x-sma-conflict-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:43+00:00", "action": "claim", "id": "UV-CO-x-sma-context-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:44+00:00", "action": "claim", "id": "UV-CO-x-sma-context-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:44+00:00", "action": "claim", "id": "UV-CO-x-sma-context-check-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:44+00:00", "action": "claim", "id": "UV-CO-x-sma-context-check-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:45+00:00", "action": "claim", "id": "UV-CO-x-sma-context-normalize-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:45+00:00", "action": "claim", "id": "UV-CO-x-sma-context-normalize-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:45+00:00", "action": "claim", "id": "UV-CO-x-sma-context-replay-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:46+00:00", "action": "claim", "id": "UV-CO-x-sma-context-replay-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:46+00:00", "action": "claim", "id": "UV-CO-x-sma-controller-snapshot-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:47+00:00", "action": "claim", "id": "UV-CO-x-sma-controller-snapshot-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:47+00:00", "action": "claim", "id": "UV-DA-x-sma-dashboard-server-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:47+00:00", "action": "claim", "id": "UV-DA-x-sma-dashboard-server-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:47+00:00", "action": "claim", "id": "UV-RG-x-sma-dependents-index-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:48+00:00", "action": "claim", "id": "UV-RG-x-sma-dependents-index-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:48+00:00", "action": "claim", "id": "UV-CO-x-sma-dirty-baseline-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:48+00:00", "action": "claim", "id": "UV-CO-x-sma-dirty-baseline-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:49+00:00", "action": "claim", "id": "UV-RG-x-sma-doctor-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:49+00:00", "action": "claim", "id": "UV-RG-x-sma-doctor-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:49+00:00", "action": "claim", "id": "UV-CO-x-sma-end-edit-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:50+00:00", "action": "claim", "id": "UV-CO-x-sma-end-edit-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:50+00:00", "action": "claim", "id": "UV-RG-x-sma-enrich-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:50+00:00", "action": "claim", "id": "UV-RG-x-sma-enrich-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:50+00:00", "action": "claim", "id": "UV-RG-x-sma-filter-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:51+00:00", "action": "claim", "id": "UV-RG-x-sma-filter-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:51+00:00", "action": "claim", "id": "UV-GA-x-sma-gen3-classify-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:51+00:00", "action": "claim", "id": "UV-GA-x-sma-gen3-classify-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:52+00:00", "action": "claim", "id": "UV-DA-x-sma-gen3-dashboard-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:52+00:00", "action": "claim", "id": "UV-DA-x-sma-gen3-dashboard-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:52+00:00", "action": "claim", "id": "UV-RG-x-sma-goal-progress-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:53+00:00", "action": "claim", "id": "UV-RG-x-sma-goal-progress-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:53+00:00", "action": "claim", "id": "UV-GR-x-sma-graph-packets-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:53+00:00", "action": "claim", "id": "UV-GR-x-sma-graph-packets-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:53+00:00", "action": "claim", "id": "UV-GR-x-sma-graphify-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:54+00:00", "action": "claim", "id": "UV-GR-x-sma-graphify-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:54+00:00", "action": "claim", "id": "UV-RG-x-sma-import-verify-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:54+00:00", "action": "claim", "id": "UV-RG-x-sma-import-verify-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:55+00:00", "action": "claim", "id": "UV-RG-x-sma-init-project-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:55+00:00", "action": "claim", "id": "UV-RG-x-sma-init-project-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:55+00:00", "action": "claim", "id": "UV-GA-x-sma-leak-gate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:55+00:00", "action": "claim", "id": "UV-GA-x-sma-leak-gate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:56+00:00", "action": "claim", "id": "UV-CO-x-sma-lease-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:56+00:00", "action": "claim", "id": "UV-CO-x-sma-lease-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:56+00:00", "action": "claim", "id": "UV-GA-x-sma-license-gate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:57+00:00", "action": "claim", "id": "UV-GA-x-sma-license-gate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:57+00:00", "action": "claim", "id": "UV-RG-x-sma-manifest-scaffold-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:57+00:00", "action": "claim", "id": "UV-RG-x-sma-manifest-scaffold-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:58+00:00", "action": "claim", "id": "UV-RG-x-sma-match-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:58+00:00", "action": "claim", "id": "UV-RG-x-sma-match-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:58+00:00", "action": "claim", "id": "UV-CO-x-sma-merge-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:58+00:00", "action": "claim", "id": "UV-CO-x-sma-merge-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:59+00:00", "action": "claim", "id": "UV-RG-x-sma-merge-registries-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:59+00:00", "action": "claim", "id": "UV-RG-x-sma-merge-registries-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:01:59+00:00", "action": "claim", "id": "UV-RG-x-sma-module-work-packets-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:00+00:00", "action": "claim", "id": "UV-RG-x-sma-module-work-packets-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:00+00:00", "action": "claim", "id": "UV-RG-x-sma-operator-packet-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:00+00:00", "action": "claim", "id": "UV-RG-x-sma-operator-packet-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:01+00:00", "action": "claim", "id": "UV-CO-x-sma-parallel-preflight-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:01+00:00", "action": "claim", "id": "UV-CO-x-sma-parallel-preflight-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:02+00:00", "action": "claim", "id": "UV-RG-x-sma-portfolio-refresh-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:02+00:00", "action": "claim", "id": "UV-RG-x-sma-portfolio-refresh-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:02+00:00", "action": "claim", "id": "UV-RG-x-sma-portfolio-scan-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:03+00:00", "action": "claim", "id": "UV-RG-x-sma-portfolio-scan-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:03+00:00", "action": "claim", "id": "UV-RG-x-sma-promote-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:03+00:00", "action": "claim", "id": "UV-RG-x-sma-promote-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:04+00:00", "action": "claim", "id": "UV-RG-x-sma-propagate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:04+00:00", "action": "claim", "id": "UV-RG-x-sma-propagate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:04+00:00", "action": "claim", "id": "UV-PR-x-sma-provenance-ledger-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:04+00:00", "action": "claim", "id": "UV-PR-x-sma-provenance-ledger-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:05+00:00", "action": "claim", "id": "UV-PR-x-sma-provenance-summary-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:05+00:00", "action": "claim", "id": "UV-PR-x-sma-provenance-summary-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:05+00:00", "action": "claim", "id": "UV-PR-x-sma-provenance-verify-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:06+00:00", "action": "claim", "id": "UV-PR-x-sma-provenance-verify-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:06+00:00", "action": "claim", "id": "UV-RG-x-sma-publish-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:06+00:00", "action": "claim", "id": "UV-RG-x-sma-publish-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:06+00:00", "action": "claim", "id": "UV-RG-x-sma-publish-index-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:07+00:00", "action": "claim", "id": "UV-RG-x-sma-publish-index-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:07+00:00", "action": "claim", "id": "UV-RG-x-sma-publish-leaks-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:07+00:00", "action": "claim", "id": "UV-RG-x-sma-publish-leaks-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:08+00:00", "action": "claim", "id": "UV-RG-x-sma-recommend-builds-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:08+00:00", "action": "claim", "id": "UV-RG-x-sma-recommend-builds-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:08+00:00", "action": "claim", "id": "UV-RG-x-sma-refresh-manifest-budgets-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:09+00:00", "action": "claim", "id": "UV-RG-x-sma-refresh-manifest-budgets-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:09+00:00", "action": "claim", "id": "UV-RG-x-sma-release-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:09+00:00", "action": "claim", "id": "UV-RG-x-sma-release-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:09+00:00", "action": "claim", "id": "UV-RG-x-sma-release-drafts-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:10+00:00", "action": "claim", "id": "UV-RG-x-sma-release-drafts-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:10+00:00", "action": "claim", "id": "UV-RG-x-sma-release-index-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:10+00:00", "action": "claim", "id": "UV-RG-x-sma-release-index-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:10+00:00", "action": "claim", "id": "UV-RG-x-sma-repo-queues-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:11+00:00", "action": "claim", "id": "UV-RG-x-sma-repo-queues-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:11+00:00", "action": "claim", "id": "UV-RG-x-sma-reuse-receipt-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:12+00:00", "action": "claim", "id": "UV-RG-x-sma-reuse-receipt-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:12+00:00", "action": "claim", "id": "UV-GA-x-sma-rule-gate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:13+00:00", "action": "claim", "id": "UV-GA-x-sma-rule-gate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:13+00:00", "action": "claim", "id": "UV-RG-x-sma-scan-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:13+00:00", "action": "claim", "id": "UV-RG-x-sma-scan-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:14+00:00", "action": "claim", "id": "UV-GA-x-sma-scope-drift-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:14+00:00", "action": "claim", "id": "UV-GA-x-sma-scope-drift-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:14+00:00", "action": "claim", "id": "UV-RG-x-sma-score-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:14+00:00", "action": "claim", "id": "UV-RG-x-sma-score-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:15+00:00", "action": "claim", "id": "UV-GA-x-sma-security-gate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:15+00:00", "action": "claim", "id": "UV-GA-x-sma-security-gate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:15+00:00", "action": "claim", "id": "UV-CO-x-sma-seed-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:16+00:00", "action": "claim", "id": "UV-CO-x-sma-seed-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:16+00:00", "action": "claim", "id": "UV-RG-x-sma-similarity-scan-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:16+00:00", "action": "claim", "id": "UV-RG-x-sma-similarity-scan-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:17+00:00", "action": "claim", "id": "UV-SM-x-sma-smoa-token-summary-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:17+00:00", "action": "claim", "id": "UV-SM-x-sma-smoa-token-summary-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:17+00:00", "action": "claim", "id": "UV-GA-x-sma-source-size-gate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:17+00:00", "action": "claim", "id": "UV-GA-x-sma-source-size-gate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:18+00:00", "action": "claim", "id": "UV-RG-x-sma-stable-generated-selftest-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:18+00:00", "action": "claim", "id": "UV-RG-x-sma-stable-generated-selftest-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:18+00:00", "action": "claim", "id": "UV-CO-x-sma-start-edit-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:19+00:00", "action": "claim", "id": "UV-CO-x-sma-start-edit-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:19+00:00", "action": "claim", "id": "UV-RG-x-sma-state-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:19+00:00", "action": "claim", "id": "UV-RG-x-sma-state-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:20+00:00", "action": "claim", "id": "UV-RG-x-sma-stats-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:20+00:00", "action": "claim", "id": "UV-RG-x-sma-stats-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:20+00:00", "action": "claim", "id": "UV-RG-x-sma-store-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:20+00:00", "action": "claim", "id": "UV-RG-x-sma-store-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:21+00:00", "action": "claim", "id": "UV-RG-x-sma-store-remote-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:21+00:00", "action": "claim", "id": "UV-RG-x-sma-store-remote-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:21+00:00", "action": "claim", "id": "UV-RG-x-sma-sup-status-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:22+00:00", "action": "claim", "id": "UV-RG-x-sma-sup-status-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:22+00:00", "action": "claim", "id": "UV-SY-x-sma-sync-public-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:22+00:00", "action": "claim", "id": "UV-SY-x-sma-sync-public-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:23+00:00", "action": "claim", "id": "UV-RG-x-sma-token-count-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:23+00:00", "action": "claim", "id": "UV-RG-x-sma-token-count-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:23+00:00", "action": "claim", "id": "UV-RG-x-sma-touch-backfill-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:24+00:00", "action": "claim", "id": "UV-RG-x-sma-touch-backfill-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:24+00:00", "action": "claim", "id": "UV-RG-x-sma-update-plan-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:24+00:00", "action": "claim", "id": "UV-RG-x-sma-update-plan-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:25+00:00", "action": "claim", "id": "UV-GA-x-sma-validate-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:25+00:00", "action": "claim", "id": "UV-GA-x-sma-validate-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:25+00:00", "action": "claim", "id": "UV-GA-x-sma-validate-gen3-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:25+00:00", "action": "claim", "id": "UV-GA-x-sma-validate-gen3-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:26+00:00", "action": "claim", "id": "UV-RG-x-sma-wave-monitor-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:26+00:00", "action": "claim", "id": "UV-RG-x-sma-wave-monitor-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:26+00:00", "action": "claim", "id": "UV-RG-x-sma-wave-observe-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:27+00:00", "action": "claim", "id": "UV-RG-x-sma-wave-observe-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:27+00:00", "action": "claim", "id": "UV-RG-x-sma-why-blocked-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:27+00:00", "action": "claim", "id": "UV-RG-x-sma-why-blocked-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:28+00:00", "action": "claim", "id": "UV-DA-x-sma-wiki-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:28+00:00", "action": "claim", "id": "UV-DA-x-sma-wiki-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:28+00:00", "action": "claim", "id": "UV-DA-x-sma-wiki-gen3-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:28+00:00", "action": "claim", "id": "UV-DA-x-sma-wiki-gen3-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:29+00:00", "action": "claim", "id": "UV-DA-x-sma-wiki-html-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:29+00:00", "action": "claim", "id": "UV-DA-x-sma-wiki-html-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:29+00:00", "action": "claim", "id": "UV-RG-x-source-path-resolver-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:30+00:00", "action": "claim", "id": "UV-RG-x-source-path-resolver-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:30+00:00", "action": "claim", "id": "UV-RG-x-stable-generated-example", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:02:30+00:00", "action": "claim", "id": "UV-RG-x-stable-generated-header", "agent": "codex-w9"}
+{"ts": "2026-07-11T01:19:21+00:00", "action": "obsolete", "id": "UV-EV-x-index-example", "detail": "fixture files are test data, not source — explain-file does not apply (snapshot gate caught the violation)"}
+{"ts": "2026-07-11T01:19:21+00:00", "action": "obsolete", "id": "UV-EV-x-index-header", "detail": "fixture files are test data, not source — explain-file does not apply (snapshot gate caught the violation)"}
+{"ts": "2026-07-11T01:19:21+00:00", "action": "complete", "id": "UV-RG-x-adoption-utils-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:22+00:00", "action": "complete", "id": "UV-RG-x-adoption-utils-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:22+00:00", "action": "complete", "id": "UV-PR-x-attestation-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:23+00:00", "action": "complete", "id": "UV-PR-x-attestation-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:23+00:00", "action": "complete", "id": "UV-PR-x-attestation-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:24+00:00", "action": "complete", "id": "UV-PR-x-attestation-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:24+00:00", "action": "complete", "id": "UV-SM-x-codex-runner-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:25+00:00", "action": "complete", "id": "UV-SM-x-codex-runner-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:25+00:00", "action": "complete", "id": "UV-GA-x-compliance-controls-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:26+00:00", "action": "complete", "id": "UV-GA-x-compliance-controls-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:26+00:00", "action": "complete", "id": "UV-CO-x-context-log-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:27+00:00", "action": "complete", "id": "UV-CO-x-context-log-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:27+00:00", "action": "complete", "id": "UV-RG-x-controller-action-report-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:28+00:00", "action": "complete", "id": "UV-RG-x-controller-action-report-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:28+00:00", "action": "complete", "id": "UV-RG-x-curated-build-utils-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:29+00:00", "action": "complete", "id": "UV-RG-x-curated-build-utils-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:29+00:00", "action": "complete", "id": "UV-PR-x-export-coverage-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:30+00:00", "action": "complete", "id": "UV-PR-x-export-coverage-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:30+00:00", "action": "complete", "id": "UV-PR-x-export-guard-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:31+00:00", "action": "complete", "id": "UV-PR-x-export-guard-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:31+00:00", "action": "complete", "id": "UV-PR-x-export-guard-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:32+00:00", "action": "complete", "id": "UV-PR-x-export-guard-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:32+00:00", "action": "complete", "id": "UV-RG-x-feature-clusters-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:33+00:00", "action": "complete", "id": "UV-RG-x-feature-clusters-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:34+00:00", "action": "complete", "id": "UV-EV-x-gen-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:34+00:00", "action": "complete", "id": "UV-EV-x-gen-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:34+00:00", "action": "complete", "id": "UV-PR-x-gen-public-ledger-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:35+00:00", "action": "complete", "id": "UV-PR-x-gen-public-ledger-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:35+00:00", "action": "complete", "id": "UV-RG-x-gen3-goal-progress-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:36+00:00", "action": "complete", "id": "UV-RG-x-gen3-goal-progress-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:36+00:00", "action": "complete", "id": "UV-DA-x-gen3-renderers-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:37+00:00", "action": "complete", "id": "UV-DA-x-gen3-renderers-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:37+00:00", "action": "complete", "id": "UV-CO-x-gen3-state-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:38+00:00", "action": "complete", "id": "UV-CO-x-gen3-state-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:39+00:00", "action": "complete", "id": "UV-SK-x-install-agent-skills-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:40+00:00", "action": "complete", "id": "UV-SK-x-install-agent-skills-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:40+00:00", "action": "complete", "id": "UV-PR-x-ledger-resolve-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:41+00:00", "action": "complete", "id": "UV-PR-x-ledger-resolve-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:41+00:00", "action": "complete", "id": "UV-PR-x-license-evidence-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:42+00:00", "action": "complete", "id": "UV-PR-x-license-evidence-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:43+00:00", "action": "complete", "id": "UV-PR-x-license-evidence-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:44+00:00", "action": "complete", "id": "UV-PR-x-license-evidence-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:45+00:00", "action": "complete", "id": "UV-PR-x-license-lattice-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:45+00:00", "action": "complete", "id": "UV-PR-x-license-lattice-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:46+00:00", "action": "complete", "id": "UV-PR-x-license-lattice-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:46+00:00", "action": "complete", "id": "UV-PR-x-license-lattice-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:47+00:00", "action": "complete", "id": "UV-PR-x-merkle-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:47+00:00", "action": "complete", "id": "UV-PR-x-merkle-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:48+00:00", "action": "complete", "id": "UV-PR-x-merkle-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:48+00:00", "action": "complete", "id": "UV-PR-x-merkle-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:49+00:00", "action": "complete", "id": "UV-RG-x-module-work-agent-packets-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:49+00:00", "action": "complete", "id": "UV-RG-x-module-work-agent-packets-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:50+00:00", "action": "complete", "id": "UV-RG-x-module-work-observations-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:50+00:00", "action": "complete", "id": "UV-RG-x-module-work-observations-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:51+00:00", "action": "complete", "id": "UV-RG-x-module-work-paths-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:51+00:00", "action": "complete", "id": "UV-RG-x-module-work-paths-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:52+00:00", "action": "complete", "id": "UV-RG-x-module-work-renderers-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:52+00:00", "action": "complete", "id": "UV-RG-x-module-work-renderers-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:53+00:00", "action": "complete", "id": "UV-RG-x-module-work-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:53+00:00", "action": "complete", "id": "UV-RG-x-module-work-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:54+00:00", "action": "complete", "id": "UV-RG-x-ownership-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:54+00:00", "action": "complete", "id": "UV-RG-x-ownership-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:55+00:00", "action": "complete", "id": "UV-RG-x-packet-freshness-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:55+00:00", "action": "complete", "id": "UV-RG-x-packet-freshness-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:56+00:00", "action": "complete", "id": "UV-CO-x-parallel-preflight-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:56+00:00", "action": "complete", "id": "UV-CO-x-parallel-preflight-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:57+00:00", "action": "complete", "id": "UV-RG-x-portfolio-projects-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:57+00:00", "action": "complete", "id": "UV-RG-x-portfolio-projects-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:58+00:00", "action": "complete", "id": "UV-RG-x-project-paths-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:58+00:00", "action": "complete", "id": "UV-RG-x-project-paths-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:59+00:00", "action": "complete", "id": "UV-PR-x-provenance-seal-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:19:59+00:00", "action": "complete", "id": "UV-PR-x-provenance-seal-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:00+00:00", "action": "complete", "id": "UV-PR-x-provenance-seal-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:00+00:00", "action": "complete", "id": "UV-PR-x-provenance-seal-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:01+00:00", "action": "complete", "id": "UV-PR-x-similarity-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:01+00:00", "action": "complete", "id": "UV-PR-x-similarity-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:02+00:00", "action": "complete", "id": "UV-PR-x-similarity-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:03+00:00", "action": "complete", "id": "UV-PR-x-similarity-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:04+00:00", "action": "complete", "id": "UV-RG-x-sma-adoption-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:05+00:00", "action": "complete", "id": "UV-RG-x-sma-adoption-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:05+00:00", "action": "complete", "id": "UV-PR-x-sma-anchor-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:06+00:00", "action": "complete", "id": "UV-PR-x-sma-anchor-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:07+00:00", "action": "complete", "id": "UV-PR-x-sma-attest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:07+00:00", "action": "complete", "id": "UV-PR-x-sma-attest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:08+00:00", "action": "complete", "id": "UV-PR-x-sma-attest-verify-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:08+00:00", "action": "complete", "id": "UV-PR-x-sma-attest-verify-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:09+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-bulk-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:09+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-bulk-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:10+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-plan-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:10+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-plan-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:11+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-run-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:11+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-run-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:12+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-summary-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:12+00:00", "action": "complete", "id": "UV-RG-x-sma-backfill-summary-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:13+00:00", "action": "complete", "id": "UV-RG-x-sma-backlog-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:13+00:00", "action": "complete", "id": "UV-RG-x-sma-backlog-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:14+00:00", "action": "complete", "id": "UV-RG-x-sma-bootstrap-manifests-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:14+00:00", "action": "complete", "id": "UV-RG-x-sma-bootstrap-manifests-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:15+00:00", "action": "complete", "id": "UV-DA-x-sma-brick-wall-lego-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:15+00:00", "action": "complete", "id": "UV-DA-x-sma-brick-wall-lego-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:16+00:00", "action": "complete", "id": "UV-RG-x-sma-build-index-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:17+00:00", "action": "complete", "id": "UV-RG-x-sma-build-index-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:17+00:00", "action": "complete", "id": "UV-RG-x-sma-build-packets-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:18+00:00", "action": "complete", "id": "UV-RG-x-sma-build-packets-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:18+00:00", "action": "complete", "id": "UV-RG-x-sma-build-promote-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:19+00:00", "action": "complete", "id": "UV-RG-x-sma-build-promote-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:19+00:00", "action": "complete", "id": "UV-RG-x-sma-build-verify-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:20+00:00", "action": "complete", "id": "UV-RG-x-sma-build-verify-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:20+00:00", "action": "complete", "id": "UV-RG-x-sma-canonicalization-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:21+00:00", "action": "complete", "id": "UV-RG-x-sma-canonicalization-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:21+00:00", "action": "complete", "id": "UV-GA-x-sma-ci-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:22+00:00", "action": "complete", "id": "UV-GA-x-sma-ci-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:22+00:00", "action": "complete", "id": "UV-CO-x-sma-cleanup-packets-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:23+00:00", "action": "complete", "id": "UV-CO-x-sma-cleanup-packets-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:23+00:00", "action": "complete", "id": "UV-RG-x-sma-clone-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:24+00:00", "action": "complete", "id": "UV-RG-x-sma-clone-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:24+00:00", "action": "complete", "id": "UV-RG-x-sma-clone-smoke-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:25+00:00", "action": "complete", "id": "UV-RG-x-sma-clone-smoke-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:25+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:26+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:27+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-all-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:27+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-all-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:28+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-connect-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:28+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-connect-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:29+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-enrich-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:29+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-enrich-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:30+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-profile-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:30+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-profile-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:31+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-rank-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:31+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-rank-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:32+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-scan-helper-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:32+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-scan-helper-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:33+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-test-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:33+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-test-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:34+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-wiki-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:34+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-wiki-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:35+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-wiki-index-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:35+00:00", "action": "complete", "id": "UV-SM-x-sma-codex-wiki-index-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:36+00:00", "action": "complete", "id": "UV-RG-x-sma-compact-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:36+00:00", "action": "complete", "id": "UV-RG-x-sma-compact-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:37+00:00", "action": "complete", "id": "UV-GA-x-sma-compliance-gate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:37+00:00", "action": "complete", "id": "UV-GA-x-sma-compliance-gate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:38+00:00", "action": "complete", "id": "UV-CO-x-sma-conflict-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:39+00:00", "action": "complete", "id": "UV-CO-x-sma-conflict-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:39+00:00", "action": "complete", "id": "UV-CO-x-sma-context-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:40+00:00", "action": "complete", "id": "UV-CO-x-sma-context-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:41+00:00", "action": "complete", "id": "UV-CO-x-sma-context-check-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:41+00:00", "action": "complete", "id": "UV-CO-x-sma-context-check-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:42+00:00", "action": "complete", "id": "UV-CO-x-sma-context-normalize-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:42+00:00", "action": "complete", "id": "UV-CO-x-sma-context-normalize-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:43+00:00", "action": "complete", "id": "UV-CO-x-sma-context-replay-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:43+00:00", "action": "complete", "id": "UV-CO-x-sma-context-replay-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:44+00:00", "action": "complete", "id": "UV-CO-x-sma-controller-snapshot-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:44+00:00", "action": "complete", "id": "UV-CO-x-sma-controller-snapshot-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:45+00:00", "action": "complete", "id": "UV-DA-x-sma-dashboard-server-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:45+00:00", "action": "complete", "id": "UV-DA-x-sma-dashboard-server-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:46+00:00", "action": "complete", "id": "UV-RG-x-sma-dependents-index-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:46+00:00", "action": "complete", "id": "UV-RG-x-sma-dependents-index-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:47+00:00", "action": "complete", "id": "UV-CO-x-sma-dirty-baseline-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:47+00:00", "action": "complete", "id": "UV-CO-x-sma-dirty-baseline-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:48+00:00", "action": "complete", "id": "UV-RG-x-sma-doctor-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:48+00:00", "action": "complete", "id": "UV-RG-x-sma-doctor-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:49+00:00", "action": "complete", "id": "UV-CO-x-sma-end-edit-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:49+00:00", "action": "complete", "id": "UV-CO-x-sma-end-edit-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:50+00:00", "action": "complete", "id": "UV-RG-x-sma-enrich-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:50+00:00", "action": "complete", "id": "UV-RG-x-sma-enrich-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:51+00:00", "action": "complete", "id": "UV-RG-x-sma-filter-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:52+00:00", "action": "complete", "id": "UV-RG-x-sma-filter-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:52+00:00", "action": "complete", "id": "UV-GA-x-sma-gen3-classify-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:53+00:00", "action": "complete", "id": "UV-GA-x-sma-gen3-classify-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:53+00:00", "action": "complete", "id": "UV-DA-x-sma-gen3-dashboard-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:54+00:00", "action": "complete", "id": "UV-DA-x-sma-gen3-dashboard-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:54+00:00", "action": "complete", "id": "UV-RG-x-sma-goal-progress-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:55+00:00", "action": "complete", "id": "UV-RG-x-sma-goal-progress-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:55+00:00", "action": "complete", "id": "UV-GR-x-sma-graph-packets-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:56+00:00", "action": "complete", "id": "UV-GR-x-sma-graph-packets-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:56+00:00", "action": "complete", "id": "UV-GR-x-sma-graphify-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:57+00:00", "action": "complete", "id": "UV-GR-x-sma-graphify-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:57+00:00", "action": "complete", "id": "UV-RG-x-sma-import-verify-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:58+00:00", "action": "complete", "id": "UV-RG-x-sma-import-verify-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:58+00:00", "action": "complete", "id": "UV-RG-x-sma-init-project-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:59+00:00", "action": "complete", "id": "UV-RG-x-sma-init-project-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:20:59+00:00", "action": "complete", "id": "UV-GA-x-sma-leak-gate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:00+00:00", "action": "complete", "id": "UV-GA-x-sma-leak-gate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:00+00:00", "action": "complete", "id": "UV-CO-x-sma-lease-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:01+00:00", "action": "complete", "id": "UV-CO-x-sma-lease-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:01+00:00", "action": "complete", "id": "UV-GA-x-sma-license-gate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:01+00:00", "action": "complete", "id": "UV-GA-x-sma-license-gate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:02+00:00", "action": "complete", "id": "UV-RG-x-sma-manifest-scaffold-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:03+00:00", "action": "complete", "id": "UV-RG-x-sma-manifest-scaffold-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:03+00:00", "action": "complete", "id": "UV-RG-x-sma-match-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:04+00:00", "action": "complete", "id": "UV-RG-x-sma-match-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:04+00:00", "action": "complete", "id": "UV-CO-x-sma-merge-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:05+00:00", "action": "complete", "id": "UV-CO-x-sma-merge-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:05+00:00", "action": "complete", "id": "UV-RG-x-sma-merge-registries-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:06+00:00", "action": "complete", "id": "UV-RG-x-sma-merge-registries-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:06+00:00", "action": "complete", "id": "UV-RG-x-sma-module-work-packets-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:07+00:00", "action": "complete", "id": "UV-RG-x-sma-module-work-packets-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:07+00:00", "action": "complete", "id": "UV-RG-x-sma-operator-packet-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:08+00:00", "action": "complete", "id": "UV-RG-x-sma-operator-packet-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:09+00:00", "action": "complete", "id": "UV-CO-x-sma-parallel-preflight-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:09+00:00", "action": "complete", "id": "UV-CO-x-sma-parallel-preflight-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:10+00:00", "action": "complete", "id": "UV-RG-x-sma-portfolio-refresh-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:10+00:00", "action": "complete", "id": "UV-RG-x-sma-portfolio-refresh-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:10+00:00", "action": "complete", "id": "UV-RG-x-sma-portfolio-scan-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:11+00:00", "action": "complete", "id": "UV-RG-x-sma-portfolio-scan-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:12+00:00", "action": "complete", "id": "UV-RG-x-sma-promote-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:12+00:00", "action": "complete", "id": "UV-RG-x-sma-promote-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:13+00:00", "action": "complete", "id": "UV-RG-x-sma-propagate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:14+00:00", "action": "complete", "id": "UV-RG-x-sma-propagate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:14+00:00", "action": "complete", "id": "UV-PR-x-sma-provenance-ledger-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:14+00:00", "action": "complete", "id": "UV-PR-x-sma-provenance-ledger-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:15+00:00", "action": "complete", "id": "UV-PR-x-sma-provenance-summary-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:15+00:00", "action": "complete", "id": "UV-PR-x-sma-provenance-summary-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:16+00:00", "action": "complete", "id": "UV-PR-x-sma-provenance-verify-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:16+00:00", "action": "complete", "id": "UV-PR-x-sma-provenance-verify-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:17+00:00", "action": "complete", "id": "UV-RG-x-sma-publish-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:17+00:00", "action": "complete", "id": "UV-RG-x-sma-publish-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:18+00:00", "action": "complete", "id": "UV-RG-x-sma-publish-index-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:18+00:00", "action": "complete", "id": "UV-RG-x-sma-publish-index-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:19+00:00", "action": "complete", "id": "UV-RG-x-sma-publish-leaks-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:20+00:00", "action": "complete", "id": "UV-RG-x-sma-publish-leaks-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:20+00:00", "action": "complete", "id": "UV-RG-x-sma-recommend-builds-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:20+00:00", "action": "complete", "id": "UV-RG-x-sma-recommend-builds-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:21+00:00", "action": "complete", "id": "UV-RG-x-sma-refresh-manifest-budgets-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:22+00:00", "action": "complete", "id": "UV-RG-x-sma-refresh-manifest-budgets-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:22+00:00", "action": "complete", "id": "UV-RG-x-sma-release-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:23+00:00", "action": "complete", "id": "UV-RG-x-sma-release-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:23+00:00", "action": "complete", "id": "UV-RG-x-sma-release-drafts-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:24+00:00", "action": "complete", "id": "UV-RG-x-sma-release-drafts-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:24+00:00", "action": "complete", "id": "UV-RG-x-sma-release-index-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:25+00:00", "action": "complete", "id": "UV-RG-x-sma-release-index-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:25+00:00", "action": "complete", "id": "UV-RG-x-sma-repo-queues-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:26+00:00", "action": "complete", "id": "UV-RG-x-sma-repo-queues-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:26+00:00", "action": "complete", "id": "UV-RG-x-sma-reuse-receipt-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:27+00:00", "action": "complete", "id": "UV-RG-x-sma-reuse-receipt-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:27+00:00", "action": "complete", "id": "UV-GA-x-sma-rule-gate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:28+00:00", "action": "complete", "id": "UV-GA-x-sma-rule-gate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:29+00:00", "action": "complete", "id": "UV-RG-x-sma-scan-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:29+00:00", "action": "complete", "id": "UV-RG-x-sma-scan-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:30+00:00", "action": "complete", "id": "UV-GA-x-sma-scope-drift-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:30+00:00", "action": "complete", "id": "UV-GA-x-sma-scope-drift-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:31+00:00", "action": "complete", "id": "UV-RG-x-sma-score-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:31+00:00", "action": "complete", "id": "UV-RG-x-sma-score-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:31+00:00", "action": "complete", "id": "UV-GA-x-sma-security-gate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:32+00:00", "action": "complete", "id": "UV-GA-x-sma-security-gate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:33+00:00", "action": "complete", "id": "UV-CO-x-sma-seed-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:33+00:00", "action": "complete", "id": "UV-CO-x-sma-seed-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:34+00:00", "action": "complete", "id": "UV-RG-x-sma-similarity-scan-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:34+00:00", "action": "complete", "id": "UV-RG-x-sma-similarity-scan-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:35+00:00", "action": "complete", "id": "UV-SM-x-sma-smoa-token-summary-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:35+00:00", "action": "complete", "id": "UV-SM-x-sma-smoa-token-summary-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:36+00:00", "action": "complete", "id": "UV-GA-x-sma-source-size-gate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:36+00:00", "action": "complete", "id": "UV-GA-x-sma-source-size-gate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:37+00:00", "action": "complete", "id": "UV-RG-x-sma-stable-generated-selftest-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:37+00:00", "action": "complete", "id": "UV-RG-x-sma-stable-generated-selftest-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:38+00:00", "action": "complete", "id": "UV-CO-x-sma-start-edit-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:39+00:00", "action": "complete", "id": "UV-CO-x-sma-start-edit-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:39+00:00", "action": "complete", "id": "UV-RG-x-sma-state-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:40+00:00", "action": "complete", "id": "UV-RG-x-sma-state-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:41+00:00", "action": "complete", "id": "UV-RG-x-sma-stats-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:41+00:00", "action": "complete", "id": "UV-RG-x-sma-stats-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:42+00:00", "action": "complete", "id": "UV-RG-x-sma-store-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:42+00:00", "action": "complete", "id": "UV-RG-x-sma-store-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:43+00:00", "action": "complete", "id": "UV-RG-x-sma-store-remote-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:43+00:00", "action": "complete", "id": "UV-RG-x-sma-store-remote-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:44+00:00", "action": "complete", "id": "UV-RG-x-sma-sup-status-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:45+00:00", "action": "complete", "id": "UV-RG-x-sma-sup-status-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:45+00:00", "action": "complete", "id": "UV-SY-x-sma-sync-public-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:46+00:00", "action": "complete", "id": "UV-SY-x-sma-sync-public-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:47+00:00", "action": "complete", "id": "UV-RG-x-sma-token-count-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:48+00:00", "action": "complete", "id": "UV-RG-x-sma-token-count-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:49+00:00", "action": "complete", "id": "UV-RG-x-sma-touch-backfill-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:49+00:00", "action": "complete", "id": "UV-RG-x-sma-touch-backfill-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:50+00:00", "action": "complete", "id": "UV-RG-x-sma-update-plan-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:51+00:00", "action": "complete", "id": "UV-RG-x-sma-update-plan-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:51+00:00", "action": "complete", "id": "UV-GA-x-sma-validate-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:51+00:00", "action": "complete", "id": "UV-GA-x-sma-validate-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:52+00:00", "action": "complete", "id": "UV-GA-x-sma-validate-gen3-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:52+00:00", "action": "complete", "id": "UV-GA-x-sma-validate-gen3-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:53+00:00", "action": "complete", "id": "UV-RG-x-sma-wave-monitor-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:53+00:00", "action": "complete", "id": "UV-RG-x-sma-wave-monitor-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:54+00:00", "action": "complete", "id": "UV-RG-x-sma-wave-observe-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:54+00:00", "action": "complete", "id": "UV-RG-x-sma-wave-observe-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:55+00:00", "action": "complete", "id": "UV-RG-x-sma-why-blocked-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:55+00:00", "action": "complete", "id": "UV-RG-x-sma-why-blocked-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:56+00:00", "action": "complete", "id": "UV-DA-x-sma-wiki-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:56+00:00", "action": "complete", "id": "UV-DA-x-sma-wiki-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:57+00:00", "action": "complete", "id": "UV-DA-x-sma-wiki-gen3-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:57+00:00", "action": "complete", "id": "UV-DA-x-sma-wiki-gen3-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:58+00:00", "action": "complete", "id": "UV-DA-x-sma-wiki-html-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:58+00:00", "action": "complete", "id": "UV-DA-x-sma-wiki-html-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:59+00:00", "action": "complete", "id": "UV-RG-x-source-path-resolver-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:21:59+00:00", "action": "complete", "id": "UV-RG-x-source-path-resolver-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:22:00+00:00", "action": "complete", "id": "UV-RG-x-stable-generated-example", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:22:00+00:00", "action": "complete", "id": "UV-RG-x-stable-generated-header", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T01:22:01+00:00", "action": "complete", "id": "UV-EV-skeptic3-fixture-snapshot-gate", "detail": "node tools/evals/fixture-snapshot.mjs --check"}

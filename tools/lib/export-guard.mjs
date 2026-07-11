@@ -1,4 +1,13 @@
 /**
+ * WHAT: Applies one fail-safe license and visibility policy before any command exports brick source or metadata.
+ * WHY: Separate checks left copy, release, and store paths able to bypass restrictions or leak closed source silently.
+ * HOW: Exporters pass brick identifiers, project, target audience, and authorization; the guard returns facts or throws.
+ * Unknown bricks resolve as closed and private, while intentional overrides are explicit and written to the audit log.
+ * This is workflow policy, not a substitute for repository and filesystem access controls.
+ * Continuous-integration terminology is defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { evaluateExport } from './tools/lib/export-guard.mjs'; console.log(evaluateExport({ brickIds: [], targetVisibility: 'community', index: new Map() }))"
+ */
+/**
  * export-guard.mjs — the single choke-point every export path must call before
  * emitting, copying, releasing, or publishing a brick/build.
  *

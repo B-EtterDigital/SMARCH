@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Reports, resolves, summarizes, and audits multi-agent collisions as append-only context events.
+ * WHY: Overlapping leases and dirty paths must become visible coordination state rather than silent races or overwritten work.
+ * HOW: Reads lease and [agent-context](../docs/GLOSSARY.md#agent-context) logs, appends conflict events, and serves agents plus controller gates.
+ * Usage: `node tools/sma-conflict.mjs summary --project sma --limit 5`
+ */
+/**
  * sma-conflict.mjs — mandatory collision reports for SMA Gen3 agents.
  *
  * Conflict reports are normal agent-context events. They are append-only,

@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Scores scanned bricks and selects the strongest cross-project reuse candidates.
+ * WHY: A raw registry contains project-specific pieces that should not enter the reuse catalog.
+ * HOW: Combines shape, documentation, tests, boundaries, and cross-project similarity signals.
+ * INPUTS: A registry, score threshold, and output paths for complete and filtered results.
+ * OUTPUTS: Candidate and score files plus a concise ranking summary.
+ * CALLERS: Registry curation and enrichment workflows building the reusable brick catalog.
+ * Usage: `node tools/sma-filter.mjs --registry registry/global-modules.generated.json --out /tmp/sma-candidates.json --all-out /tmp/sma-scores.json`
+ */
+/**
  * sma-filter: score each brick for cross-project reusability.
  *
  * Strategy: compute a reuse score 0..100 from these signals:

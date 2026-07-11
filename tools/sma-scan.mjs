@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Discovers and validates module manifests across a project root.
+ * Why: Portfolio tools need one normalized registry instead of trusting scattered declarations.
+ * How: Reads manifests and source metadata, then writes a generated registry or checks drift.
+ * Callers: Portfolio scan, state generation, validation, and dashboards consume its output.
+ * Example: `node tools/sma-scan.mjs --help`
+ */
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -58,7 +65,6 @@ const archiveDirPatterns = [
   // surfaces, not canonical portfolio scan roots.
   "worktrees"
 ];
-
 const moduleCandidateTypes = new Set([
   "browser_worker",
   "component_module",
@@ -70,35 +76,29 @@ const moduleCandidateTypes = new Set([
   "supabase_shared",
   "test_suite_group"
 ]);
-
 const brickGroupCandidateTypes = new Set([
   "app"
 ]);
-
 const oversizedThresholds = {
   medium: 350,
   high: 600,
   critical: 900
 };
-
 const codeFileExtensions = new Set([
   ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
   ".py", ".rb", ".go", ".rs", ".java", ".kt",
   ".swift", ".php", ".cs", ".sql"
 ]);
-
 const analyzableSourceExtensions = new Set([
   ...codeFileExtensions,
   ".json", ".md", ".mdx", ".yaml", ".yml", ".toml", ".txt"
 ]);
-
 const ignoredImportExtensions = new Set([
   ".css", ".scss", ".sass", ".less", ".styl",
   ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp", ".ico",
   ".mp3", ".wav", ".ogg", ".mp4", ".webm",
   ".woff", ".woff2", ".ttf", ".otf", ".eot"
 ]);
-
 const ignoredEnvNames = new Set([
   "APPDATA",
   "CI",

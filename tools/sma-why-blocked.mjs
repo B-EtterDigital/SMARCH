@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Explains why a project, brick, or curated build is not ready.
+ * WHY: Raw blocker codes do not tell operators which dependency or gate to fix next.
+ * HOW: Reads state, registry, and handoff artifacts, then ranks matching blockers and actions.
+ * OUTPUTS: Prints a human explanation or a structured report for one query.
+ * CALLERS: Operators and command-line workflows use it for readiness triage.
+ * USAGE: `node tools/sma-why-blocked.mjs --project sma --json`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
+ */
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";

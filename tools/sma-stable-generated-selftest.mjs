@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Verifies that stable generated-file helpers ignore timestamp-only changes.
+ * WHY: Volatile rewrites create false dirty work and unnecessary controller contention.
+ * HOW: Creates temporary registry snapshots and exercises meaningful-change detection.
+ * OUTPUTS: Prints one success line or throws when a stability assertion fails.
+ * CALLERS: Maintainers run it when changing generated-state normalization.
+ * USAGE: `node tools/sma-stable-generated-selftest.mjs`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
+ */
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';

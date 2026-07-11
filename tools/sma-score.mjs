@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Recalculates a manifest's weighted reuse-readiness score.
+ * Why: Declared quality scores can drift from the current gate evidence and clone readiness.
+ * How: Reads one manifest, applies the fixed gate weights and penalties, and prints the comparison.
+ * Callers: Audits and lifecycle workflows use it to verify stored scores.
+ * Example: `node tools/sma-score.mjs --help`
+ */
 import fs from "node:fs/promises";
 
 const weights = {
@@ -93,4 +100,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   });
 }
-

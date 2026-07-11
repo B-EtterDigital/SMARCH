@@ -1,3 +1,12 @@
+/**
+ * WHAT: Discovers and priority-sorts projects that belong to the local portfolio.
+ * WHY: Scanners need one bounded project inventory instead of inconsistent directory guesses.
+ * HOW: Combines configured overrides, root markers, ignore rules, caching, and strict discovery errors.
+ * INPUTS: An optional projects root, file-system adapter, logger, and strictness setting.
+ * OUTPUTS: Normalized project records, priority ranks, or a typed discovery error.
+ * CALLERS: Portfolio scans, controller snapshots, and generated state builders share this inventory.
+ * @example node --input-type=module -e "import { discoverPortfolioProjects } from './tools/lib/portfolio-projects.mjs'; console.log((await discoverPortfolioProjects({ strict: false })).length);"
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";

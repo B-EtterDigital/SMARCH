@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Initializes a target project with the minimum architecture metadata and directories.
+ * WHY: New projects need a consistent starting contract before their first module is scanned.
+ * HOW: Writes project and module metadata, creates support folders, and reports next commands.
+ * INPUTS: Target path, project identity, name, platform, mode, and optional overwrite permission.
+ * OUTPUTS: Scaffold files in the target plus a structured initialization summary.
+ * CALLERS: Operators bootstrapping a new Sweetspot Modular Architecture project.
+ * Usage: `node tools/sma-init-project.mjs --help`
+ */
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";

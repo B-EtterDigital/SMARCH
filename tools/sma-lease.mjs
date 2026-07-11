@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Manages expiring ownership leases for collision-prone resources.
+ * WHY: Concurrent agents need a shared, recoverable signal before editing the same surface.
+ * HOW: Serializes registry mutations and supports acquire, renew, release, inspect, and wrapped-run flows.
+ * INPUTS: A lease command, resource identity, agent intent, lifetime, and optional context metadata.
+ * OUTPUTS: Lease receipts, status listings, or the wrapped child command result.
+ * CALLERS: Edit workflows, regeneration wrappers, dispatch tools, and human controllers.
+ * Usage: `node tools/sma-lease.mjs list --resource-kind brick --json`
+ */
+/**
  * sma-lease.mjs — soft-lock registry for SMARCH agent collision avoidance.
  *
  * Runtime cache: ~/DEV/SMARCH/registry/active-leases.generated.json

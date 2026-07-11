@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Summarizes leak blockers and remediation work for curated build exports.
+ * Why: Private paths, secrets, policy blocks, and customer details must be fixed before sharing.
+ * How: Reads curated-build reports, groups findings, and writes a publish-leak handoff artifact.
+ * Callers: Publishing reviews and remediation queues use the generated report.
+ * Example: `node tools/sma-publish-leaks.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

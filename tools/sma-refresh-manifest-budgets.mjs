@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Recalculates source-size budgets recorded in selected manifests.
+ * Why: Stale budgets hide source growth and make size gates disagree with the current project.
+ * How: Reads project source plus scan or manifest inputs, then reports or writes refreshed values.
+ * Callers: Scan repair and manifest-maintenance workflows run it before validation.
+ * Example: `node tools/sma-refresh-manifest-budgets.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

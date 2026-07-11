@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Compares a curated build's declared surface with what its source currently realizes.
+ * Why: Promotion must stop when promised paths, commands, or product surfaces no longer exist.
+ * How: Reads manifests and project trees, then reports missing declarations and extra realization.
+ * Callers: Build promotion invokes it as a blocking scope-truth gate.
+ * Example: `node tools/sma-scope-drift.mjs --help`
+ */
 // sma-scope-drift.mjs — declared-vs-realized diff for SMA curated builds.
 // Catches the case where a manifest declares capabilities the implementation
 // no longer delivers (or never did). Inverse direction is informational only.

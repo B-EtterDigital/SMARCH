@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Exercises the fuzzy source-similarity primitive against representative copy and mismatch cases.
+ * WHY: A theft signal must tolerate harmless edits without calling unrelated programs duplicates.
+ * HOW: Compares fixed snippets and file sets, then asserts score thresholds, symmetry, and determinism.
+ * INPUTS: In-memory source samples covering formatting, renaming, structural edits, and unrelated code.
+ * OUTPUTS: A passed-group count on standard output, or an assertion failure and nonzero exit.
+ * CALLERS: Developers and provenance test gates run this executable directly.
+ * @example node tools/lib/similarity-selftest.mjs
+ */
+/**
  * Self-test for the fuzzy source-similarity primitive. Proves the properties a
  * theft detector needs beyond exact-hash matching:
  *   - identical text                    -> ~1.0

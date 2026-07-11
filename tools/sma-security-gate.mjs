@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Scans a project tree for high-risk security patterns and policy violations.
+ * Why: Secrets and unsafe code must be visible before validation, reuse, or release claims.
+ * How: Accepts a root and scan limits, walks eligible files, and prints normalized findings.
+ * Callers: Validation and continuous-integration workflows invoke it as a security gate.
+ * Example: `node tools/sma-security-gate.mjs --help`
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 

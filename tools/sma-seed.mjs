@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Simulates recent brick edit cycles to demonstrate the coordination pipeline.
+ * Why: New adopters need realistic context and a smoke test without waiting for live edits.
+ * How: Reads project manifests and Git history, then previews or commits lease and context events.
+ * Callers: Onboarding demos and coordination smoke tests run it explicitly.
+ * Example: `node tools/sma-seed.mjs --help`
+ */
+/**
  * sma-seed.mjs — adoption demo. Pick N recently-touched bricks in a project
  * and simulate the full edit cycle for each (lease + edit_planned +
  * edit_applied + release) using intents derived from real git commit

@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Generates reviewable starter manifests for scanner candidates that lack one.
+ * WHY: Unmanifested modules cannot enter scoring and governance without an explicit initial contract.
+ * HOW: Reads a scanner registry, inspects each candidate, infers conservative metadata, and defaults to dry run.
+ * INPUTS: A registry path plus optional root, ownership, provenance, write, and overwrite settings.
+ * OUTPUTS: A proposed report or, with the write switch, starter manifests and project indexes.
+ * CALLERS: Portfolio onboarding operators run this after scanning a project with unmanifested candidates.
+ * @example node tools/sma-bootstrap-manifests.mjs --help
+ */
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";

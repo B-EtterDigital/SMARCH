@@ -1,4 +1,13 @@
 /**
+ * WHAT: Deterministically converts brick provenance and license facts into standard attestation documents.
+ * WHY: Auditors and release tools need portable evidence they can regenerate instead of trusting internal records.
+ * HOW: Callers pass a brick, optional components, and a timestamp; exporters return plain document objects.
+ * The scanner, release store, provenance ledger, and verifier consume these objects without hidden input or output.
+ * Given identical inputs, each exporter returns byte-stable data suitable for comparison and signing.
+ * Format terms are defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { intotoStatement } from './tools/lib/attestation.mjs'; console.log(intotoStatement({ brick_id: 'demo', content_hash: 'abc' }).subject[0])"
+ */
+/**
  * attestation.mjs — pure, deterministic exporters that turn a brick's
  * provenance + license + fingerprint facts into STANDARD-FORMAT attestations a
  * third party can consume with off-the-shelf tooling:

@@ -1,27 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-token-count.mjs — estimate generation tokens for a brick or build.
- *
- * Two modes:
- *   --root <project_root>          → walk every brick under packages/* and apps/*, write per-brick estimates
- *   --path <file_or_dir>           → estimate a single path
- *
- * Method:
- *   1) Heuristic (default): tokens ≈ characters / 3.7 (TS/TSX) or characters / 3.5 (JSON, MD).
- *      Empirically tuned against tiktoken cl100k_base on TypeScript snippets.
- *   2) `--method=tiktoken` (optional, requires `npx tiktoken` available): uses real BPE counts.
- *      Slower but accurate to ±2%.
- *
- * Output: writes <root>/.smarch/token-counts.generated.json with per-brick + per-file breakdowns.
- *
- * The generation cost is split into three buckets per LOC, calibrated on Anthropic billing
- * receipts from real Claude Code sessions (Opus 4.7, January-April 2026):
- *   - direct_generation:     ~1.0× the file token count (write the code once)
- *   - iteration_roundtrips:  ~1.6× (typecheck failures, edits, debugging)
- *   - design_discussion:     ~1.2× (architecture chat that produced the file)
- *
- * Total realistic regenerate cost ≈ 3.8× the file's static token count.
- * Direct-only floor ≈ 1.0×. Both are reported.
+ * WHAT: Estimates source-generation tokens for one path or every brick in a project.
+ * WHY: Reuse savings and regeneration cost need measured inputs instead of intuition.
+ * HOW: Walks supported files and applies either calibrated heuristics or an optional tokenizer.
+ * OUTPUTS: Prints a path estimate or writes .smarch/token-counts.generated.json with --write.
+ * CALLERS: Reuse receipts, backlog accounting, and stakeholder reports consume the estimates.
+ * USAGE: `node tools/sma-token-count.mjs --path tools/sma-token-count.mjs`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, relative, extname, join } from 'node:path';

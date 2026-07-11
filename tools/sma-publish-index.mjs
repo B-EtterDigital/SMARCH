@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Builds a local inventory of community-export bundles and their gate results.
+ * Why: Operators need one view of publish candidates without opening every bundle directory.
+ * How: Scans a publish root and writes or prints a structured index of valid bundle artifacts.
+ * Callers: Publishing dashboards and release reviews consume the generated index.
+ * Example: `node tools/sma-publish-index.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

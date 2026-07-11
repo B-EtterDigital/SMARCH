@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Orchestrates the complete Codex-assisted enrichment, connection, test, promotion, and wiki pipeline.
+ * WHY: Operators need a repeatable stage order so derived metadata and documentation are rebuilt from compatible inputs.
+ * HOW: Passes filters to each child command, streams their results, and is called for bounded or full portfolio refreshes.
+ * Usage: `node tools/sma-codex-all.mjs --only filter --limit 1`
+ */
+/**
  * sma-codex-all: run the full Codex-powered pipeline end-to-end.
  *
  * Order:

@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Exercises source-license detection and declared-versus-observed mismatch policy on temporary fixtures.
+ * WHY: A scanner that trusts filenames or declarations could miss restricted headers and permit license laundering.
+ * HOW: The test writes synthetic source trees, scans their actual bytes, and asserts matching and mismatching outcomes.
+ * Temporary directories are tracked and removed even when an assertion fails.
+ * A successful run prints the number of policy groups; failed assertions exit nonzero.
+ * License abbreviations are defined in docs/GLOSSARY.md.
+ * Usage: node tools/lib/license-evidence-selftest.mjs
+ */
+/**
  * Self-test for license-evidence. Proves the scanner reads the ACTUAL bytes of
  * source files (SPDX tags + license-text signatures) and that the
  * declared-vs-actual laundering check flags a permissive declaration sitting on

@@ -1,3 +1,12 @@
+/**
+ * WHAT: Builds and renders long-running goal progress from module plans, context events, and verification evidence.
+ * WHY: Operators need durable progress by goal and module instead of mistaking recent activity for completed work.
+ * HOW: Dashboard and progress commands pass plans, events, and time bounds; this module returns reports, markup, and styles.
+ * Bucketing and module-path matching keep summaries stable across large histories and control-plane work.
+ * The bundled self-test validates aggregation and rendering without writing production state.
+ * Gen3 terminology is defined in docs/GLOSSARY.md#gen3.
+ * @example node --input-type=module -e "import { runGoalProgressSelfTest } from './tools/lib/gen3-goal-progress.mjs'; console.log(runGoalProgressSelfTest())"
+ */
 import {
   existsSync,
   mkdirSync,

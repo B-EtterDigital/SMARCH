@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Evaluates declared legal and safety controls against evidence present in a project checkout.
+ * WHY: Release automation needs a repeatable [gate](../docs/GLOSSARY.md#gate) that exposes missing obligations instead of relying on manual recollection.
+ * HOW: Reads the control catalog and project files, prints a scorecard or structured report, and returns stricter failures for release callers.
+ * Usage: `node tools/sma-compliance-gate.mjs --root . --json`
+ */
+/**
  * sma-compliance.mjs — SMA pre-release compliance gate (EU GDPR + DSA + CSAM
  * Reg., Swiss nFADP).
  *

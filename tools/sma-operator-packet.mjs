@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Builds a compact operator packet from current coordination evidence.
+ * Why: Operators need a trustworthy overview without rereading large generated dashboards.
+ * How: Reads preflight and goal-progress reports, then writes structured and Markdown handoffs.
+ * Callers: Humans and agents use the packet as the first status and planning artifact.
+ * Example: `node tools/sma-operator-packet.mjs --help`
+ */
+/**
  * sma-operator-packet.mjs - compact Gen3 executive/operator cache.
  *
  * This is the low-token front door for humans and agents. It distills the

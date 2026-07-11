@@ -1,4 +1,13 @@
 /**
+ * WHAT: Builds and verifies a domain-separated binary Merkle tree over ordered brick provenance seals.
+ * WHY: One anchored root must prove any brick without anchoring every record or revealing sibling content.
+ * HOW: Callers hash brick identifiers and seal heads, build layers, derive proofs, and verify them against a root.
+ * Leaf and internal-node prefixes prevent one kind of hash from being reinterpreted as the other.
+ * Odd layers duplicate the final node; all functions are deterministic and perform no input or output operations.
+ * Merkle terminology is defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { leafHash, buildMerkle } from './tools/lib/merkle.mjs'; console.log(buildMerkle([leafHash('demo', 'seal')]).root)"
+ */
+/**
  * merkle.mjs — a domain-separated binary Merkle tree over brick seals.
  *
  * One Merkle ROOT commits to every brick's provenance seal at once, so a single

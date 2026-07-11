@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Generates per-project queues for canonicalization work.
+ * Why: Portfolio findings need actionable project-side tasks rather than one undifferentiated list.
+ * How: Reads curated-build context and project metadata, then writes or prints queue handoffs.
+ * Callers: Controllers and project agents use the queues to choose the next bounded task.
+ * Example: `node tools/sma-repo-queues.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

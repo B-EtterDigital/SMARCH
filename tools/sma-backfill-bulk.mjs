@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Applies reviewed provenance intents to many bricks or prepares templates for missing intents.
+ * WHY: Bricks without usable history cannot be backfilled automatically one at a time.
+ * HOW: Parses comma-separated or structured intent files and delegates each accepted row to the touch tool.
+ * INPUTS: An intent file or failure report, optional registry and project filters, and dry-run controls.
+ * OUTPUTS: Per-row results, reusable templates, statistics, and optional manifest and context updates.
+ * CALLERS: Backfill operators use this after the automated history pass leaves unresolved bricks.
+ * @example node tools/sma-backfill-bulk.mjs --help
+ */
+/**
  * sma-backfill-bulk.mjs — apply hand-written touch_event intents to many
  * bricks at once. The fix for bricks with no git history (the 255 leftover
  * Category-A/B/C failures from the main backfill).

@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-wave-observe.mjs - persist observed Gen3 cleanup wave outcomes.
- *
- * This is the proof layer after dispatch + live monitor: it compares the
- * launch manifest with current cleanup progress/conflict state and can write
- * durable JSON/Markdown observations under handoffs/waves/observations/.
+ * WHAT: Compares a cleanup dispatch with current state and records observed outcomes.
+ * WHY: Predicted wave gains are not proof that assigned dirty paths were actually reduced.
+ * HOW: Reads a dispatch manifest and the live wave-monitor report, then derives packet outcomes.
+ * OUTPUTS: Prints an observation and optionally writes durable files under handoffs/waves/observations.
+ * CALLERS: Controllers run it before assigning the next cleanup wave.
+ * USAGE: `node tools/sma-wave-observe.mjs --help`
+ * Glossary: [Gen3](../docs/GLOSSARY.md).
  */
 
 import { execFileSync } from 'node:child_process';

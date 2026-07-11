@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Reports progress toward the configured generation-three work-hour goal.
+ * WHY: Append-only work evidence needs a consistent rollup for dashboards and status reports.
+ * HOW: Aggregates agent-context events by project and renders text, structured data, or a page fragment.
+ * INPUTS: Goal hours, optional project filters, output format, and optional output path.
+ * OUTPUTS: A progress report on standard output or in the requested file.
+ * CALLERS: The generation-three dashboard and operators tracking evidence-backed progress.
+ * Usage: `node tools/sma-goal-progress.mjs --hours 100 --project sma --json`
+ */
+/**
  * sma-goal-progress.mjs — 100h SMA Gen3 goal-progress telemetry.
  *
  * Reads append-only .smarch/agent-context logs and produces the same report the

@@ -1,3 +1,12 @@
+/**
+ * WHAT: Runs fixed scenarios against the parallel-preflight decision engine.
+ * WHY: A misleading launch recommendation can assign agents into blockers, stale work, or conflicting scopes.
+ * HOW: Accepts the command's private decision helpers and asserts clean, blocked, stale, and fallback outcomes.
+ * INPUTS: A harness object supplied by the parallel-preflight command.
+ * OUTPUTS: A success message and zero result, or an assertion failure naming the broken decision.
+ * CALLERS: The parallel-preflight command invokes this harness through its selftest mode.
+ * @example node tools/sma-parallel-preflight.mjs selftest
+ */
 /** Selftest harness for sma-parallel-preflight.mjs. */
 
 export function runParallelPreflightSelftest(harness) {

@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Classifies meaningful relationships between semantically enriched bricks.
+ * WHY: Reuse planning needs explicit dependency, composition, alternative, and shared-concept edges rather than tag overlap alone.
+ * HOW: Reads candidates and manifests, asks Codex about bounded neighbour sets, and writes graph data consumed by ranking and wiki tools.
+ * Usage: `node tools/sma-codex-connect.mjs --limit 1 --neighbours 3`
+ */
+/**
  * sma-codex-connect: discover how bricks relate to each other.
  *
  * For each anchor brick, we present codex with:

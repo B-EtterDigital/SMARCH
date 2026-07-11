@@ -1,3 +1,12 @@
+/**
+ * WHAT: Compares module path patterns while respecting declared exclusions.
+ * WHY: Parallel assignments are unsafe when glob patterns hide an overlap or shared hot path.
+ * HOW: Reduces patterns to stable bases and literal tokens, then reports covering or overlapping pairs.
+ * INPUTS: Module path arrays, exclusion arrays, and shared-hot-path declarations.
+ * OUTPUTS: Boolean overlap answers, matching path pairs, and compact path samples.
+ * CALLERS: The module-work planner uses these helpers before offering or claiming slots.
+ * @example node --input-type=module -e "import { modulesOverlap } from './tools/lib/module-work-paths.mjs'; console.log(modulesOverlap({ paths: ['src/a/**'] }, { paths: ['src/a/file.mjs'] }));"
+ */
 /** Path-overlap helpers for sma-module-work-packets.mjs. */
 
 export function modulePathSamples(module) {

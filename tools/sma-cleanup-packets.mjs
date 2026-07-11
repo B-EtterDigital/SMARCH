@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Lists, inspects, dispatches, or claims low-token cleanup packets for dirty ownership groups.
+ * WHY: Agents must coordinate cleanup without dumping full repository status or racing another live [lease](../docs/GLOSSARY.md#lease).
+ * HOW: Reads generated packet and lease state, prints compact actions, and is called by cleanup controllers and assigned agents.
+ * Usage: `node tools/sma-cleanup-packets.mjs --help`
+ */
+/**
  * sma-cleanup-packets.mjs — low-token dispatch surface for dirty cleanup work.
  *
  * Reads handoffs/cleanup-packets.generated.json and lets agents list, inspect,

@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Builds a standalone web dashboard for generation-three coordination state.
+ * WHY: Dense controller evidence needs one navigable view for readiness and work allocation.
+ * HOW: Joins state, leases, snapshots, graph status, goals, and dispatch evidence into a page.
+ * INPUTS: Optional project filters, source paths, output path, and display controls.
+ * OUTPUTS: A stable generated dashboard page and a write-or-unchanged status message.
+ * CALLERS: Dashboard scripts and operators reviewing portfolio or project readiness.
+ * Usage: `node tools/sma-gen3-dashboard.mjs --help`
+ */
+/**
  * sma-gen3-dashboard.mjs — standalone HTML dashboard for the Gen-3 surfaces.
  *
  * Reads:

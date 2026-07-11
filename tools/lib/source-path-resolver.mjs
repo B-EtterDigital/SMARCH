@@ -1,21 +1,12 @@
 /**
- * source-path-resolver.mjs — resolve a brick's directory and git-relative
- * path consistently across planner + runner.
- *
- * The registry occasionally stores `source_paths` with the project name as
- * the first segment (e.g. project="acme-agent", source_paths[0]="acme-agent/...").
- * When we resolve that against a project root that already ends in the
- * project name, we get a doubled prefix and the path doesn't exist on disk.
- * The manifest_path field is always correct, so we use its directory as the
- * source of truth.
- *
- * Resolution order:
- *   1. dirname(manifest_path) — trusted; the scanner verified this
- *   2. resolve(projectAbs, source_paths[0]) — direct
- *   3. resolve(projectAbs, source_paths[0] minus first segment) — strip
- *      doubled prefix
- *
- * Returns absolute path on disk + relative-to-project path for git operations.
+ * WHAT: Resolves a registry brick to an existing absolute and repository-relative path.
+ * WHY: Prefixed source paths can otherwise duplicate the project directory and miss real files.
+ * HOW: Prefers the manifest location, then tries direct and stripped source-path candidates.
+ * OUTPUTS: Returns path details for planners, scanners, and runners, or null when unresolved.
+ * CALLERS: Similarity, provenance, and installation tools share this resolver.
+ * @example
+ * const resolved = resolveBrickPath(brick, "/workspace/project");
+ * Glossary: [SMA](../../docs/GLOSSARY.md).
  */
 
 import { existsSync, statSync } from 'node:fs';

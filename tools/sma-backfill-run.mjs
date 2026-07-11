@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Executes a provenance backfill plan in bounded, resumable batches.
+ * WHY: Historical attribution across many bricks must be reviewable, restartable, and dry-run safe.
+ * HOW: Resolves source paths and commits, derives touch events, and records batch outcomes and failures.
+ * INPUTS: A generated plan, phase and project filters, limits, resume data, and an explicit commit switch.
+ * OUTPUTS: Batch reports, failure reports, indexes, and, in commit mode, manifest and context updates.
+ * CALLERS: Backfill operators run this after reviewing the deterministic plan.
+ * @example node tools/sma-backfill-run.mjs --help
+ */
+/**
  * sma-backfill-run.mjs — execute a backfill plan in batches.
  *
  * Reads:

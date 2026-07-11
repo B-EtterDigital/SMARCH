@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Ranks registered bricks against a plain-language product vision.
+ * WHY: Builders need a fast shortlist of reusable parts before starting new implementation.
+ * HOW: Tokenizes the vision and compares it with brick purpose, tags, names, and metadata.
+ * INPUTS: Vision text or file, registry paths, status threshold, and result limit.
+ * OUTPUTS: Human-readable or structured ranked brick matches with supporting signals.
+ * CALLERS: Discovery workflows and operators planning reuse for a new product.
+ * Usage: `node tools/sma-match.mjs --registry registry/global-modules.generated.json --vision "local dashboard" --top 5`
+ */
+/**
  * sma-match: match a product vision against the brick registry.
  *
  * Usage:

@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Refreshes portfolio registry, state, and dashboard artifacts through one queue.
+ * Why: Independent refresh chains can duplicate expensive scans and race on shared outputs.
+ * How: Accepts project and changed-file hints, reuses fresh work, and invokes required generators.
+ * Callers: Agents and controller scripts use it after changes that affect portfolio visibility.
+ * Example: `node tools/sma-portfolio-refresh.mjs --help`
+ */
+/**
  * sma-portfolio-refresh.mjs — queued/debounced Gen3 portfolio refresh.
  *
  * Normal agents should call this instead of chaining:

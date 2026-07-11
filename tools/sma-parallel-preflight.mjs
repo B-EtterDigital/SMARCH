@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Produces one readiness report before parallel work is launched or resumed.
+ * Why: A launch can otherwise collide with leases, stale handoffs, or unclaimed dirty work.
+ * How: Combines controller, conflict, graph, and work-packet inputs into text or structured output.
+ * Callers: Controllers run it before assigning a cleanup or module wave.
+ * Example: `node tools/sma-parallel-preflight.mjs --help`
+ */
+/**
  * sma-parallel-preflight.mjs - one-command Gen3 readiness check before
  * launching or respawning parallel SMA agents.
  */

@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Generates the deterministic multi-project portfolio used by evaluation and regression commands.
+ * WHY: Scanner, gate, and benchmark results need realistic fixtures whose content and expected snapshot do not drift.
+ * HOW: The command writes a fixed-seed portfolio, compares it in a temporary directory, or updates its summary snapshot.
+ * Inputs are an optional output directory and mode flags; output is fixture files plus a machine-readable summary.
+ * The self-test creates disposable data and verifies determinism, validation, scanning, and expected findings.
+ * Usage: node tools/evals/fixtures/gen.mjs --help
+ */
 
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";

@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Audits Codex startup inputs and prepares reversible lean-profile actions.
+ * WHY: Large agent waves need visibility into heavy skills, plugins, and hooks before a controller chooses any global trim.
+ * HOW: Reads user configuration roots, prints findings by default, and writes or applies a manifest only when an operator requests it.
+ * Usage: `node tools/sma-codex-profile.mjs --help`
+ */
+/**
  * sma-codex-profile.mjs - read-only Codex startup hygiene audit for SMA Gen3.
  *
  * The goal is to keep parallel agent waves lean without hidden global edits:

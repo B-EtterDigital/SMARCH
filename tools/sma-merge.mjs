@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Proposes and records resolutions for divergent agent-context edit chains.
+ * WHY: Concurrent verified work can overlap and needs an explicit, reviewable merge decision.
+ * HOW: Groups context chains, detects file overlap, recommends order, and persists proposals.
+ * INPUTS: A propose, list, show, or resolve command with project and brick identities.
+ * OUTPUTS: Merge proposals, proposal listings, or recorded resolution events.
+ * CALLERS: Controllers reconciling parallel work before integration.
+ * Usage: `node tools/sma-merge.mjs --help`
+ */
+/**
  * sma-merge.mjs — generate merge proposals from divergent agent-context chains.
  *
  * Path:    <project>/.smarch/merge-proposals/<brick-id>-<unix-ms>.json

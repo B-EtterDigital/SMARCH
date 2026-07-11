@@ -1,4 +1,12 @@
 /**
+ * WHAT: Renders self-contained brick-diff and file-tree pages for the Gen3 wiki.
+ * WHY: Operators need inspectable release and source structure when interactive renderers are unavailable.
+ * HOW: The wiki passes release files or a root path; helpers return complete page markup with static fallbacks.
+ * Browser scripts enhance the result, but plain preformatted diffs and tree lists preserve useful offline output.
+ * Lineage lives in docs/INFLUENCES.md; Gen3 is defined in docs/GLOSSARY.md#gen3.
+ * @example node --input-type=module -e "import * as renderers from './tools/lib/gen3-renderers.mjs'; console.log(Object.keys(renderers))"
+ */
+/**
  * gen3-renderers.mjs — small helpers for Pierre's open primitives:
  *   - diffs.com  → side-by-side diff renderer
  *   - trees.software → file-tree renderer

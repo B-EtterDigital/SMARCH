@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Renders one brick's agent-context events as a chronological work story.
+ * WHY: Raw line-delimited logs are difficult to review during handoff and incident analysis.
+ * HOW: Reads a project and brick log, filters by time, and formats the selected events.
+ * INPUTS: Project and brick identifiers plus optional time, format, and output-path filters.
+ * OUTPUTS: A text, Markdown, or structured-data timeline on standard output or in a file.
+ * CALLERS: Operators, reviewers, and coordination commands reconstructing prior work.
+ * Usage: `node tools/sma-context-replay.mjs --project sma --brick w9-explain-d --format text`
+ */
+/**
  * sma-context-replay.mjs — render a brick's full agent-context log as a story.
  *
  * Reads:

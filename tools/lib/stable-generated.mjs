@@ -1,3 +1,13 @@
+/**
+ * WHAT: Writes generated files only when their meaningful content changes.
+ * WHY: Timestamp churn creates false dirty work, noisy diffs, and avoidable shared-path contention.
+ * HOW: Normalizers remove volatile fields before comparison while preserving full written output.
+ * OUTPUTS: Returns whether a text or structured file was written and provides stable normalizers.
+ * CALLERS: Registry, state, and dashboard generators use these helpers before replacing artifacts.
+ * @example
+ * await writeJsonIfMeaningfulChanged("state.json", state, { normalize: normalizeSmaStateSnapshot });
+ * Glossary: [SMA](../../docs/GLOSSARY.md).
+ */
 import fs from 'node:fs/promises';
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

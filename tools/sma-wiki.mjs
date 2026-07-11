@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Generates the portfolio's Markdown and web wiki from current registry state.
+ * WHY: Reusable bricks need browsable evidence, ownership, interfaces, and readiness in one place.
+ * HOW: Reads registry, state, and source manifests, then renders project and brick pages.
+ * OUTPUTS: Writes the wiki tree selected by --out.
+ * CALLERS: The sma command router and continuous-integration pipeline regenerate this catalog.
+ * USAGE: `node tools/sma-wiki.mjs --help`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,14 +51,12 @@ Usage:
 
   return options;
 }
-
 function slugify(value) {
   return String(value || "unknown")
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -57,11 +64,9 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
-
 function mdTableRow(values) {
   return `| ${values.map((value) => String(value ?? "").replaceAll("\n", " ")).join(" | ")} |`;
 }
-
 async function readManifest(brick) {
   if (!brick.manifest_path) {
     return null;
@@ -73,7 +78,6 @@ async function readManifest(brick) {
     return null;
   }
 }
-
 async function maybeReadJson(filePath) {
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
@@ -81,7 +85,6 @@ async function maybeReadJson(filePath) {
     return null;
   }
 }
-
 function gateRows(manifest) {
   const gates = manifest?.sweetspot || {};
   return Object.entries(gates).map(([name, gate]) => mdTableRow([
@@ -92,7 +95,6 @@ function gateRows(manifest) {
     Array.isArray(gate.evidence) ? gate.evidence.join("; ") : ""
   ])).join("\n");
 }
-
 function listLines(items) {
   if (!Array.isArray(items) || items.length === 0) {
     return "- Not declared";
@@ -100,7 +102,6 @@ function listLines(items) {
 
   return items.map((item) => `- ${item}`).join("\n");
 }
-
 function provenanceLines(manifest) {
   const events = [
     manifest?.provenance?.created_by,
@@ -117,7 +118,6 @@ function provenanceLines(manifest) {
     return `- ${actor}: ${event.role} at ${event.timestamp || "unknown time"} - ${event.summary || "No summary"}`;
   }).join("\n");
 }
-
 function envRows(manifest) {
   const vars = manifest?.security?.env?.variables || [];
 

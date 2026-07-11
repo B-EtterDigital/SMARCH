@@ -1,20 +1,12 @@
 #!/usr/bin/env node
 /**
- * SMA similarity scan — fuzzy / near-duplicate theft detection.
- *
- * Exact-hash collision detection (in sma-provenance-ledger) only catches
- * verbatim copies; one changed character, a reformat, or a rename evades it.
- * This scans every brick's source, computes a simhash, LSH-buckets so we never
- * do the full O(n^2) comparison, and flags cross-project near-duplicates —
- * especially those held by a DIFFERENT owner/identity — that the exact pass
- * misses.
- *
- * Output: security/similarity-scan.generated.json
- *
- * Usage:
- *   node tools/sma-similarity-scan.mjs                 # full scan
- *   node tools/sma-similarity-scan.mjs --threshold 0.85
- *   node tools/sma-similarity-scan.mjs --limit 200 --json
+ * WHAT: Finds near-duplicate brick source across projects.
+ * WHY: Exact hashes miss copied code after small edits, renames, or reformatting.
+ * HOW: Reads the global registry and resolved brick files, then compares compact fingerprints.
+ * OUTPUTS: Writes security/similarity-scan.generated.json and prints text or structured data.
+ * CALLERS: Security reviewers and provenance checks use the cross-owner findings.
+ * USAGE: `node tools/sma-similarity-scan.mjs --threshold 0.85 --limit 200 --json`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';

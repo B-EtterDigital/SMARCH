@@ -1,4 +1,11 @@
-/** Action and packet report builders for sma-controller-snapshot.mjs. */
+/**
+ * WHAT: Converts controller snapshots into ranked action, cleanup, and graph-repair reports and Markdown handoffs.
+ * WHY: Operators need stable, claimable next actions instead of interpreting raw lease, graph, and dirty-state records.
+ * HOW: The controller passes normalized state; builders return packet objects and renderers return text.
+ * Generated commands preserve lease fingerprints so stale packets fail safely before another agent claims them.
+ * This module only shapes supplied data and does not claim work or write handoff files itself.
+ * @example node --input-type=module -e "import * as reports from './tools/lib/controller-action-report.mjs'; console.log(Object.keys(reports))"
+ */
 
 import { packetLeaseFingerprint } from './packet-freshness.mjs';
 

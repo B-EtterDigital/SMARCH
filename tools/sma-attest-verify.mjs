@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Verifies one exported brick attestation bundle without reading repository ledgers.
+ * WHY: Portable evidence is useful only if an independent recipient can detect mismatched content or proofs.
+ * HOW: Parses the bundle documents, cross-checks identities and hashes, and verifies Merkle inclusion.
+ * INPUTS: A bundle directory containing the emitted provenance, bill-of-materials, and proof files.
+ * OUTPUTS: Per-check pass or fail lines, or a structured verification result and process status.
+ * CALLERS: Recipients, release gates, and provenance self-tests run this stand-alone verifier.
+ * @example bundle="$(find releases/attestations -mindepth 1 -maxdepth 1 -type d | sort | head -1)"; node tools/sma-attest-verify.mjs --dir "$bundle"
+ */
+/**
  * SMA attest-verify — STAND-ALONE attestation bundle verifier.
  *
  * Proves a third party can verify a single brick with ONLY the bundle plus

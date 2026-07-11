@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Creates a versioned release artifact from a brick or build manifest.
+ * Why: Releases need immutable source, channel, status, trust, and lineage evidence in one record.
+ * How: Reads the manifest and registry context, validates export policy, and writes release data.
+ * Callers: Release workflows and the release-index generator consume these artifacts.
+ * Example: `node tools/sma-release.mjs --help`
+ */
 
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";

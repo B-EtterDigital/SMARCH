@@ -1,4 +1,13 @@
 /**
+ * WHAT: Resolves a configured project identifier to its canonical on-disk root.
+ * WHY: Repeated override maps drifted and made different tools target different directories.
+ * HOW: Inverts the portfolio configuration once, then falls back to bounded directory discovery.
+ * INPUTS: A project identifier and the shared portfolio configuration.
+ * OUTPUTS: An absolute project root, relative root, or null when no project matches.
+ * CALLERS: Backfill and other cross-project tools use this as their path source of truth.
+ * @example node --input-type=module -e "import { resolveProjectRoot } from './tools/lib/project-paths.mjs'; console.log(resolveProjectRoot('sma'));"
+ */
+/**
  * project-paths.mjs — single source of truth for project_id → on-disk path.
  *
  * Replaces the 5+ ad-hoc override maps that drifted across tools. Derived

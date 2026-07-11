@@ -1,4 +1,13 @@
 /**
+ * WHAT: Runs Codex requests through the shared workforce contract with structured output and caching.
+ * WHY: Ranking, enrichment, and wiki commands need one timeout, model, error, and cache policy for model calls.
+ * HOW: Callers submit prompts and optional schemas; the module returns success data or a normalized failure object.
+ * Batch callers also receive bounded concurrency and per-result callbacks without duplicating process control.
+ * Cached results live below the user's cache directory and are keyed by model, prompt, and schema.
+ * Command-line terms are defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { internals } from './tools/lib/codex-runner.mjs'; console.log(internals.cacheKey('demo-model', 'Reply READY', null))"
+ */
+/**
  * Reusable Codex CLI runner with structured-output + disk cache.
  *
  * Public API:

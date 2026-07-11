@@ -1,19 +1,13 @@
 #!/usr/bin/env node
-// SMOA delivery token summary — computes the mandatory per-agent table from
-// PRIMARY sources: Claude Code session logs (~/.claude/projects) and codex
-// session logs (~/.codex/sessions). acme-tracker is NOT used (its store
-// triple-appends on sync and its price table lacks fable-5 / opus-4.8 rates
-// as of 2026-07-02); prices come from skills/sweetspot-moa/model-prices.json.
-//
-// Usage:
-//   node tools/sma-smoa-token-summary.mjs \
-//     --claude-session <path-to-session.jsonl> \
-//     [--codex-since <ISO>] [--window-days 7] [--json]
-//
-// Every number is exact (from logs) except: costs are imputed at published
-// API rates (subscription usage is not API-billed), and the solo-baseline
-// savings reprice codex tokens at the baseline model's rates. Anything this
-// tool cannot price is reported as "unavailable — <reason>", never guessed.
+/**
+ * WHAT: Produces the required per-agent token and cost summary for a multi-agent run.
+ * WHY: Delivery accounting must come from primary logs and must never guess missing prices.
+ * HOW: Reads Claude and Codex session logs plus the pinned model-price file.
+ * OUTPUTS: Prints a table or structured data with costs, percentages, and savings baselines.
+ * CALLERS: [SMOA](../docs/GLOSSARY.md) orchestrators run it before final delivery.
+ * USAGE: `node tools/sma-smoa-token-summary.mjs --window-days 7 --json`
+ * Glossary: [API](../docs/GLOSSARY.md).
+ */
 
 import fs from 'node:fs';
 import path from 'node:path';

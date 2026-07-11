@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Merges project registry snapshots into one normalized portfolio registry.
+ * WHY: Portfolio decisions require comparable module, build, quality, and reuse data in one place.
+ * HOW: Loads named registry inputs, normalizes records, computes summaries, and writes stable output.
+ * INPUTS: Repeated project and registry references plus an output path.
+ * OUTPUTS: A merged registry file and a concise portfolio summary.
+ * CALLERS: Portfolio refresh, state generation, dashboards, and registry analysis commands.
+ * Usage: `node tools/sma-merge-registries.mjs --help`
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/stable-generated.mjs";

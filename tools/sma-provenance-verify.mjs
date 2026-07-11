@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Verifies stored provenance chains and optionally rechecks live source fingerprints.
+ * Why: Edited history, changed source, or invalid signatures must not retain trusted status.
+ * How: Reads provenance records, keys, and optional source files, then reports failures or gates.
+ * Callers: Trust audits and release checks run it after ledger generation.
+ * Example: `node tools/sma-provenance-verify.mjs --json`
+ */
+/**
  * SMA provenance-verify — tamper detection for the creator trail.
  *
  * Recomputes every brick's provenance SEAL from the events stored in the

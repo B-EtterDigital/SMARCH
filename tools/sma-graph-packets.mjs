@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Lists, inspects, and claims bounded graph-repair work packets.
+ * WHY: Agents need targeted graph gaps without loading the full controller state.
+ * HOW: Reads generated ranked packets, checks freshness and leases, and delegates safe claims.
+ * INPUTS: A list, show, or claim command with project, rank, freshness, and lease options.
+ * OUTPUTS: Packet summaries, claim instructions, or a lease-backed claim receipt.
+ * CALLERS: Graph repair agents and controllers dispatching missing or stale graph work.
+ * Usage: `node tools/sma-graph-packets.mjs list --project sma --limit 1 --no-auto-refresh`
+ */
+/**
  * sma-graph-packets.mjs — low-token dispatch surface for graph repair work.
  *
  * Reads handoffs/graph-packets.generated.json and lets agents list, inspect,

@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Converts legacy agent-context proof lines into the current event shape.
+ * WHY: Older writers produced valid evidence that newer validators cannot consume directly.
+ * HOW: Reads one project's brick logs and rewrites only records that need normalization.
+ * INPUTS: A project identifier, optional brick identifier, and optional dry-run mode.
+ * OUTPUTS: Updated line-delimited event logs or a report of the changes it would make.
+ * CALLERS: Context maintenance scripts and operators repairing historical proof records.
+ * Usage: `node tools/sma-context-normalize.mjs --project sma --dry-run`
+ */
+/**
  * Normalize legacy proof records in .smarch/agent-context/*.ndjson.
  *
  * Some older/parallel agents wrote proof objects with keys like ts/brick/status.

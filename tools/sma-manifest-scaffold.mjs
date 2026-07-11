@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Generates repair scaffolds for incomplete curated-build manifests and companion evidence.
+ * WHY: Missing fields and declared documents need explicit machine-readable repair work.
+ * HOW: Inspects selected builds and emits field patches, document stubs, and evidence templates.
+ * INPUTS: Optional build filters, output path, standard-output mode, and dry-run mode.
+ * OUTPUTS: A structured scaffold document on standard output or in a generated handoff file.
+ * CALLERS: Registry maintainers repairing curated builds before verification or publication.
+ * Usage: `node tools/sma-manifest-scaffold.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

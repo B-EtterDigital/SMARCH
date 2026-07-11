@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Rolls all persisted backfill batches and failures into operator-facing summaries.
+ * WHY: Individual reports do not reveal portfolio progress, repeated failures, or project coverage.
+ * HOW: Reads batch artifacts, aggregates counts by batch, project, and reason, then prints or writes results.
+ * INPUTS: Backfill report directories plus a summary subcommand and optional output or display flags.
+ * OUTPUTS: Console tables, structured data, or a generated summary file.
+ * CALLERS: Backfill operators and controller reporting use this after one or more runs.
+ * @example node tools/sma-backfill-summary.mjs --help
+ */
+/**
  * sma-backfill-summary.mjs — roll up every backfill batch report.
  *
  * Reads:

@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Creates, lists, closes, aggregates, and counts explicit architecture backlog entries.
+ * WHY: Known gaps must remain visible and promotion-blocking instead of disappearing in chat or logs.
+ * HOW: Reads per-project backlog files, validates command fields, and rebuilds the portfolio aggregate.
+ * INPUTS: A subcommand, project identifier, and entry metadata or filters.
+ * OUTPUTS: Updated backlog files, aggregate records, listings, and grouped statistics.
+ * CALLERS: Agents, promotion gates, and operators use this whenever work leaves declared debt.
+ * @example node tools/sma-backlog.mjs stats
+ */
+/**
  * sma-backlog.mjs — manage SMA backlog entries.
  *
  * Per-project backlog lives at <project_root>/.smarch/backlog.json

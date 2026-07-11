@@ -1,35 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-touch-backfill.mjs — append a properly-structured touch_event to a brick
- * manifest, populated with the new "why" fields (intent, decision_rationale,
- * rejected_alternatives, linked_backlog, lease_id, context_event_ids).
- *
- * Use cases:
- *   - retroactively populate provenance on bricks that have only thin git-style
- *     touch_events
- *   - close the loop after a manual edit by stamping intent into the manifest
- *   - bulk-stamp a series of bricks after a coordinated change
- *
- * The tool ALSO appends a corresponding agent-context event so the manifest
- * touch_event and the agent-context log stay aligned (cross-referenced via
- * the new context_event_ids field on touch_event).
- *
- * Subcommands:
- *   add        --manifest <path> --intent "..." --role <role> --actor-kind <kind>
- *              [--actor <id>] [--summary "..."] [--decision "..."]
- *              [--rejected "alt::reason"]... [--linked-backlog <id>]...
- *              [--commit <sha>] [--model <name>] [--session <id>] [--task <id>]
- *              [--lease <lease_id>] [--project <id>] [--no-context]
- *
- *   from-git   --manifest <path> --commit <sha> [--role implementer]
- *              [--intent-from-message] [--linked-backlog <id>]...
- *              → reads commit metadata and stamps a touch_event from it.
- *                With --intent-from-message, the commit subject becomes intent.
- *                Default role is "implementer".
- *
- *   sync-touch --manifest <path> --event-id <ctx-id>
- *              → links an existing agent-context event into the manifest's
- *                most-recent touch_event via context_event_ids.
+ * WHAT: Adds structured edit rationale to a brick manifest's touch history.
+ * WHY: Thin commit metadata cannot explain intent, rejected alternatives, or backlog links.
+ * HOW: Reads explicit inputs, a commit, or an existing context event and updates the manifest.
+ * OUTPUTS: Writes aligned manifest touch data and, unless disabled, an agent-context event.
+ * CALLERS: Maintainers use it to backfill provenance after manual or coordinated changes.
+ * USAGE: `node tools/sma-touch-backfill.mjs --help`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import {

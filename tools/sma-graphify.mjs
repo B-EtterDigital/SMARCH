@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Manages project and module code graphs for structural retrieval.
+ * WHY: Agents need bounded architectural context without repeatedly scanning entire repositories.
+ * HOW: Resolves graph targets and delegates checks, refreshes, queries, paths, and explanations.
+ * INPUTS: A subcommand plus project, module, registry, graph, and query options.
+ * OUTPUTS: Graph artifacts, readiness reports, or focused query and path results.
+ * CALLERS: Agents, controller checks, graph repair packets, and portfolio refresh workflows.
+ * Usage: `node tools/sma-graphify.mjs query --project sma -- "lease ownership flow"`
+ */
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

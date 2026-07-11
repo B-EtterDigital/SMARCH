@@ -1,19 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-wiki-gen3.mjs — opt-in Gen-3 wiki augmentation.
- *
- * For every brick with ≥ 2 releases, emit:
- *   wiki/gen3/<brick>/diff-<vA>__<vB>.html  (diffs.com renderer)
- *   wiki/gen3/<brick>/tree.html             (trees.software renderer)
- * Renderer credit and current integration status: see docs/INFLUENCES.md.
- *
- * Standalone tool. Does not touch sma-wiki.mjs's outputs. Safe to run any time;
- * idempotent. Acquire a `wiki-regen` lease for `wiki/gen3` before running in a
- * shared workspace.
- *
- * Subcommands:
- *   build   [--out wiki/gen3] [--brick <id>]   → write pages
- *   list    [--out wiki/gen3]                  → list emitted pages (after build)
+ * WHAT: Builds opt-in release-diff and source-tree pages for the Gen3 wiki.
+ * WHY: Maintainers need visual release history without changing the main wiki generator.
+ * HOW: Reads versioned release records and renders brick-filtered pages into a separate tree.
+ * OUTPUTS: Writes diff and tree pages or lists pages already emitted.
+ * CALLERS: The sma gen3 wiki route invokes it under a serialized wiki lease.
+ * USAGE: `node tools/sma-wiki-gen3.mjs list --out wiki/gen3`
+ * Glossary: [Gen3](../docs/GLOSSARY.md).
  */
 
 import { SMA_ROOT } from "./lib/sma-paths.mjs";

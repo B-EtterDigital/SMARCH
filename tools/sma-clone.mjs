@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Resolves and copies one brick or curated build into a target project with provenance and follow-up instructions.
+ * WHY: Reuse must preserve source identity, export policy, adaptation steps, and receipts instead of becoming an untraceable file copy.
+ * HOW: Reads registries or a build manifest, previews by default, writes only with `--write`, and is called by operators and clone smoke tests.
+ * Usage: `node tools/sma-clone.mjs --search workos --list`
+ */
+/**
  * sma-clone: copy a canonical/candidate brick or a first-class build into a
  * target project and stamp its provenance into the target's legacy
  * .sweetspot/imports.json and initial SMARCH control-plane artifacts under

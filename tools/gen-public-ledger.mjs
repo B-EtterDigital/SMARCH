@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Builds or verifies the public provenance ledger for this repository's core tools.
+ * WHY: External readers need evidence derived only from public file bytes and history rather than private registry state.
+ * HOW: The command hashes selected files, reads their history, computes seals, and writes one generated ledger document.
+ * Verification compares a fresh result with the committed ledger; self-test checks the expected public contract.
+ * The default mode writes registry/public-ledger.generated.json, while verification modes do not update it.
+ * Usage: node tools/gen-public-ledger.mjs --selftest
+ */
 // Generate the PUBLIC self-ledger: provenance seals over this repo's own tools,
 // verifiable by anyone (including in a browser) from raw.githubusercontent.com.
 // Inputs are 100% public: file bytes + git history of this repository.

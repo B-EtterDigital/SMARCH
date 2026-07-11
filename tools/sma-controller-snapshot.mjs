@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Produces a read-only portfolio snapshot for coordination decisions.
+ * WHY: Controllers need one bounded view of leases, conflicts, graph readiness, and dirty work.
+ * HOW: Combines project discovery, repository status, context receipts, and graph summaries.
+ * INPUTS: Optional project filters and display or strictness flags.
+ * OUTPUTS: Human-readable or structured status plus optional action handoff files.
+ * CALLERS: Controller scripts, dashboards, cleanup planners, and human operators.
+ * Usage: `node tools/sma-controller-snapshot.mjs --project sma --dirty-limit 0`
+ */
+/**
  * sma-controller-snapshot.mjs — fast read-only Gen3 controller view.
  *
  * Summarizes the live surfaces that matter while multiple agents are working:

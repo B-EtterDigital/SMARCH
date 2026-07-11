@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Selects and ranks the most valuable bricks for provenance backfill.
+ * WHY: Large portfolios need a deterministic work order instead of attempting every brick blindly.
+ * HOW: Scores registry records with dependency, status, recency, and source-resolution evidence.
+ * INPUTS: The portfolio registry, dependents index, filters, score threshold, phase, and limit.
+ * OUTPUTS: A persisted backfill plan or human-readable plan statistics and previews.
+ * CALLERS: Backfill operators generate this plan before passing it to the run command.
+ * @example node tools/sma-backfill-plan.mjs --help
+ */
+/**
  * sma-backfill-plan.mjs — selects the bricks-that-matter and emits a
  * deterministic backfill plan.
  *

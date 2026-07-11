@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Emits a small public-safe aggregate of provenance and license evidence.
+ * Why: Public surfaces cannot depend on large private ledgers or expose sensitive seal material.
+ * How: Reads generated trust ledgers and writes the committed provenance summary artifact.
+ * Callers: The marketing site and release documentation consume the summary.
+ * Example: `node tools/sma-provenance-summary.mjs`
+ */
+/**
  * sma-provenance-summary — emit a small, public-safe aggregate of the
  * provenance / license / similarity ledgers for the marketing site to surface.
  *

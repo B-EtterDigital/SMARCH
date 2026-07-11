@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Verifies imported brick and build records against their installed artifacts and evidence.
+ * WHY: Import metadata can drift from placement, hashes, environment bindings, and verification state.
+ * HOW: Cross-checks import records, receipts, manifests, files, and journals under one target.
+ * INPUTS: A target project, architecture root, check limit, and optional compact output mode.
+ * OUTPUTS: A structured verification report whose exit status reflects failed checks.
+ * CALLERS: Import workflows and release gates confirming inherited artifacts remain trustworthy.
+ * Usage: `node tools/sma-import-verify.mjs --target . --max-checks 25 --compact`
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";

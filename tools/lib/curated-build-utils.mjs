@@ -1,3 +1,11 @@
+/**
+ * WHAT: Normalizes arguments, paths, filters, and shared state for curated-build commands.
+ * WHY: Build packets, drafts, queues, and blocker reports must select the same builds and evidence consistently.
+ * HOW: Callers provide arguments or path overrides; helpers return normalized selections, loaded context, and summaries.
+ * Canonical defaults come from the adoption layer while scans skip generated and dependency directories.
+ * The module reads shared build artifacts when requested but leaves all writes to the calling command.
+ * @example node --input-type=module -e "import { toArray } from './tools/lib/curated-build-utils.mjs'; console.log(toArray('demo'))"
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

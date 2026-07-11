@@ -1,14 +1,13 @@
 #!/usr/bin/env node
-// SUP (Sweetspot Ultra Plan) portfolio roll-up.
-// Reads .UltraVision/meta/ artifacts from registered project roots and writes
-// wiki/sup/SUP_STATUS.generated.md (+ --json to stdout).
-//
-// Project registration: wiki/sup/projects.json
-//   { "projects": [ { "id": "acme-factory", "root": "/abs/path/to/repo" } ] }
-// or ad hoc: node tools/sma-sup-status.mjs --roots /path/a,/path/b
-//
-// SUP is opt-in (docs/SUP_SWEETSPOT_ULTRA_PLAN.md): a project without
-// .UltraVision/ is reported as "no SUP plan", never treated as a gap.
+/**
+ * WHAT: Rolls registered UltraVision plan statistics into one portfolio status page.
+ * WHY: Operators need aggregate progress without opening every project's planning metadata.
+ * HOW: Reads registered roots and each available .UltraVision/meta artifact.
+ * OUTPUTS: Writes wiki/sup/SUP_STATUS.generated.md and optionally prints structured data.
+ * CALLERS: Portfolio operators run it after refreshing individual project plan statistics.
+ * USAGE: `node tools/sma-sup-status.mjs --roots=`
+ * Glossary: [SUP](../docs/GLOSSARY.md).
+ */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, join, dirname, basename } from "node:path";

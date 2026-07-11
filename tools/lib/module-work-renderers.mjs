@@ -1,3 +1,12 @@
+/**
+ * WHAT: Renders module dispatch, observation, watch, conflict, and agent-prompt views.
+ * WHY: Operators and agents need the same state expressed as concise, actionable text.
+ * HOW: Transforms already-computed manifests and status objects into Markdown, console lines, and commands.
+ * INPUTS: Dispatch manifests, observation or watch summaries, and formatting callbacks.
+ * OUTPUTS: Display strings and big-picture objects; this module does not read or write state.
+ * CALLERS: Module-work planning, dispatch, observe, watch, and agent-packet writers share these renderers.
+ * @example node --input-type=module -e "import { formatExternalActiveLeases } from './tools/lib/module-work-renderers.mjs'; console.log(formatExternalActiveLeases([{ module_id: 'reg', held_resource: 'brick:demo', slot_count: 1 }]));"
+ */
 /** Markdown and prompt renderers for sma-module-work-packets.mjs. */
 
 export function renderDispatchMarkdown(manifest) {

@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/**
+ * WHAT: Generates bounded repair packets for curated builds that are not ready to promote.
+ * WHY: Agents need precise blockers and next commands instead of loading the full build registry and verification reports.
+ * HOW: Reads curated-build context and manifests, then writes or prints handoff packets consumed by repair controllers and agents.
+ * Usage: `node tools/sma-build-packets.mjs --dry-run --stdout`
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 

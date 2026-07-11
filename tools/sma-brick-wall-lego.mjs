@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Renders the [brick](../docs/GLOSSARY.md#brick) registry as a self-contained interactive web catalog.
+ * WHY: Operators need a visual way to compare brick size, status, ownership, and connections without reading raw registry records.
+ * HOW: Reads registry and score files, writes one web page, and is called by dashboard operators reviewing the portfolio.
+ * Usage: `node tools/sma-brick-wall-lego.mjs --out /tmp/sma-brick-wall.html`
+ */
+/**
  * sma-brick-wall-lego: render the brick registry as an interactive
  * "BRICKWORKS" catalog — isometric 3D interlocking-brick tiles, studded
  * baseplate, terminal chrome, AFOL/agent aesthetic.

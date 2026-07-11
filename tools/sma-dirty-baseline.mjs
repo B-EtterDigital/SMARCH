@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Saves and compares repository dirty-state baselines outside the repository.
+ * WHY: Agents need to separate their own changes from pre-existing work without adding noise.
+ * HOW: Captures short repository status records and calculates later path-level deltas.
+ * INPUTS: A project or root, a baseline label, and a save, delta, list, clean, or path command.
+ * OUTPUTS: Cached baseline records and concise dirty-state summaries.
+ * CALLERS: Edit start and end workflows plus operators auditing task ownership.
+ * Usage: `node tools/sma-dirty-baseline.mjs save --project sma --label example`
+ */
+/**
  * sma-dirty-baseline.mjs — local dirty-tree baseline/delta helper.
  *
  * The cache lives outside every repo (~/.cache/sma-gen3/dirty-baselines) so the

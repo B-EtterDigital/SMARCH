@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Recomputes each enriched brick's lifecycle status from current evidence.
+ * Why: Reuse maturity must reflect semantics, tests, warnings, and context rather than aspiration.
+ * How: Reads the candidate inventory and source manifests, then updates manifests unless dry-run is set.
+ * Callers: Registry lifecycle workflows run it after enrichment and before publishing decisions.
+ * Example: `printf '{"bricks":[]}\n' | node tools/sma-promote.mjs --candidates /dev/stdin --dry-run`
+ */
+/**
  * sma-promote: read each enriched brick and decide status (candidate / canonical).
  *
  * Rules (driven by the SMA SVA/SEV/SRLS/SSC gates):

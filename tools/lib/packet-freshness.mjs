@@ -1,3 +1,12 @@
+/**
+ * WHAT: Decides whether a generated controller packet still matches current lease state.
+ * WHY: A young packet can still be unsafe when ownership changes after it was generated.
+ * HOW: Normalizes active leases, hashes the stable fields, and combines fingerprint and age checks.
+ * INPUTS: Packet metadata, active leases, expected fingerprints, and a maximum age.
+ * OUTPUTS: Freshness results, assertion failures, and concise human-readable explanations.
+ * CALLERS: Cleanup, graph, and module packet commands use this before listing or claiming work.
+ * @example node --input-type=module -e "import { maxAgeSeconds } from './tools/lib/packet-freshness.mjs'; console.log(maxAgeSeconds('30'));"
+ */
 import { createHash } from 'node:crypto';
 
 export const DEFAULT_PACKET_MAX_AGE_SECONDS = 900;

@@ -1,3 +1,11 @@
+/**
+ * WHAT: Assigns scanned bricks to stable user-facing feature clusters from their metadata and paths.
+ * WHY: Registry and wiki views need product-level groupings instead of exposing only low-level module records.
+ * HOW: Callers pass a brick and optional manifest; keyword rules return cluster facts or attach them to the record.
+ * The scanner and wiki use the same ordered rules so their labels and descriptions remain consistent.
+ * Unmatched bricks fall back to a general cluster without mutating the source manifest.
+ * @example node --input-type=module -e "import { featureClusterForBrick } from './tools/lib/feature-clusters.mjs'; console.log(featureClusterForBrick({ name: 'video render worker' }))"
+ */
 const featureClusterRules = [
   {
     id: "youtube-youtail",

@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/**
+ * WHAT: Plans and optionally applies evidence-backed status promotions for curated builds.
+ * WHY: A build must not become verified or canonical until its verification, release, and backlog evidence supports that claim.
+ * HOW: Reads build manifests and generated evidence, writes a promotion plan, and is called by release controllers after verification.
+ * Usage: `node tools/sma-build-promote.mjs --dry-run --stdout`
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

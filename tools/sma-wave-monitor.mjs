@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-wave-monitor.mjs - compact live monitor for an active Gen3 cleanup wave.
- *
- * Combines preflight, cleanup progress, and conflict SLA into one low-token
- * controller report so humans do not have to stitch together three tools while
- * agents are running.
+ * WHAT: Reports the live state of a Gen3 cleanup wave in one compact view.
+ * WHY: Controllers otherwise have to reconcile preflight, dirty progress, and conflicts manually.
+ * HOW: Invokes parallel preflight, cleanup progress, and conflict summary tools as read-only inputs.
+ * OUTPUTS: Prints text or structured blockers, gains, packet states, and the next action.
+ * CALLERS: Controllers poll it while cleanup agents are active.
+ * USAGE: `node tools/sma-wave-monitor.mjs --limit 12 --json --no-auto-refresh`
+ * Glossary: [Gen3](../docs/GLOSSARY.md).
  */
 
 import { execFileSync } from 'node:child_process';

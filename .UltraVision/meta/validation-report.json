@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-11T01:00:07+00:00",
+  "generated": "2026-07-11T01:22:02+00:00",
   "root": ".UltraVision",
   "strict": true,
   "pedantic": false,
@@ -11,26 +11,10 @@
   "warnings": [],
   "info": [
     "13 cross-module dependency edge(s) \u2014 see `uvp topo` for wave ordering",
-    "unordered co-edit risk on `tools/install-agent-skills.mjs`: UV-SK-install-agent-skills-convert, UV-SK-x-install-agent-skills-example",
-    "unordered co-edit risk on `tools/lib/adoption-utils.mjs`: UV-RG-adoption-utils-convert, UV-RG-x-adoption-utils-example",
-    "unordered co-edit risk on `tools/lib/attestation-selftest.mjs`: UV-PR-attestation-selftest-convert, UV-PR-x-attestation-selftest-example",
-    "unordered co-edit risk on `tools/lib/attestation.mjs`: UV-PR-attestation-convert, UV-PR-x-attestation-example",
-    "unordered co-edit risk on `tools/lib/codex-runner.mjs`: UV-SM-codex-runner-convert, UV-SM-x-codex-runner-example",
-    "unordered co-edit risk on `tools/lib/compliance-controls.mjs`: UV-GA-compliance-controls-convert, UV-GA-x-compliance-controls-example",
-    "unordered co-edit risk on `tools/lib/context-log.mjs`: UV-CO-context-log-convert, UV-CO-x-context-log-example",
-    "unordered co-edit risk on `tools/lib/controller-action-report.mjs`: UV-RG-controller-action-report-convert, UV-RG-x-controller-action-report-example",
-    "unordered co-edit risk on `tools/lib/curated-build-utils.mjs`: UV-RG-curated-build-utils-convert, UV-RG-x-curated-build-utils-example",
-    "unordered co-edit risk on `tools/lib/export-coverage-selftest.mjs`: UV-PR-export-coverage-selftest-convert, UV-PR-x-export-coverage-selftest-example",
-    "unordered co-edit risk on `tools/lib/export-guard-selftest.mjs`: UV-PR-export-guard-selftest-convert, UV-PR-x-export-guard-selftest-example",
-    "unordered co-edit risk on `tools/lib/export-guard.mjs`: UV-PR-export-guard-convert, UV-PR-x-export-guard-example",
-    "unordered co-edit risk on `tools/lib/feature-clusters.mjs`: UV-RG-feature-clusters-convert, UV-RG-x-feature-clusters-example",
-    "unordered co-edit risk on `tools/lib/gen3-goal-progress.mjs`: UV-RG-gen3-goal-progress-convert, UV-RG-x-gen3-goal-progress-example",
-    "unordered co-edit risk on `tools/lib/gen3-renderers.mjs`: UV-DA-gen3-renderers-convert, UV-DA-x-gen3-renderers-example",
-    "unordered co-edit risk on `tools/lib/gen3-state.mjs`: UV-CO-gen3-state-convert, UV-CO-x-gen3-state-example",
-    "unordered co-edit risk on `tools/lib/ledger-resolve.mjs`: UV-PR-ledger-resolve-convert, UV-PR-x-ledger-resolve-example",
-    "unordered co-edit risk on `tools/lib/license-evidence-selftest.mjs`: UV-PR-license-evidence-selftest-convert, UV-PR-x-license-evidence-selftest-example",
-    "unordered co-edit risk on `tools/lib/license-evidence.mjs`: UV-PR-license-evidence-convert, UV-PR-x-license-evidence-example",
-    "unordered co-edit risk on `tools/lib/license-lattice-selftest.mjs`: UV-PR-license-lattice-selftest-convert, UV-PR-x-license-lattice-selftest-example",
-    "\u2026 124 more unordered co-edit paths"
+    "unordered co-edit risk on `tools/sma-graphify.mjs`: UV-GR-graph-charter, UV-GR-sma-graphify-convert",
+    "unordered co-edit risk on `tools/sma-lease.mjs`: UV-CO-coord-charter, UV-CO-sma-lease-convert",
+    "unordered co-edit risk on `tools/sma-rule-gate.mjs`: UV-GA-gates-charter, UV-GA-sma-rule-gate-convert",
+    "unordered co-edit risk on `tools/sma-scan.mjs`: UV-RG-reg-charter, UV-RG-sma-scan-convert",
+    "unordered co-edit risk on `tools/sma-sync-public.mjs`: UV-SY-cmd-sync-public-docs, UV-SY-sync-charter"
   ]
 }

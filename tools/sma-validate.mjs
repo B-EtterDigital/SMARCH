@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Validates brick manifests and calculates their readiness reports.
+ * WHY: Invalid boundaries, security declarations, or gate claims must fail before reuse.
+ * HOW: Reads one manifest, a project tree, or a registry and checks required contract fields.
+ * OUTPUTS: Prints per-brick findings plus a final count, with structured output when requested.
+ * CALLERS: The sma command router and continuous-integration pipeline run it before release.
+ * USAGE: `node tools/sma-validate.mjs --manifest tools/evals/fixtures/portfolio/acme-cms/src/modules/approval-flow/module.sweetspot.json`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { calculateScore } from "./sma-score.mjs";

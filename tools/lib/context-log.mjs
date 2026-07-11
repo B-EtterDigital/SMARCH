@@ -1,4 +1,13 @@
 /**
+ * WHAT: Reads and appends per-brick agent context events in the repository's newline-delimited log format.
+ * WHY: Leases, edits, verification, and handoffs need durable attribution that survives individual agent sessions.
+ * HOW: Coordination tools pass project, brick, actor, session, and event facts; helpers validate and append one record.
+ * Readers receive parsed events or discover which bricks already have context without rewriting prior history.
+ * Logs live below each project's .smarch/agent-context directory and follow the declared event schema.
+ * Format and command terms are defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { logPath } from './tools/lib/context-log.mjs'; console.log(logPath('sma', 'demo-brick'))"
+ */
+/**
  * context-log.mjs — shared helpers for the per-brick agent-context NDJSON log.
  *
  * Used by tools/sma-context.mjs (CLI) and tools/sma-lease.mjs (auto-stamping).

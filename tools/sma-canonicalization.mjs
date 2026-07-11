@@ -1,3 +1,9 @@
+/**
+ * WHAT: Derives duplicate-family and preferred-candidate evidence from a brick registry.
+ * WHY: Registry consumers need deterministic canonicalization signals without treating generic filenames as meaningful duplicates.
+ * HOW: Library callers pass a registry object and receive a report used by scans, dashboards, and reuse decisions.
+ * @example `const report = buildCanonicalizationReport(registry);`
+ */
 const GENERIC_DUPLICATE_STEMS = new Set([
   "api",
   "common",

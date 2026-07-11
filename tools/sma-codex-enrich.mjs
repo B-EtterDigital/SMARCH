@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Replaces synthesized brick semantics with structured descriptions grounded in source files.
+ * WHY: Search and reuse decisions are unreliable when purpose, interfaces, risks, and adaptation steps come only from filename heuristics.
+ * HOW: Reads candidate source, requests bounded Codex output, and merges it into manifests for downstream ranking, connection, and wiki tools.
+ * Usage: `node tools/sma-codex-enrich.mjs --limit 1 --dry-run`
+ */
+/**
  * sma-codex-enrich: replace synthesized semantic fields with real LLM-written
  * data drawn from the brick's source code.
  *

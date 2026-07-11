@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Runs the repository-wide sequence of scans, validators, security checks, coordination checks, and documentation builds.
+ * WHY: Integrators need one fail-closed command that proves all required [gates](../docs/GLOSSARY.md#gate) agree before release.
+ * HOW: Accepts project and strictness options, invokes the underlying tools, and returns a combined status to automation and controllers.
+ * Usage: `node tools/sma-ci.mjs --help`
+ */
 import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import path from "node:path";

@@ -1,27 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-validate-gen3.mjs — schema validation for the Gen-3 surfaces.
- *
- * Validates:
- *   - local registry/active-leases.generated.json against active-leases.schema.json
- *   - <project>/.smarch/agent-context/*.ndjson lines against
- *     agent-context-event.schema.json
- *   - <project>/.smarch/merge-proposals/*.json against
- *     merge-proposal.schema.json
- *
- * Light-weight validator — required-field + enum + type + format checks. Does
- * not pull AJV. Honest about that: schema-spec compliance is partial.
- *
- * Subcommands:
- *   all         [--project <id>]... [--strict]
- *   leases      [--strict]
- *   context     --project <id> [--brick <id>] [--strict]
- *   proposals   --project <id> [--strict]
- *
- * Exit codes:
- *   0  — all checked artifacts pass
- *   3  — at least one fail (only in --strict mode; otherwise 0)
- *   1  — invocation error
+ * WHAT: Checks coordination artifacts against the project's Gen3 contracts.
+ * WHY: Malformed leases, context events, or merge proposals make collision evidence unreliable.
+ * HOW: Reads active leases and project context or proposal files and applies lightweight schema checks.
+ * OUTPUTS: Prints pass, warning, and failure totals; strict mode exits nonzero on failures.
+ * CALLERS: The sma command router and Gen3 continuous-integration gate run it.
+ * USAGE: `node tools/sma-validate-gen3.mjs all --project sma --strict`
+ * Glossary: [Gen3](../docs/GLOSSARY.md).
  */
 
 import { argv, exit } from 'node:process';

@@ -1,4 +1,13 @@
 /**
+ * WHAT: Resolves declared ownership and canonical identities for bricks and projects.
+ * WHY: Release authority and authorship checks fail when owners are absent or aliases look like different people.
+ * HOW: Loads committed owner and identity maps, caches them, and exposes lookup and comparison helpers.
+ * INPUTS: Registry ownership files plus brick, project, or identity values supplied by callers.
+ * OUTPUTS: Owner records, canonical identity strings, and same-identity decisions.
+ * CALLERS: Provenance, release, and policy checks use this module to apply stable responsibility rules.
+ * @example node --input-type=module -e "import { sameIdentity } from './tools/lib/ownership.mjs'; console.log(sameIdentity('demo', 'demo'));"
+ */
+/**
  * ownership.mjs — declared owners + identity aliasing.
  *
  * Two gaps this closes:

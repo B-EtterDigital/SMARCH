@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Verifies that every known source-export command still calls the central export guard.
+ * WHY: A new exporter or refactor could silently reopen the path that releases closed source without policy checks.
+ * HOW: The test reads each registered exporter, checks its import and call sites, then checks the guard's safe default.
+ * It consumes repository source text and prints the number of protected export paths.
+ * Add every new command that copies, emits, releases, or publishes source to this coverage list.
+ * Usage: node tools/lib/export-coverage-selftest.mjs
+ */
+/**
  * Export-coverage selftest — the forcing function for the choke-point.
  *
  * Enforcement is only as good as its coverage: a NEW export tool, or a refactor

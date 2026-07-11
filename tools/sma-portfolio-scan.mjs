@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Scans selected first-class projects and assembles portfolio scan artifacts.
+ * Why: The control plane needs one consistent inventory instead of disconnected project snapshots.
+ * How: Discovers projects, runs the project scanner, and can merge results and refresh follow-ups.
+ * Callers: Portfolio refresh and operators use it for bounded or complete registry updates.
+ * Example: `node tools/sma-portfolio-scan.mjs --help`
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

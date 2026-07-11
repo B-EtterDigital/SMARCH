@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Produces a machine-readable update plan for an installed project.
+ * WHY: Version changes need explicit placements, checks, and rollback data before files move.
+ * HOW: Reads the target .smarch control plane and selected release metadata without editing targets.
+ * OUTPUTS: Prints or writes a bounded update-plan document.
+ * CALLERS: Propagation and installation workflows use the plan before applying a release.
+ * USAGE: `node tools/sma-update-plan.mjs --help`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
+ */
 
 import fs from "node:fs/promises";
 import path from "node:path";

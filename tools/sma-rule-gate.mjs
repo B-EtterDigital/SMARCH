@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Checks curated-build source against the declared reusable-source rules.
+ * Why: A brick must not be promoted while its implementation violates required safeguards.
+ * How: Reads one or more manifests and source trees, then prints or writes findings and status.
+ * Callers: Build promotion and continuous-integration workflows invoke this gate.
+ * Example: `node tools/sma-rule-gate.mjs --help`
+ */
 // sma-rule-gate.mjs — SSA-v2 rule gate.
 // Refuses to promote a brick whose source violates one or more declared rules.
 // Designed to be called from sma-build-promote.mjs and from CI.

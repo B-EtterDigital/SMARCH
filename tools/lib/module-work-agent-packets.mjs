@@ -1,3 +1,12 @@
+/**
+ * WHAT: Builds and writes the small first-read packet for each module-work assignment.
+ * WHY: An assigned agent should not need a full dispatch or dashboard just to begin safely.
+ * HOW: Converts a dispatch manifest and assignment into structured data plus rendered Markdown files.
+ * INPUTS: A dispatch manifest, its assignments, and the repository root used for relative paths.
+ * OUTPUTS: Packet descriptors, packet payloads, and paired structured-data and Markdown files.
+ * CALLERS: The module-work dispatch command uses these helpers while persisting a wave.
+ * @example node --input-type=module -e "import { agentPacketDescriptor } from './tools/lib/module-work-agent-packets.mjs'; console.log(agentPacketDescriptor({ dispatchBase: '/tmp/demo', slot: { agent_slot: 1, module_id: 'reg' }, smaRoot: '/tmp' }));"
+ */
 /** Low-token per-slot packets for Gen3 module dispatch assignments. */
 
 import { mkdirSync, writeFileSync } from 'node:fs';

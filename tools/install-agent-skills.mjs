@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Installs repository agent skills, instruction snippets, and optional ambient hooks into a target project.
+ * WHY: Supported coding agents need the same current workflow files without manual copying or platform drift.
+ * HOW: The command accepts a target and platform, copies skill directories, and optionally merges instructions and hooks.
+ * Inputs are local repository templates; outputs stay inside the selected project's agent configuration directories.
+ * Use the no-instructions flag when only skill packages should be installed.
+ * Usage: node tools/install-agent-skills.mjs --help
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

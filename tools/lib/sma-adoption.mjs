@@ -1,3 +1,12 @@
+/**
+ * WHAT: Loads portfolio evidence and ranks projects, bricks, and curated builds for adoption decisions.
+ * WHY: Recommendations should follow current registry evidence instead of names or intuition alone.
+ * HOW: Tokenizes a query, scores field overlap, and formats matches from generated state and build indexes.
+ * INPUTS: Generated portfolio state, registry and build-index paths, plus a project or free-text query.
+ * OUTPUTS: Loaded adoption context, matched records, recommendation objects, and formatted reasons.
+ * CALLERS: Adoption and recommendation commands use these shared lookup and ranking helpers.
+ * @example node --input-type=module -e "import { tokenize } from './tools/lib/sma-adoption.mjs'; console.log(tokenize('approval workflow project'));"
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

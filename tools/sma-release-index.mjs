@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Indexes release artifacts by type, identity, version, channel, and status.
+ * Why: Consumers need a consistent latest-release view without scanning release files themselves.
+ * How: Reads release records below a root and writes or prints a grouped release index.
+ * Callers: Stores, dashboards, and release review tools consume the generated index.
+ * Example: `node tools/sma-release-index.mjs --help`
+ */
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';

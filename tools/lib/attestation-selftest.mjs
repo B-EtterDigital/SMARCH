@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Exercises attestation exporters and the stand-alone verifier as one deterministic test program.
+ * WHY: A document that looks valid can still omit required fields or accept tampered provenance evidence.
+ * HOW: The test builds a synthetic brick, writes temporary bundles, verifies success, then verifies tamper failures.
+ * It consumes the public attestation and Merkle helpers and removes every temporary directory afterward.
+ * A successful run prints an assertion count; any failed assertion exits nonzero.
+ * Format terms are defined in docs/GLOSSARY.md.
+ * Usage: node tools/lib/attestation-selftest.mjs
+ */
+/**
  * Self-test for the attestation exporters + stand-alone verifier. Proves:
  *   - intotoStatement / spdxDocument / cyclonedxDocument carry every required
  *     field for their format (in-toto v1, SPDX 2.3, CycloneDX 1.5).

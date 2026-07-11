@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Generates reviewable sibling test files for candidate bricks that lack tests.
+ * WHY: Promotion requires executable evidence, while many discovered bricks begin without a focused test at their source boundary.
+ * HOW: Reads candidate source, asks Codex for a runner-specific test, and previews or writes files for maintainers to inspect and run.
+ * Usage: `node tools/sma-codex-test.mjs --limit 1 --dry-run`
+ */
+/**
  * sma-codex-test: generate a sibling test file for a candidate brick so that
  * sma-promote will flip it candidate → canonical.
  *

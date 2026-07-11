@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/**
+ * WHAT: Builds the searchable index of curated multi-brick builds.
+ * WHY: Release and reuse tools need one ranked view instead of rediscovering build manifests and evidence independently.
+ * HOW: Reads build manifests plus verification and release records, then writes or prints an index consumed by build tooling and controllers.
+ * Usage: `node tools/sma-build-index.mjs --dry-run --stdout`
+ */
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

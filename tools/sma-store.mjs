@@ -1,31 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-store.mjs — local release-store API: SMARCH's versioned-release
- * adaptation of Pierre / code.storage's SDK-first storage direction.
- * Lineage: see docs/INFLUENCES.md.
- *
- * The point: today, "install a brick" requires `sma-clone --brick X --target Y`,
- * which assumes the source repo is already on disk and resolved by id from a
- * registry scan. This tool exposes the same operation but addressed by
- * (brick_id, version) through SMARCH's own `installRelease` API. Hosted
- * Supabase variant is deferred until a second instance exists;
- * everything below is local-only.
- *
- * Subcommands:
- *   list-versions   --brick <id> [--json]
- *   version-graph   --brick <id> [--json]
- *   resolve         --brick <id> --version <v> [--json]
- *   install         --brick <id> --version <v> --target <project_path>
- *                   [--write] [--force]
- *   create-release  --manifest <path/to/module.sweetspot.json|build.sweetspot.json>
- *                   --version <v> [--status draft|published] [--search-root <path>]
- *   list-bricks     [--json]      → brick ids that have at least one release
- *
- * "Brick id" here matches release artifact_id, which mirrors the brick manifest
- * brick.id. Releases live at: releases/<artifact_id>/<version>.json.
- *
- * Hosted variant (deferred): a Supabase edge function with the same API surface,
- * backed by a storage bucket of release JSONs.
+ * WHAT: Creates, resolves, lists, and installs versioned releases from the local store.
+ * WHY: Consumers need stable brick-and-version addressing without depending on source checkout layout.
+ * HOW: Reads release records and manifests, then delegates installs to the local clone path.
+ * OUTPUTS: Prints release data and optionally writes release records or target-project files.
+ * CALLERS: The sma command router and propagation workflows use this local release interface.
+ * USAGE: `node tools/sma-store.mjs list-bricks --json`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import { SMA_ROOT } from "./lib/sma-paths.mjs";

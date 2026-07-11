@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Records an edit outcome, reports its dirty delta, and releases the matching lease.
+ * WHY: Work must close with evidence and ownership cleanup rather than an untracked handoff.
+ * HOW: Captures verification context, checks cleanup policy, appends an event, and releases ownership.
+ * INPUTS: Lease, project, brick, intent, changed files, and optional verification evidence.
+ * OUTPUTS: A closeout receipt, cleanup status, portfolio summary, and released lease state.
+ * CALLERS: Agents and controllers at the end of a leased edit session.
+ * Usage: `node tools/sma-end-edit.mjs --help`
+ */
+/**
  * sma-end-edit.mjs — bookend for sma-start-edit. Appends an edit_applied (or
  * decision_recorded) event with the actual outcome, then releases the lease.
  *

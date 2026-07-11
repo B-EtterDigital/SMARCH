@@ -1,26 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-stats.mjs — adoption metrics over time for the Gen-3 surfaces.
- *
- * Aggregates:
- *   - context events per day, total + by kind + by actor/session
- *   - lease activity (acquired/released/force) per day
- *   - merge proposals opened/resolved per day
- *   - per-project context coverage growth
- *
- * Reads:
- *   <project>/.smarch/agent-context/*.ndjson  (events)
- *   <project>/.smarch/merge-proposals/*.json
- *   registry/active-leases.generated.json     (local current snapshot, not historical)
- *
- * Note: leases.generated.json is a snapshot (only currently active leases).
- * For lease history, we infer from `lease_acquired`/`lease_released` events
- * in the agent-context log — those ARE durable.
- *
- * Subcommands:
- *   summary  [--since 7d|30d|90d|<iso>] [--project <id>]... [--json]
- *   trend    [--since 30d] [--project <id>]... [--by day|week] [--json]
- *   top      [--since 30d] [--metric agent|session|brick|kind] [--n 10] [--json]
+ * WHAT: Summarizes adoption, activity, and coverage over time.
+ * WHY: Current lease snapshots alone cannot show whether coordination practices are improving.
+ * HOW: Aggregates durable project context events, merge proposals, and the active lease snapshot.
+ * OUTPUTS: Prints summary, trend, or ranked metrics as text or structured data.
+ * CALLERS: Operators and dashboards use it for adoption and session forensics.
+ * USAGE: `node tools/sma-stats.mjs summary --since 7d --project sma --json`
+ * Glossary: [Gen3](../docs/GLOSSARY.md).
  */
 
 import { argv, exit } from 'node:process';

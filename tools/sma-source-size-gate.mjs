@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * SMA source-size gate.
- *
- * Default report mode lists source files at or above the cap. Gate mode fails
- * on every violation unless a baseline is supplied. Baseline mode is a ratchet:
- * known legacy offenders may remain only if they do not grow.
+ * WHAT: Reports source files that meet or exceed the configured line cap.
+ * WHY: Oversized files become unsafe bottlenecks for parallel maintenance.
+ * HOW: Walks selected source roots and compares violations with an optional baseline.
+ * OUTPUTS: Prints text or structured findings and fails gate mode on new or grown violations.
+ * CALLERS: The source:size:gate script and release checks enforce the ratchet.
+ * USAGE: `node tools/sma-source-size-gate.mjs --root . --gate --json`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';

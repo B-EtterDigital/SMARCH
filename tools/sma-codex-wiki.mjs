@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Generates detailed per-brick reference pages grounded in code, manifests, documentation, and connection evidence.
+ * WHY: Reusers need installation, interfaces, examples, risks, and troubleshooting in one source-backed page instead of scattered files.
+ * HOW: Reads approved brick context, asks Codex for structured sections, and writes pages consumed by the detailed wiki indexer.
+ * Usage: `node tools/sma-codex-wiki.mjs --limit 1 --dry-run`
+ */
+/**
  * sma-codex-wiki: write a full wiki page per approved brick (candidate or
  * canonical), grounded in its source code, sibling docs, manifest semantics,
  * and connection edges.

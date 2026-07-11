@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Derives missing semantic fields for reusable brick manifests.
+ * WHY: Thin manifests cannot be matched reliably by purpose, tags, or public surface.
+ * HOW: Reads filtered candidates and nearby source documentation, then proposes manifest fields.
+ * INPUTS: Candidate and registry files, an optional limit, and optional dry-run mode.
+ * OUTPUTS: Updated manifests or a structured count of proposed, skipped, and touched bricks.
+ * CALLERS: Registry curation workflows preparing candidates for discovery and reuse.
+ * Usage: `node tools/sma-enrich.mjs --candidates registry/global-modules.generated.json --registry registry/global-modules.generated.json --dry-run --limit 1`
+ */
+/**
  * sma-enrich: heuristically fill the semantic fields on brick manifests so
  * agents can query the registry by purpose/tags/use_when/public_api.
  *

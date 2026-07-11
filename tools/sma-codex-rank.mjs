@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Turns a product vision into a registry-grounded selection and integration plan for builds and bricks.
+ * WHY: Agents need ranked reusable components plus explicit coverage gaps, not an ungrounded language-model recommendation.
+ * HOW: Pre-filters registry candidates, asks Codex to plan over that slice, and prints structured output for another agent or operator.
+ * Usage: `node tools/sma-codex-rank.mjs --vision "Add an approval workflow" --top 5`
+ */
+/**
  * sma-codex-rank: take a vision string + the merged registry and ask codex
  * to return a real integration plan grounded in the registry's semantic
  * data — brick semantics plus first-class build candidates when present.

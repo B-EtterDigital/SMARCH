@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Exercises license classification, restrictive combination, and composition-policy decisions.
+ * WHY: A ranking or default regression could make a build appear more open or visible than its components permit.
+ * HOW: The test supplies permissive, reciprocal, proprietary, private, and unknown component combinations.
+ * It asserts both allowed declarations and the violations produced for attempted escalation.
+ * A successful run prints the number of test groups; failed assertions exit nonzero.
+ * License abbreviations are defined in docs/GLOSSARY.md.
+ * Usage: node tools/lib/license-lattice-selftest.mjs
+ */
+/**
  * Self-test for the license lattice. Asserts the monotonic rule holds:
  * a composed build can never be more open/visible than its bricks permit.
  * Run: node tools/lib/license-lattice-selftest.mjs

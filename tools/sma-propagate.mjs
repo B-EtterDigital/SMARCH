@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Plans and records how a source-brick release reaches its known dependents.
+ * Why: Locked imports and intentional forks need different updates or they silently drift.
+ * How: Reads the dependents index and release data, then writes reports, plans, or review stubs.
+ * Callers: Release operators run it after a source brick version changes.
+ * Example: `node tools/sma-propagate.mjs --help`
+ */
+/**
  * sma-propagate.mjs — push-side fan-out when a source brick is upgraded.
  *
  * Pipeline:

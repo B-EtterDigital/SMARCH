@@ -1,24 +1,12 @@
 #!/usr/bin/env node
 /**
- * sma-start-edit.mjs — one-shot wrapper for the standard "I'm about to edit a
- * brick" flow. Acquires a lease + appends an `edit_planned` agent-context
- * event in a single call. Cuts the boilerplate down from two commands to one.
- *
- * Usage:
- *   sma start-edit --project <id> --brick <id> --intent "..." [--ttl 1200]
- *                  [--rationale "..."] [--task <id>] [--session <id>]
- *                  [--linked-backlog <id>]... [--file <path>]... [--json]
- *
- * Output (text):
- *   acquired lease-1234... (brick:foo) → expires 2026-..
- *   logged ctx-... (edit_planned)
- *
- * Output (--json):
- *   { lease: {...}, context_event: {...} }
- *
- * Bookend with `sma end-edit --lease <id> --brick <id> --project <id>` (see
- * sma-end-edit.mjs) to release + log `edit_applied` with decision/rejected
- * alternatives.
+ * WHAT: Acquires an edit lease and records the planned edit in one command.
+ * WHY: Separate lease and context commands can leave ownership and intent out of sync.
+ * HOW: Validates project, brick, and intent inputs before invoking lease and context tools.
+ * OUTPUTS: Prints or returns the lease, context event, conflict details, and dirty baseline.
+ * CALLERS: Agents use it before editing and pair it with sma-end-edit.mjs afterward.
+ * USAGE: `node tools/sma-start-edit.mjs --help`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
 import { argv, exit, env } from 'node:process';

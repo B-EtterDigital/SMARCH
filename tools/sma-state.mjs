@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Builds the portfolio state snapshot consumed by dashboards and operators.
+ * WHY: Registry facts, readiness signals, conflicts, and activity need one consistent view.
+ * HOW: Reads registry, build-index, lease, conflict, graph, and project context artifacts.
+ * OUTPUTS: Writes wiki/SMA_STATE.generated.json or the path supplied with --out.
+ * CALLERS: Portfolio refresh, dashboard generation, and command-line status tools consume it.
+ * USAGE: `node tools/sma-state.mjs --help`
+ * Glossary: [SMA](../docs/GLOSSARY.md).
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

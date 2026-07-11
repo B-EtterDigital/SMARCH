@@ -1,4 +1,13 @@
 /**
+ * WHAT: Collects active leases, context coverage, and merge proposals into shared Gen3 state summaries.
+ * WHY: State, doctor, controller, promotion, and dashboard commands need one interpretation of coordination health.
+ * HOW: Callers supply project roots or project lists; readers return normalized project and global summary objects.
+ * Expired and volatile regeneration leases are filtered so transient maintenance does not distort readiness.
+ * The module only reads registry and per-project coordination files and never rewrites them.
+ * Gen3 terminology is defined in docs/GLOSSARY.md#gen3.
+ * @example node --input-type=module -e "import { isVolatileSmaRegenLease } from './tools/lib/gen3-state.mjs'; console.log(isVolatileSmaRegenLease({ project: 'sma', resource_kind: 'state-regen' }))"
+ */
+/**
  * gen3-state.mjs — collectors for the Gen-3 multi-agent surfaces.
  *
  * Reads:

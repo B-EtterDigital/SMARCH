@@ -1,4 +1,12 @@
 /**
+ * WHAT: Builds a license-ledger index that resolves component identifiers across registry namespace variations.
+ * WHY: Doubled prefixes, ordering prefixes, and short project tokens otherwise make valid components look missing.
+ * HOW: Callers provide ledger rows, then resolve by exact identifier, normalized signature, or trailing path segments.
+ * Ambiguous fallbacks prefer the candidate whose normalized project matches the caller's project hint.
+ * Unresolved identifiers remain unresolved so callers can apply their fail-safe closed policy.
+ * @example node --input-type=module -e "import { buildLicenseIndex } from './tools/lib/ledger-resolve.mjs'; console.log(buildLicenseIndex([{ brick_id: 'demo.part', project: 'demo' }]).resolve('demo.part', 'demo'))"
+ */
+/**
  * ledger-resolve.mjs — resolve a build's component brick_id against the license
  * ledger, tolerating the id-namespace quirks in the registry.
  *

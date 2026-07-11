@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Prepares a reviewable community-export bundle from one artifact manifest.
+ * Why: Sharing source without policy, license, and leak checks can expose private material.
+ * How: Reads a manifest, source paths, and trust ledgers, then writes a redacted bundle and report.
+ * Callers: Release operators use it before any external publishing step.
+ * Example: `node tools/sma-publish.mjs --help`
+ */
 
 import crypto from "node:crypto";
 import fs from "node:fs/promises";

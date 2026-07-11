@@ -1,3 +1,12 @@
+/**
+ * WHAT: Runs the regression suite for module-work planning, claiming, observation, and rendering helpers.
+ * WHY: Dispatch safety depends on many joined decisions that can regress without an integrated harness.
+ * HOW: Receives the command's private helper seams, feeds them fixed scenarios, and asserts each outcome.
+ * INPUTS: A harness object supplied by the module-work command.
+ * OUTPUTS: A success message and zero result, or a thrown assertion naming the failed contract.
+ * CALLERS: The module-work command invokes this harness through its selftest subcommand.
+ * @example node tools/sma-module-work-packets.mjs selftest
+ */
 /** Selftest harness for sma-module-work-packets.mjs. */
 
 export function runModuleWorkSelfTest(harness) {

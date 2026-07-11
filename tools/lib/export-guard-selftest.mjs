@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Exercises the central export policy against open, internal, closed, and unknown bricks.
+ * WHY: A permissive default or visibility regression could publish restricted source through an automated path.
+ * HOW: The test builds an in-memory license index and asserts allowed, blocked, and authorized outcomes.
+ * Audit writes are disabled before the guard loads, so the test never changes the real export audit log.
+ * A successful run prints the number of policy groups; failed assertions exit nonzero.
+ * Usage: node tools/lib/export-guard-selftest.mjs
+ */
+/**
  * Self-test for the export choke-point. Proves closed/private source cannot be
  * exported to a wider audience without an explicit acknowledgment, and that an
  * unresolved brick fails safe (treated as closed).

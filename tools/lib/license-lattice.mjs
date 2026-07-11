@@ -1,4 +1,13 @@
 /**
+ * WHAT: Computes the most restrictive effective license, openness, and visibility for composed bricks.
+ * WHY: A build must never be declared more redistributable or visible than any component permits.
+ * HOW: Gates pass declarations and component facts; pure functions classify, combine limits, and report violations.
+ * Unknown licenses fail closed, and composition uses the greatest lower bound across every component.
+ * The provenance ledger, license gate, publisher, and export guard share these deterministic decisions.
+ * License abbreviations are defined in docs/GLOSSARY.md.
+ * @example node --input-type=module -e "import { classifyLicense } from './tools/lib/license-lattice.mjs'; console.log(classifyLicense('MIT'))"
+ */
+/**
  * license-lattice.mjs — the openness / visibility / license lattice.
  *
  * Core rule (monotonic propagation): a composed artifact can never be declared

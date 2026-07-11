@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Emits a self-contained verification bundle for one or all registered bricks.
+ * WHY: A third party should verify a brick without receiving the repository's internal ledgers.
+ * HOW: Joins fingerprint, license, provenance, and anchor records into standard documents and an inclusion proof.
+ * INPUTS: A brick selector plus generated ledger and anchor files already present in the repository.
+ * OUTPUTS: Per-brick attestation directories containing provenance, bill-of-materials, and proof documents.
+ * CALLERS: Release operators run this after provenance generation and anchoring.
+ * @example node tools/sma-attest.mjs --all --json
+ */
+/**
  * SMA attest — emit STANDARD-FORMAT attestation bundles per brick so a third
  * party can verify a single brick WITHOUT the rest of the repo.
  *

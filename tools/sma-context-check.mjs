@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Checks that changed brick manifests have timely agent-context evidence.
+ * WHY: A manifest change without recorded intent and verification breaks safe handoff and weakens auditability.
+ * HOW: Reads repository changes plus per-brick context logs, emits coverage findings, and is called by continuous-integration and pre-commit gates.
+ * Usage: `node tools/sma-context-check.mjs audit --project sma`
+ */
+/**
  * sma-context-check.mjs — gate that ensures every modified brick manifest
  * has a corresponding entry in the agent-context log.
  *

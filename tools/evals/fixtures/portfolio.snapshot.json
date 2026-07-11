@@ -1,8 +1,440 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "algorithm": "sha256",
   "root": "tools/evals/fixtures/portfolio",
-  "digest": "b80f74f3f625db9798fd343ee9965b59fddff4f1271380236daf6540ce6b67b3",
+  "digest": "028734db059a52c930c256d51bdf2bdc0e5687434caaaf8231a63a97c06006f3",
   "fileCount": 86,
-  "totalBytes": 327095
+  "totalBytes": 327095,
+  "files": [
+    {
+      "path": "acme-cms/.smarch/project.json",
+      "bytes": 132,
+      "sha256": "0841c3dee791f9171ccaa0b3a9eb9f7ee16b659e12eca167dbb84f49563d30ba"
+    },
+    {
+      "path": "acme-cms/package.json",
+      "bytes": 156,
+      "sha256": "24390cb6bd6584abdf7b4ae147d0b1be1decd30457773aec3469e666ab9804cf"
+    },
+    {
+      "path": "acme-cms/src/modules/approval-flow/index.mjs",
+      "bytes": 317,
+      "sha256": "6834bb05cd9ceecb870a538f2912da417ed5f672b5c93b05a900cf46416b34ba"
+    },
+    {
+      "path": "acme-cms/src/modules/approval-flow/module.sweetspot.json",
+      "bytes": 4932,
+      "sha256": "bea2fd909f8a0caf49f022a9c4e101c4a6a63d4cd153279fdfb405c2d532395d"
+    },
+    {
+      "path": "acme-cms/src/modules/asset-library/index.mjs",
+      "bytes": 317,
+      "sha256": "4484b50c449d4d5dbc7ee4c45a66e29b7ab91b1bdb0155c5462db149e530ebb6"
+    },
+    {
+      "path": "acme-cms/src/modules/asset-library/module.sweetspot.json",
+      "bytes": 4932,
+      "sha256": "bab45836405b2d6b7f3c862571ea7faf2228a6764a76fdc895cf1c66745ecb8f"
+    },
+    {
+      "path": "acme-cms/src/modules/audit-reader/index.mjs",
+      "bytes": 314,
+      "sha256": "7f8ef5a017cf760ee7f458e6f6592bcda61e068c40cc661de0461e5f94896c85"
+    },
+    {
+      "path": "acme-cms/src/modules/audit-reader/module.sweetspot.json",
+      "bytes": 4924,
+      "sha256": "73b03eaf545ddb96da2af4f85f1db6026457543f43a76177a3479c53377191d3"
+    },
+    {
+      "path": "acme-cms/src/modules/content-editor/index.mjs",
+      "bytes": 320,
+      "sha256": "d84925d4b11333bcb63df27b9b9f4434a0f71fd1a64d05acc5219ba5a6df82f6"
+    },
+    {
+      "path": "acme-cms/src/modules/content-editor/module.sweetspot.json",
+      "bytes": 4940,
+      "sha256": "90bbb28db1ccd33cfd17c881cc2863ce5f9a1b9388b8f263b5d25a862191bf90"
+    },
+    {
+      "path": "acme-cms/src/modules/entry-index/index.mjs",
+      "bytes": 311,
+      "sha256": "a2fd5937f9b6e222f4b944130528c5b7fddaf20301a91c878804fbeeb511f801"
+    },
+    {
+      "path": "acme-cms/src/modules/entry-index/module.sweetspot.json",
+      "bytes": 4916,
+      "sha256": "ef2b4dd2d6aac8b4bc679017032343f9866643fbcb2084dc50a437e3aaab0135"
+    },
+    {
+      "path": "acme-cms/src/modules/locale-router/index.mjs",
+      "bytes": 317,
+      "sha256": "095efffc06f1d4d13dae73fce492fff4b7a8109aa26147b1ccaa6353517f5a9c"
+    },
+    {
+      "path": "acme-cms/src/modules/locale-router/module.sweetspot.json",
+      "bytes": 4932,
+      "sha256": "b0a16e81ab54aac6a13365524e58ceef6f7fd39b0db9545c00f0509371da3062"
+    },
+    {
+      "path": "acme-cms/src/modules/media-policy/index.mjs",
+      "bytes": 314,
+      "sha256": "cb49c712197f78020d057879dda401be941cfcbb6b621f68eab0b0bbeab5aaa9"
+    },
+    {
+      "path": "acme-cms/src/modules/media-policy/module.sweetspot.json",
+      "bytes": 4924,
+      "sha256": "5eb4e281ea97b187425f61127d2376d2a88a7f548b9ab99bdf6b8a9356f4a9d7"
+    },
+    {
+      "path": "acme-cms/src/modules/navigation-tree/index.mjs",
+      "bytes": 323,
+      "sha256": "c9a8a55bd0a7c29aee62a28fb5fa1348eeb6254d926f7c404e0dee3ec7d2fd4b"
+    },
+    {
+      "path": "acme-cms/src/modules/navigation-tree/module.sweetspot.json",
+      "bytes": 4948,
+      "sha256": "0049b679208a2778ae3a601fece7474162332dabe1d72ab59919e9b55777eaa1"
+    },
+    {
+      "path": "acme-cms/src/modules/publish-queue/index.mjs",
+      "bytes": 317,
+      "sha256": "bb5e645377e8b9ff90113d568518a0283842f399263d0b8b5a23d551711bd621"
+    },
+    {
+      "path": "acme-cms/src/modules/publish-queue/module.sweetspot.json",
+      "bytes": 4932,
+      "sha256": "e3b75213636ab5abfdf758c47a2a6710758634d96de33f298e6dd10c325247d7"
+    },
+    {
+      "path": "acme-cms/src/modules/revision-store/index.mjs",
+      "bytes": 320,
+      "sha256": "e99a3b243e4abfd261fbbf95e18504f7878d27d8790f9901b6e4bfed5cee875b"
+    },
+    {
+      "path": "acme-cms/src/modules/revision-store/module.sweetspot.json",
+      "bytes": 4940,
+      "sha256": "dba5c2b1a2dae04d64f905a6a0034c5728dc78538d89cb4479cdb39ecb975de3"
+    },
+    {
+      "path": "acme-cms/src/modules/schema-registry/index.mjs",
+      "bytes": 323,
+      "sha256": "2a1582f1a07476acbe98bcece3e316f3a2070915a8268717119679c3c687d2bb"
+    },
+    {
+      "path": "acme-cms/src/modules/schema-registry/module.sweetspot.json",
+      "bytes": 4948,
+      "sha256": "7562b89ba9e7b9e774ed9c291486b52dc9f6a381dc469d3e14a362ec8c448841"
+    },
+    {
+      "path": "acme-cms/src/modules/silent-parser/index.mjs",
+      "bytes": 114,
+      "sha256": "6dcc4004de759a9dd607a9cf496b6ee65d3d4fa1c9cf20728398ef5f3250072a"
+    },
+    {
+      "path": "acme-cms/src/modules/silent-parser/module.sweetspot.json",
+      "bytes": 4930,
+      "sha256": "1a9d2a2285da68dc078d1bf61fb8447d43560d725dfd230ca25cb4bbb93186b3"
+    },
+    {
+      "path": "acme-cms/src/modules/slug-service/index.mjs",
+      "bytes": 314,
+      "sha256": "a9dcae84fda7db76e4d11645bdf87236d06dd6c4cd688d742638b2b6fb7d3edc"
+    },
+    {
+      "path": "acme-cms/src/modules/slug-service/module.sweetspot.json",
+      "bytes": 4924,
+      "sha256": "17719cf8c26c861e5d35d1761867a68572cc93f5f927fe9869b896a71bad1d37"
+    },
+    {
+      "path": "acme-desktop/.smarch/project.json",
+      "bytes": 136,
+      "sha256": "aa2475b07bf13cb2118b7bd6e9c7ee1f877063d784eff9a3020612e5de32398d"
+    },
+    {
+      "path": "acme-desktop/package.json",
+      "bytes": 160,
+      "sha256": "c23e58a716e22cfc24b7182722e1bac7920d6252b5146d88ce521d3a06ade542"
+    },
+    {
+      "path": "acme-desktop/src/modules/activity-feed/index.mjs",
+      "bytes": 317,
+      "sha256": "8bd2e16ea87930aab5f8b6ba9d89777660986dcaccf983e3210c9b50cde95f7c"
+    },
+    {
+      "path": "acme-desktop/src/modules/activity-feed/module.sweetspot.json",
+      "bytes": 4956,
+      "sha256": "ef8794e4ddc7c6f31b825994c4eb14fd4ab96e6170dc65a8f154c158d674389f"
+    },
+    {
+      "path": "acme-desktop/src/modules/app-shell/index.mjs",
+      "bytes": 305,
+      "sha256": "64d38d50c7d58627daf4c88210222f7bb6fb11595b816509cf618a7e298709a4"
+    },
+    {
+      "path": "acme-desktop/src/modules/app-shell/module.sweetspot.json",
+      "bytes": 4924,
+      "sha256": "04339524e95a273728bc3b9b9a0d27751f9a0d3ba58f47e20b58d4a30858f05e"
+    },
+    {
+      "path": "acme-desktop/src/modules/command-palette/index.mjs",
+      "bytes": 323,
+      "sha256": "cb34ce19ef0166e429de8034da77d12d91186234b47a0556e03f70f81fbeb483"
+    },
+    {
+      "path": "acme-desktop/src/modules/command-palette/module.sweetspot.json",
+      "bytes": 4972,
+      "sha256": "1ef20bf52694d5cbcb3bbd13007c7eeb6172ac266cc0e32b42287f99d33e5785"
+    },
+    {
+      "path": "acme-desktop/src/modules/desktop-bridge/index.mjs",
+      "bytes": 320,
+      "sha256": "3837d1ea78d5a01889eb9838c90e5efdf411290f70b9c7d699fdd3c60091e219"
+    },
+    {
+      "path": "acme-desktop/src/modules/desktop-bridge/module.sweetspot.json",
+      "bytes": 4964,
+      "sha256": "c35eb275b03ff6c15493400b084a6b7d1d53d8016d9f4f1a8b69197509e96209"
+    },
+    {
+      "path": "acme-desktop/src/modules/device-status/index.mjs",
+      "bytes": 317,
+      "sha256": "aaad853cf03e3400a8cd4d3d3712dd77e234e225166ef8a6d50fba977242a4eb"
+    },
+    {
+      "path": "acme-desktop/src/modules/device-status/module.sweetspot.json",
+      "bytes": 4956,
+      "sha256": "4b37b45a82ce5cf44ba920d1e225ae19a4572db417316bc5e8994957ac247acd"
+    },
+    {
+      "path": "acme-desktop/src/modules/document-cache/index.mjs",
+      "bytes": 320,
+      "sha256": "f51bcad1d23b46d99f001f3c5bcfafa58e7d893ed797ab3084a257d8f5f2e866"
+    },
+    {
+      "path": "acme-desktop/src/modules/document-cache/module.sweetspot.json",
+      "bytes": 4964,
+      "sha256": "42921db466503723833caaf1440f37d98e9f10f71864bc62b690c60c2904ee3d"
+    },
+    {
+      "path": "acme-desktop/src/modules/env-probe/index.mjs",
+      "bytes": 141,
+      "sha256": "0dc445174775292b5284d154308e3f4fb25bc6309e1db74b4a9aa260afa85aab"
+    },
+    {
+      "path": "acme-desktop/src/modules/env-probe/module.sweetspot.json",
+      "bytes": 4914,
+      "sha256": "a39a8a02d7ad276a0b0a44387a02cb0bd3f5ed6a15234a2d0d8b0aa148f98ae6"
+    },
+    {
+      "path": "acme-desktop/src/modules/export-queue/index.mjs",
+      "bytes": 314,
+      "sha256": "d6a08c465be1b1a4c8092c55c61814d8a7c48c7d802917d2b549672296230734"
+    },
+    {
+      "path": "acme-desktop/src/modules/export-queue/module.sweetspot.json",
+      "bytes": 4948,
+      "sha256": "394f5a6f2b507aeb8f89f230f18d5d97020eb0b94f504975b38b1b0ac2321cee"
+    },
+    {
+      "path": "acme-desktop/src/modules/notification-center/index.mjs",
+      "bytes": 335,
+      "sha256": "6b69ad45ae2ffec007a11895200f1d487975b37fe21daaaf9eccfc2a971c4c75"
+    },
+    {
+      "path": "acme-desktop/src/modules/notification-center/module.sweetspot.json",
+      "bytes": 5004,
+      "sha256": "ae7165f93140e9ec40cccaa51dfa1a16d27608e0e3cf0f5770a60ab588a88ebc"
+    },
+    {
+      "path": "acme-desktop/src/modules/oversized-catalog/index.mjs",
+      "bytes": 103652,
+      "sha256": "4d047dd4b01ee5605784a081b7607967882468c8716787e870259beaba1e7880"
+    },
+    {
+      "path": "acme-desktop/src/modules/oversized-catalog/module.sweetspot.json",
+      "bytes": 5005,
+      "sha256": "548169cdcde14bdbee4628de9a40fd1e4f720cc0f24b682400914bdd980f47a0"
+    },
+    {
+      "path": "acme-desktop/src/modules/search-index/index.mjs",
+      "bytes": 314,
+      "sha256": "788dfa2b8ef4399ff3a4f622b3728f3b7d66e8e0b53cc173047b7bdcf3ff7482"
+    },
+    {
+      "path": "acme-desktop/src/modules/search-index/module.sweetspot.json",
+      "bytes": 4948,
+      "sha256": "15699cdcf2c00bd28425361492a1dda5c2400d794a8c22d5e9ab4fd61c86a1c1"
+    },
+    {
+      "path": "acme-desktop/src/modules/session-store/index.mjs",
+      "bytes": 317,
+      "sha256": "62e83f02b525043cc6d1f3c0db9707b4845acb425e14da83130cb86af60b1768"
+    },
+    {
+      "path": "acme-desktop/src/modules/session-store/module.sweetspot.json",
+      "bytes": 4956,
+      "sha256": "4fcdcc350200fa28e0bd6a424be82766ee3510aa376b18881e6b74cba6d6617d"
+    },
+    {
+      "path": "acme-desktop/src/modules/timeline-core/index.mjs",
+      "bytes": 6105,
+      "sha256": "179ce0dde216442dec0ee80cfa74b65f6c100e947d2210ad87995f08788f47ec"
+    },
+    {
+      "path": "acme-desktop/src/modules/timeline-core/module.sweetspot.json",
+      "bytes": 4964,
+      "sha256": "0c5fdeca9a95a8d2b72949cb53889cbf73470929cb711f09f851f85936c39ae0"
+    },
+    {
+      "path": "acme-desktop/src/modules/workspace-router/index.mjs",
+      "bytes": 326,
+      "sha256": "74c4e9784e7d5d18a1cad38af6e6183fe0878121addb489e49968d03b5202576"
+    },
+    {
+      "path": "acme-desktop/src/modules/workspace-router/module.sweetspot.json",
+      "bytes": 4980,
+      "sha256": "08c841131bd25d3f9aafcadb558a9aee02d63ef0517d8b33aec900792c93d996"
+    },
+    {
+      "path": "acme-studio/.smarch/project.json",
+      "bytes": 135,
+      "sha256": "7cbc91d68351d8c9bfa775f654053dcbe720b106c93652dff63fafd8dfaa7818"
+    },
+    {
+      "path": "acme-studio/package.json",
+      "bytes": 153,
+      "sha256": "ba9884fa26da62e90492a03d09618e72b04480b920a081ea49cc74f10954e6bb"
+    },
+    {
+      "path": "acme-studio/src/modules/asset-browser/index.mjs",
+      "bytes": 317,
+      "sha256": "bb9d5c88b3cd2fe4cc0c7ca6f8e07d2b549afe6fa2e46c25de06d37c6952fda2"
+    },
+    {
+      "path": "acme-studio/src/modules/asset-browser/module.sweetspot.json",
+      "bytes": 4950,
+      "sha256": "eaab67fe095b35bc5610b8d2b979c52a138ed23258850a42084bc4c8b2c49b4d"
+    },
+    {
+      "path": "acme-studio/src/modules/audio-mixer/index.mjs",
+      "bytes": 311,
+      "sha256": "50593247371c45309f47ae5e8c491fbc6f44f9562af5aaf3137f236834df9f9f"
+    },
+    {
+      "path": "acme-studio/src/modules/audio-mixer/module.sweetspot.json",
+      "bytes": 4934,
+      "sha256": "d960c7b167f032c96469c4101da6a274fcedab1e1328709ce61860197270b8c4"
+    },
+    {
+      "path": "acme-studio/src/modules/caption-track/index.mjs",
+      "bytes": 317,
+      "sha256": "d8972c2a0a4d6a11311f7a592a92205f1fecc08b401f83fd9885498b3d38d0f3"
+    },
+    {
+      "path": "acme-studio/src/modules/caption-track/module.sweetspot.json",
+      "bytes": 4950,
+      "sha256": "e06c10bf70dbec69c4fe550a812955676bc446bfc45a1d5c6e4108ad6026ca67"
+    },
+    {
+      "path": "acme-studio/src/modules/clip-inspector/index.mjs",
+      "bytes": 320,
+      "sha256": "090c1173655893e9e40914793a70ff7f305ce288b920c3380efd54e6dfb8565a"
+    },
+    {
+      "path": "acme-studio/src/modules/clip-inspector/module.sweetspot.json",
+      "bytes": 4958,
+      "sha256": "9a67e82a9208cf7afbb264fa4da366d9ce6430a5e3db1aa7ec87045476de3373"
+    },
+    {
+      "path": "acme-studio/src/modules/color-pipeline/index.mjs",
+      "bytes": 320,
+      "sha256": "1146998eb43ef4a394f3ec02a433a1adacf6d9e1b212005b76100b0028548117"
+    },
+    {
+      "path": "acme-studio/src/modules/color-pipeline/module.sweetspot.json",
+      "bytes": 4958,
+      "sha256": "5a762c93658d7ed8a67ee05fd96953e6c1c75ebdc7ab2e661df06016bc164bfb"
+    },
+    {
+      "path": "acme-studio/src/modules/export-preset/index.mjs",
+      "bytes": 317,
+      "sha256": "0e10874d404fadc1b4bf753e4627b3acc0c7f69c095550f8ee2432c07a6d3f95"
+    },
+    {
+      "path": "acme-studio/src/modules/export-preset/module.sweetspot.json",
+      "bytes": 4950,
+      "sha256": "f3d7c5f8d18b07b630eb5fbe3ba0d6af80fa3b5ce272aebeb355c9d6c3d7a19b"
+    },
+    {
+      "path": "acme-studio/src/modules/media-bin/index.mjs",
+      "bytes": 305,
+      "sha256": "037dd0dad603c0396586c2c194475511c81e71e86f0e23657c30985bd1917452"
+    },
+    {
+      "path": "acme-studio/src/modules/media-bin/module.sweetspot.json",
+      "bytes": 4918,
+      "sha256": "6ef51ab524710170649265b973e1361de9afb99a6af24058ff0129a992362617"
+    },
+    {
+      "path": "acme-studio/src/modules/preview-renderer/index.mjs",
+      "bytes": 326,
+      "sha256": "7308741a64d788343bf8af621d559cff8c523a4ab5f79475ff11e83cd93ac5da"
+    },
+    {
+      "path": "acme-studio/src/modules/preview-renderer/module.sweetspot.json",
+      "bytes": 4974,
+      "sha256": "9ca3e4bb0310424c0df440ca412d5e38ee46896948d6d4f95f257080ad2bc01f"
+    },
+    {
+      "path": "acme-studio/src/modules/project-timeline/index.mjs",
+      "bytes": 326,
+      "sha256": "e978243aad039971c6e2000b4316f5596ebfbffac45c3474f7f60ea3860c3149"
+    },
+    {
+      "path": "acme-studio/src/modules/project-timeline/module.sweetspot.json",
+      "bytes": 4974,
+      "sha256": "cc7e9400f1eecb62c8ef721d70a6836de0c9d155f70efed816eed94427c25cba"
+    },
+    {
+      "path": "acme-studio/src/modules/render-queue/index.mjs",
+      "bytes": 314,
+      "sha256": "beb9ee0d2ffdbd961eb2e6fc54486bc396d7dd60946c852c1b1a190faa29c04c"
+    },
+    {
+      "path": "acme-studio/src/modules/render-queue/module.sweetspot.json",
+      "bytes": 4942,
+      "sha256": "1e31dd78e9de39c370f30ad9f88b24f788704594b29a57c5098da67c086c3766"
+    },
+    {
+      "path": "acme-studio/src/modules/scene-library/index.mjs",
+      "bytes": 317,
+      "sha256": "0de089fcd7581ca294fe4798effcd53bff29912abec66ca8120194709090d2c6"
+    },
+    {
+      "path": "acme-studio/src/modules/scene-library/module.sweetspot.json",
+      "bytes": 4950,
+      "sha256": "83ce6689069829fd1d984ce404ff5bda3d5d88ec692eb4e0efd49291d12c7007"
+    },
+    {
+      "path": "acme-studio/src/modules/timeline-core/index.mjs",
+      "bytes": 7097,
+      "sha256": "ea47d1896da466a0c1768d065ee241002434afa741a4d633b08defeef2c5578e"
+    },
+    {
+      "path": "acme-studio/src/modules/timeline-core/module.sweetspot.json",
+      "bytes": 4963,
+      "sha256": "0003b8df75849b6e264bc9948a0ab9791e761143599e7b23e302475581b153fa"
+    },
+    {
+      "path": "acme-studio/src/modules/transition-engine/index.mjs",
+      "bytes": 329,
+      "sha256": "e66ad56c576e8130f59e0eec5b2f290e3df6c68c899c2a19c8310796931b9a00"
+    },
+    {
+      "path": "acme-studio/src/modules/transition-engine/module.sweetspot.json",
+      "bytes": 4982,
+      "sha256": "2bfaa3a84ec1ae451a16942087efc1d2900722b2e42fcd981874d9069f539bd2"
+    }
+  ]
 }

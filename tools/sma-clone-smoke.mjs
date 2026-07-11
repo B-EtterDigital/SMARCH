@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Exercises the complete cross-project clone, import verification, dependency indexing, and propagation path for a build.
+ * WHY: A build is not reusable merely because its files copy; the downstream control-plane records must also remain coherent.
+ * HOW: Accepts a build identity, creates a temporary target, runs the clone toolchain, and emits a report for release controllers.
+ * Usage: `node tools/sma-clone-smoke.mjs --help`
+ */
+/**
  * sma-clone-smoke: end-to-end smoke test for a build's cross-project clone path.
  *
  * Runs the batch-43 sequence as one CLI:

@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Checks whether composed builds obey the repository's license and visibility lattice.
+ * WHY: A build must not be released under terms more permissive than its source components.
+ * HOW: Resolves component licenses, evaluates each build composition, and records blocking findings.
+ * INPUTS: Generated ledgers, build manifests, theft-risk data, and strictness or output options.
+ * OUTPUTS: A generated license report and a blocking exit status when gate rules fail.
+ * CALLERS: Release checks and maintainers reviewing whether a build may be distributed.
+ * Usage: `node tools/sma-license-gate.mjs --json`
+ */
+/**
  * SMA license-lattice gate.
  *
  * Enforces the monotonic rule: a build can never be declared more open, more

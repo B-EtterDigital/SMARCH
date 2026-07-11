@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 /**
+ * What: Records a brick or build copied from one project into another.
+ * Why: Reuse savings, integration cost, provenance, and inherited debt otherwise disappear.
+ * How: Accepts source, target, item, token, and backlog inputs, then writes a target receipt.
+ * Callers: Clone and manual-copy workflows run it immediately after integration.
+ * Example: `node tools/sma-reuse-receipt.mjs --help`
+ */
+/**
  * sma-reuse-receipt.mjs — record a brick/build inheritance from one project to another.
  *
  * Use after `sma-clone.mjs` (or after a manual copy) to capture:

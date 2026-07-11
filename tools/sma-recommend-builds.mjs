@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * What: Ranks reusable builds against a plain-language product need.
+ * Why: Teams need evidence-based starting points instead of searching the portfolio manually.
+ * How: Reads state, registry, and build indexes, then prints ranked human or structured results.
+ * Callers: Adoption workflows and operators use it during project discovery.
+ * Example: `node tools/sma-recommend-builds.mjs --help`
+ */
 
 import path from "node:path";
 import process from "node:process";

@@ -1,4 +1,13 @@
 /**
+ * WHAT: Scores structural similarity between source texts and source-file collections.
+ * WHY: Exact hashes miss copied code after trivial edits, reformatting, or identifier renaming.
+ * HOW: Normalizes syntax-like tokens and combines shingles, fingerprints, and set comparisons deterministically.
+ * INPUTS: Two source strings or two maps of file paths to source strings.
+ * OUTPUTS: Normalized tokens, intermediate fingerprints, and similarity scores from zero to one.
+ * CALLERS: Similarity scans and provenance collision analysis use these dependency-free primitives.
+ * @example node --input-type=module -e "import { similarity } from './tools/lib/similarity.mjs'; console.log(similarity('const x = 1;', 'const y = 1;'));"
+ */
+/**
  * similarity.mjs — near-duplicate ("fuzzy") source-code detection.
  *
  * The existing theft signal (sma-provenance-ledger detectCollisions) groups

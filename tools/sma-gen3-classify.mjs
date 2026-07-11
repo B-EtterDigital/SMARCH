@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Classifies a changed path into its configured module and coordination lane.
+ * WHY: Agents need a deterministic ownership answer before choosing edit and verification rules.
+ * HOW: Matches one normalized path against module patterns and shared hot-path patterns.
+ * INPUTS: A changed file and the repository's generation-three configuration.
+ * OUTPUTS: A structured module and lane decision with the matching ownership details.
+ * CALLERS: Agents, automated checks, and dispatch tools selecting safe work lanes.
+ * Usage: `node tools/sma-gen3-classify.mjs --changed-file tools/sma-graphify.mjs`
+ */
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

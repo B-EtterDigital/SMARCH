@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * WHAT: Finds plausible standalone bricks among source paths not covered by existing manifests.
+ * WHY: Pattern-based scanning leaves a long tail of reusable units whose intent is visible only from surrounding project structure.
+ * HOW: Reads an uncovered file tree, asks Codex for bounded detections, and writes a report consumed by manifest-bootstrap operators.
+ * Usage: `node tools/sma-codex-scan-helper.mjs --project smarch --root . --extras 20`
+ */
+/**
  * sma-codex-scan-helper: close the long tail of brickable units the regex
  * scanner missed. We feed codex a tree listing of files NOT yet covered by
  * a manifest, and ask "are any of these standalone bricks (one-by-one)".

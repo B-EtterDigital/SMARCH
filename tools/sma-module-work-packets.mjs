@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * WHAT: Plans, claims, watches, and verifies module-scoped work dispatches.
+ * WHY: Parallel product work needs durable assignments that respect ownership and shared paths.
+ * HOW: Turns project and dispatch inputs into packets and receipts for controllers and claiming agents.
+ * Usage: `node tools/sma-module-work-packets.mjs plan --project sma --max-agents 1 --json`
+ */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { argv, exit } from 'node:process';
@@ -11,7 +17,6 @@ import { agentPacketDescriptor, agentPacketPayload, writeAgentPackets } from './
 import { latestObservationForDispatch } from './lib/module-work-observations.mjs';
 import { formatExternalActiveLeases, moduleConflictCommand, moduleObservationBigPicture, modulePrompt, moduleWatchBigPicture, renderDispatchMarkdown, renderModuleWatchConsole, renderObservationMarkdown } from './lib/module-work-renderers.mjs';
 import { runModuleWorkSelfTest } from './lib/module-work-selftest.mjs';
-
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const START_EDIT = resolve(TOOLS_DIR, 'sma-start-edit.mjs');
@@ -22,10 +27,8 @@ const PLACEHOLDER_MODULE_TASK = '<describe module task>';
 const DEFAULT_STALE_UNCLAIMED_DISPATCH_MS = 8 * 60 * 60 * 1000;
 const CLAIM_KINDS = new Set(['lease_acquired', 'lease_force_acquired', 'edit_planned']);
 const COMPLETE_KINDS = new Set(['edit_applied']);
-
 const command = argv[2] || 'plan';
 const args = parseArgs(argv.slice(3));
-
 try {
   if (args.help || command === 'help' || command === '--help' || command === '-h') {
     usage();
@@ -64,7 +67,6 @@ try {
   console.error(`sma-module-work-packets: ${err.message}`);
   exit(1);
 }
-
 function usage() {
   console.log(`Usage:
   sma-module-work-packets.mjs plan --project <id> [--task "..."] [--max-agents 12]
