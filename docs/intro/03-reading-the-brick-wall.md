@@ -41,10 +41,10 @@ export SMARCH_FIXTURE_REGISTRY SMARCH_BRICK_WALL
 cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO" \
   --out "$SMARCH_FIXTURE_REGISTRY"
-node tools/sma-brick-wall-lego.mjs \
+node tools/sma-brick-wall-lego.ts \
   --registry "$SMARCH_FIXTURE_REGISTRY" \
   --out "$SMARCH_BRICK_WALL"
 

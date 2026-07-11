@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/capsule-manifest/1.0.0",
+  "title": "Sweetspot Capsule Manifest",
+  "description": "A brick manifest for a constraint-first executable capsule. The capsule runner reads this contract before loading fixtures or source code.",
+  "x-sma-contract": {
+    "version": "1.0.0",
+    "change_policy": "Optional additive fields preserve v1 compatibility; required, renamed, or narrowed fields require a new versioned $id and schema_version.",
+    "rollback": "Consumers retain the v1 brick-manifest validator; rollback restores the previous schema and discards only newly-added optional fields.",
+    "readers": ["tools/sma-brick-run.mjs", "tools/sma-validate.ts"],
+    "writers": ["templates/capsule/module.sweetspot.json", "tools/sma-brick-new.mjs"],
+    "lifecycle": "Created from the capsule template, adapted by the owner, validated before every fixture run, and retained with the capsule source.",
+    "retention": "Retain for the lifetime of the capsule and every published release that references it.",
+    "performance": "Static file contract; database query and index budgets are not applicable. Validation is bounded by the manifest size."
+  },
+  "allOf": [
+    {
+      "$ref": "brick.manifest.schema.json"
+    },
+    {
+      "type": "object",
+      "required": ["brick"],
+      "properties": {
+        "brick": {
+          "description": "Capsule identity constrained to the capsule brick kind.",
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "description": "Discriminator used by capsule-aware tools.",
+              "const": "capsule"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

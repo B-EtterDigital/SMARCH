@@ -2167,3 +2167,485 @@
 {"ts": "2026-07-11T02:48:33+00:00", "action": "complete", "id": "UV-GR-sma-graphify-parity", "detail": "node tools/sma-doc-lint.mjs"}
 {"ts": "2026-07-11T02:48:33+00:00", "action": "complete", "id": "UV-SK-install-agent-skills-convert", "detail": "node tools/sma-doc-lint.mjs"}
 {"ts": "2026-07-11T02:48:34+00:00", "action": "complete", "id": "UV-SK-install-agent-skills-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:49:31+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:31+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:31+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:32+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:32+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:33+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:33+00:00", "action": "claim", "id": "UV-SC-active-leases-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:33+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:34+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:34+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:35+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:35+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:35+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:36+00:00", "action": "claim", "id": "UV-SC-agent-context-event-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:36+00:00", "action": "claim", "id": "UV-SC-backlog-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:36+00:00", "action": "claim", "id": "UV-SC-backlog-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:37+00:00", "action": "claim", "id": "UV-SC-backlog-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:37+00:00", "action": "claim", "id": "UV-SC-backlog-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:37+00:00", "action": "claim", "id": "UV-SC-backlog-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:38+00:00", "action": "claim", "id": "UV-SC-backlog-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:38+00:00", "action": "claim", "id": "UV-SC-backlog-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:38+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:39+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:39+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:39+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:40+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:40+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:40+00:00", "action": "claim", "id": "UV-SC-brick-manifest-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:41+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:41+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:41+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:42+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:42+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:42+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:43+00:00", "action": "claim", "id": "UV-SC-build-manifest-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:43+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:44+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:44+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:44+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:45+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:45+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:45+00:00", "action": "claim", "id": "UV-SC-capsule-manifest-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:46+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:46+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:46+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:46+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:47+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:47+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:47+00:00", "action": "claim", "id": "UV-SC-dependents-index-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:48+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:48+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:48+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:49+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:49+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:49+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:50+00:00", "action": "claim", "id": "UV-SC-entitlement-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:50+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:50+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:51+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:51+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:51+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:52+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:52+00:00", "action": "claim", "id": "UV-SC-eval-run-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:52+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:53+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:53+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:53+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:54+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:54+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:54+00:00", "action": "claim", "id": "UV-SC-global-registry-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:55+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:55+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:55+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:56+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:56+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:56+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:57+00:00", "action": "claim", "id": "UV-SC-import-lock-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:57+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:57+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:57+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:58+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:58+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:58+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:49:59+00:00", "action": "claim", "id": "UV-SC-merge-proposal-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:00+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:00+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:00+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:01+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:01+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:01+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:02+00:00", "action": "claim", "id": "UV-SC-placement-map-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:02+00:00", "action": "claim", "id": "UV-SC-project-index-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:02+00:00", "action": "claim", "id": "UV-SC-project-index-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:03+00:00", "action": "claim", "id": "UV-SC-project-index-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:03+00:00", "action": "claim", "id": "UV-SC-project-index-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:04+00:00", "action": "claim", "id": "UV-SC-project-index-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:04+00:00", "action": "claim", "id": "UV-SC-project-index-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:04+00:00", "action": "claim", "id": "UV-SC-project-index-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:05+00:00", "action": "claim", "id": "UV-SC-release-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:05+00:00", "action": "claim", "id": "UV-SC-release-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:05+00:00", "action": "claim", "id": "UV-SC-release-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:06+00:00", "action": "claim", "id": "UV-SC-release-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:06+00:00", "action": "claim", "id": "UV-SC-release-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:07+00:00", "action": "claim", "id": "UV-SC-release-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:07+00:00", "action": "claim", "id": "UV-SC-release-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:07+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:08+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:08+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:08+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:09+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:09+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:09+00:00", "action": "claim", "id": "UV-SC-reuse-receipt-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:10+00:00", "action": "claim", "id": "UV-SC-server-card-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:10+00:00", "action": "claim", "id": "UV-SC-server-card-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:11+00:00", "action": "claim", "id": "UV-SC-server-card-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:11+00:00", "action": "claim", "id": "UV-SC-server-card-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:11+00:00", "action": "claim", "id": "UV-SC-server-card-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:12+00:00", "action": "claim", "id": "UV-SC-server-card-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:13+00:00", "action": "claim", "id": "UV-SC-server-card-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:13+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:14+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:15+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:15+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:16+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:17+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:17+00:00", "action": "claim", "id": "UV-SC-submission-bundle-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:18+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-access", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:18+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:19+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-integrity", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:19+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:19+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-rollback", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:20+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-schema", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:20+00:00", "action": "claim", "id": "UV-SC-workforce-packet-schema-tests", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:21+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:21+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:21+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:22+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:22+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:22+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:23+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:23+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:23+00:00", "action": "claim", "id": "UV-MC-mcp-brick-get-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:24+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:24+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:24+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:24+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:25+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:25+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:25+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:26+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:26+00:00", "action": "claim", "id": "UV-MC-mcp-brick-search-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:26+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:27+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:27+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:27+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:28+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:28+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:28+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:29+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:29+00:00", "action": "claim", "id": "UV-MC-mcp-brick-trust-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:29+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:30+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:30+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:30+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:31+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:31+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:31+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:32+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:32+00:00", "action": "claim", "id": "UV-MC-mcp-build-list-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:32+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:33+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:33+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:33+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:34+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:34+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:35+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:35+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:35+00:00", "action": "claim", "id": "UV-MC-mcp-registry-doctor-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:36+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:36+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:36+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:37+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:37+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:37+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:37+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:38+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:38+00:00", "action": "claim", "id": "UV-MC-mcp-registry-why-blocked-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:38+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:39+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:39+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:39+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:40+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:40+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:40+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:40+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:41+00:00", "action": "claim", "id": "UV-MC-mcp-release-install-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:41+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-authz", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:42+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-docs", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:42+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:42+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-integration", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:42+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-perf", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:43+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-resilience", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:43+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-telemetry", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:44+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-unit", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:44+00:00", "action": "claim", "id": "UV-MC-mcp-server-card-validate", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:44+00:00", "action": "claim", "id": "UV-EV-j-capsule-create-to-promote-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:44+00:00", "action": "claim", "id": "UV-EV-j-capsule-create-to-promote-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:45+00:00", "action": "claim", "id": "UV-EV-j-capsule-create-to-promote-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:45+00:00", "action": "claim", "id": "UV-EV-j-capsule-create-to-promote-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:46+00:00", "action": "claim", "id": "UV-EV-j-collision-flow-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:46+00:00", "action": "claim", "id": "UV-EV-j-collision-flow-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:47+00:00", "action": "claim", "id": "UV-EV-j-collision-flow-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:47+00:00", "action": "claim", "id": "UV-EV-j-collision-flow-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:47+00:00", "action": "claim", "id": "UV-EV-j-dashboard-tour-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:48+00:00", "action": "claim", "id": "UV-EV-j-dashboard-tour-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:48+00:00", "action": "claim", "id": "UV-EV-j-dashboard-tour-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:49+00:00", "action": "claim", "id": "UV-EV-j-dashboard-tour-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:49+00:00", "action": "claim", "id": "UV-EV-j-demo-tape-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:49+00:00", "action": "claim", "id": "UV-EV-j-demo-tape-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:50+00:00", "action": "claim", "id": "UV-EV-j-demo-tape-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:50+00:00", "action": "claim", "id": "UV-EV-j-demo-tape-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:50+00:00", "action": "claim", "id": "UV-EV-j-mcp-discovery-install-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:51+00:00", "action": "claim", "id": "UV-EV-j-mcp-discovery-install-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:51+00:00", "action": "claim", "id": "UV-EV-j-mcp-discovery-install-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:51+00:00", "action": "claim", "id": "UV-EV-j-mcp-discovery-install-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:52+00:00", "action": "claim", "id": "UV-EV-j-new-coder-path-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:52+00:00", "action": "claim", "id": "UV-EV-j-new-coder-path-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:53+00:00", "action": "claim", "id": "UV-EV-j-new-coder-path-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:53+00:00", "action": "claim", "id": "UV-EV-j-new-coder-path-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:53+00:00", "action": "claim", "id": "UV-EV-j-quickstart-5min-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:54+00:00", "action": "claim", "id": "UV-EV-j-quickstart-5min-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:54+00:00", "action": "claim", "id": "UV-EV-j-quickstart-5min-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:54+00:00", "action": "claim", "id": "UV-EV-j-quickstart-5min-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:55+00:00", "action": "claim", "id": "UV-EV-j-scan-to-clone-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:55+00:00", "action": "claim", "id": "UV-EV-j-scan-to-clone-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:55+00:00", "action": "claim", "id": "UV-EV-j-scan-to-clone-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:56+00:00", "action": "claim", "id": "UV-EV-j-scan-to-clone-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:56+00:00", "action": "claim", "id": "UV-EV-j-submission-to-promotion-flake", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:56+00:00", "action": "claim", "id": "UV-EV-j-submission-to-promotion-impl", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:57+00:00", "action": "claim", "id": "UV-EV-j-submission-to-promotion-monitor", "agent": "codex-w13"}
+{"ts": "2026-07-11T02:50:57+00:00", "action": "claim", "id": "UV-EV-j-submission-to-promotion-spec", "agent": "codex-w13"}
+{"ts": "2026-07-11T03:19:53+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:53+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:54+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:54+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:55+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:55+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:56+00:00", "action": "complete", "id": "UV-SC-active-leases-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:56+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:56+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:57+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:57+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:58+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:58+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:59+00:00", "action": "complete", "id": "UV-SC-agent-context-event-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:19:59+00:00", "action": "complete", "id": "UV-SC-backlog-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:00+00:00", "action": "complete", "id": "UV-SC-backlog-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:01+00:00", "action": "complete", "id": "UV-SC-backlog-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:01+00:00", "action": "complete", "id": "UV-SC-backlog-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:01+00:00", "action": "complete", "id": "UV-SC-backlog-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:02+00:00", "action": "complete", "id": "UV-SC-backlog-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:03+00:00", "action": "complete", "id": "UV-SC-backlog-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:04+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:04+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:05+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:05+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:06+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:06+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:06+00:00", "action": "complete", "id": "UV-SC-brick-manifest-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:07+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:07+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:08+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:08+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:09+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:09+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:10+00:00", "action": "complete", "id": "UV-SC-build-manifest-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:10+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:11+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:12+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:12+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:12+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:13+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:13+00:00", "action": "complete", "id": "UV-SC-capsule-manifest-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:14+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:15+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:16+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:16+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:17+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:18+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:18+00:00", "action": "complete", "id": "UV-SC-dependents-index-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:19+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:20+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:21+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:22+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:22+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:23+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:24+00:00", "action": "complete", "id": "UV-SC-entitlement-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:24+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:25+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:25+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:26+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:27+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:27+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:28+00:00", "action": "complete", "id": "UV-SC-eval-run-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:28+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:29+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:30+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:30+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:31+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:32+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:32+00:00", "action": "complete", "id": "UV-SC-global-registry-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:33+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:33+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:34+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:34+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:35+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:35+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:36+00:00", "action": "complete", "id": "UV-SC-import-lock-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:37+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:37+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:38+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:38+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:39+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:39+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:40+00:00", "action": "complete", "id": "UV-SC-merge-proposal-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:40+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:41+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:41+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:42+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:42+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:43+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:43+00:00", "action": "complete", "id": "UV-SC-placement-map-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:44+00:00", "action": "complete", "id": "UV-SC-project-index-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:45+00:00", "action": "complete", "id": "UV-SC-project-index-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:45+00:00", "action": "complete", "id": "UV-SC-project-index-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:46+00:00", "action": "complete", "id": "UV-SC-project-index-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:46+00:00", "action": "complete", "id": "UV-SC-project-index-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:47+00:00", "action": "complete", "id": "UV-SC-project-index-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:47+00:00", "action": "complete", "id": "UV-SC-project-index-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:48+00:00", "action": "complete", "id": "UV-SC-release-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:48+00:00", "action": "complete", "id": "UV-SC-release-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:49+00:00", "action": "complete", "id": "UV-SC-release-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:49+00:00", "action": "complete", "id": "UV-SC-release-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:50+00:00", "action": "complete", "id": "UV-SC-release-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:50+00:00", "action": "complete", "id": "UV-SC-release-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:51+00:00", "action": "complete", "id": "UV-SC-release-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:52+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:52+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:53+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:53+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:54+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:54+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:55+00:00", "action": "complete", "id": "UV-SC-reuse-receipt-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:55+00:00", "action": "complete", "id": "UV-SC-server-card-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:56+00:00", "action": "complete", "id": "UV-SC-server-card-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:56+00:00", "action": "complete", "id": "UV-SC-server-card-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:57+00:00", "action": "complete", "id": "UV-SC-server-card-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:57+00:00", "action": "complete", "id": "UV-SC-server-card-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:58+00:00", "action": "complete", "id": "UV-SC-server-card-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:58+00:00", "action": "complete", "id": "UV-SC-server-card-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:59+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:20:59+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:00+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:00+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:01+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:01+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:02+00:00", "action": "complete", "id": "UV-SC-submission-bundle-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:02+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-access", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:03+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:03+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-integrity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:04+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:05+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-rollback", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:05+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-schema", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:06+00:00", "action": "complete", "id": "UV-SC-workforce-packet-schema-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:06+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:07+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:08+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:08+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:09+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:09+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:10+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:10+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:11+00:00", "action": "complete", "id": "UV-MC-mcp-brick-get-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:12+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:12+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:13+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:14+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:14+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:15+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:16+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:16+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:17+00:00", "action": "complete", "id": "UV-MC-mcp-brick-search-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:17+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:18+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:18+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:19+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:19+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:20+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:21+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:21+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:22+00:00", "action": "complete", "id": "UV-MC-mcp-brick-trust-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:23+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:24+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:24+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:25+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:25+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:26+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:26+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:27+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:27+00:00", "action": "complete", "id": "UV-MC-mcp-build-list-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:28+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:28+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:29+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:30+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:30+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:31+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:31+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:31+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:32+00:00", "action": "complete", "id": "UV-MC-mcp-registry-doctor-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:33+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:33+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:34+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:34+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:35+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:35+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:36+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:36+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:37+00:00", "action": "complete", "id": "UV-MC-mcp-registry-why-blocked-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:37+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:38+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:38+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:39+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:39+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:40+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:40+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:40+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:41+00:00", "action": "complete", "id": "UV-MC-mcp-release-install-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:41+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:42+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:43+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:43+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:44+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:44+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:45+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:45+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:46+00:00", "action": "complete", "id": "UV-MC-mcp-server-card-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:47+00:00", "action": "complete", "id": "UV-EV-j-capsule-create-to-promote-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:47+00:00", "action": "complete", "id": "UV-EV-j-capsule-create-to-promote-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:48+00:00", "action": "complete", "id": "UV-EV-j-capsule-create-to-promote-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:48+00:00", "action": "complete", "id": "UV-EV-j-capsule-create-to-promote-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:49+00:00", "action": "complete", "id": "UV-EV-j-collision-flow-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:49+00:00", "action": "complete", "id": "UV-EV-j-collision-flow-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:50+00:00", "action": "complete", "id": "UV-EV-j-collision-flow-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:50+00:00", "action": "complete", "id": "UV-EV-j-collision-flow-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:51+00:00", "action": "complete", "id": "UV-EV-j-dashboard-tour-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:51+00:00", "action": "complete", "id": "UV-EV-j-dashboard-tour-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:52+00:00", "action": "complete", "id": "UV-EV-j-dashboard-tour-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:52+00:00", "action": "complete", "id": "UV-EV-j-dashboard-tour-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:53+00:00", "action": "complete", "id": "UV-EV-j-demo-tape-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:53+00:00", "action": "complete", "id": "UV-EV-j-demo-tape-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:54+00:00", "action": "complete", "id": "UV-EV-j-demo-tape-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:54+00:00", "action": "complete", "id": "UV-EV-j-demo-tape-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:55+00:00", "action": "complete", "id": "UV-EV-j-mcp-discovery-install-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:55+00:00", "action": "complete", "id": "UV-EV-j-mcp-discovery-install-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:56+00:00", "action": "complete", "id": "UV-EV-j-mcp-discovery-install-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:57+00:00", "action": "complete", "id": "UV-EV-j-mcp-discovery-install-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:57+00:00", "action": "complete", "id": "UV-EV-j-new-coder-path-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:58+00:00", "action": "complete", "id": "UV-EV-j-new-coder-path-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:58+00:00", "action": "complete", "id": "UV-EV-j-new-coder-path-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:21:59+00:00", "action": "complete", "id": "UV-EV-j-new-coder-path-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:00+00:00", "action": "complete", "id": "UV-EV-j-quickstart-5min-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:01+00:00", "action": "complete", "id": "UV-EV-j-quickstart-5min-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:01+00:00", "action": "complete", "id": "UV-EV-j-quickstart-5min-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:02+00:00", "action": "complete", "id": "UV-EV-j-quickstart-5min-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:02+00:00", "action": "complete", "id": "UV-EV-j-scan-to-clone-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:03+00:00", "action": "complete", "id": "UV-EV-j-scan-to-clone-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:03+00:00", "action": "complete", "id": "UV-EV-j-scan-to-clone-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:04+00:00", "action": "complete", "id": "UV-EV-j-scan-to-clone-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:05+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-flake", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:05+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:06+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-monitor", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:22:06+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-spec", "detail": "node tools/sma-doc-lint.mjs"}

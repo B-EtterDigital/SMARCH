@@ -30,7 +30,7 @@ node /path/to/SMARCH/tools/sma-submit.mjs \
 - a sidecar curator checklist;
 - the archive SHA-256.
 
-No archive is emitted when manifest validation or either local gate fails. The submission bundle currently uses the inline v1 contract identified in `bundle.json`; it can move to the shared `schemas/submission-bundle` contract when that schema module lands.
+No archive is emitted when manifest validation or either local gate fails. `bundle.json` uses the inline-v1 identifier implemented by `schemas/submission-bundle-schema.json`; the shared schema deliberately preserves the shipped identifier so existing archives and the verifier remain compatible.
 
 Verify the finished archive before attaching it:
 

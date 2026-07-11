@@ -49,13 +49,13 @@ export SMARCH_FIXTURE_REGISTRY
 cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO" \
   --out "$SMARCH_FIXTURE_REGISTRY"
 
 node --input-type=module <<'NODE'
 import fs from "node:fs";
-import { buildCanonicalizationReport } from "./tools/sma-canonicalization.mjs";
+import { buildCanonicalizationReport } from "./tools/sma-canonicalization.ts";
 
 const registry = JSON.parse(
   fs.readFileSync(process.env.SMARCH_FIXTURE_REGISTRY, "utf8"),

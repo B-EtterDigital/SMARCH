@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/entitlement/1.0.0",
+  "title": "Sweetspot Entitlement Record",
+  "description": "Portable authorization evidence for the WorkOS auth-and-billing scaffold seam. This contract does not claim that SMARCH owns a live entitlement database.",
+  "type": "object",
+  "additionalProperties": false,
+  "x-sma-contract": {
+    "version": "1.0.0",
+    "change_policy": "Optional additive fields preserve v1 compatibility; required, renamed, or narrowed fields require a new versioned $id and schema_version.",
+    "rollback": "Consumers must retain the v1 decoder. Rollback removes additive optional fields while preserving subject, capability, decision, source, and issuance evidence.",
+    "readers": ["tools/sma-manifest-scaffold.ts", "downstream WorkOS adapters"],
+    "writers": ["downstream WorkOS adapters"],
+    "lifecycle": "Issued by an authorization adapter, checked at an access boundary, superseded or expired, then retained as audit evidence according to the host project policy.",
+    "retention": "Host-project policy controls authorization evidence retention; secrets and session tokens are forbidden from this record.",
+    "performance": "Static interchange contract; database query and index budgets are host-project concerns and are not applicable in SMARCH."
+  },
+  "required": ["schema_version", "entitlement_id", "subject", "capability", "decision", "source", "issued_at"],
+  "properties": {
+    "schema_version": {
+      "description": "Schema version that this record conforms to.",
+      "const": "1.0.0"
+    },
+    "entitlement_id": {
+      "description": "Stable, non-secret identifier for this authorization decision.",
+      "type": "string",
+      "minLength": 3
+    },
+    "subject": {
+      "description": "Actor or organization receiving the decision.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "description": "Subject namespace.",
+          "enum": ["user", "organization", "service"]
+        },
+        "id": {
+          "description": "Identifier in the named subject namespace.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "capability": {
+      "description": "Capability being authorized, such as a feature or operation name.",
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "description": "Resolved authorization effect.",
+      "enum": ["allow", "deny"]
+    },
+    "source": {
+      "description": "System and policy evidence that produced the decision.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "policy"],
+      "properties": {
+        "provider": {
+          "description": "Authorization provider name.",
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "description": "Policy, plan, or role identifier used for the decision.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "issued_at": {
+      "description": "ISO 8601 time when the decision was issued.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "description": "Optional ISO 8601 expiry after which the decision must be refreshed.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "metadata": {
+      "description": "Non-secret host-project correlation values.",
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "smarch-registry",
+  "description": "x",
+  "version": "1.0.0",
+  "transport": {
+    "type": "stdio"
+  },
+  "repository": "https://example.com/resource",
+  "tools": [
+    "x"
+  ],
+  "authorization": {
+    "boundary": "stdio-parent-process",
+    "read_capability": "registry:read",
+    "write_capability": "release:install"
+  }
+}

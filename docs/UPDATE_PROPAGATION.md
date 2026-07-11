@@ -11,17 +11,17 @@ additive change (commit `032257d11`, added `getAnnotationCounts` utility).
 
 ```bash
 # 1. Cut release
-node tools/sma-release.mjs --manifest <acme-desktop-v1>/web/src/modules/modcap/module.sweetspot.json \
+node tools/sma-release.ts --manifest <acme-desktop-v1>/web/src/modules/modcap/module.sweetspot.json \
   --version 0.2.0 --status published \
   --search-root ~/DEV/Projects/acme-desktop
 # → releases/acme-desktop.frontend-module.web-src-modules-modcap.e049040a/0.2.0.json
 
 # 2. Refresh dependents
-node tools/sma-dependents-index.mjs --write
+node tools/sma-dependents-index.ts --write
 # → 1 source brick, 1 link: acme-lang (reuse-receipt fork)
 
 # 3. Apply propagation
-node tools/sma-propagate.mjs \
+node tools/sma-propagate.ts \
   --source-brick "acme-desktop.frontend-module.web-src-modules-modcap.e049040a" \
   --release releases/.../0.2.0.json --apply
 # → notify-only stub written to acme-lang/.smarch/incoming-updates/...
@@ -109,23 +109,23 @@ After bumping a source brick:
 
 ```bash
 # 1. Cut a release artifact for the new version
-node tools/sma-release.mjs --manifest <source>/module.sweetspot.json
+node tools/sma-release.ts --manifest <source>/module.sweetspot.json
 
 # 2. Refresh the dependents index
-node tools/sma-dependents-index.mjs --write
+node tools/sma-dependents-index.ts --write
 
 # 3. Dry-run propagation to see who'd be affected
-node tools/sma-propagate.mjs --source-brick <id> --release releases/<brick>/<version>.json
+node tools/sma-propagate.ts --source-brick <id> --release releases/<brick>/<version>.json
 
 # 4. Apply: writes update plans for locked targets,
 #          drops notify-only stubs for forked targets.
-node tools/sma-propagate.mjs --source-brick <id> --release releases/<brick>/<version>.json --apply
+node tools/sma-propagate.ts --source-brick <id> --release releases/<brick>/<version>.json --apply
 ```
 
 Or, for "everything that changed since we last shipped":
 
 ```bash
-node tools/sma-propagate.mjs --since <last-deploy-sha> --source-project acme-desktop --apply
+node tools/sma-propagate.ts --since <last-deploy-sha> --source-project acme-desktop --apply
 ```
 
 ## What lands where after `--apply`
@@ -151,7 +151,7 @@ When `sma-propagate --apply` writes a stub for a `reuse-receipt` dependent, the
 recommended follow-up is to open a backlog entry in that dependent's project:
 
 ```bash
-node tools/sma-backlog.mjs add --project <dependent> \
+node tools/sma-backlog.ts add --project <dependent> \
   --kind dependency_drift --severity medium \
   --title "upstream <brick> shipped <version>; review fork divergence" \
   --reuse-receipt-id <id>
@@ -163,9 +163,9 @@ The next agent finds it via `sma-backlog.mjs list --project <dependent>` and dec
 
 ```bash
 # Nightly: rebuild the dependents index + backlog aggregate
-0 3 * * * node ~/DEV/SMARCH/tools/sma-dependents-index.mjs --write
-0 3 * * * node ~/DEV/SMARCH/tools/sma-backlog.mjs aggregate
-0 3 * * * node ~/DEV/SMARCH/tools/sma-token-count.mjs --root <each_project> --write
+0 3 * * * node ~/DEV/SMARCH/tools/sma-dependents-index.ts --write
+0 3 * * * node ~/DEV/SMARCH/tools/sma-backlog.ts aggregate
+0 3 * * * node ~/DEV/SMARCH/tools/sma-token-count.ts --root <each_project> --write
 ```
 
 ## Why this is non-breaking

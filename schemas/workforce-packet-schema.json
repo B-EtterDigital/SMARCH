@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/workforce-packet/1.0.0",
+  "title": "SMA Workforce Execution Packet",
+  "description": "Canonical bounded task packet accepted as the opaque payload by tools/lib/workforce/contract.mjs and used by SMOA executors.",
+  "type": "object",
+  "additionalProperties": false,
+  "x-sma-contract": {
+    "version": "1.0.0",
+    "change_policy": "Optional additive fields preserve v1 compatibility; required, renamed, or narrowed fields require a new versioned $id and schema_version.",
+    "rollback": "Dispatch remains payload-opaque, so rollback restores the prior packet producer while v1 executors continue to accept the documented fields.",
+    "readers": ["tools/lib/workforce/contract.mjs", "SMOA executors"],
+    "writers": ["SMOA orchestrators", "workforce callers"],
+    "lifecycle": "Created by an orchestrator, dispatched through one backend attempt sequence, consumed by one executor, and retained only with execution evidence when required.",
+    "retention": "Retain with task evidence; do not embed secrets, credentials, or unrelated repository context.",
+    "performance": "Small dispatch payload; database query and index budgets are not applicable. Lists are capped to bound prompt size."
+  },
+  "required": ["schema_version", "task_id", "mode", "objective", "acceptance_criteria", "scope_files", "forbidden_surfaces", "constraints", "evidence_required", "effort"],
+  "properties": {
+    "schema_version": { "description": "Packet schema version.", "const": "1.0.0" },
+    "task_id": { "description": "Stable task identifier used for evidence correlation.", "type": "string", "minLength": 1 },
+    "mode": { "description": "Disjoint implementation or independent ensemble execution mode.", "enum": ["SPLIT", "ENSEMBLE"] },
+    "objective": { "description": "Fully-specified implementation objective.", "type": "string", "minLength": 1 },
+    "acceptance_criteria": { "description": "Observable completion conditions authored by the orchestrator.", "type": "array", "minItems": 1, "maxItems": 128, "items": { "type": "string", "minLength": 1 } },
+    "scope_files": { "description": "File globs owned by this executor packet.", "type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "forbidden_surfaces": { "description": "Explicit files, modules, and shared paths the executor must not touch.", "type": "array", "maxItems": 256, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "constraints": { "description": "Repository and execution constraints that bind the worker.", "type": "array", "maxItems": 256, "items": { "type": "string", "minLength": 1 } },
+    "evidence_required": { "description": "Tests and runtime proof required in the handoff.", "type": "array", "minItems": 1, "maxItems": 128, "items": { "type": "string", "minLength": 1 } },
+    "design_spec": { "description": "Orchestrator-authored frontend design contract when visual work is in scope.", "type": "string", "minLength": 1 },
+    "effort": { "description": "Requested reasoning effort tier.", "enum": ["low", "medium", "high", "xhigh"] },
+    "review_round": { "description": "Zero-based review/fix round counter.", "type": "integer", "minimum": 0, "maximum": 2 }
+  }
+}

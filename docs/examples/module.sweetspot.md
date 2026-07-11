@@ -31,5 +31,5 @@ Confirm the `brick.id`, source paths, and `boundaries.owned_paths` first. Review
 
 ## Validate the example
 
-Run `node tools/sma-validate.mjs --manifest examples/module.sweetspot.json` from the repository root. The command checks the manifest shape, but reviewers still need to compare paths, commands, scores, and evidence with the source project. Update the manifest whenever those facts change.
+Run `node tools/sma-validate.ts --manifest examples/module.sweetspot.json` from the repository root. The command checks the manifest shape, but reviewers still need to compare paths, commands, scores, and evidence with the source project. Update the manifest whenever those facts change.
 

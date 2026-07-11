@@ -45,7 +45,7 @@ cd "$SMARCH_DIR"
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
 
 set +e
-GATE_OUTPUT="$(node tools/sma-source-size-gate.mjs \
+GATE_OUTPUT="$(node tools/sma-source-size-gate.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO/acme-desktop" \
   --source-root src \
   --no-baseline \
@@ -83,7 +83,7 @@ SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
 cd "$SMARCH_DIR"
 
-node tools/sma-source-size-gate.mjs \
+node tools/sma-source-size-gate.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO/acme-desktop/src/modules/activity-feed" \
   --source-root . \
   --no-baseline \

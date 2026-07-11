@@ -43,7 +43,7 @@ ledgers rather than copied from this snapshot.
 Each brick resolves to `{ spdx, license_class, openness, visibility,
 attribution_required }`. Resolution precedence: brick declaration → project
 `package.json` / `LICENSE` → **fail-safe closed** (if openness can't be proven,
-it is treated as closed). See `tools/lib/license-lattice.mjs` for the SPDX
+it is treated as closed). See `tools/lib/license-lattice.ts` for the SPDX
 classification and the openness/visibility partial orders.
 
 ### 3. Content fingerprints + theft detection (`security/brick-fingerprints.generated.json`)
@@ -67,11 +67,11 @@ anchored to its content fingerprint.
 
 | Tool | Purpose |
 |---|---|
-| `tools/sma-provenance-ledger.mjs` | Backfill engine. Fingerprints, git-provenance, license-resolves, seals, detects theft. Writes the three ledgers. `--sign`, `--keygen`, `--limit`, `--project`. |
-| `tools/sma-license-gate.mjs` | Enforces the lattice over build manifests. Blocks openness/visibility/license escalation. `--gate`, `--strict` (theft ⇒ block). |
-| `tools/sma-provenance-verify.mjs` | Recomputes every seal from the ledger, verifies signatures, `--recheck-source` for drift. `--gate`. |
-| `tools/lib/license-lattice.mjs` | Pure lattice: `classifyLicense`, `meetOpenness`, `meetVisibility`, `checkComposition`. |
-| `tools/lib/provenance-seal.mjs` | Pure crypto: `fingerprintSource`, `computeSeal`, `verifySeal`, ed25519 sign/verify. |
+| `tools/sma-provenance-ledger.ts` | Backfill engine. Fingerprints, git-provenance, license-resolves, seals, detects theft. Writes the three ledgers. `--sign`, `--keygen`, `--limit`, `--project`. |
+| `tools/sma-license-gate.ts` | Enforces the lattice over build manifests. Blocks openness/visibility/license escalation. `--gate`, `--strict` (theft ⇒ block). |
+| `tools/sma-provenance-verify.ts` | Recomputes every seal from the ledger, verifies signatures, `--recheck-source` for drift. `--gate`. |
+| `tools/lib/license-lattice.ts` | Pure lattice: `classifyLicense`, `meetOpenness`, `meetVisibility`, `checkComposition`. |
+| `tools/lib/provenance-seal.ts` | Pure crypto: `fingerprintSource`, `computeSeal`, `verifySeal`, ed25519 sign/verify. |
 
 ## npm scripts
 
@@ -89,10 +89,10 @@ the ledgers with `provenance:ledger` when bricks change.
 ## Signing (optional, for authoritative provenance)
 
 ```bash
-node tools/sma-provenance-ledger.mjs --keygen          # generates security/keys/seal.<id>.{pub,key}.pem
+node tools/sma-provenance-ledger.ts --keygen          # generates security/keys/seal.<id>.{pub,key}.pem
 # commit the .pub.pem; the .key.pem is gitignored — never commit it
 SMA_SEAL_PRIVATE_KEY=security/keys/seal.<id>.key.pem \
-  node tools/sma-provenance-ledger.mjs --sign
+  node tools/sma-provenance-ledger.ts --sign
 ```
 
 Verification (`sma-provenance-verify`) reads the public key from
@@ -120,7 +120,7 @@ the repo **and** holds the signing key could rewrite the ledger and re-sign it,
 with no independent record that the original was different. Closing that gap
 needs an **append-only external witness** nobody can rewrite retroactively.
 
-`tools/sma-anchor.mjs` commits every brick's seal to a single **Merkle root** and
+`tools/sma-anchor.ts` commits every brick's seal to a single **Merkle root** and
 publishes only that root — never code, never full provenance. One anchor covers
 all bricks; any brick is proven later with a compact inclusion proof
 (`--proof <brick_id>`) that discloses no other brick.
@@ -128,7 +128,7 @@ all bricks; any brick is proven later with a compact inclusion proof
 ```bash
 npm run anchor            # compute the Merkle root over all seals (local record)
 npm run anchor:verify     # recompute the root and check it matches the anchor
-node tools/sma-anchor.mjs --proof <brick_id>   # dispute evidence for one brick
+node tools/sma-anchor.ts --proof <brick_id>   # dispute evidence for one brick
 ```
 
 Backends (pick per `--backend`):
@@ -194,7 +194,7 @@ both:
   Merkle domain separation, and fingerprint framing are correct.
 - **Fail-safe is real**: unknown/undeclared license ⇒ `closed`; an unresolved
   component ⇒ `closed/private`. You cannot accidentally open something.
-- **Every export path is now gated** through `tools/lib/export-guard.mjs`
+- **Every export path is now gated** through `tools/lib/export-guard.ts`
   (clone, release, store, publish). Closed/private source cannot be exported to
   a wider audience without an explicit, audited `--allow-closed`.
 - Fingerprints now cover `.min.js`/`.map`/`.wasm`/lockfiles, so a bundled or
@@ -224,11 +224,11 @@ both:
 | Capability | Status | Where |
 |---|---|---|
 | ed25519 ledger signing + out-of-band key pin | **DONE** — signed, `trusted.json` pinned, verified | `--sign`, `security/keys/trusted.json`, `provenance-verify` |
-| Similarity / near-duplicate theft detection | **DONE** — winnowing + simhash, LSH-bucketed; rename/reformat-invariant | `tools/lib/similarity.mjs`, `tools/sma-similarity-scan.mjs` |
-| License evidence (declared-vs-actual) | **DONE** — scans source for SPDX/headers; laundering ⇒ fail-safe closed | `tools/lib/license-evidence.mjs`, `--evidence` |
-| Standard formats (in-toto/SLSA, SPDX 2.3, CycloneDX 1.5) | **DONE** — plus a stand-alone verifier needing only the bundle | `tools/sma-attest.mjs`, `tools/sma-attest-verify.mjs` |
-| Ownership records + identity aliasing | **DONE** — owner-authorization + alias-aware theft | `registry/owners.json`, `registry/identity-map.json`, `tools/lib/ownership.mjs` |
-| Enforcement forcing-function (no unguarded exporter) | **DONE** — CI test fails if a tool loses its guard | `tools/lib/export-coverage-selftest.mjs` |
+| Similarity / near-duplicate theft detection | **DONE** — winnowing + simhash, LSH-bucketed; rename/reformat-invariant | `tools/lib/similarity.ts`, `tools/sma-similarity-scan.ts` |
+| License evidence (declared-vs-actual) | **DONE** — scans source for SPDX/headers; laundering ⇒ fail-safe closed | `tools/lib/license-evidence.ts`, `--evidence` |
+| Standard formats (in-toto/SLSA, SPDX 2.3, CycloneDX 1.5) | **DONE** — plus a stand-alone verifier needing only the bundle | `tools/sma-attest.ts`, `tools/sma-attest-verify.ts` |
+| Ownership records + identity aliasing | **DONE** — owner-authorization + alias-aware theft | `registry/owners.json`, `registry/identity-map.json`, `tools/lib/ownership.ts` |
+| Enforcement forcing-function (no unguarded exporter) | **DONE** — CI test fails if a tool loses its guard | `tools/lib/export-coverage-selftest.ts` |
 | Audit-log anchoring | **DONE** — export-audit digest folded into the anchor | `sma-anchor` `audit_digest` |
 | Revocation list | **DONE** — revoked key ⇒ verify fails; revoked brick flagged | `security/revocations.json`, `provenance-verify` |
 | **Verified identity (Sigstore/OIDC)** | **PARTIAL** — signing + pinning done; binding author to a *verified OIDC identity* still uses git email | roadmap |

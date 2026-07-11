@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "proposal_id": "x",
+  "brick_id": "x",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "chains": [
+    {
+      "chain_id": "x",
+      "agent_id": "x",
+      "intents": [
+        "x"
+      ],
+      "events": [
+        "x"
+      ]
+    },
+    {
+      "chain_id": "x",
+      "agent_id": "x",
+      "intents": [
+        "x"
+      ],
+      "events": [
+        "x"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "x",
+      "status": "only_in_chain_a"
+    }
+  ],
+  "recommendation": {
+    "preferred_chain": "x",
+    "reason": "x"
+  }
+}

@@ -87,7 +87,7 @@ SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
 SMARCH_FIXTURE_REGISTRY="${SMARCH_FIXTURE_REGISTRY:-$SMARCH_DIR/scans/quickstart.registry.json}"
 cd "$SMARCH_DIR"
-node tools/sma-scan.mjs --root "$SMARCH_FIXTURE_PORTFOLIO" --out "$SMARCH_FIXTURE_REGISTRY"
+node tools/sma-scan.ts --root "$SMARCH_FIXTURE_PORTFOLIO" --out "$SMARCH_FIXTURE_REGISTRY"
 ```
 
 Expected output includes:
@@ -108,7 +108,7 @@ SMARCH_FIXTURE_REGISTRY="${SMARCH_FIXTURE_REGISTRY:-$SMARCH_DIR/scans/quickstart
 SMARCH_FIXTURE_STATE="${SMARCH_FIXTURE_STATE:-$SMARCH_DIR/wiki/SMA_STATE.generated.json}"
 cd "$SMARCH_DIR"
 mkdir -p "$(dirname "$SMARCH_DIR")/Projects"
-node tools/sma-state.mjs --registry "$SMARCH_FIXTURE_REGISTRY" --out "$SMARCH_FIXTURE_STATE"
+node tools/sma-state.ts --registry "$SMARCH_FIXTURE_REGISTRY" --out "$SMARCH_FIXTURE_STATE"
 npm run doctor -- --registry "$SMARCH_FIXTURE_REGISTRY" --state "$SMARCH_FIXTURE_STATE"
 ```
 
@@ -134,8 +134,8 @@ SMARCH_FIXTURE_REGISTRY="${SMARCH_FIXTURE_REGISTRY:-$SMARCH_DIR/scans/quickstart
 SMARCH_CLONE_TARGET="${SMARCH_CLONE_TARGET:-$HOME/DEV/smarch-first-clone}"
 cd "$SMARCH_DIR"
 mkdir -p "$SMARCH_CLONE_TARGET"
-node tools/sma-provenance-ledger.mjs --registry "$SMARCH_FIXTURE_REGISTRY"
-node tools/sma-clone.mjs --registry "$SMARCH_FIXTURE_REGISTRY" --brick acme-desktop.activity-feed --target "$SMARCH_CLONE_TARGET" --write --allow-closed
+node tools/sma-provenance-ledger.ts --registry "$SMARCH_FIXTURE_REGISTRY"
+node tools/sma-clone.ts --registry "$SMARCH_FIXTURE_REGISTRY" --brick acme-desktop.activity-feed --target "$SMARCH_CLONE_TARGET" --write --allow-closed
 ```
 
 Expected output includes:

@@ -8,9 +8,9 @@ The provenance module records where reusable material came from and whether it c
 
 ## Owned files
 
-- `tools/sma-attest*.mjs`, `tools/sma-provenance-*.mjs`, and `tools/sma-anchor.mjs`
+- `tools/sma-attest*.mjs`, `tools/sma-provenance-*.mjs`, and `tools/sma-anchor.ts`
 - `tools/lib/merkle*.mjs`, license helpers, seals, attestations, exports, and similarity helpers
-- `tools/lib/ledger-resolve.mjs`
+- `tools/lib/ledger-resolve.ts`
 
 ## Ownership and lane
 

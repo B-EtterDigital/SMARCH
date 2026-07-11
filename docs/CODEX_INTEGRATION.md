@@ -29,7 +29,7 @@ The shared runner underpins six user-facing workflows:
 
 | Tool | Script | What it does |
 |---|---|---|
-| Runner | `tools/lib/codex-runner.mjs` | Thin wrapper: `codex exec --output-schema`, disk cache at `~/.cache/sma-codex/`, bounded-concurrency batch runner. All other tools use this. |
+| Runner | `tools/lib/codex-runner.ts` | Thin wrapper: `codex exec --output-schema`, disk cache at `~/.cache/sma-codex/`, bounded-concurrency batch runner. All other tools use this. |
 | Enrich | `npm run codex:enrich` | For each reuse-candidate brick, reads up to 6 KB of source and writes real `purpose`, `use_when`, `do_not_use_when`, `public_api`, `tags`, `clone_steps`, `risks`, `reuse_archetype`, `related_concepts` to the manifest's `semantics` block. Replaces the earlier heuristic-synthesized values. |
 | Connect | `npm run codex:connect` | For each brick, picks K neighbours by tag-Jaccard and asks Codex to classify the relationship (`depends_on`, `composes_with`, `alternative_to`, `supersedes`, `shared_concept`, etc.) with confidence + reason. Outputs `security/brick_connections.json` and per-manifest `semantics.connections`. |
 | Tests | `npm run codex:test` | For each candidate brick lacking a sibling test, asks Codex to write a minimal vitest/deno/node test importing the brick's public API. Enables candidate → canonical promotion. |
@@ -133,8 +133,8 @@ npm run promote
 
 ## Extending
 
-- Add new SMA heuristics to `tools/sma-filter.mjs` (non-LLM).
-- Add new semantic fields to the schema in `tools/sma-codex-enrich.mjs`;
+- Add new SMA heuristics to `tools/sma-filter.ts` (non-LLM).
+- Add new semantic fields to the schema in `tools/sma-codex-enrich.ts`;
   existing manifests are non-destructively extended.
 - Swap the model: every tool accepts `--model <name>`; default is
   `gpt-5.4`. The runner works with any model `codex exec -m` accepts.

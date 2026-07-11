@@ -1,0 +1,21 @@
+{
+  "benchmark": "07-performance-plan",
+  "baseline": "x",
+  "fixture_file_count": 1,
+  "headroom_percent": 0,
+  "started_at": "2026-01-01T00:00:00Z",
+  "finished_at": "2026-01-01T00:00:00Z",
+  "passed": true,
+  "results": [
+    {
+      "id": "x",
+      "label": "x",
+      "unit": "milliseconds",
+      "budget": 0,
+      "gate_limit": 0,
+      "actual": 0,
+      "headroom_percent": 0,
+      "passed": true
+    }
+  ]
+}

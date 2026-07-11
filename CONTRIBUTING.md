@@ -17,7 +17,7 @@ npm run check   # syntax + selftests + source-size gate — must pass clean
   dependency creep. New runtime dependencies need a strong justification.
 - **One concern per commit.** Never bundle unrelated changes.
 - **No machine-specific paths.** All path resolution goes through
-  `tools/lib/sma-paths.mjs` (`SMA_ROOT`, `SMA_DEV_ROOT`, `SMA_PROJECTS_ROOT`)
+  `tools/lib/sma-paths.ts` (`SMA_ROOT`, `SMA_DEV_ROOT`, `SMA_PROJECTS_ROOT`)
   and `tools/lib/portfolio-config.mjs`. Hardcoded absolute paths are rejected.
 - **No real project data.** Examples, fixtures, and docs use the fictional
   `acme-*` portfolio. Never commit scan output, registries, or wiki output

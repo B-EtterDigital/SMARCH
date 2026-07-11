@@ -57,7 +57,7 @@ cp -R "$SMARCH_DIR/tools" "$SMARCH_LESSON_SANDBOX/tools"
 
 (
   SMA_AGENT="swarm-blue" SMA_SESSION_ID="lesson-18-blue" \
-    node "$SMARCH_LESSON_SANDBOX/tools/sma-start-edit.mjs" \
+    node "$SMARCH_LESSON_SANDBOX/tools/sma-start-edit.ts" \
       --project sma \
       --brick acme-desktop.activity-feed \
       --intent "blue agent tries the fixture brick" \
@@ -70,7 +70,7 @@ BLUE_PID=$!
 
 (
   SMA_AGENT="swarm-gold" SMA_SESSION_ID="lesson-18-gold" \
-    node "$SMARCH_LESSON_SANDBOX/tools/sma-start-edit.mjs" \
+    node "$SMARCH_LESSON_SANDBOX/tools/sma-start-edit.ts" \
       --project sma \
       --brick acme-desktop.activity-feed \
       --intent "gold agent tries the fixture brick" \
@@ -110,7 +110,7 @@ process.stdout.write(events.some((event) => event.kind === "conflict_detected") 
 ' "$CONTEXT_LOG")"
 
 SMA_AGENT="$WINNER" SMA_SESSION_ID="$WINNER_SESSION" \
-  node "$SMARCH_LESSON_SANDBOX/tools/sma-end-edit.mjs" \
+  node "$SMARCH_LESSON_SANDBOX/tools/sma-end-edit.ts" \
     --lease "$LEASE_ID" \
     --project sma \
     --brick acme-desktop.activity-feed \
@@ -120,7 +120,7 @@ SMA_AGENT="$WINNER" SMA_SESSION_ID="$WINNER_SESSION" \
     --no-preflight-tldr \
     --json > "$SMARCH_LESSON_SANDBOX/end.json"
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-lease.mjs" list --json \
+node "$SMARCH_LESSON_SANDBOX/tools/sma-lease.ts" list --json \
   > "$SMARCH_LESSON_SANDBOX/active.json"
 
 export BLUE_STATUS GOLD_STATUS CONFLICT_RECORDED

@@ -323,15 +323,15 @@ The current implementation uses:
 - [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
 - `schemas/build.manifest.schema.json`
 - `examples/build.sweetspot.json`
-- `tools/sma-scan.mjs` for `scanner_report.build_report`
-- `tools/sma-build-verify.mjs`
-- `tools/sma-build-promote.mjs`
-- `tools/sma-build-index.mjs`
-- `tools/sma-build-packets.mjs`
-- `tools/sma-clone.mjs`
-- `tools/sma-release.mjs`
-- `tools/sma-publish.mjs`
-- `tools/sma-codex-rank.mjs` for build-first ranking
+- `tools/sma-scan.ts` for `scanner_report.build_report`
+- `tools/sma-build-verify.ts`
+- `tools/sma-build-promote.ts`
+- `tools/sma-build-index.ts`
+- `tools/sma-build-packets.ts`
+- `tools/sma-clone.ts`
+- `tools/sma-release.ts`
+- `tools/sma-publish.ts`
+- `tools/sma-codex-rank.ts` for build-first ranking
 - generated wiki build-registry and capability views
 
 The originally proposed `docs/BUILD_MANIFEST_SPEC.md`,

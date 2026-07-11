@@ -1,0 +1,21 @@
+{
+  "task_id": "x",
+  "mode": "SPLIT",
+  "objective": "x",
+  "acceptance_criteria": [
+    "x"
+  ],
+  "scope_files": [
+    "x"
+  ],
+  "forbidden_surfaces": [
+    "x"
+  ],
+  "constraints": [
+    "x"
+  ],
+  "evidence_required": [
+    "x"
+  ],
+  "effort": "low"
+}

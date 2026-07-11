@@ -31,4 +31,4 @@ Start with `boundaries` and `classification` to decide where artifacts may be wr
 
 ## Validate the example
 
-Run `node tools/sma-validate.mjs --manifest examples/sweetspot-visual-demo.module.sweetspot.json` from the repository root. The checked-in verification proves the candidate manifest shape; a project adoption needs fresh runtime proof from its own capture and gallery implementation.
+Run `node tools/sma-validate.ts --manifest examples/sweetspot-visual-demo.module.sweetspot.json` from the repository root. The checked-in verification proves the candidate manifest shape; a project adoption needs fresh runtime proof from its own capture and gallery implementation.

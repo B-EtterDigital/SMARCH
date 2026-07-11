@@ -40,7 +40,7 @@ export PRACTICE_PROJECT
 cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
-node tools/install-agent-skills.mjs \
+node tools/install-agent-skills.ts \
   --target "$PRACTICE_PROJECT" \
   --platform codex
 

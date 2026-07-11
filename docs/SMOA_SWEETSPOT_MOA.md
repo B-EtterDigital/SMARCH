@@ -79,7 +79,7 @@ always under `$sma-gen3`; [SUP](GLOSSARY.md#sup) is plan-of-record when `.UltraV
 Every SMOA run ends with a per-agent token table — planner plus every codex
 agent: model, effort, calls, tokens in/out, API cost (USD), % of Fable
 7-day spend, % of all-models 7-day spend. Produce it with the bundled tool
-(`node tools/sma-smoa-token-summary.mjs --claude-session <session.jsonl>
+(`node tools/sma-smoa-token-summary.ts --claude-session <session.jsonl>
 --codex-since <ISO>`), which computes everything exactly from primary local
 sources (Claude Code + codex session logs) priced by the pinned
 `skills/sweetspot-moa/model-prices.json`. acme-tracker is a cross-check only

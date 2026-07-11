@@ -9,13 +9,13 @@ The dashboard module turns registry, coordination, and graph data into self-host
 ## Owned files
 
 - `tools/sma-wiki*.mjs`
-- `tools/sma-gen3-dashboard.mjs` and `tools/sma-dashboard-server.mjs`
-- `tools/sma-brick-wall-lego.mjs` and `tools/lib/gen3-renderers.mjs`
+- `tools/sma-gen3-dashboard.ts` and `tools/sma-dashboard-server.ts`
+- `tools/sma-brick-wall-lego.ts` and `tools/lib/gen3-renderers.ts`
 - `tools/lib/dash-api/**` and `web/**`
 
 ## Gates
 
-The module-local gate declared by `sma.gen3.json` is `node tools/sma-gen3-dashboard.mjs --selftest`. In this audit, that command exited with `unknown subcommand: --selftest`; the dashboard CLI exposes `build` only. Treat the declared gate as an open harness defect. Do not substitute a different command. Also run available renderer/API checks, regenerate the affected view under its lease, then run the source-size gate and strict module Graphify summary. Compare generated output for stable ordering and meaningful changes.
+The module-local gate declared by `sma.gen3.json` is `node tools/sma-gen3-dashboard.ts --selftest`. In this audit, that command exited with `unknown subcommand: --selftest`; the dashboard CLI exposes `build` only. Treat the declared gate as an open harness defect. Do not substitute a different command. Also run available renderer/API checks, regenerate the affected view under its lease, then run the source-size gate and strict module Graphify summary. Compare generated output for stable ordering and meaningful changes.
 
 The module gate is available to Gen3 module dispatch, but the current GitHub workflow does not dispatch affected module gates. Treat affected-CI wiring as open shared-CI work.
 

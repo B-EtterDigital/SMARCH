@@ -8,18 +8,18 @@ SMA is only credible when checks can fail.
 
 | Tool | Purpose |
 |------|---------|
-| `tools/sma-scan.mjs` | Find brick manifests and generate global registry |
-| `tools/sma-validate.mjs` | Validate manifests and enforce canonical blockers |
-| `tools/sma-score.mjs` | Recalculate weighted score from gate scores |
-| `tools/sma-security-gate.mjs` | Lightweight secret/env exposure gate |
-| `tools/sma-wiki.mjs` | Generate user-facing wiki and course |
-| `tools/sma-ci.mjs` | Run scan, validation, and wiki generation together |
-| `tools/install-agent-skills.mjs` | Install SMA skills for Claude Code, Codex, and OpenCode |
+| `tools/sma-scan.ts` | Find brick manifests and generate global registry |
+| `tools/sma-validate.ts` | Validate manifests and enforce canonical blockers |
+| `tools/sma-score.ts` | Recalculate weighted score from gate scores |
+| `tools/sma-security-gate.ts` | Lightweight secret/env exposure gate |
+| `tools/sma-wiki.ts` | Generate user-facing wiki and course |
+| `tools/sma-ci.ts` | Run scan, validation, and wiki generation together |
+| `tools/install-agent-skills.ts` | Install SMA skills for Claude Code, Codex, and OpenCode |
 
 ## Recommended CI
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-ci.mjs \
+node ~/DEV/SMARCH/tools/sma-ci.ts \
   --root ~/DEV/Projects \
   --registry ~/DEV/SMARCH/registry/global-modules.generated.json \
   --wiki ~/DEV/SMARCH/wiki

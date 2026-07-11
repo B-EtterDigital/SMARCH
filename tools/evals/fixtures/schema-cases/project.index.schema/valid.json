@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "project": {
+    "id": "x",
+    "name": "x",
+    "root": "x"
+  },
+  "modules": [
+    {
+      "brick_id": "x",
+      "manifest_path": "x",
+      "status": "experimental"
+    }
+  ]
+}

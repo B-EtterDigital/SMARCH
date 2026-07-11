@@ -34,8 +34,8 @@ Response:
 Artifacts:
 
 - `schemas/brick.manifest.schema.json`
-- `tools/sma-validate.mjs`
-- `tools/sma-ci.mjs`
+- `tools/sma-validate.ts`
+- `tools/sma-ci.ts`
 - `templates/github/sma-ci.yml`
 
 ## Critique: Copying Code Creates Hidden Coupling
@@ -73,7 +73,7 @@ Artifacts:
 - `docs/GOVERNANCE.md`
 - `registry/global-modules.generated.json` (`canonicalization` and
   `scanner_report.duplicate_clusters`)
-- `tools/sma-canonicalization.mjs`
+- `tools/sma-canonicalization.ts`
 
 ## Critique: Subjective Quality Scores
 
@@ -88,8 +88,8 @@ Response:
 
 Artifacts:
 
-- `tools/sma-score.mjs`
-- `tools/sma-validate.mjs`
+- `tools/sma-score.ts`
+- `tools/sma-validate.ts`
 - `docs/ENFORCEMENT.md`
 
 ## Critique: Model Provenance Can Become Vanity Metadata

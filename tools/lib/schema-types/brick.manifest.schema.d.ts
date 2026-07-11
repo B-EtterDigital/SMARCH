@@ -58,7 +58,7 @@ export type BrickManifestVerificationEvent = ({
   command: string;
   notes?: string;
   output_path?: string;
-  status: "blocked" | "fail" | "pass" | "skipped";
+  status: "blocked" | "fail" | "pass" | "passing" | "skipped";
   timestamp?: string;
 });
 
@@ -74,7 +74,7 @@ export type BrickManifest = ({
     domain?: Array<string>;
     frameworks?: Array<string>;
     id: string;
-    kind: "adapter" | "guard" | "module_group" | "module" | "submodule" | "template" | "tooling";
+    kind: "adapter" | "capsule" | "guard" | "module_group" | "module" | "submodule" | "template" | "tooling";
     language: Array<string>;
     name: string;
     registry_origin?: string;
@@ -111,6 +111,7 @@ export type BrickManifest = ({
   interfaces: {
     adapters?: Array<string>;
     forbidden_dependencies?: Array<string>;
+    ports?: Array<string>;
     public_api?: Array<string>;
     required_dependencies?: Array<string>;
   };

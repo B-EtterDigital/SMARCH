@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0.0",
+  "project": "x",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "entries": [
+    {
+      "id": "x",
+      "title": "x",
+      "severity": "blocker",
+      "kind": "typecheck_disabled",
+      "scope": {},
+      "opened_at": "2026-01-01T00:00:00Z",
+      "status": "open"
+    }
+  ]
+}

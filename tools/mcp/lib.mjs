@@ -12,6 +12,7 @@ import {
   maybeReadJson,
 } from "../lib/sma-adoption.ts";
 import { SMA_ROOT } from "../lib/sma-paths.ts";
+import { McpToolError } from "./contract.mjs";
 
 const STATE_CANDIDATES = [
   "wiki/SMA_STATE.generated.json",
@@ -61,7 +62,11 @@ export async function loadRegistryContext() {
   }
 
   if (!registry) {
-    throw new Error(`MCP_REGISTRY_MISSING: no registry snapshot at ${registryPath}`);
+    throw new McpToolError(
+      "MCP_REGISTRY_MISSING",
+      "No registry snapshot is available",
+      { registry_path: registryPath },
+    );
   }
 
   return {
@@ -182,16 +187,23 @@ export function getProject({ state }, projectId) {
 }
 
 export function requireString(value, field) {
-  const normalized = String(value || "").trim();
-  if (!normalized) throw new Error(`MCP_INVALID_INPUT: ${field} is required`);
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) throw new McpToolError(
+    "MCP_INVALID_INPUT",
+    "Invalid MCP tool input",
+    { field, expectation: "non-empty string" },
+  );
   return normalized;
 }
 
 export function normalizeLimit(value, fallback = 20) {
   const parsed = Number(value ?? fallback);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
-    throw new Error("MCP_INVALID_INPUT: limit must be an integer between 1 and 100");
+    throw new McpToolError(
+      "MCP_INVALID_INPUT",
+      "Invalid MCP tool input",
+      { field: "limit", expectation: "integer between 1 and 100" },
+    );
   }
   return parsed;
 }
-

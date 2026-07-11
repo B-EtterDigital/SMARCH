@@ -98,7 +98,7 @@ What it means:
 Minimum bar:
 
 - the build is already `verified`
-- `node tools/sma-publish.mjs --manifest <build>` produces a clean enough
+- `node tools/sma-publish.ts --manifest <build>` produces a clean enough
   publish result and leak review
 - exclusions, redactions, and exposed docs are explicit
 - release consumers can understand install, verify, and rollback expectations
@@ -162,7 +162,7 @@ One does not replace the other.
    `security/build-verification.generated.json`.
 3. If the evidence is still weak, keep the build at `candidate`.
 4. If the evidence is strong enough, promote the build to `verified`.
-5. Run `node tools/sma-publish.mjs --manifest <build>` and review the leak
+5. Run `node tools/sma-publish.ts --manifest <build>` and review the leak
    report and package surface.
 6. If redaction or private-surface issues remain, stop at `verified`.
 7. If the publish result is clean enough, the build can move to `private
@@ -213,5 +213,5 @@ Bad:
 
 That last check still belongs to:
 
-- `node tools/sma-import-verify.mjs --target /path/to/project`
-- `node tools/sma-update-plan.mjs --target /path/to/project --release <artifact>`
+- `node tools/sma-import-verify.ts --target /path/to/project`
+- `node tools/sma-update-plan.ts --target /path/to/project --release <artifact>`

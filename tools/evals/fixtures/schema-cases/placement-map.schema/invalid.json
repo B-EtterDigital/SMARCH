@@ -1,0 +1,29 @@
+{
+  "map": {
+    "generated_at": "2026-01-01T00:00:00Z"
+  },
+  "target": {
+    "root": "x"
+  },
+  "imports": [
+    {
+      "import_id": "abc",
+      "artifact_type": "brick",
+      "artifact_id": "abc",
+      "release_version": "1.0.0"
+    }
+  ],
+  "placements": [
+    {
+      "placement_id": "abc",
+      "import_id": "abc",
+      "kind": "file",
+      "source_path": "x",
+      "target_path": "x",
+      "ownership": {
+        "mode": "managed",
+        "replaceable": true
+      }
+    }
+  ]
+}

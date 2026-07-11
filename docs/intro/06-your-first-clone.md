@@ -55,12 +55,12 @@ export SMARCH_CLONE_TARGET
 cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO" \
   --out "$SMARCH_FIXTURE_REGISTRY"
 
 mkdir -p "$SMARCH_CLONE_TARGET"
-node tools/sma-clone.mjs \
+node tools/sma-clone.ts \
   --registry "$SMARCH_FIXTURE_REGISTRY" \
   --brick acme-desktop.activity-feed \
   --target "$SMARCH_CLONE_TARGET" \

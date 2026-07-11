@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/submission-bundle/1.0.0-inline",
+  "title": "SMA Community Submission Bundle",
+  "description": "The bundle.json contract emitted and verified by tools/sma-submit.mjs for gated community intake.",
+  "type": "object",
+  "additionalProperties": false,
+  "x-sma-contract": {
+    "version": "1.0.0",
+    "change_policy": "Optional additive fields preserve v1 compatibility; required, renamed, or narrowed fields require a new versioned $id and schema_version.",
+    "rollback": "The packager and verifier retain the inline-v1 decoder. Rollback restores that decoder and ignores additive optional metadata without changing archived hashes.",
+    "readers": ["tools/sma-submit.mjs --verify", "community curators"],
+    "writers": ["tools/sma-submit.mjs"],
+    "lifecycle": "Created after manifest and gate validation, archived with the submission, verified before intake, and retained with curator evidence.",
+    "retention": "Retain with the submitted archive and curator decision; immutable hashes must never be rewritten.",
+    "performance": "Static archive manifest; database query and index budgets are not applicable. File entries are capped to bound validation."
+  },
+  "required": ["schema_version", "schema", "kind", "created_at", "brick", "files", "verification"],
+  "properties": {
+    "schema_version": { "description": "Schema version that this bundle conforms to.", "const": "1.0.0" },
+    "schema": { "description": "Canonical schema identifier embedded by the shipped packager.", "const": "https://sweetspot.local/schemas/submission-bundle/1.0.0-inline" },
+    "kind": { "description": "Submission artifact discriminator.", "const": "sma.community-submission-bundle" },
+    "created_at": { "description": "ISO 8601 bundle creation time.", "type": "string", "format": "date-time" },
+    "brick": {
+      "description": "Identity copied from the validated brick manifest.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "version", "status"],
+      "properties": {
+        "id": { "description": "Brick identifier.", "type": "string", "minLength": 3 },
+        "name": { "description": "Human-readable brick name.", "type": "string", "minLength": 1 },
+        "version": { "description": "Brick semantic version.", "type": "string", "minLength": 1 },
+        "status": { "description": "Brick maturity status at packaging time.", "type": "string", "minLength": 1 }
+      }
+    },
+    "files": {
+      "description": "Hashed archive entries excluding bundle.json itself.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/file" },
+      "allOf": [
+        { "contains": { "type": "object", "required": ["role"], "properties": { "role": { "const": "manifest" } } }, "minContains": 1 },
+        { "contains": { "type": "object", "required": ["role"], "properties": { "role": { "const": "source" } } }, "minContains": 1 },
+        { "contains": { "type": "object", "required": ["role"], "properties": { "role": { "const": "attestation" } } }, "minContains": 1 },
+        { "contains": { "type": "object", "required": ["role"], "properties": { "role": { "const": "checklist" } } }, "minContains": 1 }
+      ]
+    },
+    "verification": {
+      "description": "Manifest and gate evidence captured before packaging.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest", "manifest_validator", "manifest_warning_count", "gates"],
+      "properties": {
+        "digest": { "description": "Digest algorithm for every file entry.", "const": "sha256" },
+        "manifest_validator": { "description": "Validator used before packaging.", "const": "tools/sma-validate.ts" },
+        "manifest_warning_count": { "description": "Warnings returned by manifest validation.", "type": "integer", "minimum": 0 },
+        "gates": {
+          "description": "Exactly the all and leak gate results required by the packager.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/gate" },
+          "allOf": [
+            { "contains": { "type": "object", "required": ["command"], "properties": { "command": { "const": "npm run gate:all" } } }, "minContains": 1, "maxContains": 1 },
+            { "contains": { "type": "object", "required": ["command"], "properties": { "command": { "const": "npm run gate:leaks" } } }, "minContains": 1, "maxContains": 1 }
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": { "description": "Safe POSIX-relative archive path without absolute, parent, or backslash segments.", "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$" },
+        "role": { "description": "Purpose of the archived entry.", "enum": ["manifest", "source", "attestation", "checklist"] },
+        "bytes": { "description": "File size in bytes.", "type": "integer", "minimum": 0 },
+        "sha256": { "description": "Lowercase SHA-256 digest.", "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "status", "stdout_sha256", "stderr_sha256"],
+      "properties": {
+        "command": { "description": "Gate command executed by the packager.", "enum": ["npm run gate:all", "npm run gate:leaks"] },
+        "status": { "description": "Successful process exit status.", "const": 0 },
+        "stdout_sha256": { "description": "Digest of captured standard output.", "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "stderr_sha256": { "description": "Digest of captured standard error.", "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

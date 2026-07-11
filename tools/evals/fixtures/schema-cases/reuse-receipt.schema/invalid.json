@@ -1,0 +1,29 @@
+{
+  "id": "x",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "source": {
+    "project": "x",
+    "commit": "x"
+  },
+  "target": {
+    "project": "x",
+    "root": "x"
+  },
+  "items": [
+    {
+      "source_brick_id": "x",
+      "target_path": "x",
+      "kind": "brick",
+      "loc": 0,
+      "files": 0
+    }
+  ],
+  "estimates": {
+    "loc_inherited_total": 0,
+    "tokens_saved_estimate": {
+      "lower": 0,
+      "upper": 0,
+      "method": "x"
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "brick": {
+    "id": "abc",
+    "name": "xx",
+    "kind": "module",
+    "status": "experimental",
+    "version": "x",
+    "language": [
+      "x"
+    ]
+  },
+  "source": {
+    "project": "x",
+    "paths": [
+      "x"
+    ]
+  },
+  "owner": {
+    "primary": "x"
+  },
+  "boundaries": {
+    "owned_paths": [
+      "x"
+    ],
+    "public_paths": [
+      "x"
+    ],
+    "private_paths": [
+      "x"
+    ]
+  },
+  "classification": {
+    "data_classes": [
+      "public"
+    ],
+    "risk": "low"
+  },
+  "sweetspot": {
+    "ssa_v2": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "ssi": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sstf": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "spe": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "srs": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "ssra": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sas": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sva": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "srls": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sev": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "ssc": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sai": {
+      "status": "not_applicable",
+      "score": 0
+    }
+  },
+  "interfaces": {},
+  "security": {
+    "rls": {
+      "required": true,
+      "status": "not_applicable"
+    },
+    "env": {
+      "required": true,
+      "status": "not_applicable",
+      "variables": [
+        {
+          "name": "x",
+          "scope": "server_only",
+          "required_in": [
+            "local"
+          ]
+        }
+      ]
+    },
+    "vulnerability_findings": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    }
+  },
+  "supply_chain": {
+    "dependencies": [
+      {
+        "name": "x",
+        "purpose": "x"
+      }
+    ],
+    "licenses": [
+      "x"
+    ],
+    "checksums": [
+      {
+        "path": "x",
+        "sha256": "x"
+      }
+    ]
+  },
+  "quality": {
+    "score": 0,
+    "line_count": {
+      "max_file_lines": 0,
+      "over_600_count": 0
+    },
+    "code_budget": {
+      "status": "lean",
+      "feature_lines": 0,
+      "file_count": 0,
+      "dependency_count": 0
+    },
+    "test_commands": [
+      "x"
+    ],
+    "verification": [
+      {
+        "command": "x",
+        "status": "pass"
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "blocked",
+    "adaptation_points": [
+      "x"
+    ],
+    "install_steps": [
+      "x"
+    ],
+    "known_traps": [
+      "x"
+    ]
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "human",
+      "actor_id": "x",
+      "role": "architect",
+      "timestamp": "2026-01-01T00:00:00Z",
+      "summary": "x"
+    },
+    "touched_by": [
+      {
+        "actor_kind": "human",
+        "actor_id": "x",
+        "role": "architect",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "summary": "x"
+      }
+    ],
+    "reviewed_by": [
+      {
+        "actor_kind": "human",
+        "actor_id": "x",
+        "role": "architect",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "summary": "x"
+      }
+    ],
+    "source_chain": [
+      {
+        "project": "x",
+        "brick_id": "x"
+      }
+    ]
+  }
+}

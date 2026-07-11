@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "x",
+  "projects": [
+    {
+      "id": "x",
+      "root": "x"
+    }
+  ],
+  "bricks": [
+    {
+      "id": "x",
+      "name": "x",
+      "status": "x",
+      "manifest_path": "x"
+    }
+  ]
+}

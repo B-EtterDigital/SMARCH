@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/server-card/1.0.0",
+  "title": "SMARCH Registry MCP Server Card",
+  "description": "Discovery metadata returned by the shipped server-card MCP tool.",
+  "type": "object",
+  "additionalProperties": false,
+  "x-sma-contract": {
+    "version": "1.0.0",
+    "change_policy": "Tool-list additions are additive; renamed or removed fields and changed authorization semantics require a new versioned $id.",
+    "rollback": "Restore the previous server-card implementation and schema together; clients must tolerate newly-added tool names.",
+    "readers": ["MCP clients", "tools/mcp/selftest.mjs"],
+    "writers": ["tools/mcp/tools/server-card.mjs"],
+    "lifecycle": "Generated on request from static server metadata and discarded by the server after transport.",
+    "retention": "No server-side retention; clients may cache it for the server version lifetime.",
+    "performance": "Static in-memory response; database query and index budgets are not applicable. The tool has a 500 ms timeout."
+  },
+  "required": ["name", "description", "version", "transport", "repository", "tools", "authorization"],
+  "properties": {
+    "name": { "description": "Stable MCP server name.", "const": "smarch-registry" },
+    "description": { "description": "Human-readable server capability summary.", "type": "string", "minLength": 1 },
+    "version": { "description": "Semantic version of the exposed server card.", "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "transport": {
+      "description": "Supported MCP transport.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "description": "Transport discriminator.", "const": "stdio" }
+      }
+    },
+    "repository": { "description": "Canonical source repository.", "type": "string", "format": "uri" },
+    "tools": {
+      "description": "Bounded names of tools advertised by this server version.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "authorization": {
+      "description": "Authorization boundary and capability names enforced by tool contracts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boundary", "read_capability", "write_capability"],
+      "properties": {
+        "boundary": { "description": "Trust boundary for the stdio server.", "const": "stdio-parent-process" },
+        "read_capability": { "description": "Capability required for read operations.", "const": "registry:read" },
+        "write_capability": { "description": "Capability required for release installation.", "const": "release:install" }
+      }
+    }
+  }
+}

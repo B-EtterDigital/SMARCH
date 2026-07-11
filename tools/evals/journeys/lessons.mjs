@@ -104,7 +104,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/install-agent-skills.mjs"
+      "tools/install-agent-skills.ts"
     ]
   }],
   ["13-contributing-your-first-brick.md", {

@@ -1,0 +1,14 @@
+{
+  "entitlement_id": "xxx",
+  "subject": {
+    "kind": "user",
+    "id": "x"
+  },
+  "capability": "x",
+  "decision": "allow",
+  "source": {
+    "provider": "x",
+    "policy": "x"
+  },
+  "issued_at": "2026-01-01T00:00:00Z"
+}

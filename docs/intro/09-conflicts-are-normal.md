@@ -60,7 +60,7 @@ RESOLVE_RECORD="$SMARCH_LESSON_SANDBOX/resolve.json"
 CLEAR_RECORD="$SMARCH_LESSON_SANDBOX/clear.json"
 export SMA_AGENT="lesson-reader" SMA_SESSION_ID="lesson-09"
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.mjs" report \
+node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.ts" report \
   --project sma \
   --brick acme-cms.slug-service \
   --intent "edit the fixture slug service" \
@@ -72,7 +72,7 @@ node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.mjs" report \
   --file "$PRACTICE_FILE" \
   --json > "$REPORT_RECORD"
 
-if node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.mjs" check \
+if node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.ts" check \
   --project sma \
   --brick acme-cms.slug-service \
   --strict \
@@ -83,7 +83,7 @@ else
   STRICT_BLOCKED=yes
 fi
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.mjs" resolve \
+node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.ts" resolve \
   --project sma \
   --brick acme-cms.slug-service \
   --intent "fixture handoff received" \
@@ -91,7 +91,7 @@ node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.mjs" resolve \
   --file "$PRACTICE_FILE" \
   --json > "$RESOLVE_RECORD"
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.mjs" check \
+node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.ts" check \
   --project sma \
   --brick acme-cms.slug-service \
   --strict \

@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "lock": {
+    "generated_at": "2026-01-01T00:00:00Z",
+    "registry_snapshot_sha": "abcdef0",
+    "mode": "exact"
+  },
+  "target": {
+    "root": "x"
+  },
+  "selected_builds": [
+    {
+      "import_id": "abc",
+      "artifact_type": "build",
+      "artifact_id": "abc",
+      "release_version": "1.0.0"
+    }
+  ],
+  "resolved_bricks": [
+    {
+      "import_id": "abc",
+      "artifact_type": "brick",
+      "artifact_id": "abc",
+      "release_version": "1.0.0"
+    }
+  ],
+  "frozen_dependency_graph": {
+    "nodes": [
+      {
+        "node_id": "x",
+        "artifact_type": "brick",
+        "artifact_id": "abc",
+        "release_version": "1.0.0"
+      }
+    ],
+    "edges": [
+      {
+        "from": "x",
+        "to": "x",
+        "relation": "depends_on"
+      }
+    ]
+  },
+  "trust_policy": {
+    "allowed_release_statuses": [
+      "draft"
+    ],
+    "require_contract_hashes": true,
+    "allow_local_overrides": true
+  },
+  "verification_policy": {
+    "run_declared_tests": true,
+    "fail_on_missing_env": true,
+    "required_check_status": "passed"
+  }
+}

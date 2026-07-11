@@ -13,7 +13,7 @@ The schemas module is the single source of truth for data exchanged across Sweet
 
 ## Gates
 
-Run `node tools/lib/schema-types/generate.mjs --check`, schema validation tests, the source-size gate, and the strict module Graphify summary.
+Run `node tools/lib/schema-types/generate.mjs --check`, `node tools/evals/fixtures/schema-cases/selftest.mjs`, the source-size gate, and the strict module Graphify summary. The full access, versioning, lifecycle, retention, rollback, integrity, and static-contract performance policy lives in [Schema contracts](../SCHEMA_CONTRACTS.md).
 
 The configured module gate is `npm run validate:gen3 -- all`. Query the module graph with `npm run graphify:query -- --project sma --module schemas -- "<question>"`; its generated graph lives under `graphify-out/modules/schemas/`.
 

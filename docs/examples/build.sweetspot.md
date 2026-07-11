@@ -32,5 +32,5 @@ Start with `composition.brick_refs` to see which bricks are required and the rol
 
 ## Review the evidence
 
-Compare the build status with `verification.status`, the gate entries under `sweetspot`, and the source commit. A candidate may contain useful evidence while still lacking the proof required for promotion. Validate the manifest with `node tools/sma-validate.mjs --manifest examples/build.sweetspot.json`, then run the smoke and integration commands against the real source project before changing its lifecycle state.
+Compare the build status with `verification.status`, the gate entries under `sweetspot`, and the source commit. A candidate may contain useful evidence while still lacking the proof required for promotion. Validate the manifest with `node tools/sma-validate.ts --manifest examples/build.sweetspot.json`, then run the smoke and integration commands against the real source project before changing its lifecycle state.
 

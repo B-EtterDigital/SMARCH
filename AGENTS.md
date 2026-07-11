@@ -49,10 +49,10 @@ session, every project that consumes this SMA workflow.
 
 Read [docs/TOKEN_ACCOUNTING_AND_BACKLOG.md](docs/TOKEN_ACCOUNTING_AND_BACKLOG.md) before doing any of the following:
 
-- **Cloning a brick or build into a project** → run `tools/sma-reuse-receipt.mjs --write` after the copy. Pass `--infra-tokens` (your best estimate of the tokens this session spent integrating the bricks) and `--backlog-id` for every imperfection you opened.
-- **Leaving a gate at `partial` or `missing`** (typecheck disabled, RLS missing, env contract drift, scanner warning unfixed in code you touched) → run `tools/sma-backlog.mjs add` with the appropriate `--kind` and `--severity`. Link via `--reuse-receipt-id` if it stems from inheritance.
+- **Cloning a brick or build into a project** → run `tools/sma-reuse-receipt.ts --write` after the copy. Pass `--infra-tokens` (your best estimate of the tokens this session spent integrating the bricks) and `--backlog-id` for every imperfection you opened.
+- **Leaving a gate at `partial` or `missing`** (typecheck disabled, RLS missing, env contract drift, scanner warning unfixed in code you touched) → run `tools/sma-backlog.ts add` with the appropriate `--kind` and `--severity`. Link via `--reuse-receipt-id` if it stems from inheritance.
 - **Promoting a brick** (`candidate → verified` or `verified → canonical`) → backlog must be empty for the brick (or every entry marked `wontfix` with a written rationale). All gates must be `passing`.
-- **Estimating savings** for a stakeholder report → run `tools/sma-token-count.mjs --root <project> --write` first; the per-brick numbers go in `<root>/.smarch/token-counts.generated.json`. Don't gut-feel.
+- **Estimating savings** for a stakeholder report → run `tools/sma-token-count.ts --root <project> --write` first; the per-brick numbers go in `<root>/.smarch/token-counts.generated.json`. Don't gut-feel.
 
 If you can't fix something in-session, open the backlog entry. The cost is logged and recoverable; silent debt is not.
 
@@ -60,7 +60,7 @@ If you can't fix something in-session, open the backlog entry. The cost is logge
 
 Read [docs/UPDATE_PROPAGATION.md](docs/UPDATE_PROPAGATION.md) before bumping a source brick that other projects depend on.
 
-- **After every brick version bump:** run `tools/sma-dependents-index.mjs --write` then `tools/sma-propagate.mjs --source-brick <id> --release ... --apply`.
+- **After every brick version bump:** run `tools/sma-dependents-index.ts --write` then `tools/sma-propagate.ts --source-brick <id> --release ... --apply`.
 - **Locked dependents** (`evidence_kind: import-lock`) receive an actionable update plan at `<target>/.smarch/update-plan-*.json`.
 - **Fork dependents** (`evidence_kind: reuse-receipt`) receive a notify-only stub at `<target>/.smarch/incoming-updates/`. Auto-applying upstream changes to a fork is forbidden — open a backlog entry in the dependent project instead.
 - A source brick can declare `brick.replication.policy` in its manifest to opt into stronger automation (`track-canonical` + `auto_pr_on_minor`).
@@ -132,7 +132,7 @@ Read [docs/SMOA_SWEETSPOT_MOA.md](docs/SMOA_SWEETSPOT_MOA.md) before running one
   per-agent table: model, tokens in/out, API cost (USD), % of Fable 7-day
   spend, % of all-models 7-day spend, plus two savings lines: exact tokens
   offloaded to codex with est. USD saved vs Fable-5 solo and vs Opus 4.8
-  solo. Produce it with `node tools/sma-smoa-token-summary.mjs` (primary
+  solo. Produce it with `node tools/sma-smoa-token-summary.ts` (primary
   local logs + pinned `skills/sweetspot-moa/model-prices.json`; mark
   anything unpriced `unavailable — <reason>` rather than guessing). A
   missing table blocks completion.

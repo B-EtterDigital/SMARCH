@@ -9,9 +9,9 @@ The SMOA module provides the workforce-backend abstraction used for bounded Code
 ## Owned files
 
 - `tools/sma-codex*.mjs`
-- `tools/lib/codex-runner.mjs`
+- `tools/lib/codex-runner.ts`
 - `tools/lib/workforce/**`
-- `tools/sma-smoa-token-summary.mjs`
+- `tools/sma-smoa-token-summary.ts`
 
 ## Gates
 

@@ -21,7 +21,7 @@ without turning the repo into a junk drawer.
 git clone https://github.com/B-EtterDigital/SMARCH sma
 cd sma && npm install && npm link
 sma list                                          # every command
-node tools/install-agent-skills.mjs --target ~/your-project
+node tools/install-agent-skills.ts --target ~/your-project
 ```
 
 What lands on your machine: a Node CLI, the CI gates, the scanner, the agent
@@ -86,7 +86,7 @@ npm run scan && npm run doctor
 ```
 
 All tools resolve paths from `SMA_ROOT`, `SMA_DEV_ROOT`, and
-`SMA_PROJECTS_ROOT` environment variables (see `tools/lib/sma-paths.mjs`),
+`SMA_PROJECTS_ROOT` environment variables (see `tools/lib/sma-paths.ts`),
 falling back to this repo's location.
 
 ## The Gen3 Multi-Agent Layer
@@ -112,7 +112,7 @@ Read `docs/MULTI_AGENT_OPERATIONS.md` for the operator's guide and
 ## Agent Skills
 
 The optional skill layers (install with
-`node tools/install-agent-skills.mjs --target /path/to/project --platform all`):
+`node tools/install-agent-skills.ts --target /path/to/project --platform all`):
 
 - **`sma-gen3`** — the universal operating standard for modular SMA projects.
 - **`f5-ultravisionplan` (SUP)** — repo audit → vision → exhaustive,

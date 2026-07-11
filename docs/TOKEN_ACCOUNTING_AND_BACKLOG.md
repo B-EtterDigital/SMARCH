@@ -10,19 +10,19 @@ This is mandatory for every SMA-clone, every brick promotion, and every session 
 
 ## The three tools
 
-### `tools/sma-token-count.mjs`
+### `tools/sma-token-count.ts`
 Estimates generation tokens per brick or build. Default heuristic: chars / 3.7 for TS-like files, chars / 3.5 for JSON/Markdown/SQL. Multiplier 3.8× for "realistic regenerate cost" (direct + iteration + design discussion). `--method=tiktoken` requests BPE counts when the optional `tiktoken` package is installed; otherwise the tool warns and falls back to the heuristic.
 
 ```bash
-node tools/sma-token-count.mjs --root /path/to/project --write
+node tools/sma-token-count.ts --root /path/to/project --write
 # writes <root>/.smarch/token-counts.generated.json
 ```
 
-### `tools/sma-reuse-receipt.mjs`
+### `tools/sma-reuse-receipt.ts`
 After cloning bricks from one project to another, write a receipt:
 
 ```bash
-node tools/sma-reuse-receipt.mjs \
+node tools/sma-reuse-receipt.ts \
   --target /path/to/target_project \
   --target-project acme-lang \
   --source-project acme-desktop \
@@ -37,13 +37,13 @@ node tools/sma-reuse-receipt.mjs \
 Writes `<target>/.smarch/reuse-receipts/<source>-<sha>-<ts>.json` per the
 `reuse-receipt.schema.json`. Net savings = `tokens_saved_estimate.upper - infrastructure_cost_tokens`.
 
-### `tools/sma-backlog.mjs`
+### `tools/sma-backlog.ts`
 Per-project backlog at `<root>/.smarch/backlog.json`, global aggregate at
 `~/DEV/SMARCH/registry/backlog.generated.json`.
 
 ```bash
 # Open an entry
-node tools/sma-backlog.mjs add --project acme-lang \
+node tools/sma-backlog.ts add --project acme-lang \
   --title "modcap typecheck disabled" \
   --kind typecheck_disabled --severity high \
   --package packages/modcap \
@@ -52,15 +52,15 @@ node tools/sma-backlog.mjs add --project acme-lang \
   --reuse-receipt-id <id>
 
 # List / filter
-node tools/sma-backlog.mjs list --project acme-lang
-node tools/sma-backlog.mjs list --severity blocker --status open
+node tools/sma-backlog.ts list --project acme-lang
+node tools/sma-backlog.ts list --severity blocker --status open
 
 # Close
-node tools/sma-backlog.mjs close --project acme-lang --id acme-lang-001 \
+node tools/sma-backlog.ts close --project acme-lang --id acme-lang-001 \
   --resolution "Ported missing types from acme-desktop-v1 src/renderer; typecheck re-enabled in commit abc123"
 
 # Rebuild global aggregate (run in CI nightly)
-node tools/sma-backlog.mjs aggregate
+node tools/sma-backlog.ts aggregate
 ```
 
 ## When entries are mandatory
@@ -90,7 +90,7 @@ If you can't fix it in-session, open a ticket. The cost is logged; future-you (o
 | Promotion: `candidate → verified` | Process requirement: backlog must be empty for the brick, or every remaining entry must be closed with a written rationale; the backlog CLI records this debt but does not make every promotion tool enforce it automatically |
 | Promotion: `verified → canonical` | Process requirement: backlog must be empty and all gates must be `passing`; verify both before promotion |
 | Scheduled accounting, when configured | Run `sma-token-count.mjs --write` per project, then `sma-backlog.mjs aggregate`; this repository does not currently ship a nightly workflow for it |
-| Backlog review | Use `node tools/sma-backlog.mjs stats` and inspect `registry/backlog.generated.json`; the current state generator does not embed token/backlog summaries |
+| Backlog review | Use `node tools/sma-backlog.ts stats` and inspect `registry/backlog.generated.json`; the current state generator does not embed token/backlog summaries |
 
 ## Estimate calibration
 
@@ -124,7 +124,7 @@ Every `module.sweetspot.json` should carry token estimates as part of `quality.c
 }
 ```
 
-`tools/sma-refresh-manifest-budgets.mjs` (already exists) should be extended to populate these fields from `.smarch/token-counts.generated.json`.
+`tools/sma-refresh-manifest-budgets.ts` (already exists) should be extended to populate these fields from `.smarch/token-counts.generated.json`.
 
 ## Reading the global state
 

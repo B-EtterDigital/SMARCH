@@ -15,7 +15,7 @@ The canonical SMA skills live in:
 Install them into a project:
 
 ```bash
-node ~/DEV/SMARCH/tools/install-agent-skills.mjs \
+node ~/DEV/SMARCH/tools/install-agent-skills.ts \
   --target /path/to/project \
   --platform all
 ```

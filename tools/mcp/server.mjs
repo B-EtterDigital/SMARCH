@@ -4,6 +4,8 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { McpToolError, normalizeError } from "./contract.mjs";
+
 const SERVER_NAME = "smarch-registry";
 const SERVER_VERSION = "0.1.0";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -63,14 +65,12 @@ function toolResult(value) {
 }
 
 function toolError(error) {
-  const message = error instanceof Error ? error.message : String(error);
-  const structured = error && typeof error === "object" && typeof error.code === "string"
-    ? {
-      code: error.code,
-      message,
-      ...(error.details && typeof error.details === "object" ? { details: error.details } : {}),
-    }
-    : message;
+  const safe = normalizeError(error);
+  const structured = {
+    code: safe.code,
+    message: safe.message,
+    ...(safe.details && typeof safe.details === "object" ? { details: safe.details } : {}),
+  };
   return {
     isError: true,
     content: [{ type: "text", text: JSON.stringify({ error: structured }) }],
@@ -95,21 +95,20 @@ export async function createServer() {
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
+      ...(tool.annotations ? { annotations: tool.annotations } : {}),
     })),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const tool = byName.get(request.params.name);
-    if (!tool) return toolError(new Error(`MCP_TOOL_NOT_FOUND: ${request.params.name}`));
+    if (!tool) return toolError(new McpToolError(
+      "MCP_TOOL_NOT_FOUND",
+      "No MCP tool matched the request",
+    ));
     try {
       return toolResult(await tool.handler(request.params.arguments || {}));
     } catch (error) {
-      console.error(JSON.stringify({
-        area: "mcp-server",
-        severity: "error",
-        tool: tool.name,
-        message: error instanceof Error ? error.message : String(error),
-      }));
+      // Tool handlers emit their own structured, payload-free failure telemetry.
       return toolError(error);
     }
   });

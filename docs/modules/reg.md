@@ -8,7 +8,7 @@ The registry module is the lifecycle hub for Sweetspot projects and reusable bri
 
 ## Owned files
 
-- `tools/sma-scan.mjs`, state and registry merge tools
+- `tools/sma-scan.ts`, state and registry merge tools
 - Store, clone, release, publish, promote, doctor, filter, match, and update tools
 - Portfolio, backlog, reuse, propagation, scoring, token, and module-work tools
 - Registry support libraries listed under `reg` in `sma.gen3.json`

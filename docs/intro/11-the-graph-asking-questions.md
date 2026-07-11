@@ -38,12 +38,12 @@ cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
 
-node tools/sma-graphify.mjs refresh \
+node tools/sma-graphify.ts refresh \
   --project-root "$PRACTICE_PROJECT" \
   --no-cluster \
   --timeout-seconds 120
 
-node tools/sma-graphify.mjs query \
+node tools/sma-graphify.ts query \
   --project-root "$PRACTICE_PROJECT" \
   --budget 900 \
   -- "Where is Activity Feed implemented?"

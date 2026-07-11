@@ -8,7 +8,7 @@ from day one — not as a late scramble.
 
 ## Files
 
-- `tools/lib/compliance-controls.mjs` — the **declarative control catalog**: the
+- `tools/lib/compliance-controls.ts` — the **declarative control catalog**: the
   single source of truth for every obligation (data-subject rights, consent,
   privacy notice, DSA notice-and-action, child-safety taxonomy, CSAM media
   scanning, age assurance, RLS/owner-scoping, service-role hygiene, local-cache
@@ -16,16 +16,16 @@ from day one — not as a late scramble.
   severity (`blocker` / `required` / `advisory`), a `detect()` evidence probe,
   and a remediation hint. **Add/remove/re-prioritise an obligation = one array
   entry.**
-- `tools/sma-compliance-gate.mjs` — the checker. Evaluates the catalog against a
+- `tools/sma-compliance-gate.ts` — the checker. Evaluates the catalog against a
   project and prints a COVERED / PARTIAL / MISSING scorecard with citations.
 
 ## Use
 
 ```bash
-node tools/sma-compliance-gate.mjs --root <project>           # report
-node tools/sma-compliance-gate.mjs --root <project> --gate    # fail if a BLOCKER is unmet
-node tools/sma-compliance-gate.mjs --root <project> --strict  # fail if any required/blocker unmet
-node tools/sma-compliance-gate.mjs --root <project> --json    # machine-readable
+node tools/sma-compliance-gate.ts --root <project>           # report
+node tools/sma-compliance-gate.ts --root <project> --gate    # fail if a BLOCKER is unmet
+node tools/sma-compliance-gate.ts --root <project> --strict  # fail if any required/blocker unmet
+node tools/sma-compliance-gate.ts --root <project> --json    # machine-readable
 ```
 
 - `npm run gate:compliance` runs it against the current repo and is part of

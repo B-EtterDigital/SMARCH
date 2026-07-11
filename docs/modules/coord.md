@@ -8,10 +8,10 @@ The coordination module keeps concurrent agents from overwriting one another and
 
 ## Owned files
 
-- `tools/sma-lease.mjs`, `tools/sma-start-edit.mjs`, and `tools/sma-end-edit.mjs`
-- `tools/sma-context*.mjs`, `tools/sma-conflict.mjs`, and `tools/sma-merge.mjs`
-- `tools/sma-controller-snapshot.mjs`, dirty-baseline, preflight, cleanup, and wave tools
-- `tools/lib/context-log.mjs`, `tools/lib/gen3-state.mjs`, and `tools/hooks/**`
+- `tools/sma-lease.ts`, `tools/sma-start-edit.ts`, and `tools/sma-end-edit.ts`
+- `tools/sma-context*.mjs`, `tools/sma-conflict.ts`, and `tools/sma-merge.ts`
+- `tools/sma-controller-snapshot.ts`, dirty-baseline, preflight, cleanup, and wave tools
+- `tools/lib/context-log.ts`, `tools/lib/gen3-state.ts`, and `tools/hooks/**`
 
 ## Gates
 

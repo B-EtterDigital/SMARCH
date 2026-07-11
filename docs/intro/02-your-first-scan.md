@@ -42,7 +42,7 @@ export SMARCH_FIXTURE_REGISTRY
 cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO" \
   --out "$SMARCH_FIXTURE_REGISTRY"
 

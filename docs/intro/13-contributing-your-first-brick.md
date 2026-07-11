@@ -64,19 +64,19 @@ fs.writeFileSync(
 );
 NODE
 
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$PRACTICE_PROJECT" \
   --project-id acme-desktop \
   --out "$BEFORE_REGISTRY"
 
-node tools/sma-bootstrap-manifests.mjs \
+node tools/sma-bootstrap-manifests.ts \
   --registry "$BEFORE_REGISTRY" \
   --root "$PRACTICE_PROJECT" \
   --owner "Lesson Creator" \
   --team "Learning Lab" \
   --write
 
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$PRACTICE_PROJECT" \
   --project-id acme-desktop \
   --out "$AFTER_REGISTRY"

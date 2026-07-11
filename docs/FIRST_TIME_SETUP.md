@@ -14,7 +14,7 @@ Both paths install the same rules and skills. The difference is whether manifest
 Use this before the first feature is written:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-init-project.mjs \
+node ~/DEV/SMARCH/tools/sma-init-project.ts \
   --target /path/to/new-project \
   --project-id my-project \
   --name "My Project" \
@@ -44,12 +44,12 @@ src/features/my-feature/
 Before calling the feature done, run:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs \
+node ~/DEV/SMARCH/tools/sma-scan.ts \
   --root /path/to/new-project \
   --out /path/to/new-project/.sweetspot/scans/latest.registry.json \
   --check
 
-node ~/DEV/SMARCH/tools/sma-security-gate.mjs \
+node ~/DEV/SMARCH/tools/sma-security-gate.ts \
   --root /path/to/new-project
 ```
 
@@ -58,7 +58,7 @@ node ~/DEV/SMARCH/tools/sma-security-gate.mjs \
 Use the dashboard server:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-dashboard-server.mjs \
+node ~/DEV/SMARCH/tools/sma-dashboard-server.ts \
   --wiki ~/DEV/SMARCH/wiki \
   --scans ~/DEV/SMARCH/scans \
   --allow-root ~/DEV \
@@ -86,7 +86,7 @@ Then:
 Install or refresh SMA skills and instruction snippets:
 
 ```bash
-node ~/DEV/SMARCH/tools/install-agent-skills.mjs \
+node ~/DEV/SMARCH/tools/install-agent-skills.ts \
   --target /path/to/project \
   --platform all
 ```

@@ -1,0 +1,259 @@
+{
+  "build": {
+    "id": "abc",
+    "name": "xx",
+    "slug": "abc",
+    "kind": "capability_build",
+    "status": "experimental",
+    "version": "x",
+    "visibility": "private",
+    "stability": "evolving"
+  },
+  "source": {
+    "project": "x",
+    "paths": [
+      "x"
+    ],
+    "derived_from_bricks": [
+      {
+        "brick_id": "x",
+        "role": "account_linking",
+        "required": true
+      }
+    ]
+  },
+  "owner": {
+    "primary": "x"
+  },
+  "composition": {
+    "brick_refs": [
+      {
+        "brick_id": "x",
+        "role": "account_linking",
+        "required": true
+      }
+    ],
+    "flows": [
+      {
+        "id": "abc",
+        "name": "x",
+        "steps": [
+          {
+            "id": "abc",
+            "name": "x"
+          }
+        ]
+      }
+    ],
+    "shared_contracts": [
+      "env"
+    ]
+  },
+  "classification": {
+    "data_classes": [
+      "public"
+    ],
+    "risk": "low"
+  },
+  "sweetspot": {
+    "ssa_v2": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "ssi": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sstf": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "spe": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "srs": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "ssra": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sas": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sva": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "srls": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sev": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "ssc": {
+      "status": "not_applicable",
+      "score": 0
+    },
+    "sai": {
+      "status": "not_applicable",
+      "score": 0
+    }
+  },
+  "interfaces": {},
+  "contracts": {
+    "env": {
+      "required": [
+        {
+          "name": "x",
+          "scope": "server_only",
+          "required_in": [
+            "local"
+          ]
+        }
+      ],
+      "optional": [
+        {
+          "name": "x",
+          "scope": "server_only",
+          "required_in": [
+            "local"
+          ]
+        }
+      ],
+      "forbidden": [
+        "x"
+      ]
+    },
+    "data": {
+      "inputs": [
+        "x"
+      ],
+      "outputs": [
+        "x"
+      ],
+      "stores": [
+        "x"
+      ]
+    },
+    "auth": {
+      "required": true,
+      "modes": [
+        "x"
+      ]
+    },
+    "rls": {
+      "required": true,
+      "status": "not_applicable"
+    },
+    "network": {
+      "outbound_hosts": [
+        "x"
+      ],
+      "webhooks": [
+        "x"
+      ]
+    },
+    "performance": {
+      "latency_budget_ms": 0,
+      "queue_allowed": true
+    }
+  },
+  "verification": {
+    "status": "missing",
+    "fixture_targets": [
+      "x"
+    ],
+    "smoke_commands": [
+      "x"
+    ],
+    "integration_targets": [
+      "x"
+    ],
+    "evidence": [
+      {
+        "command": "x",
+        "status": "planned"
+      }
+    ]
+  },
+  "clone": {
+    "readiness": "blocked",
+    "greenfield_support": true,
+    "required_ports": [
+      "x"
+    ],
+    "install_steps": [
+      "x"
+    ],
+    "post_clone_checks": [
+      "x"
+    ],
+    "rollback_steps": [
+      "x"
+    ]
+  },
+  "upgrade": {
+    "channel": "pinned",
+    "compatibility_policy": "manifested_ports_only",
+    "migration_hooks": [
+      "x"
+    ],
+    "supersedes": [
+      "x"
+    ],
+    "replacement_policy": "automatic_if_contract_compatible"
+  },
+  "publishing": {
+    "visibility": "private",
+    "publishable": true,
+    "redaction_profile": "internal-default",
+    "license": "x"
+  },
+  "economics": {
+    "estimated_prompt_token_savings": 0,
+    "estimated_clone_time_minutes": 0,
+    "maintenance_score": 0
+  },
+  "provenance": {
+    "created_by": {
+      "actor_kind": "human",
+      "actor_id": "x",
+      "role": "architect",
+      "timestamp": "2026-01-01T00:00:00Z",
+      "summary": "x"
+    },
+    "touched_by": [
+      {
+        "actor_kind": "human",
+        "actor_id": "x",
+        "role": "architect",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "summary": "x"
+      }
+    ],
+    "reviewed_by": [
+      {
+        "actor_kind": "human",
+        "actor_id": "x",
+        "role": "architect",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "summary": "x"
+      }
+    ],
+    "source_chain": [
+      {
+        "project": "x",
+        "artifact_id": "x",
+        "artifact_type": "brick",
+        "event": "created",
+        "timestamp": "2026-01-01T00:00:00Z"
+      }
+    ]
+  }
+}

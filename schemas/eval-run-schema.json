@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sweetspot.local/schemas/eval-run/1.0.0",
+  "title": "SMARCH Evaluation Run",
+  "description": "Result emitted by the shipped tools/evals performance bench, including its fixture volume, CI headroom, timing, and individual budget results.",
+  "type": "object",
+  "additionalProperties": false,
+  "x-sma-contract": {
+    "version": "1.0.0",
+    "change_policy": "Optional additive fields preserve v1 compatibility; required, renamed, or narrowed fields require a new versioned $id and schema_version.",
+    "rollback": "Keep the v1 report reader and ignore additive metrics when rolling back. Never rewrite historical measurements.",
+    "readers": ["CI performance gates", "evaluation report consumers"],
+    "writers": ["tools/evals/bench.mjs"],
+    "lifecycle": "Created for one benchmark execution, consumed by its gate/reporting path, and retained with CI evidence when required.",
+    "retention": "Retain with the CI run or release evidence; local ad-hoc results may be discarded.",
+    "performance": "This schema records performance measurements; validating the static report has no database query or index budget."
+  },
+  "required": ["schema_version", "benchmark", "baseline", "fixture_file_count", "headroom_percent", "started_at", "finished_at", "passed", "results"],
+  "properties": {
+    "schema_version": {
+      "description": "Numeric report schema version emitted by the current benchmark.",
+      "const": 1
+    },
+    "benchmark": {
+      "description": "Benchmark plan identifier.",
+      "const": "07-performance-plan"
+    },
+    "baseline": {
+      "description": "Machine baseline used to interpret budgets.",
+      "type": "string",
+      "minLength": 1
+    },
+    "fixture_file_count": {
+      "description": "Number of files in the generated realistic-volume fixture.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "headroom_percent": {
+      "description": "CI headroom applied above the published budget.",
+      "type": "number",
+      "minimum": 0
+    },
+    "started_at": {
+      "description": "ISO 8601 run start time.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "description": "ISO 8601 run completion time.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "passed": {
+      "description": "True when every selected metric remained within its gate limit.",
+      "type": "boolean"
+    },
+    "results": {
+      "description": "Bounded metric results for the selected benchmark set.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/result"
+      }
+    }
+  },
+  "$defs": {
+    "result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "label", "unit", "budget", "gate_limit", "actual", "headroom_percent", "passed"],
+      "properties": {
+        "id": { "description": "Stable metric identifier.", "type": "string", "minLength": 1 },
+        "label": { "description": "Human-readable metric label.", "type": "string", "minLength": 1 },
+        "unit": { "description": "Measurement unit.", "enum": ["milliseconds", "bytes"] },
+        "budget": { "description": "Published metric budget.", "type": "number", "minimum": 0 },
+        "gate_limit": { "description": "Budget after CI headroom is applied.", "type": "number", "minimum": 0 },
+        "actual": { "description": "Observed metric value.", "type": "number", "minimum": 0 },
+        "headroom_percent": { "description": "Headroom used for this result.", "type": "number", "minimum": 0 },
+        "passed": { "description": "Whether the observed value was below the gate limit.", "type": "boolean" }
+      }
+    }
+  }
+}

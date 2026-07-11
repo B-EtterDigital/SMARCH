@@ -1,0 +1,14 @@
+{
+  "project": {
+    "id": "x",
+    "name": "x",
+    "root": "x"
+  },
+  "modules": [
+    {
+      "brick_id": "x",
+      "manifest_path": "x",
+      "status": "experimental"
+    }
+  ]
+}

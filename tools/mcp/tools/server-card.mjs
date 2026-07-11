@@ -1,3 +1,9 @@
+import {
+  executeTool,
+  readOnlyAnnotations,
+  readOnlyAuthorization,
+} from "../contract.mjs";
+
 const TOOLS = [
   "brick-search",
   "brick-get",
@@ -16,8 +22,11 @@ export const inputSchema = {
   properties: {},
   additionalProperties: false,
 };
+export const annotations = readOnlyAnnotations;
+export const authorization = readOnlyAuthorization;
+export const timeoutMs = 500;
 
-export async function handler() {
+export function getServerCard() {
   return {
     name: "smarch-registry",
     description: "Stdio MCP access to the SMARCH registry, trust, doctor, build, and release-install seams.",
@@ -25,6 +34,20 @@ export async function handler() {
     transport: { type: "stdio" },
     repository: "https://github.com/B-EtterDigital/SMARCH",
     tools: TOOLS,
+    authorization: {
+      boundary: "stdio-parent-process",
+      read_capability: "registry:read",
+      write_capability: "release:install",
+    },
   };
 }
 
+export async function handler(args = {}) {
+  return executeTool({
+    name,
+    inputSchema,
+    args,
+    timeoutMs,
+    operation: async () => getServerCard(),
+  });
+}

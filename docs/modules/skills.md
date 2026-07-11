@@ -10,14 +10,14 @@ The skills module packages reusable agent instructions around documented Sweetsp
 
 - `skills/**`
 - `agent-skills/**`
-- `tools/install-agent-skills.mjs`
+- `tools/install-agent-skills.ts`
 - `.claude-plugin/**`
 
 ## Gates
 
 Run the affected skill's self-test or fixture, installation smoke, source-size gate, and strict module Graphify summary. Verify that the trigger does not activate outside its documented scope.
 
-The configured module gate is `node tools/install-agent-skills.mjs --check`. Query the module graph with `npm run graphify:query -- --project sma --module skills -- "<question>"`; its generated graph lives under `graphify-out/modules/skills/`.
+The configured module gate is `node tools/install-agent-skills.ts --check`. Query the module graph with `npm run graphify:query -- --project sma --module skills -- "<question>"`; its generated graph lives under `graphify-out/modules/skills/`.
 
 ## How to work here
 

@@ -324,7 +324,7 @@ npm run lease -- run \
   --ttl 600 \
   --auto-context \
   --project <project_id> --brick <brick_id> \
-  -- node tools/sma-state.mjs
+  -- node tools/sma-state.ts
 
 # Renew during long jobs (or use --renew-every with run)
 npm run lease -- renew --lease <lease_id> --ttl 600
@@ -571,10 +571,10 @@ npm run merge:propose -- \
 npm run merge:list -- --project <project_id> --unresolved
 
 # Show a proposal in detail
-node tools/sma-merge.mjs show --project <id> --proposal <proposal_id>
+node tools/sma-merge.ts show --project <id> --proposal <proposal_id>
 
 # Resolve
-node tools/sma-merge.mjs resolve \
+node tools/sma-merge.ts resolve \
   --project <id> --proposal <id> \
   --kind accepted_a \
   --notes "chain A had verified tests; chain B's intent superseded but not implemented"

@@ -1,4 +1,10 @@
 import { loadRegistryContext } from "../lib.mjs";
+import {
+  boundedDiagnosticValue,
+  executeTool,
+  readOnlyAnnotations,
+  readOnlyAuthorization,
+} from "../contract.mjs";
 
 export const name = "registry-doctor";
 export const description = "Summarize registry health, validation pressure, trust, and snapshot freshness.";
@@ -7,9 +13,11 @@ export const inputSchema = {
   properties: {},
   additionalProperties: false,
 };
+export const annotations = readOnlyAnnotations;
+export const authorization = readOnlyAuthorization;
+export const timeoutMs = 500;
 
-export async function handler() {
-  const { registry, state, paths } = await loadRegistryContext();
+export function summarizeRegistryDoctor({ registry, state, paths }) {
   const validationErrors = Number(registry.validation_error_count || 0);
   const scanFailures = Number(registry.failure_count || registry.failures?.length || 0);
   const brickCount = Number(state?.totals?.brick_count || registry.bricks?.length || registry.count || 0);
@@ -29,9 +37,18 @@ export async function handler() {
       failure_count: scanFailures,
       unmanifested_count: Number(registry.unmanifested_count || 0),
     },
-    trust: state?.trust || {},
-    build_plane: state?.build_plane || {},
-    scanner_report: registry?.scanner_report || {},
+    trust: boundedDiagnosticValue(state?.trust || {}),
+    build_plane: boundedDiagnosticValue(state?.build_plane || {}),
+    scanner_report: boundedDiagnosticValue(registry?.scanner_report || {}),
   };
 }
 
+export async function handler(args = {}) {
+  return executeTool({
+    name,
+    inputSchema,
+    args,
+    timeoutMs,
+    operation: async () => summarizeRegistryDoctor(await loadRegistryContext()),
+  });
+}

@@ -67,7 +67,7 @@ This matters for large projects. A monorepo with hundreds of functions should no
 For a project that has no manifests yet, use the bootstrapper:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-bootstrap-manifests.mjs \
+node ~/DEV/SMARCH/tools/sma-bootstrap-manifests.ts \
   --registry ~/DEV/SMARCH/scans/<project>/latest.registry.json \
   --write
 ```
@@ -102,7 +102,7 @@ A brick can become canonical only if:
 ## Scanner Command
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs \
+node ~/DEV/SMARCH/tools/sma-scan.ts \
   --root ~/DEV/Projects \
   --out ~/DEV/SMARCH/registry/global-modules.generated.json
 ```

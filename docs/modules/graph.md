@@ -8,12 +8,12 @@ The graph module gives agents bounded structural context for module and project 
 
 ## Owned files
 
-- `tools/sma-graphify.mjs`
-- `tools/sma-graph-packets.mjs`
+- `tools/sma-graphify.ts`
+- `tools/sma-graph-packets.ts`
 
 ## Ownership and lane
 
-`sma.gen3.json` maps these files to `graph`; the default lane is `single-module` and its required local gate is `node tools/sma-graphify.mjs selftest`. Module source maps, project manifests, registry records, and `.UltraVision/` stay with their owners. Writes to project, module, or global graph caches are shared-state operations and must be claimed and serialized.
+`sma.gen3.json` maps these files to `graph`; the default lane is `single-module` and its required local gate is `node tools/sma-graphify.ts selftest`. Module source maps, project manifests, registry records, and `.UltraVision/` stay with their owners. Writes to project, module, or global graph caches are shared-state operations and must be claimed and serialized.
 
 This module's own graph lives at `graphify-out/modules/graph/graphify-out/graph.json`. Query it with `npm run graphify:query -- --project sma --module graph -- "Where are graph refresh, staleness checks, queries, and repair packets implemented?"` before broad reads.
 

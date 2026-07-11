@@ -61,7 +61,7 @@ END_RECORD="$SMARCH_LESSON_SANDBOX/end.json"
 ACTIVE_RECORD="$SMARCH_LESSON_SANDBOX/active.json"
 export SMA_AGENT="lesson-reader" SMA_SESSION_ID="lesson-08"
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-start-edit.mjs" \
+node "$SMARCH_LESSON_SANDBOX/tools/sma-start-edit.ts" \
   --project sma \
   --brick acme-desktop.activity-feed \
   --intent "practice a safe fixture edit" \
@@ -75,7 +75,7 @@ console.log(`Lease acquired: ${x.lease.resource_id}`);
 console.log(`Edit plan recorded: ${x.context_event.kind === "edit_planned" ? "yes" : "no"}`);
 ' "$START_RECORD"
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-end-edit.mjs" \
+node "$SMARCH_LESSON_SANDBOX/tools/sma-end-edit.ts" \
   --lease "$LEASE_ID" \
   --project sma \
   --brick acme-desktop.activity-feed \
@@ -85,7 +85,7 @@ node "$SMARCH_LESSON_SANDBOX/tools/sma-end-edit.mjs" \
   --no-preflight-tldr \
   --json > "$END_RECORD"
 
-node "$SMARCH_LESSON_SANDBOX/tools/sma-lease.mjs" list --json > "$ACTIVE_RECORD"
+node "$SMARCH_LESSON_SANDBOX/tools/sma-lease.ts" list --json > "$ACTIVE_RECORD"
 node -e '
 const ended = require(process.argv[1]);
 const active = require(process.argv[2]);

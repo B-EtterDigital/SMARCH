@@ -27,8 +27,8 @@ Source of truth:
 
 - `schemas/build.manifest.schema.json`
 - `examples/build.sweetspot.json`
-- `tools/sma-build-verify.mjs`
-- `tools/sma-build-promote.mjs`
+- `tools/sma-build-verify.ts`
+- `tools/sma-build-promote.ts`
 - [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
 - [docs/GOVERNANCE.md](GOVERNANCE.md)
 

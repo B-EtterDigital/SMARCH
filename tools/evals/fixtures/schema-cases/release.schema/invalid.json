@@ -1,0 +1,32 @@
+{
+  "release": {
+    "artifact_type": "brick",
+    "artifact_id": "abc",
+    "version": "1.0.0",
+    "channel": "dev",
+    "status": "draft",
+    "created_at": "2026-01-01T00:00:00Z",
+    "source_commit": "abcdef0",
+    "registry_snapshot_sha": "abcdef0",
+    "content_hash": "abcdef0"
+  },
+  "content": {
+    "included_paths": [
+      "x"
+    ]
+  },
+  "contracts": {
+    "hashes": {},
+    "runtimes": [
+      "x"
+    ]
+  },
+  "verification": {
+    "status": "unverified"
+  },
+  "provenance": {
+    "created_by": {
+      "actor": "x"
+    }
+  }
+}

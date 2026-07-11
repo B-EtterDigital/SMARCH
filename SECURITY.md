@@ -13,8 +13,8 @@ Report vulnerabilities privately via GitHub Security Advisories on this reposito
 Run:
 
 ```bash
-node tools/sma-security-gate.mjs --root /path/to/project
-node tools/sma-validate.mjs --registry /path/to/global-modules.generated.json
+node tools/sma-security-gate.ts --root /path/to/project
+node tools/sma-validate.ts --registry /path/to/global-modules.generated.json
 ```
 
 Canonical bricks cannot have:

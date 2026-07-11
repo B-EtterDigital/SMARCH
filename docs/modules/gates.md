@@ -8,9 +8,9 @@ The gates module enforces the project contracts used by local work, CI, and rele
 
 ## Owned files
 
-- `tools/sma-rule-gate.mjs`, `tools/sma-scope-drift.mjs`, and security, license, and compliance gates
-- `tools/sma-source-size-gate.mjs` and `tools/source-size-baseline.json`
-- `tools/sma-validate*.mjs`, `tools/sma-ci.mjs`, and `tools/lib/compliance-controls.mjs`
+- `tools/sma-rule-gate.ts`, `tools/sma-scope-drift.ts`, and security, license, and compliance gates
+- `tools/sma-source-size-gate.ts` and `tools/source-size-baseline.json`
+- `tools/sma-validate*.mjs`, `tools/sma-ci.ts`, and `tools/lib/compliance-controls.ts`
 
 ## Ownership and lane
 

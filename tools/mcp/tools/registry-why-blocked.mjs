@@ -6,18 +6,28 @@ import {
   requireString,
   trustFields,
 } from "../lib.mjs";
+import {
+  boundedDiagnosticValue,
+  executeTool,
+  McpToolError,
+  readOnlyAnnotations,
+  readOnlyAuthorization,
+} from "../contract.mjs";
 
 export const name = "registry-why-blocked";
 export const description = "Explain recorded readiness blockers for a brick, build, or project.";
 export const inputSchema = {
   type: "object",
   properties: {
-    query: { type: "string", description: "Brick, build, or project identifier." },
+    query: { type: "string", minLength: 1, maxLength: 256, description: "Brick, build, or project identifier." },
     type: { type: "string", enum: ["auto", "brick", "build", "project"], default: "auto" },
   },
   required: ["query"],
   additionalProperties: false,
 };
+export const annotations = readOnlyAnnotations;
+export const authorization = readOnlyAuthorization;
+export const timeoutMs = 500;
 
 function brickBlockers(brick) {
   const reasons = [];
@@ -41,10 +51,9 @@ function buildBlockers(build) {
   return [...new Set(explicit)];
 }
 
-export async function handler(args = {}) {
+export async function explainWhyBlocked(args, context) {
   const query = requireString(args.query, "query");
   const requestedType = args.type || "auto";
-  const context = await loadRegistryContext();
 
   const brick = requestedType === "auto" || requestedType === "brick" ? getBrick(context, query) : null;
   if (brick) {
@@ -74,7 +83,7 @@ export async function handler(args = {}) {
       blocked: reasons.length > 0,
       ready: reasons.length === 0 && build.installable !== false,
       reasons,
-      details: build,
+      details: boundedDiagnosticValue(build),
     };
   }
 
@@ -87,10 +96,23 @@ export async function handler(args = {}) {
       blocked: actions.length > 0,
       ready: actions.length === 0,
       reasons: actions.map((action) => action.code || action.reason || action.name).filter(Boolean),
-      details: project,
+      details: boundedDiagnosticValue(project),
     };
   }
 
-  throw new Error(`MCP_TARGET_NOT_FOUND: no ${requestedType} target matched ${query}`);
+  throw new McpToolError(
+    "MCP_TARGET_NOT_FOUND",
+    "No registry target matched the request",
+    { target_type: requestedType },
+  );
 }
 
+export async function handler(args = {}) {
+  return executeTool({
+    name,
+    inputSchema,
+    args,
+    timeoutMs,
+    operation: async (input) => explainWhyBlocked(input, await loadRegistryContext()),
+  });
+}

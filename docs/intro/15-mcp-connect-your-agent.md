@@ -45,7 +45,7 @@ cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
 mkdir -p "$MCP_ROOT/scans/all-projects"
-node tools/sma-scan.mjs \
+node tools/sma-scan.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO" \
   --out "$MCP_REGISTRY"
 
