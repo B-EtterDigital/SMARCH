@@ -11,7 +11,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 import { executeTool } from "./contract.mjs";
-import { loadToolModules } from "./server.mjs";
+import { invokeTool, loadToolModules, parseGrantedCapabilities } from "./server.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
@@ -151,7 +151,7 @@ async function assertStdioIntegration(root) {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [path.resolve(repoRoot, "tools/mcp/server.mjs")],
-    env: { ...process.env, SMA_ROOT: root },
+    env: { ...process.env, SMA_ROOT: root, SMARCH_MCP_CAPABILITIES: "registry:read" },
     stderr: "pipe",
   });
   transport.stderr?.on("data", (chunk) => telemetry.push(String(chunk)));
@@ -193,6 +193,14 @@ async function assertStdioIntegration(root) {
     const doctor = await client.callTool({ name: "registry-doctor", arguments: {} });
     assert.equal(doctor.isError, undefined);
     assert.equal(JSON.parse(doctor.content[0].text).healthy, true);
+
+    const deniedInstall = await client.callTool({ name: "release-install", arguments: {} });
+    assert.equal(deniedInstall.isError, true);
+    assert.equal(
+      JSON.parse(deniedInstall.content[0].text).error.code,
+      "MCP_CAPABILITY_REQUIRED",
+      "stdio server must enforce capability declarations before handler input validation",
+    );
 
     const registryPath = path.join(root, "scans/all-projects/latest.registry.json");
     const hiddenRegistryPath = `${registryPath}.failure-injection`;
@@ -237,6 +245,15 @@ async function assertStdioIntegration(root) {
     assert.equal(event?.area, "mcp:registry-why-blocked");
     assert.equal(event?.severity, "error");
     assert.equal(event?.code, "MCP_TARGET_NOT_FOUND");
+    const deniedEvent = telemetry
+      .join("")
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+      .find((entry) => entry.event === "tool_denied" && entry.code === "MCP_CAPABILITY_REQUIRED");
+    assert.equal(deniedEvent?.area, "mcp:release-install");
+    assert.equal(deniedEvent?.required_capability, "release:install");
     const brickEvent = telemetry
       .join("")
       .trim()
@@ -278,6 +295,7 @@ async function run() {
     "MCP_TARGET_NOT_FOUND",
     "MCP_REGISTRY_MISSING",
     "MCP_RELEASE_INSTALL_REFUSED",
+    "MCP_CAPABILITY_REQUIRED",
     "MCP_TIMEOUT",
     "MCP_INTERNAL_ERROR",
   ]) {
@@ -373,6 +391,31 @@ async function run() {
       assert.equal(selected[toolName].authorization.effect, "read");
       assert.equal(selected[toolName].annotations.readOnlyHint, true);
     }
+
+    assert.deepEqual([...parseGrantedCapabilities(undefined)], ["registry:read"]);
+    assert.deepEqual(
+      [...parseGrantedCapabilities("release:install, registry:read")].sort(),
+      ["registry:read", "release:install"],
+    );
+    let deniedHandlerInvoked = false;
+    await assertCode(invokeTool({
+      name: "denied-fixture",
+      authorization: { required_capability: "release:install" },
+      handler: async () => { deniedHandlerInvoked = true; },
+    }, {}, new Set(["registry:read"])), "MCP_CAPABILITY_REQUIRED");
+    assert.equal(deniedHandlerInvoked, false, "denied tool handler must not be invoked");
+
+    const serverCard = await selected["server-card"].handler({});
+    assert.deepEqual(
+      JSON.parse(await readFile(path.join(repoRoot, ".well-known/mcp/server-card.json"), "utf8")),
+      serverCard,
+      "published server card must match the in-memory discovery response",
+    );
+    const cardCheck = spawnSync(process.execPath, [
+      path.join(repoRoot, "tools/mcp/generate-server-card.mjs"),
+      "--check",
+    ], { cwd: repoRoot, encoding: "utf8" });
+    assert.equal(cardCheck.status, 0, cardCheck.stderr || cardCheck.stdout);
 
     for (const tool of Object.values(selected)) {
       for (const malformed of [null, [], "not-an-object", 42, true, { unexpected: true }]) {

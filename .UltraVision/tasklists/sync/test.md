@@ -6,6 +6,6 @@
 
 ## M0
 
-- [ ] **UV-SY-cmd-sync-public-e2e** (C2→sonnet) End-to-end test of `sma sync-public` against a real workspace · deps: UV-SY-cmd-sync-public-impl
-- [ ] **UV-SY-cmd-sync-public-unit** (C2→sonnet) Unit tests for sma sync-public · deps: UV-SY-cmd-sync-public-impl
-- [ ] **UV-SY-sync-testharness** (C3→sonnet) Test harness and CI wiring for sync
+- [x] **UV-SY-cmd-sync-public-e2e** (C2→sonnet) End-to-end test of `sma sync-public` against a real workspace · deps: UV-SY-cmd-sync-public-impl
+- [x] **UV-SY-cmd-sync-public-unit** (C2→sonnet) Unit tests for sma sync-public · deps: UV-SY-cmd-sync-public-impl
+- [x] **UV-SY-sync-testharness** (C3→sonnet) Test harness and CI wiring for sync

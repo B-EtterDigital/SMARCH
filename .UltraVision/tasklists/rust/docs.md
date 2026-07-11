@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-RS-rust-charter** (C1→haiku) Write module charter for rust
-- [ ] **UV-RS-rust-docs** (C1→haiku) Module docs baseline for rust
+- [x] **UV-RS-rust-charter** (C1→haiku) Write module charter for rust
+- [x] **UV-RS-rust-docs** (C1→haiku) Module docs baseline for rust

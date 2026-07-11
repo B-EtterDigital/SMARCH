@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-GR-graph-telemetry** (C3→sonnet) Telemetry coverage baseline for graph
+- [x] **UV-GR-graph-telemetry** (C3→sonnet) Telemetry coverage baseline for graph

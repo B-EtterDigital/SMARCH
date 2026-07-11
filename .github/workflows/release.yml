@@ -1,0 +1,76 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  rust-binaries:
+    if: ${{ hashFiles('rust-core/Cargo.toml') != '' }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: smarch-core-linux-x64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            artifact: smarch-core-darwin-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --manifest-path rust-core/Cargo.toml --release --target ${{ matrix.target }}
+      - run: cp target/${{ matrix.target }}/release/smarch-core ${{ matrix.artifact }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  plugin-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install
+      - name: Verify release-blocking skill eval matrix
+        run: node tools/evals/scenario-runner.mjs --matrix --backend codex
+      - name: Pack Claude plugin
+        working-directory: .claude-plugin
+        run: npm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claude-plugin
+          path: .claude-plugin/*.tgz
+
+  publish:
+    needs: [rust-binaries, plugin-bundle]
+    if: ${{ always() && needs.plugin-bundle.result == 'success' && (needs.rust-binaries.result == 'success' || needs.rust-binaries.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Generate conventional-commit changelog
+        run: |
+          previous="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+          range="${previous:+$previous..}HEAD"
+          git log "$range" --pretty='format:* %s (%h)' > release-notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: dist/*

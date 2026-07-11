@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CI-ci-testharness** (C3→sonnet) Test harness and CI wiring for ci
+- [x] **UV-CI-ci-testharness** (C3→sonnet) Test harness and CI wiring for ci

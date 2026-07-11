@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-SK-skills-graph** (C1→haiku) Graphify module graph for skills
-- [ ] **UV-SK-skills-ownership** (C2→sonnet) Register skills ownership in sma.gen3.json
+- [x] **UV-SK-skills-graph** (C1→haiku) Graphify module graph for skills
+- [x] **UV-SK-skills-ownership** (C2→sonnet) Register skills ownership in sma.gen3.json

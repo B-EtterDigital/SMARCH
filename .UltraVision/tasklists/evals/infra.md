@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-EV-evals-graph** (C1→haiku) Graphify module graph for evals
-- [ ] **UV-EV-evals-ownership** (C2→sonnet) Register evals ownership in sma.gen3.json
+- [x] **UV-EV-evals-graph** (C1→haiku) Graphify module graph for evals
+- [x] **UV-EV-evals-ownership** (C2→sonnet) Register evals ownership in sma.gen3.json

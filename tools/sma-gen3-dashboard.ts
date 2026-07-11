@@ -66,6 +66,10 @@ try {
       usage();
       exit(0);
       break;
+    case 'selftest':
+    case '--selftest':
+      runSelftest();
+      break;
     default:
       console.error(`unknown subcommand: ${cmd}`);
       usage();
@@ -90,6 +94,19 @@ When exactly one --project is supplied and --out is omitted, output defaults to
 wiki/projects/<project-id>/GEN3_DASHBOARD.generated.html so project dashboards
 do not overwrite the global dashboard.
 `);
+}
+
+function runSelftest() {
+  args.noGoalProgress = true;
+  const html = render({
+    gen3: null,
+    liveLeases: { active_count: 0, leases: [] },
+    controller: { projects: [], action_items: [], summary: {} },
+  });
+  for (const marker of ['<h2>Active leases</h2>', '<h2>Conflict SLA queue</h2>', '<h2>Global project control plane</h2>']) {
+    if (!html.includes(marker)) throw new Error(`selftest missing dashboard marker: ${marker}`);
+  }
+  console.log('sma-gen3-dashboard selftest passed');
 }
 
 function runBuild() {

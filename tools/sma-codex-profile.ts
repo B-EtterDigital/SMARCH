@@ -25,6 +25,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { homedir, tmpdir } from 'node:os';
 import {
   basename,
@@ -35,6 +36,7 @@ import {
   sep,
 } from 'node:path';
 import { argv, env, exit } from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 type JsonMap = Record<string, any>;
 
@@ -969,6 +971,8 @@ function shellArg(value: unknown): string {
 }
 
 function runSelftest() {
+  const workforceSelftest = spawnSync(process.execPath, [fileURLToPath(new URL('./lib/workforce/claude-cli.mjs', import.meta.url)), '--selftest'], { encoding: 'utf8' });
+  assertSelftest(workforceSelftest.status === 0, workforceSelftest.stderr || 'Claude workforce backend contract should pass');
   const root = mkdtempSync(join(tmpdir(), 'sma-codex-profile-'));
   try {
     const codexHome = join(root, '.codex');

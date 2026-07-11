@@ -87,3 +87,5 @@ that no jest test reaches.
 - Claims & Completion: a SCAT PASS satisfies the "real runtime proof"
   requirement for the flows it exercised; everything else still needs its own
   evidence.
+
+<!-- docs-i18n: key=docs.scat-sweetspot-core-agent-testloop; source=en; media=media/{locale}/scat-sweetspot-core-agent-testloop/ -->

@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-RS-rust-telemetry** (C3→sonnet) Telemetry coverage baseline for rust
+- [x] **UV-RS-rust-telemetry** (C3→sonnet) Telemetry coverage baseline for rust

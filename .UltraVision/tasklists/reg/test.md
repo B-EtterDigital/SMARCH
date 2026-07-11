@@ -6,85 +6,85 @@
 
 ## M0
 
-- [ ] **UV-RG-reg-testharness** (C3→sonnet) Test harness and CI wiring for reg
+- [x] **UV-RG-reg-testharness** (C3→sonnet) Test harness and CI wiring for reg
 
 ## M1
 
-- [ ] **UV-RG-adoption-utils-parity** (C1→haiku) Record behavior-parity evidence for adoption-utils.mjs · deps: UV-RG-adoption-utils-convert
-- [ ] **UV-RG-controller-action-report-parity** (C1→haiku) Record behavior-parity evidence for controller-action-report.mjs · deps: UV-RG-controller-action-report-convert
-- [ ] **UV-RG-curated-build-utils-parity** (C1→haiku) Record behavior-parity evidence for curated-build-utils.mjs · deps: UV-RG-curated-build-utils-convert
-- [ ] **UV-RG-feature-clusters-parity** (C1→haiku) Record behavior-parity evidence for feature-clusters.mjs · deps: UV-RG-feature-clusters-convert
-- [ ] **UV-RG-gen3-goal-progress-parity** (C1→haiku) Record behavior-parity evidence for gen3-goal-progress.mjs · deps: UV-RG-gen3-goal-progress-convert
-- [ ] **UV-RG-module-work-agent-packets-parity** (C1→haiku) Record behavior-parity evidence for module-work-agent-packets.mjs · deps: UV-RG-module-work-agent-packets-convert
-- [ ] **UV-RG-module-work-observations-parity** (C1→haiku) Record behavior-parity evidence for module-work-observations.mjs · deps: UV-RG-module-work-observations-convert
-- [ ] **UV-RG-module-work-paths-parity** (C1→haiku) Record behavior-parity evidence for module-work-paths.mjs · deps: UV-RG-module-work-paths-convert
-- [ ] **UV-RG-module-work-renderers-parity** (C1→haiku) Record behavior-parity evidence for module-work-renderers.mjs · deps: UV-RG-module-work-renderers-convert
-- [ ] **UV-RG-module-work-selftest-parity** (C1→haiku) Record behavior-parity evidence for module-work-selftest.mjs · deps: UV-RG-module-work-selftest-convert
-- [ ] **UV-RG-ownership-parity** (C1→haiku) Record behavior-parity evidence for ownership.mjs · deps: UV-RG-ownership-convert
-- [ ] **UV-RG-packet-freshness-parity** (C1→haiku) Record behavior-parity evidence for packet-freshness.mjs · deps: UV-RG-packet-freshness-convert
-- [ ] **UV-RG-portfolio-projects-parity** (C1→haiku) Record behavior-parity evidence for portfolio-projects.mjs · deps: UV-RG-portfolio-projects-convert
-- [ ] **UV-RG-project-paths-parity** (C1→haiku) Record behavior-parity evidence for project-paths.mjs · deps: UV-RG-project-paths-convert
-- [ ] **UV-RG-sma-adoption-parity** (C1→haiku) Record behavior-parity evidence for sma-adoption.mjs · deps: UV-RG-sma-adoption-convert
-- [ ] **UV-RG-source-path-resolver-parity** (C1→haiku) Record behavior-parity evidence for source-path-resolver.mjs · deps: UV-RG-source-path-resolver-convert
-- [ ] **UV-RG-stable-generated-parity** (C1→haiku) Record behavior-parity evidence for stable-generated.mjs · deps: UV-RG-stable-generated-convert
+- [x] **UV-RG-adoption-utils-parity** (C1→haiku) Record behavior-parity evidence for adoption-utils.mjs · deps: UV-RG-adoption-utils-convert
+- [x] **UV-RG-controller-action-report-parity** (C1→haiku) Record behavior-parity evidence for controller-action-report.mjs · deps: UV-RG-controller-action-report-convert
+- [x] **UV-RG-curated-build-utils-parity** (C1→haiku) Record behavior-parity evidence for curated-build-utils.mjs · deps: UV-RG-curated-build-utils-convert
+- [x] **UV-RG-feature-clusters-parity** (C1→haiku) Record behavior-parity evidence for feature-clusters.mjs · deps: UV-RG-feature-clusters-convert
+- [x] **UV-RG-gen3-goal-progress-parity** (C1→haiku) Record behavior-parity evidence for gen3-goal-progress.mjs · deps: UV-RG-gen3-goal-progress-convert
+- [x] **UV-RG-module-work-agent-packets-parity** (C1→haiku) Record behavior-parity evidence for module-work-agent-packets.mjs · deps: UV-RG-module-work-agent-packets-convert
+- [x] **UV-RG-module-work-observations-parity** (C1→haiku) Record behavior-parity evidence for module-work-observations.mjs · deps: UV-RG-module-work-observations-convert
+- [x] **UV-RG-module-work-paths-parity** (C1→haiku) Record behavior-parity evidence for module-work-paths.mjs · deps: UV-RG-module-work-paths-convert
+- [x] **UV-RG-module-work-renderers-parity** (C1→haiku) Record behavior-parity evidence for module-work-renderers.mjs · deps: UV-RG-module-work-renderers-convert
+- [x] **UV-RG-module-work-selftest-parity** (C1→haiku) Record behavior-parity evidence for module-work-selftest.mjs · deps: UV-RG-module-work-selftest-convert
+- [x] **UV-RG-ownership-parity** (C1→haiku) Record behavior-parity evidence for ownership.mjs · deps: UV-RG-ownership-convert
+- [x] **UV-RG-packet-freshness-parity** (C1→haiku) Record behavior-parity evidence for packet-freshness.mjs · deps: UV-RG-packet-freshness-convert
+- [x] **UV-RG-portfolio-projects-parity** (C1→haiku) Record behavior-parity evidence for portfolio-projects.mjs · deps: UV-RG-portfolio-projects-convert
+- [x] **UV-RG-project-paths-parity** (C1→haiku) Record behavior-parity evidence for project-paths.mjs · deps: UV-RG-project-paths-convert
+- [x] **UV-RG-sma-adoption-parity** (C1→haiku) Record behavior-parity evidence for sma-adoption.mjs · deps: UV-RG-sma-adoption-convert
+- [x] **UV-RG-source-path-resolver-parity** (C1→haiku) Record behavior-parity evidence for source-path-resolver.mjs · deps: UV-RG-source-path-resolver-convert
+- [x] **UV-RG-stable-generated-parity** (C1→haiku) Record behavior-parity evidence for stable-generated.mjs · deps: UV-RG-stable-generated-convert
 
 ## M2
 
-- [ ] **UV-RG-sma-backfill-bulk-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-bulk.mjs · deps: UV-RG-sma-backfill-bulk-convert
-- [ ] **UV-RG-sma-backfill-plan-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-plan.mjs · deps: UV-RG-sma-backfill-plan-convert
-- [ ] **UV-RG-sma-backfill-run-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-run.mjs · deps: UV-RG-sma-backfill-run-convert
-- [ ] **UV-RG-sma-backfill-summary-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-summary.mjs · deps: UV-RG-sma-backfill-summary-convert
-- [ ] **UV-RG-sma-backlog-parity** (C1→haiku) Record behavior-parity evidence for sma-backlog.mjs · deps: UV-RG-sma-backlog-convert
-- [ ] **UV-RG-sma-bootstrap-manifests-parity** (C1→haiku) Record behavior-parity evidence for sma-bootstrap-manifests.mjs · deps: UV-RG-sma-bootstrap-manifests-convert
-- [ ] **UV-RG-sma-build-index-parity** (C1→haiku) Record behavior-parity evidence for sma-build-index.mjs · deps: UV-RG-sma-build-index-convert
-- [ ] **UV-RG-sma-build-packets-parity** (C1→haiku) Record behavior-parity evidence for sma-build-packets.mjs · deps: UV-RG-sma-build-packets-convert
-- [ ] **UV-RG-sma-build-promote-parity** (C1→haiku) Record behavior-parity evidence for sma-build-promote.mjs · deps: UV-RG-sma-build-promote-convert
-- [ ] **UV-RG-sma-build-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-build-verify.mjs · deps: UV-RG-sma-build-verify-convert
-- [ ] **UV-RG-sma-canonicalization-parity** (C1→haiku) Record behavior-parity evidence for sma-canonicalization.mjs · deps: UV-RG-sma-canonicalization-convert
-- [ ] **UV-RG-sma-clone-parity** (C1→haiku) Record behavior-parity evidence for sma-clone.mjs · deps: UV-RG-sma-clone-convert
-- [ ] **UV-RG-sma-clone-smoke-parity** (C1→haiku) Record behavior-parity evidence for sma-clone-smoke.mjs · deps: UV-RG-sma-clone-smoke-convert
-- [ ] **UV-RG-sma-compact-parity** (C1→haiku) Record behavior-parity evidence for sma-compact.mjs · deps: UV-RG-sma-compact-convert
-- [ ] **UV-RG-sma-dependents-index-parity** (C1→haiku) Record behavior-parity evidence for sma-dependents-index.mjs · deps: UV-RG-sma-dependents-index-convert
-- [ ] **UV-RG-sma-doctor-parity** (C1→haiku) Record behavior-parity evidence for sma-doctor.mjs · deps: UV-RG-sma-doctor-convert
-- [ ] **UV-RG-sma-enrich-parity** (C1→haiku) Record behavior-parity evidence for sma-enrich.mjs · deps: UV-RG-sma-enrich-convert
-- [ ] **UV-RG-sma-filter-parity** (C1→haiku) Record behavior-parity evidence for sma-filter.mjs · deps: UV-RG-sma-filter-convert
-- [ ] **UV-RG-sma-goal-progress-parity** (C1→haiku) Record behavior-parity evidence for sma-goal-progress.mjs · deps: UV-RG-sma-goal-progress-convert
-- [ ] **UV-RG-sma-import-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-import-verify.mjs · deps: UV-RG-sma-import-verify-convert
-- [ ] **UV-RG-sma-init-project-parity** (C1→haiku) Record behavior-parity evidence for sma-init-project.mjs · deps: UV-RG-sma-init-project-convert
-- [ ] **UV-RG-sma-manifest-scaffold-parity** (C1→haiku) Record behavior-parity evidence for sma-manifest-scaffold.mjs · deps: UV-RG-sma-manifest-scaffold-convert
-- [ ] **UV-RG-sma-match-parity** (C1→haiku) Record behavior-parity evidence for sma-match.mjs · deps: UV-RG-sma-match-convert
-- [ ] **UV-RG-sma-merge-registries-parity** (C1→haiku) Record behavior-parity evidence for sma-merge-registries.mjs · deps: UV-RG-sma-merge-registries-convert
-- [ ] **UV-RG-sma-module-work-packets-parity** (C1→haiku) Record behavior-parity evidence for sma-module-work-packets.mjs · deps: UV-RG-sma-module-work-packets-convert
-- [ ] **UV-RG-sma-operator-packet-parity** (C1→haiku) Record behavior-parity evidence for sma-operator-packet.mjs · deps: UV-RG-sma-operator-packet-convert
-- [ ] **UV-RG-sma-portfolio-refresh-parity** (C1→haiku) Record behavior-parity evidence for sma-portfolio-refresh.mjs · deps: UV-RG-sma-portfolio-refresh-convert
-- [ ] **UV-RG-sma-portfolio-scan-parity** (C1→haiku) Record behavior-parity evidence for sma-portfolio-scan.mjs · deps: UV-RG-sma-portfolio-scan-convert
-- [ ] **UV-RG-sma-promote-parity** (C1→haiku) Record behavior-parity evidence for sma-promote.mjs · deps: UV-RG-sma-promote-convert
-- [ ] **UV-RG-sma-propagate-parity** (C1→haiku) Record behavior-parity evidence for sma-propagate.mjs · deps: UV-RG-sma-propagate-convert
-- [ ] **UV-RG-sma-publish-index-parity** (C1→haiku) Record behavior-parity evidence for sma-publish-index.mjs · deps: UV-RG-sma-publish-index-convert
-- [ ] **UV-RG-sma-publish-leaks-parity** (C1→haiku) Record behavior-parity evidence for sma-publish-leaks.mjs · deps: UV-RG-sma-publish-leaks-convert
-- [ ] **UV-RG-sma-publish-parity** (C1→haiku) Record behavior-parity evidence for sma-publish.mjs · deps: UV-RG-sma-publish-convert
-- [ ] **UV-RG-sma-recommend-builds-parity** (C1→haiku) Record behavior-parity evidence for sma-recommend-builds.mjs · deps: UV-RG-sma-recommend-builds-convert
-- [ ] **UV-RG-sma-refresh-manifest-budgets-parity** (C1→haiku) Record behavior-parity evidence for sma-refresh-manifest-budgets.mjs · deps: UV-RG-sma-refresh-manifest-budgets-convert
-- [ ] **UV-RG-sma-release-drafts-parity** (C1→haiku) Record behavior-parity evidence for sma-release-drafts.mjs · deps: UV-RG-sma-release-drafts-convert
-- [ ] **UV-RG-sma-release-index-parity** (C1→haiku) Record behavior-parity evidence for sma-release-index.mjs · deps: UV-RG-sma-release-index-convert
-- [ ] **UV-RG-sma-release-parity** (C1→haiku) Record behavior-parity evidence for sma-release.mjs · deps: UV-RG-sma-release-convert
-- [ ] **UV-RG-sma-repo-queues-parity** (C1→haiku) Record behavior-parity evidence for sma-repo-queues.mjs · deps: UV-RG-sma-repo-queues-convert
-- [ ] **UV-RG-sma-reuse-receipt-parity** (C1→haiku) Record behavior-parity evidence for sma-reuse-receipt.mjs · deps: UV-RG-sma-reuse-receipt-convert
-- [ ] **UV-RG-sma-score-parity** (C1→haiku) Record behavior-parity evidence for sma-score.mjs · deps: UV-RG-sma-score-convert
-- [ ] **UV-RG-sma-similarity-scan-parity** (C1→haiku) Record behavior-parity evidence for sma-similarity-scan.mjs · deps: UV-RG-sma-similarity-scan-convert
-- [ ] **UV-RG-sma-stable-generated-selftest-parity** (C1→haiku) Record behavior-parity evidence for sma-stable-generated-selftest.mjs · deps: UV-RG-sma-stable-generated-selftest-convert
-- [ ] **UV-RG-sma-state-parity** (C1→haiku) Record behavior-parity evidence for sma-state.mjs · deps: UV-RG-sma-state-convert
-- [ ] **UV-RG-sma-stats-parity** (C1→haiku) Record behavior-parity evidence for sma-stats.mjs · deps: UV-RG-sma-stats-convert
-- [ ] **UV-RG-sma-store-parity** (C1→haiku) Record behavior-parity evidence for sma-store.mjs · deps: UV-RG-sma-store-convert
-- [ ] **UV-RG-sma-store-remote-parity** (C1→haiku) Record behavior-parity evidence for sma-store-remote.mjs · deps: UV-RG-sma-store-remote-convert
-- [ ] **UV-RG-sma-sup-status-parity** (C1→haiku) Record behavior-parity evidence for sma-sup-status.mjs · deps: UV-RG-sma-sup-status-convert
-- [ ] **UV-RG-sma-token-count-parity** (C1→haiku) Record behavior-parity evidence for sma-token-count.mjs · deps: UV-RG-sma-token-count-convert
-- [ ] **UV-RG-sma-touch-backfill-parity** (C1→haiku) Record behavior-parity evidence for sma-touch-backfill.mjs · deps: UV-RG-sma-touch-backfill-convert
-- [ ] **UV-RG-sma-update-plan-parity** (C1→haiku) Record behavior-parity evidence for sma-update-plan.mjs · deps: UV-RG-sma-update-plan-convert
-- [ ] **UV-RG-sma-wave-monitor-parity** (C1→haiku) Record behavior-parity evidence for sma-wave-monitor.mjs · deps: UV-RG-sma-wave-monitor-convert
-- [ ] **UV-RG-sma-wave-observe-parity** (C1→haiku) Record behavior-parity evidence for sma-wave-observe.mjs · deps: UV-RG-sma-wave-observe-convert
-- [ ] **UV-RG-sma-why-blocked-parity** (C1→haiku) Record behavior-parity evidence for sma-why-blocked.mjs · deps: UV-RG-sma-why-blocked-convert
+- [x] **UV-RG-sma-backfill-bulk-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-bulk.mjs · deps: UV-RG-sma-backfill-bulk-convert
+- [x] **UV-RG-sma-backfill-plan-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-plan.mjs · deps: UV-RG-sma-backfill-plan-convert
+- [x] **UV-RG-sma-backfill-run-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-run.mjs · deps: UV-RG-sma-backfill-run-convert
+- [x] **UV-RG-sma-backfill-summary-parity** (C1→haiku) Record behavior-parity evidence for sma-backfill-summary.mjs · deps: UV-RG-sma-backfill-summary-convert
+- [x] **UV-RG-sma-backlog-parity** (C1→haiku) Record behavior-parity evidence for sma-backlog.mjs · deps: UV-RG-sma-backlog-convert
+- [x] **UV-RG-sma-bootstrap-manifests-parity** (C1→haiku) Record behavior-parity evidence for sma-bootstrap-manifests.mjs · deps: UV-RG-sma-bootstrap-manifests-convert
+- [x] **UV-RG-sma-build-index-parity** (C1→haiku) Record behavior-parity evidence for sma-build-index.mjs · deps: UV-RG-sma-build-index-convert
+- [x] **UV-RG-sma-build-packets-parity** (C1→haiku) Record behavior-parity evidence for sma-build-packets.mjs · deps: UV-RG-sma-build-packets-convert
+- [x] **UV-RG-sma-build-promote-parity** (C1→haiku) Record behavior-parity evidence for sma-build-promote.mjs · deps: UV-RG-sma-build-promote-convert
+- [x] **UV-RG-sma-build-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-build-verify.mjs · deps: UV-RG-sma-build-verify-convert
+- [x] **UV-RG-sma-canonicalization-parity** (C1→haiku) Record behavior-parity evidence for sma-canonicalization.mjs · deps: UV-RG-sma-canonicalization-convert
+- [x] **UV-RG-sma-clone-parity** (C1→haiku) Record behavior-parity evidence for sma-clone.mjs · deps: UV-RG-sma-clone-convert
+- [x] **UV-RG-sma-clone-smoke-parity** (C1→haiku) Record behavior-parity evidence for sma-clone-smoke.mjs · deps: UV-RG-sma-clone-smoke-convert
+- [x] **UV-RG-sma-compact-parity** (C1→haiku) Record behavior-parity evidence for sma-compact.mjs · deps: UV-RG-sma-compact-convert
+- [x] **UV-RG-sma-dependents-index-parity** (C1→haiku) Record behavior-parity evidence for sma-dependents-index.mjs · deps: UV-RG-sma-dependents-index-convert
+- [x] **UV-RG-sma-doctor-parity** (C1→haiku) Record behavior-parity evidence for sma-doctor.mjs · deps: UV-RG-sma-doctor-convert
+- [x] **UV-RG-sma-enrich-parity** (C1→haiku) Record behavior-parity evidence for sma-enrich.mjs · deps: UV-RG-sma-enrich-convert
+- [x] **UV-RG-sma-filter-parity** (C1→haiku) Record behavior-parity evidence for sma-filter.mjs · deps: UV-RG-sma-filter-convert
+- [x] **UV-RG-sma-goal-progress-parity** (C1→haiku) Record behavior-parity evidence for sma-goal-progress.mjs · deps: UV-RG-sma-goal-progress-convert
+- [x] **UV-RG-sma-import-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-import-verify.mjs · deps: UV-RG-sma-import-verify-convert
+- [x] **UV-RG-sma-init-project-parity** (C1→haiku) Record behavior-parity evidence for sma-init-project.mjs · deps: UV-RG-sma-init-project-convert
+- [x] **UV-RG-sma-manifest-scaffold-parity** (C1→haiku) Record behavior-parity evidence for sma-manifest-scaffold.mjs · deps: UV-RG-sma-manifest-scaffold-convert
+- [x] **UV-RG-sma-match-parity** (C1→haiku) Record behavior-parity evidence for sma-match.mjs · deps: UV-RG-sma-match-convert
+- [x] **UV-RG-sma-merge-registries-parity** (C1→haiku) Record behavior-parity evidence for sma-merge-registries.mjs · deps: UV-RG-sma-merge-registries-convert
+- [x] **UV-RG-sma-module-work-packets-parity** (C1→haiku) Record behavior-parity evidence for sma-module-work-packets.mjs · deps: UV-RG-sma-module-work-packets-convert
+- [x] **UV-RG-sma-operator-packet-parity** (C1→haiku) Record behavior-parity evidence for sma-operator-packet.mjs · deps: UV-RG-sma-operator-packet-convert
+- [x] **UV-RG-sma-portfolio-refresh-parity** (C1→haiku) Record behavior-parity evidence for sma-portfolio-refresh.mjs · deps: UV-RG-sma-portfolio-refresh-convert
+- [x] **UV-RG-sma-portfolio-scan-parity** (C1→haiku) Record behavior-parity evidence for sma-portfolio-scan.mjs · deps: UV-RG-sma-portfolio-scan-convert
+- [x] **UV-RG-sma-promote-parity** (C1→haiku) Record behavior-parity evidence for sma-promote.mjs · deps: UV-RG-sma-promote-convert
+- [x] **UV-RG-sma-propagate-parity** (C1→haiku) Record behavior-parity evidence for sma-propagate.mjs · deps: UV-RG-sma-propagate-convert
+- [x] **UV-RG-sma-publish-index-parity** (C1→haiku) Record behavior-parity evidence for sma-publish-index.mjs · deps: UV-RG-sma-publish-index-convert
+- [x] **UV-RG-sma-publish-leaks-parity** (C1→haiku) Record behavior-parity evidence for sma-publish-leaks.mjs · deps: UV-RG-sma-publish-leaks-convert
+- [x] **UV-RG-sma-publish-parity** (C1→haiku) Record behavior-parity evidence for sma-publish.mjs · deps: UV-RG-sma-publish-convert
+- [x] **UV-RG-sma-recommend-builds-parity** (C1→haiku) Record behavior-parity evidence for sma-recommend-builds.mjs · deps: UV-RG-sma-recommend-builds-convert
+- [x] **UV-RG-sma-refresh-manifest-budgets-parity** (C1→haiku) Record behavior-parity evidence for sma-refresh-manifest-budgets.mjs · deps: UV-RG-sma-refresh-manifest-budgets-convert
+- [x] **UV-RG-sma-release-drafts-parity** (C1→haiku) Record behavior-parity evidence for sma-release-drafts.mjs · deps: UV-RG-sma-release-drafts-convert
+- [x] **UV-RG-sma-release-index-parity** (C1→haiku) Record behavior-parity evidence for sma-release-index.mjs · deps: UV-RG-sma-release-index-convert
+- [x] **UV-RG-sma-release-parity** (C1→haiku) Record behavior-parity evidence for sma-release.mjs · deps: UV-RG-sma-release-convert
+- [x] **UV-RG-sma-repo-queues-parity** (C1→haiku) Record behavior-parity evidence for sma-repo-queues.mjs · deps: UV-RG-sma-repo-queues-convert
+- [x] **UV-RG-sma-reuse-receipt-parity** (C1→haiku) Record behavior-parity evidence for sma-reuse-receipt.mjs · deps: UV-RG-sma-reuse-receipt-convert
+- [x] **UV-RG-sma-score-parity** (C1→haiku) Record behavior-parity evidence for sma-score.mjs · deps: UV-RG-sma-score-convert
+- [x] **UV-RG-sma-similarity-scan-parity** (C1→haiku) Record behavior-parity evidence for sma-similarity-scan.mjs · deps: UV-RG-sma-similarity-scan-convert
+- [x] **UV-RG-sma-stable-generated-selftest-parity** (C1→haiku) Record behavior-parity evidence for sma-stable-generated-selftest.mjs · deps: UV-RG-sma-stable-generated-selftest-convert
+- [x] **UV-RG-sma-state-parity** (C1→haiku) Record behavior-parity evidence for sma-state.mjs · deps: UV-RG-sma-state-convert
+- [x] **UV-RG-sma-stats-parity** (C1→haiku) Record behavior-parity evidence for sma-stats.mjs · deps: UV-RG-sma-stats-convert
+- [x] **UV-RG-sma-store-parity** (C1→haiku) Record behavior-parity evidence for sma-store.mjs · deps: UV-RG-sma-store-convert
+- [x] **UV-RG-sma-store-remote-parity** (C1→haiku) Record behavior-parity evidence for sma-store-remote.mjs · deps: UV-RG-sma-store-remote-convert
+- [x] **UV-RG-sma-sup-status-parity** (C1→haiku) Record behavior-parity evidence for sma-sup-status.mjs · deps: UV-RG-sma-sup-status-convert
+- [x] **UV-RG-sma-token-count-parity** (C1→haiku) Record behavior-parity evidence for sma-token-count.mjs · deps: UV-RG-sma-token-count-convert
+- [x] **UV-RG-sma-touch-backfill-parity** (C1→haiku) Record behavior-parity evidence for sma-touch-backfill.mjs · deps: UV-RG-sma-touch-backfill-convert
+- [x] **UV-RG-sma-update-plan-parity** (C1→haiku) Record behavior-parity evidence for sma-update-plan.mjs · deps: UV-RG-sma-update-plan-convert
+- [x] **UV-RG-sma-wave-monitor-parity** (C1→haiku) Record behavior-parity evidence for sma-wave-monitor.mjs · deps: UV-RG-sma-wave-monitor-convert
+- [x] **UV-RG-sma-wave-observe-parity** (C1→haiku) Record behavior-parity evidence for sma-wave-observe.mjs · deps: UV-RG-sma-wave-observe-convert
+- [x] **UV-RG-sma-why-blocked-parity** (C1→haiku) Record behavior-parity evidence for sma-why-blocked.mjs · deps: UV-RG-sma-why-blocked-convert
 
 ## M3
 
-- [ ] **UV-RG-sma-scan-parity** (C1→haiku) Record behavior-parity evidence for sma-scan.mjs · deps: UV-RG-sma-scan-convert
+- [x] **UV-RG-sma-scan-parity** (C1→haiku) Record behavior-parity evidence for sma-scan.mjs · deps: UV-RG-sma-scan-convert

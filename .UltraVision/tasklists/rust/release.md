@@ -6,4 +6,4 @@
 
 ## M3
 
-- [ ] **UV-RS-release-binaries** (C2→sonnet) Release binaries for linux-x64 + darwin-arm64 · deps: UV-RS-parity-tests
+- [x] **UV-RS-release-binaries** (C2→sonnet) Release binaries for linux-x64 + darwin-arm64 · deps: UV-RS-parity-tests

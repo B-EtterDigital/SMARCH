@@ -6,8 +6,8 @@
 
 ## M0
 
-- [ ] **UV-RS-rust-testharness** (C3→sonnet) Test harness and CI wiring for rust
+- [x] **UV-RS-rust-testharness** (C3→sonnet) Test harness and CI wiring for rust
 
 ## M3
 
-- [ ] **UV-RS-parity-tests** (C3→sonnet) Kernel parity suite vs node scanner · deps: UV-RS-node-adapter
+- [x] **UV-RS-parity-tests** (C3→sonnet) Kernel parity suite vs node scanner · deps: UV-RS-node-adapter

@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.agent-skills; source=en; media=media/{locale}/agent-skills/ -->
 # Agent Skills
 
 This guide explains the agent skills that install, teach, and enforce Sweetspot Modular Architecture. Agent maintainers and repository operators need it when they configure an automation harness. Read it before enabling a skill or changing how agents discover project rules. Remember that a skill must load the repository contract before it acts.

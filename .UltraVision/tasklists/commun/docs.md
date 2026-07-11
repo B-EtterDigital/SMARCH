@@ -6,9 +6,9 @@
 
 ## M0
 
-- [ ] **UV-CM-commun-charter** (C1→haiku) Write module charter for commun
-- [ ] **UV-CM-commun-docs** (C1→haiku) Module docs baseline for commun
+- [x] **UV-CM-commun-charter** (C1→haiku) Write module charter for commun
+- [x] **UV-CM-commun-docs** (C1→haiku) Module docs baseline for commun
 
 ## M3
 
-- [ ] **UV-CM-cmd-submit-docs** (C1→haiku) Document sma submit · deps: UV-CM-cmd-submit-impl
+- [x] **UV-CM-cmd-submit-docs** (C1→haiku) Document sma submit · deps: UV-CM-cmd-submit-impl

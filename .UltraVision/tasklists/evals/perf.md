@@ -6,8 +6,8 @@
 
 ## M0
 
-- [ ] **UV-EV-evals-perfbudget** (C2→sonnet) Performance budgets for evals
+- [x] **UV-EV-evals-perfbudget** (C2→sonnet) Performance budgets for evals
 
 ## M2
 
-- [ ] **UV-EV-bench** (C3→sonnet) Perf bench gate implementing 07 budgets · deps: UV-EV-fixture-portfolio
+- [x] **UV-EV-bench** (C3→sonnet) Perf bench gate implementing 07 budgets · deps: UV-EV-fixture-portfolio

@@ -65,3 +65,5 @@ privacy review.
 
 See [Moderation transparency](TRANSPARENCY.md) for the current moderation and
 platform-safety audit boundary.
+
+<!-- docs-i18n: key=docs.privacy; source=en; media=media/{locale}/privacy/ -->

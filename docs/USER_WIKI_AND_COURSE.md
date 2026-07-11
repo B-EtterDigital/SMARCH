@@ -93,3 +93,5 @@ Find brick -> inspect trust -> copy -> adapt declared ports -> run gates -> reco
 ```
 
 Then reveal the acronyms as the gates behind that lifecycle.
+
+<!-- docs-i18n: key=docs.user-wiki-and-course; source=en; media=media/{locale}/user-wiki-and-course/ -->

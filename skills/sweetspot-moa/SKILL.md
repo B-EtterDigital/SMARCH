@@ -176,8 +176,25 @@ One JSON packet per `codex exec` invocation:
   `.UltraVision/` exists; otherwise the planner writes them before dispatch.
   A packet without acceptance criteria must not be sent.
 - `forbidden_surfaces` = files under other leases plus Gen3 shared hot paths.
-- Invocation (codex-cli 0.142.4 at install time — on flag drift check
-  `codex exec --help` before dispatch, never guess):
+- Canonical invocation goes through the workforce abstraction. It preserves the
+  same model, effort, schema, sandbox, timeout, token-accounting, and retry
+  semantics across Codex, Claude CLI, and OpenCode:
+
+```bash
+node --input-type=module -e '
+  import { dispatch } from "./tools/lib/workforce/contract.mjs";
+  import fs from "node:fs";
+  const packet = JSON.parse(fs.readFileSync("packet.json", "utf8"));
+  const result = await dispatch(packet, {
+    backend: "codex", model: "gpt-5.6-sol", effort: "xhigh",
+    schema: "handback.schema.json", readOnly: false
+  });
+  console.log(JSON.stringify(result));
+'
+```
+
+- The raw Codex CLI equivalent remains documented for debugging flag drift
+  (codex-cli 0.142.4 at install time; check `codex exec --help`, never guess):
 
 ```bash
 # implementers: write access, schema-checked hand-back

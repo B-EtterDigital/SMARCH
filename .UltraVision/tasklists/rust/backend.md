@@ -6,6 +6,6 @@
 
 ## M3
 
-- [ ] **UV-RS-crate-scaffold** (C3→sonnet) rust-core crate: walk + hash + similarity kernel
-- [ ] **UV-RS-node-adapter** (C2→sonnet) Node adapter + transparent fallback · deps: UV-RS-crate-scaffold, UV-RG-scan-walk-extraction
-- [ ] **UV-RS-skeptic-merkle-parity** (C3→sonnet) Add Rust Merkle implementation and provenance parity suite
+- [x] **UV-RS-crate-scaffold** (C3→sonnet) rust-core crate: walk + hash + similarity kernel
+- [x] **UV-RS-node-adapter** (C2→sonnet) Node adapter + transparent fallback · deps: UV-RS-crate-scaffold, UV-RG-scan-walk-extraction
+- [x] **UV-RS-skeptic-merkle-parity** (C3→sonnet) Add Rust Merkle implementation and provenance parity suite

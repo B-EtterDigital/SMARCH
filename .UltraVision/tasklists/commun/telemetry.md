@@ -6,8 +6,8 @@
 
 ## M0
 
-- [ ] **UV-CM-commun-telemetry** (C3→sonnet) Telemetry coverage baseline for commun
+- [x] **UV-CM-commun-telemetry** (C3→sonnet) Telemetry coverage baseline for commun
 
 ## M3
 
-- [ ] **UV-CM-cmd-submit-telemetry** (C1→haiku) Error telemetry for sma submit · deps: UV-CM-cmd-submit-impl
+- [x] **UV-CM-cmd-submit-telemetry** (C1→haiku) Error telemetry for sma submit · deps: UV-CM-cmd-submit-impl

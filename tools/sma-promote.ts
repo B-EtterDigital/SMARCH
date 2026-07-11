@@ -40,6 +40,7 @@
  */
 import fs from "node:fs/promises";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { execFile } from "node:child_process";
 import path from "node:path";
 import { readActiveLeases, readProjectContextCoverage } from "./lib/gen3-state.ts";
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
@@ -90,6 +91,18 @@ function isSensitive(dataClasses) {
   return s.has("user_private") || s.has("pii") || s.has("payment") || s.has("credential") || s.has("admin_only");
 }
 
+async function hasPassingCapsuleFixture(brick) {
+  const capsuleRoot = path.dirname(path.resolve(brick.manifest_path));
+  return new Promise((resolve) => {
+    execFile(
+      process.execPath,
+      [smaPath("tools/sma-brick-run.mjs"), capsuleRoot, "--json", "--quiet"],
+      { cwd: capsuleRoot, timeout: 30_000, maxBuffer: 1024 * 1024 },
+      (error) => resolve(error === null),
+    );
+  });
+}
+
 async function decideStatus(brick, manifest) {
   const sem = manifest.semantics || {};
   const hasAllSemantics = Boolean(
@@ -100,6 +113,17 @@ async function decideStatus(brick, manifest) {
 
   if (typeof brick.score === "number" && brick.score < 40) {
     return { status: "project_bound", reason: "low-score" };
+  }
+
+  const tier = manifest.tier || manifest.brick?.tier || (manifest.brick?.kind === 'capsule' ? 'capsule' : 'standard');
+  if (tier === 'capsule') {
+    if (!await hasPassingCapsuleFixture(brick)) {
+      return { status: 'candidate', reason: 'capsule-fastlane:fixture-evidence-required' };
+    }
+    return {
+      status: 'canonical',
+      reason: 'capsule-fastlane:fixture-evidence-passing; skipped sibling-test and RLS checks because capsule constraints make those redundant',
+    };
   }
 
   const srcPath = (brick.source_paths || [])[0];

@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-SC-schemas-graph** (C1→haiku) Graphify module graph for schemas
-- [ ] **UV-SC-schemas-ownership** (C2→sonnet) Register schemas ownership in sma.gen3.json
+- [x] **UV-SC-schemas-graph** (C1→haiku) Graphify module graph for schemas
+- [x] **UV-SC-schemas-ownership** (C2→sonnet) Register schemas ownership in sma.gen3.json

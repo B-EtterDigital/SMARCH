@@ -6,11 +6,11 @@
 
 ## M0
 
-- [ ] **UV-CP-capsule-charter** (C1→haiku) Write module charter for capsule
-- [ ] **UV-CP-capsule-docs** (C1→haiku) Module docs baseline for capsule
+- [x] **UV-CP-capsule-charter** (C1→haiku) Write module charter for capsule
+- [x] **UV-CP-capsule-docs** (C1→haiku) Module docs baseline for capsule
 
 ## M2
 
-- [ ] **UV-CP-cmd-brick-inspect-docs** (C1→haiku) Document sma brick-inspect · deps: UV-CP-cmd-brick-inspect-impl
-- [ ] **UV-CP-cmd-brick-new-docs** (C1→haiku) Document sma brick-new · deps: UV-CP-cmd-brick-new-impl
-- [ ] **UV-CP-cmd-brick-run-docs** (C1→haiku) Document sma brick-run · deps: UV-CP-cmd-brick-run-impl
+- [x] **UV-CP-cmd-brick-inspect-docs** (C1→haiku) Document sma brick-inspect · deps: UV-CP-cmd-brick-inspect-impl
+- [x] **UV-CP-cmd-brick-new-docs** (C1→haiku) Document sma brick-new · deps: UV-CP-cmd-brick-new-impl
+- [x] **UV-CP-cmd-brick-run-docs** (C1→haiku) Document sma brick-run · deps: UV-CP-cmd-brick-run-impl

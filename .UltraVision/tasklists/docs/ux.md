@@ -6,21 +6,21 @@
 
 ## M2
 
-- [ ] **UV-DO-lesson-01-what-is-a-brick-beginner-review** (C1→haiku) Beginner-lens review of what is a brick · deps: UV-DO-lesson-01-what-is-a-brick-draft
-- [ ] **UV-DO-lesson-02-your-first-scan-beginner-review** (C1→haiku) Beginner-lens review of your first scan · deps: UV-DO-lesson-02-your-first-scan-draft
-- [ ] **UV-DO-lesson-03-reading-the-brick-wall-beginner-review** (C1→haiku) Beginner-lens review of reading the brick wall · deps: UV-DO-lesson-03-reading-the-brick-wall-draft
-- [ ] **UV-DO-lesson-04-manifests-explained-beginner-review** (C1→haiku) Beginner-lens review of manifests explained · deps: UV-DO-lesson-04-manifests-explained-draft
-- [ ] **UV-DO-lesson-05-gates-what-blocks-and-why-beginner-review** (C1→haiku) Beginner-lens review of gates what blocks and why · deps: UV-DO-lesson-05-gates-what-blocks-and-why-draft
-- [ ] **UV-DO-lesson-06-your-first-clone-beginner-review** (C1→haiku) Beginner-lens review of your first clone · deps: UV-DO-lesson-06-your-first-clone-draft
-- [ ] **UV-DO-lesson-07-provenance-and-seals-beginner-review** (C1→haiku) Beginner-lens review of provenance and seals · deps: UV-DO-lesson-07-provenance-and-seals-draft
-- [ ] **UV-DO-lesson-08-leases-working-alongside-agents-beginner-review** (C1→haiku) Beginner-lens review of leases working alongside agents · deps: UV-DO-lesson-08-leases-working-alongside-agents-draft
-- [ ] **UV-DO-lesson-09-conflicts-are-normal-beginner-review** (C1→haiku) Beginner-lens review of conflicts are normal · deps: UV-DO-lesson-09-conflicts-are-normal-draft
-- [ ] **UV-DO-lesson-10-your-first-capsule-beginner-review** (C1→haiku) Beginner-lens review of your first capsule · deps: UV-DO-lesson-10-your-first-capsule-draft
-- [ ] **UV-DO-lesson-11-the-graph-asking-questions-beginner-review** (C1→haiku) Beginner-lens review of the graph asking questions · deps: UV-DO-lesson-11-the-graph-asking-questions-draft
-- [ ] **UV-DO-lesson-12-agents-and-skills-setup-beginner-review** (C1→haiku) Beginner-lens review of agents and skills setup · deps: UV-DO-lesson-12-agents-and-skills-setup-draft
-- [ ] **UV-DO-lesson-13-contributing-your-first-brick-beginner-review** (C1→haiku) Beginner-lens review of contributing your first brick · deps: UV-DO-lesson-13-contributing-your-first-brick-draft
-- [ ] **UV-DO-lesson-14-canonical-the-registry-story-beginner-review** (C1→haiku) Beginner-lens review of canonical the registry story · deps: UV-DO-lesson-14-canonical-the-registry-story-draft
-- [ ] **UV-DO-lesson-15-mcp-connect-your-agent-beginner-review** (C1→haiku) Beginner-lens review of mcp connect your agent · deps: UV-DO-lesson-15-mcp-connect-your-agent-draft
-- [ ] **UV-DO-lesson-16-glossary-safari-beginner-review** (C1→haiku) Beginner-lens review of glossary safari · deps: UV-DO-lesson-16-glossary-safari-draft
-- [ ] **UV-DO-lesson-17-reading-the-plan-uvp-beginner-review** (C1→haiku) Beginner-lens review of reading the plan uvp · deps: UV-DO-lesson-17-reading-the-plan-uvp-draft
-- [ ] **UV-DO-lesson-18-your-first-agent-swarm-beginner-review** (C1→haiku) Beginner-lens review of your first agent swarm · deps: UV-DO-lesson-18-your-first-agent-swarm-draft
+- [x] **UV-DO-lesson-01-what-is-a-brick-beginner-review** (C1→haiku) Beginner-lens review of what is a brick · deps: UV-DO-lesson-01-what-is-a-brick-draft
+- [x] **UV-DO-lesson-02-your-first-scan-beginner-review** (C1→haiku) Beginner-lens review of your first scan · deps: UV-DO-lesson-02-your-first-scan-draft
+- [x] **UV-DO-lesson-03-reading-the-brick-wall-beginner-review** (C1→haiku) Beginner-lens review of reading the brick wall · deps: UV-DO-lesson-03-reading-the-brick-wall-draft
+- [x] **UV-DO-lesson-04-manifests-explained-beginner-review** (C1→haiku) Beginner-lens review of manifests explained · deps: UV-DO-lesson-04-manifests-explained-draft
+- [x] **UV-DO-lesson-05-gates-what-blocks-and-why-beginner-review** (C1→haiku) Beginner-lens review of gates what blocks and why · deps: UV-DO-lesson-05-gates-what-blocks-and-why-draft
+- [x] **UV-DO-lesson-06-your-first-clone-beginner-review** (C1→haiku) Beginner-lens review of your first clone · deps: UV-DO-lesson-06-your-first-clone-draft
+- [x] **UV-DO-lesson-07-provenance-and-seals-beginner-review** (C1→haiku) Beginner-lens review of provenance and seals · deps: UV-DO-lesson-07-provenance-and-seals-draft
+- [x] **UV-DO-lesson-08-leases-working-alongside-agents-beginner-review** (C1→haiku) Beginner-lens review of leases working alongside agents · deps: UV-DO-lesson-08-leases-working-alongside-agents-draft
+- [x] **UV-DO-lesson-09-conflicts-are-normal-beginner-review** (C1→haiku) Beginner-lens review of conflicts are normal · deps: UV-DO-lesson-09-conflicts-are-normal-draft
+- [x] **UV-DO-lesson-10-your-first-capsule-beginner-review** (C1→haiku) Beginner-lens review of your first capsule · deps: UV-DO-lesson-10-your-first-capsule-draft
+- [x] **UV-DO-lesson-11-the-graph-asking-questions-beginner-review** (C1→haiku) Beginner-lens review of the graph asking questions · deps: UV-DO-lesson-11-the-graph-asking-questions-draft
+- [x] **UV-DO-lesson-12-agents-and-skills-setup-beginner-review** (C1→haiku) Beginner-lens review of agents and skills setup · deps: UV-DO-lesson-12-agents-and-skills-setup-draft
+- [x] **UV-DO-lesson-13-contributing-your-first-brick-beginner-review** (C1→haiku) Beginner-lens review of contributing your first brick · deps: UV-DO-lesson-13-contributing-your-first-brick-draft
+- [x] **UV-DO-lesson-14-canonical-the-registry-story-beginner-review** (C1→haiku) Beginner-lens review of canonical the registry story · deps: UV-DO-lesson-14-canonical-the-registry-story-draft
+- [x] **UV-DO-lesson-15-mcp-connect-your-agent-beginner-review** (C1→haiku) Beginner-lens review of mcp connect your agent · deps: UV-DO-lesson-15-mcp-connect-your-agent-draft
+- [x] **UV-DO-lesson-16-glossary-safari-beginner-review** (C1→haiku) Beginner-lens review of glossary safari · deps: UV-DO-lesson-16-glossary-safari-draft
+- [x] **UV-DO-lesson-17-reading-the-plan-uvp-beginner-review** (C1→haiku) Beginner-lens review of reading the plan uvp · deps: UV-DO-lesson-17-reading-the-plan-uvp-draft
+- [x] **UV-DO-lesson-18-your-first-agent-swarm-beginner-review** (C1→haiku) Beginner-lens review of your first agent swarm · deps: UV-DO-lesson-18-your-first-agent-swarm-draft

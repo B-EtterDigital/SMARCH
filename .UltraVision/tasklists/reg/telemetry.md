@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-RG-reg-telemetry** (C3→sonnet) Telemetry coverage baseline for reg
+- [x] **UV-RG-reg-telemetry** (C3→sonnet) Telemetry coverage baseline for reg

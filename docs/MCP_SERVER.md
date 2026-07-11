@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.mcp-server; source=en; media=media/{locale}/mcp-server/ -->
 # SMARCH registry MCP server
 
 `node tools/mcp/server.mjs` exposes the local SMARCH registry over MCP stdio.
@@ -5,6 +6,10 @@ The client that launches the process is the authentication boundary: the server
 opens no port and inherits only that process's filesystem permissions. Read-only
 tools declare `registry:read`; `release-install` declares `release:install` and
 re-checks every declared and computed write path against the requested target.
+The server grants only `registry:read` by default. Launch it with
+`SMARCH_MCP_CAPABILITIES=registry:read,release:install` when the parent process
+is authorized to invoke the write tool; undeclared capabilities fail before the
+handler runs.
 
 ## Tool contract
 
@@ -36,7 +41,7 @@ Errors use the MCP error result shape:
 {"error":{"code":"MCP_INVALID_INPUT","message":"Invalid input for registry-why-blocked","details":{"field":"type","expectation":"one of: auto, brick, build, project"}}}
 ```
 
-Expected codes are `MCP_INVALID_INPUT`, `MCP_BRICK_NOT_FOUND`, `MCP_TARGET_NOT_FOUND`,
+Expected codes are `MCP_INVALID_INPUT`, `MCP_CAPABILITY_REQUIRED`, `MCP_BRICK_NOT_FOUND`, `MCP_TARGET_NOT_FOUND`,
 `MCP_REGISTRY_MISSING`, `MCP_RELEASE_INSTALL_REFUSED`, `MCP_TIMEOUT`, and
 `MCP_INTERNAL_ERROR`. Unexpected dependency messages are replaced with the safe
 `MCP_INTERNAL_ERROR` text. Failures write one structured JSON event to stderr

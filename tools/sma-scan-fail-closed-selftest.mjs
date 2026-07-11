@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const toolsDir = path.dirname(fileURLToPath(import.meta.url));
-const scanner = path.join(toolsDir, "sma-scan.mjs");
+const scanner = path.join(toolsDir, "sma-scan.ts");
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "sma-scan-fail-closed-"));
 const out = path.join(tempRoot, "registry.json");
 const rejectedOut = `${out}.rejected.json`;

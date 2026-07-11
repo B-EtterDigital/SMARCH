@@ -6,4 +6,4 @@
 
 ## M1
 
-- [ ] **UV-MC-cmd-mcp-serve-errors** (C2→sonnet) Human-quality error output for `sma mcp-serve` · deps: UV-MC-cmd-mcp-serve-impl
+- [x] **UV-MC-cmd-mcp-serve-errors** (C2→sonnet) Human-quality error output for `sma mcp-serve` · deps: UV-MC-cmd-mcp-serve-impl

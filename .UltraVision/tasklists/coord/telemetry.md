@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CO-coord-telemetry** (C3→sonnet) Telemetry coverage baseline for coord
+- [x] **UV-CO-coord-telemetry** (C3→sonnet) Telemetry coverage baseline for coord

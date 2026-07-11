@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.compact-brick-cards; source=en; media=media/{locale}/compact-brick-cards/ -->
 # Token-efficient brick cards
 
 This reference explains the compact brick-card format used to load registry knowledge into an agent context. Tool authors and operators need it when generating cards or choosing how much brick detail to retrieve. Read it before changing the card schema, stream format, or retrieval workflow. Remember that a compact card points to deeper evidence and must not overstate what the full manifest proves.

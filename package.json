@@ -114,7 +114,7 @@
     "graphify:query:self": "node tools/sma-graphify.ts query --project sma",
     "graphify:global:list": "node tools/sma-graphify.ts global-list",
     "graphify:global:path": "node tools/sma-graphify.ts global-path",
-    "sma": "node tools/sma.mjs",
+    "sma": "node tools/sma.ts",
     "backfill:plan": "node tools/sma-backfill-plan.ts generate",
     "backfill:run": "node tools/sma-backfill-run.ts run",
     "backfill:status": "node tools/sma-backfill-run.ts status",

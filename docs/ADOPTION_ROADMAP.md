@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.adoption-roadmap; source=en; media=media/{locale}/adoption-roadmap/ -->
 # Adoption Roadmap
 
 This roadmap explains how to introduce Sweetspot Modular Architecture to a project in controlled stages. Project leads and engineers adopting the system should use it before changing repository structure or enforcement. Read it when planning an initial rollout or deciding which proof gate comes next. Remember that each phase should establish working evidence before the team advances.
@@ -35,7 +36,7 @@ Exit criteria:
 - Add [SVA](GLOSSARY.md#sva) security checks.
 - Add [SEV](GLOSSARY.md#sev) env validation.
 - Add [SPE](GLOSSARY.md#spe) measurements for UI/perf-heavy bricks.
-- Run `sma-validate.mjs` in CI.
+- Run `node tools/sma.ts validate` in CI.
 
 Exit criteria:
 

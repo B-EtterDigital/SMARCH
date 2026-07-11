@@ -6,26 +6,26 @@
 
 ## M0
 
-- [ ] **UV-MC-mcp-testharness** (C3→sonnet) Test harness and CI wiring for mcp
+- [x] **UV-MC-mcp-testharness** (C3→sonnet) Test harness and CI wiring for mcp
 
 ## M1
 
-- [ ] **UV-MC-cmd-mcp-serve-e2e** (C2→sonnet) End-to-end test of `sma mcp-serve` against a real workspace · deps: UV-MC-cmd-mcp-serve-impl
-- [ ] **UV-MC-cmd-mcp-serve-unit** (C2→sonnet) Unit tests for sma mcp-serve · deps: UV-MC-cmd-mcp-serve-impl
-- [ ] **UV-MC-fixture-selftest** (C2→sonnet) MCP selftest against the fixture portfolio · deps: UV-MC-server-scaffold
-- [ ] **UV-MC-mcp-brick-get-integration** (C3→sonnet) Integration tests for MCP tool brick-get · deps: UV-MC-mcp-brick-get-unit, UV-MC-mcp-brick-get-authz
-- [ ] **UV-MC-mcp-brick-get-unit** (C2→sonnet) Unit tests for MCP tool brick-get · deps: UV-MC-mcp-brick-get-validate
-- [ ] **UV-MC-mcp-brick-search-integration** (C3→sonnet) Integration tests for MCP tool brick-search · deps: UV-MC-mcp-brick-search-unit, UV-MC-mcp-brick-search-authz
-- [ ] **UV-MC-mcp-brick-search-unit** (C2→sonnet) Unit tests for MCP tool brick-search · deps: UV-MC-mcp-brick-search-validate
-- [ ] **UV-MC-mcp-brick-trust-integration** (C3→sonnet) Integration tests for MCP tool brick-trust · deps: UV-MC-mcp-brick-trust-unit, UV-MC-mcp-brick-trust-authz
-- [ ] **UV-MC-mcp-brick-trust-unit** (C2→sonnet) Unit tests for MCP tool brick-trust · deps: UV-MC-mcp-brick-trust-validate
-- [ ] **UV-MC-mcp-build-list-integration** (C3→sonnet) Integration tests for MCP tool build-list · deps: UV-MC-mcp-build-list-unit, UV-MC-mcp-build-list-authz
-- [ ] **UV-MC-mcp-build-list-unit** (C2→sonnet) Unit tests for MCP tool build-list · deps: UV-MC-mcp-build-list-validate
-- [ ] **UV-MC-mcp-registry-doctor-integration** (C3→sonnet) Integration tests for MCP tool registry-doctor · deps: UV-MC-mcp-registry-doctor-unit, UV-MC-mcp-registry-doctor-authz
-- [ ] **UV-MC-mcp-registry-doctor-unit** (C2→sonnet) Unit tests for MCP tool registry-doctor · deps: UV-MC-mcp-registry-doctor-validate
-- [ ] **UV-MC-mcp-registry-why-blocked-integration** (C3→sonnet) Integration tests for MCP tool registry-why-blocked · deps: UV-MC-mcp-registry-why-blocked-unit, UV-MC-mcp-registry-why-blocked-authz
-- [ ] **UV-MC-mcp-registry-why-blocked-unit** (C2→sonnet) Unit tests for MCP tool registry-why-blocked · deps: UV-MC-mcp-registry-why-blocked-validate
-- [ ] **UV-MC-mcp-release-install-integration** (C3→sonnet) Integration tests for MCP tool release-install · deps: UV-MC-mcp-release-install-unit, UV-MC-mcp-release-install-authz
-- [ ] **UV-MC-mcp-release-install-unit** (C2→sonnet) Unit tests for MCP tool release-install · deps: UV-MC-mcp-release-install-validate
-- [ ] **UV-MC-mcp-server-card-integration** (C3→sonnet) Integration tests for MCP tool server-card · deps: UV-MC-mcp-server-card-unit, UV-MC-mcp-server-card-authz
-- [ ] **UV-MC-mcp-server-card-unit** (C2→sonnet) Unit tests for MCP tool server-card · deps: UV-MC-mcp-server-card-validate
+- [x] **UV-MC-cmd-mcp-serve-e2e** (C2→sonnet) End-to-end test of `sma mcp-serve` against a real workspace · deps: UV-MC-cmd-mcp-serve-impl
+- [x] **UV-MC-cmd-mcp-serve-unit** (C2→sonnet) Unit tests for sma mcp-serve · deps: UV-MC-cmd-mcp-serve-impl
+- [x] **UV-MC-fixture-selftest** (C2→sonnet) MCP selftest against the fixture portfolio · deps: UV-MC-server-scaffold
+- [x] **UV-MC-mcp-brick-get-integration** (C3→sonnet) Integration tests for MCP tool brick-get · deps: UV-MC-mcp-brick-get-unit, UV-MC-mcp-brick-get-authz
+- [x] **UV-MC-mcp-brick-get-unit** (C2→sonnet) Unit tests for MCP tool brick-get · deps: UV-MC-mcp-brick-get-validate
+- [x] **UV-MC-mcp-brick-search-integration** (C3→sonnet) Integration tests for MCP tool brick-search · deps: UV-MC-mcp-brick-search-unit, UV-MC-mcp-brick-search-authz
+- [x] **UV-MC-mcp-brick-search-unit** (C2→sonnet) Unit tests for MCP tool brick-search · deps: UV-MC-mcp-brick-search-validate
+- [x] **UV-MC-mcp-brick-trust-integration** (C3→sonnet) Integration tests for MCP tool brick-trust · deps: UV-MC-mcp-brick-trust-unit, UV-MC-mcp-brick-trust-authz
+- [x] **UV-MC-mcp-brick-trust-unit** (C2→sonnet) Unit tests for MCP tool brick-trust · deps: UV-MC-mcp-brick-trust-validate
+- [x] **UV-MC-mcp-build-list-integration** (C3→sonnet) Integration tests for MCP tool build-list · deps: UV-MC-mcp-build-list-unit, UV-MC-mcp-build-list-authz
+- [x] **UV-MC-mcp-build-list-unit** (C2→sonnet) Unit tests for MCP tool build-list · deps: UV-MC-mcp-build-list-validate
+- [x] **UV-MC-mcp-registry-doctor-integration** (C3→sonnet) Integration tests for MCP tool registry-doctor · deps: UV-MC-mcp-registry-doctor-unit, UV-MC-mcp-registry-doctor-authz
+- [x] **UV-MC-mcp-registry-doctor-unit** (C2→sonnet) Unit tests for MCP tool registry-doctor · deps: UV-MC-mcp-registry-doctor-validate
+- [x] **UV-MC-mcp-registry-why-blocked-integration** (C3→sonnet) Integration tests for MCP tool registry-why-blocked · deps: UV-MC-mcp-registry-why-blocked-unit, UV-MC-mcp-registry-why-blocked-authz
+- [x] **UV-MC-mcp-registry-why-blocked-unit** (C2→sonnet) Unit tests for MCP tool registry-why-blocked · deps: UV-MC-mcp-registry-why-blocked-validate
+- [x] **UV-MC-mcp-release-install-integration** (C3→sonnet) Integration tests for MCP tool release-install · deps: UV-MC-mcp-release-install-unit, UV-MC-mcp-release-install-authz
+- [x] **UV-MC-mcp-release-install-unit** (C2→sonnet) Unit tests for MCP tool release-install · deps: UV-MC-mcp-release-install-validate
+- [x] **UV-MC-mcp-server-card-integration** (C3→sonnet) Integration tests for MCP tool server-card · deps: UV-MC-mcp-server-card-unit, UV-MC-mcp-server-card-authz
+- [x] **UV-MC-mcp-server-card-unit** (C2→sonnet) Unit tests for MCP tool server-card · deps: UV-MC-mcp-server-card-validate

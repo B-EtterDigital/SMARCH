@@ -6,33 +6,33 @@
 
 ## M0
 
-- [ ] **UV-DA-dash-telemetry** (C3→sonnet) Telemetry coverage baseline for dash
+- [x] **UV-DA-dash-telemetry** (C3→sonnet) Telemetry coverage baseline for dash
 
 ## M3
 
-- [ ] **UV-DA-dash-api-conflicts-telemetry** (C1→haiku) Telemetry for dashboard api-conflicts · deps: UV-DA-dash-api-conflicts-impl
-- [ ] **UV-DA-dash-api-events-sse-telemetry** (C1→haiku) Telemetry for dashboard api-events-sse · deps: UV-DA-dash-api-events-sse-impl
-- [ ] **UV-DA-dash-api-graph-telemetry** (C1→haiku) Telemetry for dashboard api-graph · deps: UV-DA-dash-api-graph-impl
-- [ ] **UV-DA-dash-api-leases-telemetry** (C1→haiku) Telemetry for dashboard api-leases · deps: UV-DA-dash-api-leases-impl
-- [ ] **UV-DA-dash-api-registry-telemetry** (C1→haiku) Telemetry for dashboard api-registry · deps: UV-DA-dash-api-registry-impl
-- [ ] **UV-DA-srs-reporter** (C2→sonnet) Dashboard client error reporter (SRS-equivalent) · deps: UV-DA-server-api
-- [ ] **UV-DA-ui-app-shell-telemetry** (C1→haiku) Error telemetry for app-shell · deps: UV-DA-ui-app-shell-states
-- [ ] **UV-DA-ui-brick-card-telemetry** (C1→haiku) Error telemetry for brick-card · deps: UV-DA-ui-brick-card-states
-- [ ] **UV-DA-ui-brick-detail-telemetry** (C1→haiku) Error telemetry for brick-detail · deps: UV-DA-ui-brick-detail-states
-- [ ] **UV-DA-ui-brick-wall-telemetry** (C1→haiku) Error telemetry for brick-wall · deps: UV-DA-ui-brick-wall-states
-- [ ] **UV-DA-ui-conflict-heat-strip-telemetry** (C1→haiku) Error telemetry for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-states
-- [ ] **UV-DA-ui-conflict-ledger-telemetry** (C1→haiku) Error telemetry for conflict-ledger · deps: UV-DA-ui-conflict-ledger-states
-- [ ] **UV-DA-ui-empty-states-telemetry** (C1→haiku) Error telemetry for empty-states · deps: UV-DA-ui-empty-states-states
-- [ ] **UV-DA-ui-graph-view-telemetry** (C1→haiku) Error telemetry for graph-view · deps: UV-DA-ui-graph-view-states
-- [ ] **UV-DA-ui-lease-board-telemetry** (C1→haiku) Error telemetry for lease-board · deps: UV-DA-ui-lease-board-states
-- [ ] **UV-DA-ui-lease-row-telemetry** (C1→haiku) Error telemetry for lease-row · deps: UV-DA-ui-lease-row-states
-- [ ] **UV-DA-ui-module-filter-telemetry** (C1→haiku) Error telemetry for module-filter · deps: UV-DA-ui-module-filter-states
-- [ ] **UV-DA-ui-provenance-ribbon-telemetry** (C1→haiku) Error telemetry for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-states
-- [ ] **UV-DA-ui-registry-table-telemetry** (C1→haiku) Error telemetry for registry-table · deps: UV-DA-ui-registry-table-states
-- [ ] **UV-DA-ui-seal-chip-telemetry** (C1→haiku) Error telemetry for seal-chip · deps: UV-DA-ui-seal-chip-states
-- [ ] **UV-DA-ui-search-bar-telemetry** (C1→haiku) Error telemetry for search-bar · deps: UV-DA-ui-search-bar-states
-- [ ] **UV-DA-ui-settings-panel-telemetry** (C1→haiku) Error telemetry for settings-panel · deps: UV-DA-ui-settings-panel-states
-- [ ] **UV-DA-ui-stats-tiles-telemetry** (C1→haiku) Error telemetry for stats-tiles · deps: UV-DA-ui-stats-tiles-states
-- [ ] **UV-DA-ui-theme-toggle-telemetry** (C1→haiku) Error telemetry for theme-toggle · deps: UV-DA-ui-theme-toggle-states
-- [ ] **UV-DA-ui-toast-center-telemetry** (C1→haiku) Error telemetry for toast-center · deps: UV-DA-ui-toast-center-states
-- [ ] **UV-DA-ui-verdict-stamp-telemetry** (C1→haiku) Error telemetry for verdict-stamp · deps: UV-DA-ui-verdict-stamp-states
+- [x] **UV-DA-dash-api-conflicts-telemetry** (C1→haiku) Telemetry for dashboard api-conflicts · deps: UV-DA-dash-api-conflicts-impl
+- [x] **UV-DA-dash-api-events-sse-telemetry** (C1→haiku) Telemetry for dashboard api-events-sse · deps: UV-DA-dash-api-events-sse-impl
+- [x] **UV-DA-dash-api-graph-telemetry** (C1→haiku) Telemetry for dashboard api-graph · deps: UV-DA-dash-api-graph-impl
+- [x] **UV-DA-dash-api-leases-telemetry** (C1→haiku) Telemetry for dashboard api-leases · deps: UV-DA-dash-api-leases-impl
+- [x] **UV-DA-dash-api-registry-telemetry** (C1→haiku) Telemetry for dashboard api-registry · deps: UV-DA-dash-api-registry-impl
+- [x] **UV-DA-srs-reporter** (C2→sonnet) Dashboard client error reporter (SRS-equivalent) · deps: UV-DA-server-api
+- [x] **UV-DA-ui-app-shell-telemetry** (C1→haiku) Error telemetry for app-shell · deps: UV-DA-ui-app-shell-states
+- [x] **UV-DA-ui-brick-card-telemetry** (C1→haiku) Error telemetry for brick-card · deps: UV-DA-ui-brick-card-states
+- [x] **UV-DA-ui-brick-detail-telemetry** (C1→haiku) Error telemetry for brick-detail · deps: UV-DA-ui-brick-detail-states
+- [x] **UV-DA-ui-brick-wall-telemetry** (C1→haiku) Error telemetry for brick-wall · deps: UV-DA-ui-brick-wall-states
+- [x] **UV-DA-ui-conflict-heat-strip-telemetry** (C1→haiku) Error telemetry for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-states
+- [x] **UV-DA-ui-conflict-ledger-telemetry** (C1→haiku) Error telemetry for conflict-ledger · deps: UV-DA-ui-conflict-ledger-states
+- [x] **UV-DA-ui-empty-states-telemetry** (C1→haiku) Error telemetry for empty-states · deps: UV-DA-ui-empty-states-states
+- [x] **UV-DA-ui-graph-view-telemetry** (C1→haiku) Error telemetry for graph-view · deps: UV-DA-ui-graph-view-states
+- [x] **UV-DA-ui-lease-board-telemetry** (C1→haiku) Error telemetry for lease-board · deps: UV-DA-ui-lease-board-states
+- [x] **UV-DA-ui-lease-row-telemetry** (C1→haiku) Error telemetry for lease-row · deps: UV-DA-ui-lease-row-states
+- [x] **UV-DA-ui-module-filter-telemetry** (C1→haiku) Error telemetry for module-filter · deps: UV-DA-ui-module-filter-states
+- [x] **UV-DA-ui-provenance-ribbon-telemetry** (C1→haiku) Error telemetry for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-states
+- [x] **UV-DA-ui-registry-table-telemetry** (C1→haiku) Error telemetry for registry-table · deps: UV-DA-ui-registry-table-states
+- [x] **UV-DA-ui-seal-chip-telemetry** (C1→haiku) Error telemetry for seal-chip · deps: UV-DA-ui-seal-chip-states
+- [x] **UV-DA-ui-search-bar-telemetry** (C1→haiku) Error telemetry for search-bar · deps: UV-DA-ui-search-bar-states
+- [x] **UV-DA-ui-settings-panel-telemetry** (C1→haiku) Error telemetry for settings-panel · deps: UV-DA-ui-settings-panel-states
+- [x] **UV-DA-ui-stats-tiles-telemetry** (C1→haiku) Error telemetry for stats-tiles · deps: UV-DA-ui-stats-tiles-states
+- [x] **UV-DA-ui-theme-toggle-telemetry** (C1→haiku) Error telemetry for theme-toggle · deps: UV-DA-ui-theme-toggle-states
+- [x] **UV-DA-ui-toast-center-telemetry** (C1→haiku) Error telemetry for toast-center · deps: UV-DA-ui-toast-center-states
+- [x] **UV-DA-ui-verdict-stamp-telemetry** (C1→haiku) Error telemetry for verdict-stamp · deps: UV-DA-ui-verdict-stamp-states

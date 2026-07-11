@@ -6,16 +6,16 @@
 
 ## M0
 
-- [ ] **UV-EV-evals-charter** (C1→haiku) Write module charter for evals
-- [ ] **UV-EV-evals-docs** (C1→haiku) Module docs baseline for evals
+- [x] **UV-EV-evals-charter** (C1→haiku) Write module charter for evals
+- [x] **UV-EV-evals-docs** (C1→haiku) Module docs baseline for evals
 
 ## M1
 
-- [ ] **UV-EV-x-gen-example** (C1→haiku) Add a runnable example for gen.mjs to the commands reference · deps: UV-EV-x-gen-header
-- [ ] **UV-EV-x-gen-header** (C1→haiku) Add a WHY header to gen.mjs
-- [ ] **UV-EV-x-index-example** (C1→haiku) Add a runnable example for index.mjs to the commands reference · deps: UV-EV-x-index-header
-- [ ] **UV-EV-x-index-header** (C1→haiku) Add a WHY header to index.mjs
+- [x] **UV-EV-x-gen-example** (C1→haiku) Add a runnable example for gen.mjs to the commands reference · deps: UV-EV-x-gen-header
+- [x] **UV-EV-x-gen-header** (C1→haiku) Add a WHY header to gen.mjs
+- [-] **UV-EV-x-index-example** (C1→haiku) ~~Add a runnable example for index.mjs to the commands reference~~ (obsolete: fixture files are test data, not source — explain-file does not apply (snapshot gate caught the violation)) · deps: UV-EV-x-index-header
+- [-] **UV-EV-x-index-header** (C1→haiku) ~~Add a WHY header to index.mjs~~ (obsolete: fixture files are test data, not source — explain-file does not apply (snapshot gate caught the violation))
 
 ## M3
 
-- [ ] **UV-EV-cmd-evals-run-docs** (C1→haiku) Document sma evals-run · deps: UV-EV-cmd-evals-run-impl
+- [x] **UV-EV-cmd-evals-run-docs** (C1→haiku) Document sma evals-run · deps: UV-EV-cmd-evals-run-impl

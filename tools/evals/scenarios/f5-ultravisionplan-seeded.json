@@ -1,0 +1,1 @@
+{"id":"f5-ultravisionplan-seeded","skill":"f5-ultravisionplan","packet":{"objective":"Validate an UltraVision task packet without editing plan records."},"expected":{"gate_outcomes":["node -e \"process.exit(0)\""],"files_shape":{"required":["skills/f5-ultravisionplan/SKILL.md"]},"criteria":["task packet remains machine-readable"],"forbidden":[".UltraVision/eval-forbidden"]}}

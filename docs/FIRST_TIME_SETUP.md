@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.first-time-setup; source=en; media=media/{locale}/first-time-setup/ -->
 # First-Time Setup
 
 This guide walks a team through the first Sweetspot setup for a new or existing project. Repository owners and agent operators need it before the first implementation or refactor begins. Read it when choosing a setup path, installing the agent harness, or ordering the initial cleanup. Remember to establish manifests, ownership, and gates before agents start broad edits.

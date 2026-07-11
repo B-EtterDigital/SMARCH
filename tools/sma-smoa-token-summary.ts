@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 type TokenSum = { input: number; cacheWrite: number; cacheRead: number; output: number; calls: number };
 type CodexSum = { model: string; input: number; cached: number; output: number; id: string };
+type WorkforceSum = { backend: string; model: string; input: number; output: number; id: string; ts: number };
 type Price = Record<string, number> & { key?: string };
 
 const args = process.argv.slice(2);
@@ -31,6 +32,7 @@ const NOW = Date.now();
 const WINDOW_START = NOW - WINDOW_DAYS * 864e5;
 const CODEX_SINCE = Date.parse(opt('codex-since', new Date(NOW - 864e5).toISOString()));
 const CLAUDE_SESSION = opt('claude-session', null);
+const WORKFORCE_LOG = opt('workforce-log', process.env.SMA_WORKFORCE_USAGE_LOG || path.join(os.homedir(), '.smarch', 'workforce-usage.jsonl'));
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRICES_PATH = path.join(HERE, '..', 'skills', 'sweetspot-moa', 'model-prices.json');
@@ -158,6 +160,30 @@ const codexWeek: CodexSum[] = [];  // sessions in the 7d window     -> denominat
   }
 })(codexRoot);
 
+// ---- generic workforce receipts --------------------------------------
+// The dispatch contract writes one backend-neutral receipt per executor call.
+// Codex is excluded here because its primary session log above is richer and
+// cumulative; Claude CLI and OpenCode have no equivalent shared log contract.
+const workforceRun: WorkforceSum[] = [];
+const workforceWeek: WorkforceSum[] = [];
+if (fs.existsSync(WORKFORCE_LOG)) {
+  for (const line of fs.readFileSync(WORKFORCE_LOG, 'utf8').split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let row: any; try { row = JSON.parse(line); } catch { continue; }
+    if (row?.schema !== 'smarch.workforce-usage.v1' || row.backend === 'codex') continue;
+    const item = {
+      backend: String(row.backend || 'unknown'),
+      model: String(row.model || row.backend || 'unknown'),
+      input: Number(row.tokens_in || 0),
+      output: Number(row.tokens_out || 0),
+      id: String(row.session_id || row.timestamp || '').slice(-12),
+      ts: Date.parse(row.timestamp || 0),
+    };
+    if (item.ts >= WINDOW_START) workforceWeek.push(item);
+    if (item.ts >= CODEX_SINCE) workforceRun.push(item);
+  }
+}
+
 // ---- assemble ----------------------------------------------------------
 const unpriced = new Set();
 const usd = (model: string, fn: (price: Price) => number): number | null => {
@@ -171,7 +197,9 @@ const fableWeek = Object.entries(weekly).filter(([m]) => m.includes('fable'))
 const claudeWeekUsd = Object.entries(weekly)
   .reduce((acc, [m, s]) => acc + (usd(m, (p) => claudeCost(s, p)) ?? 0), 0);
 const codexWeekUsd = codexWeek.reduce((acc, s) => acc + (usd(s.model, (p) => codexCost(s, p)) ?? 0), 0);
-const allWeek = claudeWeekUsd + codexWeekUsd;
+const workforceCost = (s: WorkforceSum, p: Price): number => (s.input * p.input + s.output * p.output) / 1e6;
+const workforceWeekUsd = workforceWeek.reduce((acc, s) => acc + (usd(s.model, (p) => workforceCost(s, p)) ?? 0), 0);
+const allWeek = claudeWeekUsd + codexWeekUsd + workforceWeekUsd;
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
 const money = (n: number | null): string => n == null ? 'unavailable' : `$${n.toFixed(2)}`;
@@ -193,6 +221,14 @@ for (const s of codexRun) {
   rows.push({
     agent: `codex ${s.id}`, model: s.model, calls: 1,
     tokens: `${fmt(s.input)} in (${fmt(s.cached)} cached) / ${fmt(s.output)} out`,
+    cost, fablePct: pct(cost, fableWeek, 'Fable 7d'), allPct: pct(cost, allWeek, 'all-models 7d'),
+  });
+}
+for (const s of workforceRun) {
+  const cost = usd(s.model, (p) => workforceCost(s, p));
+  rows.push({
+    agent: `${s.backend} ${s.id}`, model: s.model, calls: 1,
+    tokens: `${fmt(s.input)} in / ${fmt(s.output)} out`,
     cost, fablePct: pct(cost, fableWeek, 'Fable 7d'), allPct: pct(cost, allWeek, 'all-models 7d'),
   });
 }
@@ -222,6 +258,6 @@ if (has('json')) {
   console.log(saveLine('Fable-5', 'claude-fable-5'));
   console.log(saveLine('Opus 4.8', 'claude-opus-4-8'));
   console.log('');
-  console.log(`7-day denominators (exact, from local logs): Fable ${money(fableWeek)} | all tracked models ${money(allWeek)} (claude ${money(claudeWeekUsd)} + codex ${money(codexWeekUsd)})`);
+  console.log(`7-day denominators (exact, from local logs): Fable ${money(fableWeek)} | all tracked models ${money(allWeek)} (claude ${money(claudeWeekUsd)} + codex ${money(codexWeekUsd)} + workforce receipts ${money(workforceWeekUsd)})`);
   if (unpriced.size) console.log(`⚠ unpriced models excluded from denominators: ${[...unpriced].join(', ')} — add them to model-prices.json`);
 }

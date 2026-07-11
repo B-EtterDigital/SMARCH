@@ -164,3 +164,5 @@ Rules:
 - Agents do not read secrets unless explicitly required.
 - Agents do not deploy or rotate secrets unless assigned that role.
 - Security-sensitive generated code gets a security review.
+
+<!-- docs-i18n: key=docs.security-and-swarm-gates; source=en; media=media/{locale}/security-and-swarm-gates/ -->

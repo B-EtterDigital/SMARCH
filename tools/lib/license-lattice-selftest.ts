@@ -94,4 +94,30 @@ ok('PASS: closed build kept private is fine', () => {
   assert.equal(res.ok, true, JSON.stringify(res.violations));
 });
 
+ok('BLOCK: open canonical composition needs waiver for commercial brick', () => {
+  const res = checkComposition(
+    { visibility: 'private', license: 'MIT', license_tier: 'open', publishable: false },
+    [{ brick_id: 'paid.adapter', spdx: 'MIT', openness: 'open', visibility: 'private', license_tier: 'commercial', commercial_terms: 'https://example.test/terms' }],
+  );
+  assert.equal(res.ok, false);
+  assert.ok(res.violations.some((v) => v.code === 'COMMERCIAL_TIER_WAIVER_REQUIRED'));
+});
+
+ok('PASS: explicit commercial waiver allows tier mixing', () => {
+  const res = checkComposition(
+    { visibility: 'private', license: 'MIT', license_tier: 'open', commercial_waiver: { approved_by: 'curator', reason: 'licensed dependency' }, publishable: false },
+    [{ brick_id: 'paid.adapter', spdx: 'MIT', openness: 'open', visibility: 'private', license_tier: 'commercial', commercial_terms: 'https://example.test/terms' }],
+  );
+  assert.equal(res.ok, true, JSON.stringify(res.violations));
+  assert.equal(res.effective.license_tier, 'commercial');
+});
+
+ok('BLOCK: commercial brick requires terms URI', () => {
+  const res = checkComposition(
+    { visibility: 'private', license: 'MIT', license_tier: 'commercial', publishable: false },
+    [{ brick_id: 'paid.adapter', spdx: 'MIT', openness: 'open', visibility: 'private', license_tier: 'commercial' }],
+  );
+  assert.ok(res.violations.some((v) => v.code === 'COMMERCIAL_TERMS_MISSING'));
+});
+
 console.log(`license-lattice selftest: ${n} groups passed`);

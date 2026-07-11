@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.framework; source=en; media=media/{locale}/framework/ -->
 # Sweetspot Modular Architecture
 
 This document defines the core Sweetspot architecture, its brick types, and the proof model that makes reuse safe. Engineers, reviewers, and project leads need it as the primary conceptual reference for the system. Read it before designing module boundaries or deciding which gates a brick must satisfy. Remember that a brick is reusable only when its boundaries and evidence travel with its code.

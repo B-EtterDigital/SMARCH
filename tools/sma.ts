@@ -2,7 +2,7 @@
 /**
  * sma — umbrella entry point for SMARCH tools.
  *
- * Dispatches `sma <command> [args...]` to the matching sma-<command>.mjs.
+ * Dispatches `sma <command> [args...]` to the matching SMA tool.
  * Commands map roughly 1:1 to the tools in this directory; the umbrella exists
  * to give a stable, short surface area instead of `node tools/sma-foo.mjs`.
  *
@@ -21,7 +21,7 @@
  *
  * Install once, anywhere:
  *   npm link                         (then `sma <cmd>` works in any cwd)
- *   alias sma="node ~/DEV/SMARCH/tools/sma.mjs"
+ *   alias sma="node ~/DEV/SMARCH/tools/sma.ts"
  */
 
 import { spawn } from 'node:child_process';
@@ -34,7 +34,20 @@ const TOOLS_DIR = dirname(__filename);
 
 // Command → (script-relative-to-tools-dir, optional sub-arg-injection)
 // First entry under each key wins; aliases follow it.
-const COMMANDS = {
+type CommandEntry = {
+  script?: string;
+  desc?: string;
+  args?: string[];
+  router?: "gen3";
+};
+
+type RoutedCommandEntry = {
+  script: string;
+  desc: string;
+  args?: string[];
+};
+
+const COMMANDS: Record<string, CommandEntry> = {
   // multi-agent layer
   lease:           { script: 'sma-lease.ts',          desc: 'Soft locks on bricks/regen targets' },
   context:         { script: 'sma-context.ts',        desc: 'Append-only agent-context log' },
@@ -90,7 +103,7 @@ const COMMANDS = {
   gen3:            { router: 'gen3' },
 };
 
-const GEN3_SUBCOMMANDS = {
+const GEN3_SUBCOMMANDS: Record<string, RoutedCommandEntry> = {
   status:     { script: 'sma-parallel-preflight.ts', desc: 'Parallel readiness + big-picture TLDR' },
   watch:      { script: 'sma-wave-monitor.ts', desc: 'Live cleanup wave monitor' },
   observe:    { script: 'sma-wave-observe.ts', desc: 'Persist observed cleanup wave outcomes' },
@@ -135,10 +148,10 @@ if (entry.router === 'gen3') {
   }
   dispatch(subEntry.script, [...(subEntry.args || []), ...rest.slice(1)]);
 } else {
-  dispatch(entry.script, rest);
+  dispatch(entry.script!, rest);
 }
 
-function dispatch(script, argv) {
+function dispatch(script: string, argv: string[]) {
   const path = resolve(TOOLS_DIR, script);
   if (!existsSync(path)) {
     console.error(`sma: tool not found at ${path}`);

@@ -108,3 +108,5 @@ node ~/DEV/SMARCH/tools/sma-scan.ts \
 ```
 
 The generated file is an index, not an approval. Human or security-agent review promotes entries into canonical maps.
+
+<!-- docs-i18n: key=docs.registry-workflow; source=en; media=media/{locale}/registry-workflow/ -->

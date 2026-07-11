@@ -21,7 +21,7 @@
 
 import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadPortfolioConfig } from './portfolio-config.mjs';
+import { loadPortfolioConfig } from './portfolio-config.ts';
 
 export { PROJECTS_ROOT } from './sma-paths.ts';
 import { PROJECTS_ROOT } from './sma-paths.ts';

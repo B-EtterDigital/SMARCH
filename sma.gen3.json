@@ -38,20 +38,20 @@
       "label": "COORD",
       "description": "coord module (see .UltraVision/tasklists/coord/_MODULE.md)",
       "paths": [
-        "tools/sma-lease.mjs",
-        "tools/sma-context*.mjs",
-        "tools/sma-conflict.mjs",
-        "tools/sma-merge.mjs",
-        "tools/sma-start-edit.mjs",
-        "tools/sma-end-edit.mjs",
-        "tools/sma-controller-snapshot.mjs",
-        "tools/sma-dirty-baseline.mjs",
-        "tools/sma-parallel-preflight.mjs",
-        "tools/sma-cleanup-packets.mjs",
-        "tools/sma-seed.mjs",
-        "tools/lib/context-log.mjs",
-        "tools/lib/gen3-state.mjs",
-        "tools/lib/parallel-preflight-selftest.mjs",
+        "tools/sma-lease.ts",
+        "tools/sma-context*.ts",
+        "tools/sma-conflict.ts",
+        "tools/sma-merge.ts",
+        "tools/sma-start-edit.ts",
+        "tools/sma-end-edit.ts",
+        "tools/sma-controller-snapshot.ts",
+        "tools/sma-dirty-baseline.ts",
+        "tools/sma-parallel-preflight.ts",
+        "tools/sma-cleanup-packets.ts",
+        "tools/sma-seed.ts",
+        "tools/lib/context-log.ts",
+        "tools/lib/gen3-state.ts",
+        "tools/lib/parallel-preflight-selftest.ts",
         "tools/hooks/**"
       ],
       "requiredLocalGates": [
@@ -64,16 +64,17 @@
       "label": "PROV",
       "description": "prov module (see .UltraVision/tasklists/prov/_MODULE.md)",
       "paths": [
-        "tools/sma-attest*.mjs",
-        "tools/sma-provenance-*.mjs",
-        "tools/sma-anchor.mjs",
-        "tools/lib/merkle*.mjs",
-        "tools/lib/license-*.mjs",
-        "tools/lib/provenance-seal*.mjs",
-        "tools/lib/attestation*.mjs",
-        "tools/lib/export-*.mjs",
-        "tools/lib/similarity*.mjs",
-        "tools/lib/ledger-resolve.mjs"
+        "tools/sma-attest*.ts",
+        "tools/sma-provenance-*.ts",
+        "tools/sma-anchor.ts",
+        "tools/lib/merkle*.ts",
+        "tools/lib/license-*.ts",
+        "tools/lib/provenance-seal*.ts",
+        "tools/lib/attestation*.ts",
+        "tools/lib/export-*.ts",
+        "tools/lib/similarity*.ts",
+        "tools/lib/ledger-resolve.ts",
+        "tools/lib/commercial-entitlement*.ts"
       ],
       "requiredLocalGates": [
         "npm run provenance:selftest"
@@ -85,62 +86,64 @@
       "label": "REG",
       "description": "reg module (see .UltraVision/tasklists/reg/_MODULE.md)",
       "paths": [
-        "tools/sma-scan.mjs",
-        "tools/sma-state.mjs",
-        "tools/sma-merge-registries.mjs",
-        "tools/sma-store.mjs",
-        "tools/sma-store-remote.mjs",
-        "tools/sma-clone*.mjs",
-        "tools/sma-release*.mjs",
-        "tools/sma-publish*.mjs",
-        "tools/sma-promote.mjs",
-        "tools/sma-doctor.mjs",
-        "tools/sma-why-blocked.mjs",
-        "tools/sma-filter.mjs",
-        "tools/sma-match.mjs",
-        "tools/sma-enrich.mjs",
-        "tools/sma-compact.mjs",
-        "tools/sma-recommend-builds.mjs",
-        "tools/sma-build-*.mjs",
-        "tools/sma-manifest-scaffold.mjs",
-        "tools/sma-import-verify.mjs",
-        "tools/sma-update-plan.mjs",
-        "tools/sma-init-project.mjs",
-        "tools/sma-bootstrap-manifests.mjs",
-        "tools/sma-reuse-receipt.mjs",
-        "tools/sma-backlog.mjs",
-        "tools/sma-backfill-*.mjs",
-        "tools/sma-stats.mjs",
-        "tools/sma-goal-progress.mjs",
-        "tools/sma-canonicalization.mjs",
-        "tools/sma-portfolio-*.mjs",
-        "tools/sma-dependents-index.mjs",
-        "tools/sma-operator-packet.mjs",
-        "tools/sma-module-work-packets.mjs",
-        "tools/lib/portfolio-projects.mjs",
-        "tools/lib/project-paths.mjs",
-        "tools/lib/adoption-utils.mjs",
-        "tools/lib/curated-build-utils.mjs",
-        "tools/lib/feature-clusters.mjs",
-        "tools/lib/source-path-resolver.mjs",
-        "tools/lib/stable-generated.mjs",
-        "tools/lib/packet-freshness.mjs",
-        "tools/lib/module-work-*.mjs",
-        "tools/lib/gen3-goal-progress.mjs",
-        "tools/lib/controller-action-report.mjs",
-        "tools/lib/ownership.mjs",
-        "tools/lib/sma-adoption.mjs",
-        "tools/sma-propagate.mjs",
-        "tools/sma-refresh-manifest-budgets.mjs",
-        "tools/sma-repo-queues.mjs",
-        "tools/sma-score.mjs",
-        "tools/sma-similarity-scan.mjs",
-        "tools/sma-stable-generated-selftest.mjs",
-        "tools/sma-sup-status.mjs",
-        "tools/sma-token-count.mjs",
-        "tools/sma-touch-backfill.mjs",
-        "tools/sma-wave-monitor.mjs",
-        "tools/sma-wave-observe.mjs"
+        "tools/sma-scan.ts",
+        "tools/sma-state.ts",
+        "tools/sma-merge-registries.ts",
+        "tools/sma-store.ts",
+        "tools/sma-store-remote.ts",
+        "tools/sma-clone*.ts",
+        "tools/sma-release*.ts",
+        "tools/sma-publish*.ts",
+        "tools/sma-promote.ts",
+        "tools/sma-doctor.ts",
+        "tools/sma-why-blocked.ts",
+        "tools/sma-filter.ts",
+        "tools/sma-match.ts",
+        "tools/sma-enrich.ts",
+        "tools/sma-compact.ts",
+        "tools/sma-recommend-builds.ts",
+        "tools/sma-build-*.ts",
+        "tools/sma-manifest-scaffold.ts",
+        "tools/sma-import-verify.ts",
+        "tools/sma-update-plan.ts",
+        "tools/sma-init-project.ts",
+        "tools/sma-bootstrap-manifests.ts",
+        "tools/sma-reuse-receipt.ts",
+        "tools/sma-backlog.ts",
+        "tools/sma-backfill-*.ts",
+        "tools/sma-stats.ts",
+        "tools/sma-goal-progress.ts",
+        "tools/sma-canonicalization.ts",
+        "tools/sma-portfolio-*.ts",
+        "tools/sma-dependents-index.ts",
+        "tools/sma-operator-packet.ts",
+        "tools/sma-module-work-packets.ts",
+        "tools/lib/portfolio-projects.ts",
+        "tools/lib/project-paths.ts",
+        "tools/lib/adoption-utils.ts",
+        "tools/lib/curated-build-utils.ts",
+        "tools/lib/feature-clusters.ts",
+        "tools/lib/source-path-resolver.ts",
+        "tools/lib/stable-generated.ts",
+        "tools/lib/packet-freshness.ts",
+        "tools/lib/module-work-*.ts",
+        "tools/lib/gen3-goal-progress.ts",
+        "tools/lib/controller-action-report.ts",
+        "tools/lib/ownership.ts",
+        "tools/lib/sma-adoption.ts",
+        "tools/lib/scan-*.ts",
+        "tools/lib/portfolio-config.ts",
+        "tools/sma-propagate.ts",
+        "tools/sma-refresh-manifest-budgets.ts",
+        "tools/sma-repo-queues.ts",
+        "tools/sma-score.ts",
+        "tools/sma-similarity-scan.ts",
+        "tools/sma-stable-generated-selftest.ts",
+        "tools/sma-sup-status.ts",
+        "tools/sma-token-count.ts",
+        "tools/sma-touch-backfill.ts",
+        "tools/sma-wave-monitor.ts",
+        "tools/sma-wave-observe.ts"
       ],
       "requiredLocalGates": [
         "npm run check"
@@ -152,16 +155,18 @@
       "label": "GATES",
       "description": "gates module (see .UltraVision/tasklists/gates/_MODULE.md)",
       "paths": [
-        "tools/sma-rule-gate.mjs",
-        "tools/sma-scope-drift.mjs",
-        "tools/sma-security-gate.mjs",
-        "tools/sma-license-gate.mjs",
-        "tools/sma-compliance-gate.mjs",
-        "tools/sma-source-size-gate.mjs",
-        "tools/sma-validate*.mjs",
-        "tools/sma-ci.mjs",
-        "tools/lib/compliance-controls.mjs",
-        "tools/source-size-baseline.json"
+        "tools/sma-rule-gate.ts",
+        "tools/sma-scope-drift.ts",
+        "tools/sma-security-gate.ts",
+        "tools/sma-license-gate.ts",
+        "tools/sma-compliance-gate.ts",
+        "tools/sma-source-size-gate.ts",
+        "tools/sma-validate*.ts",
+        "tools/sma-ci.ts",
+        "tools/lib/compliance-controls.ts",
+        "tools/source-size-baseline.json",
+        "tools/sma-gen3-classify.mjs",
+        "tools/gates-workflow-selftest.mjs"
       ],
       "requiredLocalGates": [
         "npm run gate:all"
@@ -173,11 +178,12 @@
       "label": "GRAPH",
       "description": "graph module (see .UltraVision/tasklists/graph/_MODULE.md)",
       "paths": [
-        "tools/sma-graphify.mjs",
-        "tools/sma-graph-packets.mjs"
+        "tools/sma-graphify.ts",
+        "tools/sma-graph-packets.ts",
+        "tools/lib/graph-*.ts"
       ],
       "requiredLocalGates": [
-        "node tools/sma-graphify.mjs selftest"
+        "node tools/sma-graphify.ts selftest"
       ],
       "maxParallelAgents": 2
     },
@@ -213,13 +219,13 @@
       "label": "SMOA",
       "description": "smoa module (see .UltraVision/tasklists/smoa/_MODULE.md)",
       "paths": [
-        "tools/sma-codex*.mjs",
-        "tools/lib/codex-runner.mjs",
+        "tools/sma-codex*.ts",
+        "tools/lib/codex-runner.ts",
         "tools/lib/workforce/**",
-        "tools/sma-smoa-token-summary.mjs"
+        "tools/sma-smoa-token-summary.ts"
       ],
       "requiredLocalGates": [
-        "node tools/sma-codex-profile.mjs selftest"
+        "node tools/sma-codex-profile.ts selftest"
       ],
       "maxParallelAgents": 2
     },
@@ -228,16 +234,19 @@
       "label": "DASH",
       "description": "dash module (see .UltraVision/tasklists/dash/_MODULE.md)",
       "paths": [
-        "tools/sma-wiki*.mjs",
-        "tools/sma-gen3-dashboard.mjs",
+        "tools/sma-wiki*.ts",
+        "tools/sma-gen3-dashboard.ts",
         "tools/sma-dashboard-server.mjs",
-        "tools/sma-brick-wall-lego.mjs",
-        "tools/lib/gen3-renderers.mjs",
+        "tools/sma-dashboard-server.ts",
+        "tools/sma-brick-wall-lego.ts",
+        "tools/lib/gen3-renderers.ts",
+        "tools/lib/wiki-*.ts",
         "web/**",
         "tools/lib/dash-api/**"
       ],
       "requiredLocalGates": [
-        "node tools/sma-gen3-dashboard.mjs --selftest"
+        "node tools/sma-gen3-dashboard.ts --selftest",
+        "node tools/sma-dashboard-server.mjs --selftest"
       ],
       "maxParallelAgents": 2
     },
@@ -248,11 +257,11 @@
       "paths": [
         "skills/**",
         "agent-skills/**",
-        "tools/install-agent-skills.mjs",
+        "tools/install-agent-skills.ts",
         ".claude-plugin/**"
       ],
       "requiredLocalGates": [
-        "node tools/install-agent-skills.mjs --check"
+        "node tools/install-agent-skills.ts --check"
       ],
       "maxParallelAgents": 2
     },
@@ -339,7 +348,8 @@
       "label": "RUST",
       "description": "rust module (see .UltraVision/tasklists/rust/_MODULE.md)",
       "paths": [
-        "rust-core/**"
+        "rust-core/**",
+        "tools/lib/rust-core.ts"
       ],
       "requiredLocalGates": [
         "cargo test --manifest-path rust-core/Cargo.toml"
@@ -411,9 +421,9 @@
     },
     {
       "id": "hot-path-5",
-      "label": "Declared hot path: tools/sma.mjs",
+      "label": "Declared hot path: tools/sma.ts",
       "paths": [
-        "tools/sma.mjs"
+        "tools/sma.ts"
       ],
       "risk": "high",
       "requiredGates": [
@@ -423,9 +433,9 @@
     },
     {
       "id": "hot-path-6",
-      "label": "Declared hot path: tools/lib/sma-paths.mjs",
+      "label": "Declared hot path: tools/lib/sma-paths.ts",
       "paths": [
-        "tools/lib/sma-paths.mjs"
+        "tools/lib/sma-paths.ts"
       ],
       "risk": "high",
       "requiredGates": [
@@ -435,9 +445,9 @@
     },
     {
       "id": "hot-path-7",
-      "label": "Declared hot path: tools/lib/portfolio-config.mjs",
+      "label": "Declared hot path: tools/lib/portfolio-config.ts",
       "paths": [
-        "tools/lib/portfolio-config.mjs"
+        "tools/lib/portfolio-config.ts"
       ],
       "risk": "high",
       "requiredGates": [

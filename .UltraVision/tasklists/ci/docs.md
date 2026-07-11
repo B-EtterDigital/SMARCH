@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-CI-ci-charter** (C1→haiku) Write module charter for ci
-- [ ] **UV-CI-ci-docs** (C1→haiku) Module docs baseline for ci
+- [x] **UV-CI-ci-charter** (C1→haiku) Write module charter for ci
+- [x] **UV-CI-ci-docs** (C1→haiku) Module docs baseline for ci

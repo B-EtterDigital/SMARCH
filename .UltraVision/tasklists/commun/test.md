@@ -6,9 +6,9 @@
 
 ## M0
 
-- [ ] **UV-CM-commun-testharness** (C3→sonnet) Test harness and CI wiring for commun
+- [x] **UV-CM-commun-testharness** (C3→sonnet) Test harness and CI wiring for commun
 
 ## M3
 
-- [ ] **UV-CM-cmd-submit-e2e** (C2→sonnet) End-to-end test of `sma submit` against a real workspace · deps: UV-CM-cmd-submit-impl
-- [ ] **UV-CM-cmd-submit-unit** (C2→sonnet) Unit tests for sma submit · deps: UV-CM-cmd-submit-impl
+- [x] **UV-CM-cmd-submit-e2e** (C2→sonnet) End-to-end test of `sma submit` against a real workspace · deps: UV-CM-cmd-submit-impl
+- [x] **UV-CM-cmd-submit-unit** (C2→sonnet) Unit tests for sma submit · deps: UV-CM-cmd-submit-impl

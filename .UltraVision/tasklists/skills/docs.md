@@ -6,25 +6,25 @@
 
 ## M0
 
-- [ ] **UV-SK-skills-charter** (C1→haiku) Write module charter for skills
-- [ ] **UV-SK-skills-docs** (C1→haiku) Module docs baseline for skills
+- [x] **UV-SK-skills-charter** (C1→haiku) Write module charter for skills
+- [x] **UV-SK-skills-docs** (C1→haiku) Module docs baseline for skills
 
 ## M1
 
-- [ ] **UV-SK-x-install-agent-skills-example** (C1→haiku) Add a runnable example for install-agent-skills.mjs to the commands reference · deps: UV-SK-x-install-agent-skills-header
-- [ ] **UV-SK-x-install-agent-skills-header** (C1→haiku) Add a WHY header to install-agent-skills.mjs
+- [x] **UV-SK-x-install-agent-skills-example** (C1→haiku) Add a runnable example for install-agent-skills.mjs to the commands reference · deps: UV-SK-x-install-agent-skills-header
+- [x] **UV-SK-x-install-agent-skills-header** (C1→haiku) Add a WHY header to install-agent-skills.mjs
 
 ## M2
 
-- [ ] **UV-SK-in-agents-claude-code-intro** (C1→haiku) Add an explained intro to agent-skills/claude-code guide intro
-- [ ] **UV-SK-in-agents-codex-intro** (C1→haiku) Add an explained intro to agent-skills/codex guide intro
-- [ ] **UV-SK-in-agents-opencode-intro** (C1→haiku) Add an explained intro to agent-skills/opencode guide intro
-- [ ] **UV-SK-in-agents-root-intro** (C1→haiku) Add an explained intro to agent-skills overview intro
-- [ ] **UV-SK-in-skill-f5-ultravisionplan-intro** (C1→haiku) Add an explained intro to skills/f5-ultravisionplan explainer
-- [ ] **UV-SK-in-skill-sma-agent-composer-intro** (C1→haiku) Add an explained intro to skills/sma-agent-composer explainer
-- [ ] **UV-SK-in-skill-sma-course-builder-intro** (C1→haiku) Add an explained intro to skills/sma-course-builder explainer
-- [ ] **UV-SK-in-skill-sma-enforcer-intro** (C1→haiku) Add an explained intro to skills/sma-enforcer explainer
-- [ ] **UV-SK-in-skill-sma-gen3-intro** (C1→haiku) Add an explained intro to skills/sma-gen3 explainer
-- [ ] **UV-SK-in-skill-sma-token-backlog-intro** (C1→haiku) Add an explained intro to skills/sma-token-backlog explainer
-- [ ] **UV-SK-in-skill-sweetspot-frontend-fix-intro** (C1→haiku) Add an explained intro to skills/sweetspot-frontend-fix explainer
-- [ ] **UV-SK-in-skill-sweetspot-moa-intro** (C1→haiku) Add an explained intro to skills/sweetspot-moa explainer
+- [x] **UV-SK-in-agents-claude-code-intro** (C1→haiku) Add an explained intro to agent-skills/claude-code guide intro
+- [x] **UV-SK-in-agents-codex-intro** (C1→haiku) Add an explained intro to agent-skills/codex guide intro
+- [x] **UV-SK-in-agents-opencode-intro** (C1→haiku) Add an explained intro to agent-skills/opencode guide intro
+- [x] **UV-SK-in-agents-root-intro** (C1→haiku) Add an explained intro to agent-skills overview intro
+- [x] **UV-SK-in-skill-f5-ultravisionplan-intro** (C1→haiku) Add an explained intro to skills/f5-ultravisionplan explainer
+- [x] **UV-SK-in-skill-sma-agent-composer-intro** (C1→haiku) Add an explained intro to skills/sma-agent-composer explainer
+- [x] **UV-SK-in-skill-sma-course-builder-intro** (C1→haiku) Add an explained intro to skills/sma-course-builder explainer
+- [x] **UV-SK-in-skill-sma-enforcer-intro** (C1→haiku) Add an explained intro to skills/sma-enforcer explainer
+- [x] **UV-SK-in-skill-sma-gen3-intro** (C1→haiku) Add an explained intro to skills/sma-gen3 explainer
+- [x] **UV-SK-in-skill-sma-token-backlog-intro** (C1→haiku) Add an explained intro to skills/sma-token-backlog explainer
+- [x] **UV-SK-in-skill-sweetspot-frontend-fix-intro** (C1→haiku) Add an explained intro to skills/sweetspot-frontend-fix explainer
+- [x] **UV-SK-in-skill-sweetspot-moa-intro** (C1→haiku) Add an explained intro to skills/sweetspot-moa explainer

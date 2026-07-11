@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-SY-sync-graph** (C1→haiku) Graphify module graph for sync
-- [ ] **UV-SY-sync-ownership** (C2→sonnet) Register sync ownership in sma.gen3.json
+- [x] **UV-SY-sync-graph** (C1→haiku) Graphify module graph for sync
+- [x] **UV-SY-sync-ownership** (C2→sonnet) Register sync ownership in sma.gen3.json

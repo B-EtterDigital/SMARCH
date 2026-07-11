@@ -1,0 +1,24 @@
+{
+  "name": "smarch-registry",
+  "description": "Stdio MCP access to the SMARCH registry, trust, doctor, build, and release-install seams.",
+  "version": "0.1.0",
+  "transport": {
+    "type": "stdio"
+  },
+  "repository": "https://github.com/B-EtterDigital/SMARCH",
+  "tools": [
+    "brick-search",
+    "brick-get",
+    "brick-trust",
+    "registry-doctor",
+    "registry-why-blocked",
+    "release-install",
+    "build-list",
+    "server-card"
+  ],
+  "authorization": {
+    "boundary": "stdio-parent-process",
+    "read_capability": "registry:read",
+    "write_capability": "release:install"
+  }
+}

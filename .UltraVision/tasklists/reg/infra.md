@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-RG-reg-graph** (C1→haiku) Graphify module graph for reg
-- [ ] **UV-RG-reg-ownership** (C2→sonnet) Register reg ownership in sma.gen3.json
+- [x] **UV-RG-reg-graph** (C1→haiku) Graphify module graph for reg
+- [x] **UV-RG-reg-ownership** (C2→sonnet) Register reg ownership in sma.gen3.json

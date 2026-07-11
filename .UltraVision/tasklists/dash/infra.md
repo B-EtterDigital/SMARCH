@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-DA-dash-graph** (C1→haiku) Graphify module graph for dash
-- [ ] **UV-DA-dash-ownership** (C2→sonnet) Register dash ownership in sma.gen3.json
+- [x] **UV-DA-dash-graph** (C1→haiku) Graphify module graph for dash
+- [x] **UV-DA-dash-ownership** (C2→sonnet) Register dash ownership in sma.gen3.json

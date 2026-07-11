@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-RS-rust-perfbudget** (C2→sonnet) Performance budgets for rust
+- [x] **UV-RS-rust-perfbudget** (C2→sonnet) Performance budgets for rust

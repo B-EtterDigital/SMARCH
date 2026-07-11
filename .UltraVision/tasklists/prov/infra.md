@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-PR-prov-graph** (C1→haiku) Graphify module graph for prov
-- [ ] **UV-PR-prov-ownership** (C2→sonnet) Register prov ownership in sma.gen3.json
+- [x] **UV-PR-prov-graph** (C1→haiku) Graphify module graph for prov
+- [x] **UV-PR-prov-ownership** (C2→sonnet) Register prov ownership in sma.gen3.json

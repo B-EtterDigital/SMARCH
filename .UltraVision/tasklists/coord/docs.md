@@ -6,42 +6,42 @@
 
 ## M0
 
-- [ ] **UV-CO-coord-charter** (C1→haiku) Write module charter for coord
-- [ ] **UV-CO-coord-docs** (C1→haiku) Module docs baseline for coord
+- [x] **UV-CO-coord-charter** (C1→haiku) Write module charter for coord
+- [x] **UV-CO-coord-docs** (C1→haiku) Module docs baseline for coord
 
 ## M1
 
-- [ ] **UV-CO-x-context-log-example** (C1→haiku) Add a runnable example for context-log.mjs to the commands reference · deps: UV-CO-x-context-log-header
-- [ ] **UV-CO-x-context-log-header** (C1→haiku) Add a WHY header to context-log.mjs
-- [ ] **UV-CO-x-gen3-state-example** (C1→haiku) Add a runnable example for gen3-state.mjs to the commands reference · deps: UV-CO-x-gen3-state-header
-- [ ] **UV-CO-x-gen3-state-header** (C1→haiku) Add a WHY header to gen3-state.mjs
-- [ ] **UV-CO-x-parallel-preflight-selftest-example** (C1→haiku) Add a runnable example for parallel-preflight-selftest.mjs to the commands reference · deps: UV-CO-x-parallel-preflight-selftest-header
-- [ ] **UV-CO-x-parallel-preflight-selftest-header** (C1→haiku) Add a WHY header to parallel-preflight-selftest.mjs
-- [ ] **UV-CO-x-sma-cleanup-packets-example** (C1→haiku) Add a runnable example for sma-cleanup-packets.mjs to the commands reference · deps: UV-CO-x-sma-cleanup-packets-header
-- [ ] **UV-CO-x-sma-cleanup-packets-header** (C1→haiku) Add a WHY header to sma-cleanup-packets.mjs
-- [ ] **UV-CO-x-sma-conflict-example** (C1→haiku) Add a runnable example for sma-conflict.mjs to the commands reference · deps: UV-CO-x-sma-conflict-header
-- [ ] **UV-CO-x-sma-conflict-header** (C1→haiku) Add a WHY header to sma-conflict.mjs
-- [ ] **UV-CO-x-sma-context-check-example** (C1→haiku) Add a runnable example for sma-context-check.mjs to the commands reference · deps: UV-CO-x-sma-context-check-header
-- [ ] **UV-CO-x-sma-context-check-header** (C1→haiku) Add a WHY header to sma-context-check.mjs
-- [ ] **UV-CO-x-sma-context-example** (C1→haiku) Add a runnable example for sma-context.mjs to the commands reference · deps: UV-CO-x-sma-context-header
-- [ ] **UV-CO-x-sma-context-header** (C1→haiku) Add a WHY header to sma-context.mjs
-- [ ] **UV-CO-x-sma-context-normalize-example** (C1→haiku) Add a runnable example for sma-context-normalize.mjs to the commands reference · deps: UV-CO-x-sma-context-normalize-header
-- [ ] **UV-CO-x-sma-context-normalize-header** (C1→haiku) Add a WHY header to sma-context-normalize.mjs
-- [ ] **UV-CO-x-sma-context-replay-example** (C1→haiku) Add a runnable example for sma-context-replay.mjs to the commands reference · deps: UV-CO-x-sma-context-replay-header
-- [ ] **UV-CO-x-sma-context-replay-header** (C1→haiku) Add a WHY header to sma-context-replay.mjs
-- [ ] **UV-CO-x-sma-controller-snapshot-example** (C1→haiku) Add a runnable example for sma-controller-snapshot.mjs to the commands reference · deps: UV-CO-x-sma-controller-snapshot-header
-- [ ] **UV-CO-x-sma-controller-snapshot-header** (C1→haiku) Add a WHY header to sma-controller-snapshot.mjs
-- [ ] **UV-CO-x-sma-dirty-baseline-example** (C1→haiku) Add a runnable example for sma-dirty-baseline.mjs to the commands reference · deps: UV-CO-x-sma-dirty-baseline-header
-- [ ] **UV-CO-x-sma-dirty-baseline-header** (C1→haiku) Add a WHY header to sma-dirty-baseline.mjs
-- [ ] **UV-CO-x-sma-end-edit-example** (C1→haiku) Add a runnable example for sma-end-edit.mjs to the commands reference · deps: UV-CO-x-sma-end-edit-header
-- [ ] **UV-CO-x-sma-end-edit-header** (C1→haiku) Add a WHY header to sma-end-edit.mjs
-- [ ] **UV-CO-x-sma-lease-example** (C1→haiku) Add a runnable example for sma-lease.mjs to the commands reference · deps: UV-CO-x-sma-lease-header
-- [ ] **UV-CO-x-sma-lease-header** (C1→haiku) Add a WHY header to sma-lease.mjs
-- [ ] **UV-CO-x-sma-merge-example** (C1→haiku) Add a runnable example for sma-merge.mjs to the commands reference · deps: UV-CO-x-sma-merge-header
-- [ ] **UV-CO-x-sma-merge-header** (C1→haiku) Add a WHY header to sma-merge.mjs
-- [ ] **UV-CO-x-sma-parallel-preflight-example** (C1→haiku) Add a runnable example for sma-parallel-preflight.mjs to the commands reference · deps: UV-CO-x-sma-parallel-preflight-header
-- [ ] **UV-CO-x-sma-parallel-preflight-header** (C1→haiku) Add a WHY header to sma-parallel-preflight.mjs
-- [ ] **UV-CO-x-sma-seed-example** (C1→haiku) Add a runnable example for sma-seed.mjs to the commands reference · deps: UV-CO-x-sma-seed-header
-- [ ] **UV-CO-x-sma-seed-header** (C1→haiku) Add a WHY header to sma-seed.mjs
-- [ ] **UV-CO-x-sma-start-edit-example** (C1→haiku) Add a runnable example for sma-start-edit.mjs to the commands reference · deps: UV-CO-x-sma-start-edit-header
-- [ ] **UV-CO-x-sma-start-edit-header** (C1→haiku) Add a WHY header to sma-start-edit.mjs
+- [x] **UV-CO-x-context-log-example** (C1→haiku) Add a runnable example for context-log.mjs to the commands reference · deps: UV-CO-x-context-log-header
+- [x] **UV-CO-x-context-log-header** (C1→haiku) Add a WHY header to context-log.mjs
+- [x] **UV-CO-x-gen3-state-example** (C1→haiku) Add a runnable example for gen3-state.mjs to the commands reference · deps: UV-CO-x-gen3-state-header
+- [x] **UV-CO-x-gen3-state-header** (C1→haiku) Add a WHY header to gen3-state.mjs
+- [x] **UV-CO-x-parallel-preflight-selftest-example** (C1→haiku) Add a runnable example for parallel-preflight-selftest.mjs to the commands reference · deps: UV-CO-x-parallel-preflight-selftest-header
+- [x] **UV-CO-x-parallel-preflight-selftest-header** (C1→haiku) Add a WHY header to parallel-preflight-selftest.mjs
+- [x] **UV-CO-x-sma-cleanup-packets-example** (C1→haiku) Add a runnable example for sma-cleanup-packets.mjs to the commands reference · deps: UV-CO-x-sma-cleanup-packets-header
+- [x] **UV-CO-x-sma-cleanup-packets-header** (C1→haiku) Add a WHY header to sma-cleanup-packets.mjs
+- [x] **UV-CO-x-sma-conflict-example** (C1→haiku) Add a runnable example for sma-conflict.mjs to the commands reference · deps: UV-CO-x-sma-conflict-header
+- [x] **UV-CO-x-sma-conflict-header** (C1→haiku) Add a WHY header to sma-conflict.mjs
+- [x] **UV-CO-x-sma-context-check-example** (C1→haiku) Add a runnable example for sma-context-check.mjs to the commands reference · deps: UV-CO-x-sma-context-check-header
+- [x] **UV-CO-x-sma-context-check-header** (C1→haiku) Add a WHY header to sma-context-check.mjs
+- [x] **UV-CO-x-sma-context-example** (C1→haiku) Add a runnable example for sma-context.mjs to the commands reference · deps: UV-CO-x-sma-context-header
+- [x] **UV-CO-x-sma-context-header** (C1→haiku) Add a WHY header to sma-context.mjs
+- [x] **UV-CO-x-sma-context-normalize-example** (C1→haiku) Add a runnable example for sma-context-normalize.mjs to the commands reference · deps: UV-CO-x-sma-context-normalize-header
+- [x] **UV-CO-x-sma-context-normalize-header** (C1→haiku) Add a WHY header to sma-context-normalize.mjs
+- [x] **UV-CO-x-sma-context-replay-example** (C1→haiku) Add a runnable example for sma-context-replay.mjs to the commands reference · deps: UV-CO-x-sma-context-replay-header
+- [x] **UV-CO-x-sma-context-replay-header** (C1→haiku) Add a WHY header to sma-context-replay.mjs
+- [x] **UV-CO-x-sma-controller-snapshot-example** (C1→haiku) Add a runnable example for sma-controller-snapshot.mjs to the commands reference · deps: UV-CO-x-sma-controller-snapshot-header
+- [x] **UV-CO-x-sma-controller-snapshot-header** (C1→haiku) Add a WHY header to sma-controller-snapshot.mjs
+- [x] **UV-CO-x-sma-dirty-baseline-example** (C1→haiku) Add a runnable example for sma-dirty-baseline.mjs to the commands reference · deps: UV-CO-x-sma-dirty-baseline-header
+- [x] **UV-CO-x-sma-dirty-baseline-header** (C1→haiku) Add a WHY header to sma-dirty-baseline.mjs
+- [x] **UV-CO-x-sma-end-edit-example** (C1→haiku) Add a runnable example for sma-end-edit.mjs to the commands reference · deps: UV-CO-x-sma-end-edit-header
+- [x] **UV-CO-x-sma-end-edit-header** (C1→haiku) Add a WHY header to sma-end-edit.mjs
+- [x] **UV-CO-x-sma-lease-example** (C1→haiku) Add a runnable example for sma-lease.mjs to the commands reference · deps: UV-CO-x-sma-lease-header
+- [x] **UV-CO-x-sma-lease-header** (C1→haiku) Add a WHY header to sma-lease.mjs
+- [x] **UV-CO-x-sma-merge-example** (C1→haiku) Add a runnable example for sma-merge.mjs to the commands reference · deps: UV-CO-x-sma-merge-header
+- [x] **UV-CO-x-sma-merge-header** (C1→haiku) Add a WHY header to sma-merge.mjs
+- [x] **UV-CO-x-sma-parallel-preflight-example** (C1→haiku) Add a runnable example for sma-parallel-preflight.mjs to the commands reference · deps: UV-CO-x-sma-parallel-preflight-header
+- [x] **UV-CO-x-sma-parallel-preflight-header** (C1→haiku) Add a WHY header to sma-parallel-preflight.mjs
+- [x] **UV-CO-x-sma-seed-example** (C1→haiku) Add a runnable example for sma-seed.mjs to the commands reference · deps: UV-CO-x-sma-seed-header
+- [x] **UV-CO-x-sma-seed-header** (C1→haiku) Add a WHY header to sma-seed.mjs
+- [x] **UV-CO-x-sma-start-edit-example** (C1→haiku) Add a runnable example for sma-start-edit.mjs to the commands reference · deps: UV-CO-x-sma-start-edit-header
+- [x] **UV-CO-x-sma-start-edit-header** (C1→haiku) Add a WHY header to sma-start-edit.mjs

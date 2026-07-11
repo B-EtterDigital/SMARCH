@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CM-commun-perfbudget** (C2→sonnet) Performance budgets for commun
+- [x] **UV-CM-commun-perfbudget** (C2→sonnet) Performance budgets for commun

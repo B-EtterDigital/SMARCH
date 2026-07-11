@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SC-schemas-telemetry** (C3→sonnet) Telemetry coverage baseline for schemas
+- [x] **UV-SC-schemas-telemetry** (C3→sonnet) Telemetry coverage baseline for schemas

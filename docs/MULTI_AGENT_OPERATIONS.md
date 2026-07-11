@@ -718,3 +718,5 @@ The system is designed to be free for the easy path and meaningful for the multi
 - [`TOKEN_ACCOUNTING_AND_BACKLOG.md`](TOKEN_ACCOUNTING_AND_BACKLOG.md) — backlog conventions; `--linked-backlog` ties context events to backlog entries
 - [`SECURITY_AND_SWARM_GATES.md`](SECURITY_AND_SWARM_GATES.md) — the wider gate model
 - `schemas/active-leases.schema.json`, `schemas/agent-context-event.schema.json`, `schemas/merge-proposal.schema.json` — the underlying data contracts
+
+<!-- docs-i18n: key=docs.multi-agent-operations; source=en; media=media/{locale}/multi-agent-operations/ -->

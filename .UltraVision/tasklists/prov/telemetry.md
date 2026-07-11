@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-PR-prov-telemetry** (C3→sonnet) Telemetry coverage baseline for prov
+- [x] **UV-PR-prov-telemetry** (C3→sonnet) Telemetry coverage baseline for prov

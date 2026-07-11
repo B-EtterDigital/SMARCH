@@ -1,5 +1,5 @@
 /**
- * portfolio-config.mjs — optional local portfolio description.
+ * portfolio-config.ts — optional local portfolio description.
  *
  * The public framework ships with an empty portfolio. Each operator describes
  * their own machine in registry/portfolio.config.json (gitignored), or points
@@ -11,31 +11,45 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { SMA_ROOT } from "./sma-paths.ts";
 
-const DEFAULT_CONFIG = {
+type PortfolioConfig = {
+  priority_project_ids: string[];
+  overrides: Record<string, any>;
+  ignored_top_level_dirs: string[];
+  ignored_name_fragments: string[];
+};
+
+const DEFAULT_CONFIG: PortfolioConfig = {
   priority_project_ids: [],
   overrides: {},
   ignored_top_level_dirs: ["DEPRECATED", "RESEARCH", "node_modules", ".netlify", ".sweetspot"],
   ignored_name_fragments: ["backup", "corrupt"],
 };
 
-let cached = null;
+let cached: PortfolioConfig | null = null;
 
 export function loadPortfolioConfig() {
   if (cached) return cached;
   const configPath = process.env.SMA_PORTFOLIO_CONFIG
     ? path.resolve(process.env.SMA_PORTFOLIO_CONFIG)
     : path.join(SMA_ROOT, "registry", "portfolio.config.json");
-  let raw = null;
+  let raw: Partial<PortfolioConfig> & Record<string, unknown> = {};
   try {
     raw = JSON.parse(readFileSync(configPath, "utf8"));
-  } catch {
-    raw = {};
+  } catch (error) {
+    if (!(error && typeof error === "object" && "code" in error && error.code === "ENOENT")) {
+      console.error(JSON.stringify({
+        area: "portfolio-config.load",
+        severity: "warning",
+        config_path: configPath,
+        error: error instanceof Error ? error.message : String(error),
+      }));
+    }
   }
   cached = {
     priority_project_ids: Array.isArray(raw.priority_project_ids)
       ? raw.priority_project_ids.map(String)
       : DEFAULT_CONFIG.priority_project_ids,
-    overrides: raw.overrides && typeof raw.overrides === "object" ? raw.overrides : DEFAULT_CONFIG.overrides,
+    overrides: raw.overrides && typeof raw.overrides === "object" ? raw.overrides as Record<string, any> : DEFAULT_CONFIG.overrides,
     ignored_top_level_dirs: Array.isArray(raw.ignored_top_level_dirs)
       ? raw.ignored_top_level_dirs.map(String)
       : DEFAULT_CONFIG.ignored_top_level_dirs,

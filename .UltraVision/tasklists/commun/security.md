@@ -6,4 +6,4 @@
 
 ## M3
 
-- [ ] **UV-CM-skeptic-trusted-revalidation** (C3→sonnet) Revalidate community submission bundles in trusted CI before curator review
+- [x] **UV-CM-skeptic-trusted-revalidation** (C3→sonnet) Revalidate community submission bundles in trusted CI before curator review

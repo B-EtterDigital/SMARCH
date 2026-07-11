@@ -64,3 +64,5 @@ These names are not universal gates. They are known module contracts that a proj
 ## Naming Rule
 
 If an acronym does not produce a check, field, command, or review decision, it should not exist.
+
+<!-- docs-i18n: key=docs.terminology; source=en; media=media/{locale}/terminology/ -->

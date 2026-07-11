@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.curated-build-private-publish-lane; source=en; media=media/{locale}/curated-build-private-publish-lane/ -->
 # Curated Build Private Publish Lane
 
 This playbook explains the controlled path for publishing a curated build to an approved private audience. Build owners and release operators need it when reuse must stay inside a restricted boundary. Read it before packaging, granting access, or changing a private build's publication state. Remember that private publication still requires verified provenance, security, and consumer instructions.

@@ -145,3 +145,5 @@ jq '[.entries[] | select(.status == "open") | .estimated_token_cost // 0] | add'
 ## The standard, in one paragraph
 
 When you clone a brick, write a receipt. When you leave anything imperfect, open a backlog entry. When you promote, both must be clean. When you measure, use real LOC × 3.8× tokens, not gut feel. Calibrate the multiplier against actual Anthropic invoices every five sessions.
+
+<!-- docs-i18n: key=docs.token-accounting-and-backlog; source=en; media=media/{locale}/token-accounting-and-backlog/ -->

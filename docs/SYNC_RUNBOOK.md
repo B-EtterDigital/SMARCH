@@ -40,3 +40,5 @@ package-script integration request for that command is:
 ```json
 {"ledger:verify":"node tools/gen-public-ledger.mjs --verify"}
 ```
+
+<!-- docs-i18n: key=docs.sync-runbook; source=en; media=media/{locale}/sync-runbook/ -->

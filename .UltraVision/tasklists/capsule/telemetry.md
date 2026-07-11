@@ -6,10 +6,10 @@
 
 ## M0
 
-- [ ] **UV-CP-capsule-telemetry** (C3→sonnet) Telemetry coverage baseline for capsule
+- [x] **UV-CP-capsule-telemetry** (C3→sonnet) Telemetry coverage baseline for capsule
 
 ## M2
 
-- [ ] **UV-CP-cmd-brick-inspect-telemetry** (C1→haiku) Error telemetry for sma brick-inspect · deps: UV-CP-cmd-brick-inspect-impl
-- [ ] **UV-CP-cmd-brick-new-telemetry** (C1→haiku) Error telemetry for sma brick-new · deps: UV-CP-cmd-brick-new-impl
-- [ ] **UV-CP-cmd-brick-run-telemetry** (C1→haiku) Error telemetry for sma brick-run · deps: UV-CP-cmd-brick-run-impl
+- [x] **UV-CP-cmd-brick-inspect-telemetry** (C1→haiku) Error telemetry for sma brick-inspect · deps: UV-CP-cmd-brick-inspect-impl
+- [x] **UV-CP-cmd-brick-new-telemetry** (C1→haiku) Error telemetry for sma brick-new · deps: UV-CP-cmd-brick-new-impl
+- [x] **UV-CP-cmd-brick-run-telemetry** (C1→haiku) Error telemetry for sma brick-run · deps: UV-CP-cmd-brick-run-impl

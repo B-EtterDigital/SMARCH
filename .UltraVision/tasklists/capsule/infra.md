@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-CP-capsule-graph** (C1→haiku) Graphify module graph for capsule
-- [ ] **UV-CP-capsule-ownership** (C2→sonnet) Register capsule ownership in sma.gen3.json
+- [x] **UV-CP-capsule-graph** (C1→haiku) Graphify module graph for capsule
+- [x] **UV-CP-capsule-ownership** (C2→sonnet) Register capsule ownership in sma.gen3.json

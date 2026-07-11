@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-PR-prov-perfbudget** (C2→sonnet) Performance budgets for prov
+- [x] **UV-PR-prov-perfbudget** (C2→sonnet) Performance budgets for prov

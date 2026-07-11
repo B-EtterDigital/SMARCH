@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.glossary; source=en; media=media/{locale}/glossary/ -->
 # Glossary
 
 Use this page when a SMARCH command, manifest, or agent handoff uses a term you

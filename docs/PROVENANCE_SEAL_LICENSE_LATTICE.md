@@ -82,6 +82,8 @@ npm run provenance:verify     # recompute + verify every seal
 npm run provenance:selftest   # unit tests for the lattice + sealing primitives
 ```
 
+<!-- docs-i18n: key=docs.provenance-seal-license-lattice; source=en; media=media/{locale}/provenance-seal-license-lattice/ -->
+
 `gate:license` and `provenance:verify` are chained into `gate:all`, so they run
 on every `gate:promote`. They verify against the **committed** ledgers; refresh
 the ledgers with `provenance:ledger` when bricks change.

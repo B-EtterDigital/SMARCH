@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.compliance-layer; source=en; media=media/{locale}/compliance-layer/ -->
 # SMA Compliance Layer (EU GDPR · DSA · CSAM Reg. + Swiss nFADP)
 
 This guide describes the reusable compliance checks for data protection and platform safety in Sweetspot projects. Product owners, security reviewers, and engineers handling regulated data need it before release. Read it while classifying a project, wiring compliance evidence, or reviewing an unresolved legal gate. Remember that the layer records engineering evidence and blockers; it does not substitute for legal review.

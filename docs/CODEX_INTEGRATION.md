@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.codex-integration; source=en; media=media/{locale}/codex-integration/ -->
 # SMA × Codex CLI integration
 
 This guide explains how local Codex commands enrich and query the Sweetspot brick registry. Operators who maintain agent-facing documentation and registry intelligence need it during setup or troubleshooting. Read it before running the integration commands or interpreting their generated output. Remember that Codex enriches checked-in project evidence; it does not replace validation of the source bricks.

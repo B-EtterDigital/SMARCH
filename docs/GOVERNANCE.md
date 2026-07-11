@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.governance; source=en; media=media/{locale}/governance/ -->
 # Governance
 
 This guide defines who may promote, demote, or reject bricks and builds in the Sweetspot registry. Maintainers and reviewers need it whenever they make a lifecycle decision. Read it before approving canonical status, recording an exception, or responding to failed evidence. Remember that registry quality depends on documented rejection and demotion decisions as much as promotion.

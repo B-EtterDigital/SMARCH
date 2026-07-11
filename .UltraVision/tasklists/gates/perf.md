@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-GA-gates-perfbudget** (C2→sonnet) Performance budgets for gates
+- [x] **UV-GA-gates-perfbudget** (C2→sonnet) Performance budgets for gates

@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-MC-mcp-graph** (C1→haiku) Graphify module graph for mcp
-- [ ] **UV-MC-mcp-ownership** (C2→sonnet) Register mcp ownership in sma.gen3.json
+- [x] **UV-MC-mcp-graph** (C1→haiku) Graphify module graph for mcp
+- [x] **UV-MC-mcp-ownership** (C2→sonnet) Register mcp ownership in sma.gen3.json

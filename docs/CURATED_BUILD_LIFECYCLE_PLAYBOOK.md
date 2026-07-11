@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.curated-build-lifecycle-playbook; source=en; media=media/{locale}/curated-build-lifecycle-playbook/ -->
 # Curated Build Lifecycle Playbook
 
 This playbook explains how a scanned capability becomes a reviewed, reusable build. Build curators, project owners, and release reviewers need it as they move work between lifecycle states. Read it before promoting, updating, or retiring a build under `builds/`. Remember that each transition requires current source evidence and an explicit reviewer decision.

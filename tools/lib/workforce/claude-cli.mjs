@@ -1,4 +1,7 @@
 import { spawn } from "node:child_process";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_TIMEOUT_MS = 600_000;
 
@@ -6,9 +9,27 @@ function packetPrompt(packet) {
   return typeof packet === "string" ? packet : JSON.stringify(packet, null, 2);
 }
 
-function runProcess(args, input, { timeoutMs, signal }) {
+function schemaJson(schema) {
+  if (typeof schema !== "string" || !schema.trim()) throw new Error("schema must be a JSON string or filesystem path");
+  const source = schema.trim().startsWith("{") ? schema : readFileSync(schema, "utf8");
+  return JSON.stringify(JSON.parse(source));
+}
+
+/**
+ * @param {{ model?: string, effort?: string, schema?: string, readOnly?: boolean }} [options]
+ */
+export function buildClaudeArgs({ model, effort, schema, readOnly = false } = {}) {
+  const args = ["-p", "--output-format", "json"];
+  if (model) args.push("--model", String(model));
+  if (effort) args.push("--effort", String(effort));
+  if (schema) args.push("--json-schema", schemaJson(schema));
+  if (readOnly) args.push("--permission-mode", "plan");
+  return args;
+}
+
+function runProcess(args, input, { timeoutMs, signal, cwd }) {
   return new Promise((resolve) => {
-    const child = spawn("claude", args, { env: process.env });
+    const child = spawn("claude", args, { env: process.env, cwd });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -38,17 +59,32 @@ function runProcess(args, input, { timeoutMs, signal }) {
 
 /**
  * @param {unknown} packet
- * @param {{ model?: string, timeoutMs?: number, signal?: AbortSignal }} [options]
+ * @param {{ model?: string, effort?: string, schema?: string, readOnly?: boolean, timeoutMs?: number, signal?: AbortSignal, cwd?: string }} [options]
  */
 export async function execute(packet, {
   model,
+  effort,
+  schema,
+  readOnly = false,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   signal,
+  cwd,
 } = {}) {
-  const args = ["-p", "--output-format", "json"];
-  if (model) args.push("--model", String(model));
+  let args;
+  try {
+    args = buildClaudeArgs({ model, effort, schema, readOnly });
+  } catch (error) {
+    return {
+      ok: false,
+      output: "",
+      tokensIn: 0,
+      tokensOut: 0,
+      retryable: false,
+      raw: { backend: "claude-cli", error: error instanceof Error ? error.message : String(error) },
+    };
+  }
 
-  const result = await runProcess(args, packetPrompt(packet), { timeoutMs, signal });
+  const result = await runProcess(args, packetPrompt(packet), { timeoutMs, signal, cwd });
   let parsed;
   try { parsed = JSON.parse(result.stdout); } catch {}
   const usage = parsed?.usage || {};
@@ -71,4 +107,25 @@ export async function execute(packet, {
       response: parsed,
     },
   };
+}
+
+function selftest() {
+  const args = buildClaudeArgs({
+    model: "sonnet",
+    effort: "xhigh",
+    schema: JSON.stringify({ type: "object" }),
+    readOnly: true,
+  });
+  assert.deepEqual(args, [
+    "-p", "--output-format", "json",
+    "--model", "sonnet",
+    "--effort", "xhigh",
+    "--json-schema", '{"type":"object"}',
+    "--permission-mode", "plan",
+  ]);
+  console.log("claude-cli workforce selftest: ok (full dispatch contract)");
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1] && process.argv.includes("--selftest")) {
+  selftest();
 }

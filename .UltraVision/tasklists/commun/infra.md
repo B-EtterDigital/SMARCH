@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-CM-commun-graph** (C1→haiku) Graphify module graph for commun
-- [ ] **UV-CM-commun-ownership** (C2→sonnet) Register commun ownership in sma.gen3.json
+- [x] **UV-CM-commun-graph** (C1→haiku) Graphify module graph for commun
+- [x] **UV-CM-commun-ownership** (C2→sonnet) Register commun ownership in sma.gen3.json

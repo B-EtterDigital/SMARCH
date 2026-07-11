@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-SM-smoa-graph** (C1→haiku) Graphify module graph for smoa
-- [ ] **UV-SM-smoa-ownership** (C2→sonnet) Register smoa ownership in sma.gen3.json
+- [x] **UV-SM-smoa-graph** (C1→haiku) Graphify module graph for smoa
+- [x] **UV-SM-smoa-ownership** (C2→sonnet) Register smoa ownership in sma.gen3.json

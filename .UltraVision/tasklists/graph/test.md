@@ -6,10 +6,10 @@
 
 ## M0
 
-- [ ] **UV-GR-graph-testharness** (C3→sonnet) Test harness and CI wiring for graph
+- [x] **UV-GR-graph-testharness** (C3→sonnet) Test harness and CI wiring for graph
 
 ## M2
 
-- [ ] **UV-GR-sma-graph-packets-parity** (C1→haiku) Record behavior-parity evidence for sma-graph-packets.mjs · deps: UV-GR-sma-graph-packets-convert
-- [ ] **UV-GR-sma-graphify-parity** (C1→haiku) Record behavior-parity evidence for sma-graphify.mjs · deps: UV-GR-sma-graphify-convert
-- [ ] **UV-GR-tree-sitter-spike** (C3→sonnet) tree-sitter extraction spike (go/no-go)
+- [x] **UV-GR-sma-graph-packets-parity** (C1→haiku) Record behavior-parity evidence for sma-graph-packets.mjs · deps: UV-GR-sma-graph-packets-convert
+- [x] **UV-GR-sma-graphify-parity** (C1→haiku) Record behavior-parity evidence for sma-graphify.mjs · deps: UV-GR-sma-graphify-convert
+- [x] **UV-GR-tree-sitter-spike** (C3→sonnet) tree-sitter extraction spike (go/no-go)

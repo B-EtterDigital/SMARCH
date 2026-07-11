@@ -33,9 +33,9 @@ export function buildArgs({
   return args;
 }
 
-function runProcess(command, args, input, { timeoutMs, signal }) {
+function runProcess(command, args, input, { timeoutMs, signal, cwd }) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { env: process.env });
+    const child = spawn(command, args, { env: process.env, cwd });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -95,7 +95,7 @@ export function isAvailable() {
 
 /**
  * @param {unknown} packet
- * @param {{ model?: string, effort?: string, schema?: string, readOnly?: boolean, timeoutMs?: number, signal?: AbortSignal }} [options]
+ * @param {{ model?: string, effort?: string, schema?: string, readOnly?: boolean, timeoutMs?: number, signal?: AbortSignal, cwd?: string }} [options]
  */
 export async function execute(packet, {
   model = DEFAULT_MODEL,
@@ -104,6 +104,7 @@ export async function execute(packet, {
   readOnly = false,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   signal,
+  cwd,
 } = {}) {
   if (schema && typeof schema !== "string") {
     return {
@@ -117,7 +118,7 @@ export async function execute(packet, {
   }
 
   const args = buildArgs({ model, effort, schema, readOnly });
-  const result = await runProcess("codex", args, packetPrompt(packet), { timeoutMs, signal });
+  const result = await runProcess("codex", args, packetPrompt(packet), { timeoutMs, signal, cwd });
   const parsed = parseEvents(result.stdout);
   const ok = result.code === 0 && !result.timedOut;
   return {

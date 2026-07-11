@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CO-coord-perfbudget** (C2→sonnet) Performance budgets for coord
+- [x] **UV-CO-coord-perfbudget** (C2→sonnet) Performance budgets for coord

@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-GA-gates-telemetry** (C3→sonnet) Telemetry coverage baseline for gates
+- [x] **UV-GA-gates-telemetry** (C3→sonnet) Telemetry coverage baseline for gates

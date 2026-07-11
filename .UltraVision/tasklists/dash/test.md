@@ -6,70 +6,70 @@
 
 ## M0
 
-- [ ] **UV-DA-dash-testharness** (C3→sonnet) Test harness and CI wiring for dash
+- [x] **UV-DA-dash-testharness** (C3→sonnet) Test harness and CI wiring for dash
 
 ## M1
 
-- [ ] **UV-DA-gen3-renderers-parity** (C1→haiku) Record behavior-parity evidence for gen3-renderers.mjs · deps: UV-DA-gen3-renderers-convert
+- [x] **UV-DA-gen3-renderers-parity** (C1→haiku) Record behavior-parity evidence for gen3-renderers.mjs · deps: UV-DA-gen3-renderers-convert
 
 ## M2
 
-- [ ] **UV-DA-sma-brick-wall-lego-parity** (C1→haiku) Record behavior-parity evidence for sma-brick-wall-lego.mjs · deps: UV-DA-sma-brick-wall-lego-convert
-- [ ] **UV-DA-sma-dashboard-server-parity** (C1→haiku) Record behavior-parity evidence for sma-dashboard-server.mjs · deps: UV-DA-sma-dashboard-server-convert
-- [ ] **UV-DA-sma-gen3-dashboard-parity** (C1→haiku) Record behavior-parity evidence for sma-gen3-dashboard.mjs · deps: UV-DA-sma-gen3-dashboard-convert
-- [ ] **UV-DA-sma-wiki-gen3-parity** (C1→haiku) Record behavior-parity evidence for sma-wiki-gen3.mjs · deps: UV-DA-sma-wiki-gen3-convert
-- [ ] **UV-DA-sma-wiki-html-parity** (C1→haiku) Record behavior-parity evidence for sma-wiki-html.mjs · deps: UV-DA-sma-wiki-html-convert
+- [x] **UV-DA-sma-brick-wall-lego-parity** (C1→haiku) Record behavior-parity evidence for sma-brick-wall-lego.mjs · deps: UV-DA-sma-brick-wall-lego-convert
+- [x] **UV-DA-sma-dashboard-server-parity** (C1→haiku) Record behavior-parity evidence for sma-dashboard-server.mjs · deps: UV-DA-sma-dashboard-server-convert
+- [x] **UV-DA-sma-gen3-dashboard-parity** (C1→haiku) Record behavior-parity evidence for sma-gen3-dashboard.mjs · deps: UV-DA-sma-gen3-dashboard-convert
+- [x] **UV-DA-sma-wiki-gen3-parity** (C1→haiku) Record behavior-parity evidence for sma-wiki-gen3.mjs · deps: UV-DA-sma-wiki-gen3-convert
+- [x] **UV-DA-sma-wiki-html-parity** (C1→haiku) Record behavior-parity evidence for sma-wiki-html.mjs · deps: UV-DA-sma-wiki-html-convert
 
 ## M3
 
-- [ ] **UV-DA-dash-api-conflicts-integration** (C3→sonnet) Integration tests for dashboard api-conflicts · deps: UV-DA-dash-api-conflicts-unit, UV-DA-dash-api-conflicts-authz
-- [ ] **UV-DA-dash-api-conflicts-unit** (C2→sonnet) Unit tests for dashboard api-conflicts · deps: UV-DA-dash-api-conflicts-validate
-- [ ] **UV-DA-dash-api-events-sse-integration** (C3→sonnet) Integration tests for dashboard api-events-sse · deps: UV-DA-dash-api-events-sse-unit, UV-DA-dash-api-events-sse-authz
-- [ ] **UV-DA-dash-api-events-sse-unit** (C2→sonnet) Unit tests for dashboard api-events-sse · deps: UV-DA-dash-api-events-sse-validate
-- [ ] **UV-DA-dash-api-graph-integration** (C3→sonnet) Integration tests for dashboard api-graph · deps: UV-DA-dash-api-graph-unit, UV-DA-dash-api-graph-authz
-- [ ] **UV-DA-dash-api-graph-unit** (C2→sonnet) Unit tests for dashboard api-graph · deps: UV-DA-dash-api-graph-validate
-- [ ] **UV-DA-dash-api-leases-integration** (C3→sonnet) Integration tests for dashboard api-leases · deps: UV-DA-dash-api-leases-unit, UV-DA-dash-api-leases-authz
-- [ ] **UV-DA-dash-api-leases-unit** (C2→sonnet) Unit tests for dashboard api-leases · deps: UV-DA-dash-api-leases-validate
-- [ ] **UV-DA-dash-api-registry-integration** (C3→sonnet) Integration tests for dashboard api-registry · deps: UV-DA-dash-api-registry-unit, UV-DA-dash-api-registry-authz
-- [ ] **UV-DA-dash-api-registry-unit** (C2→sonnet) Unit tests for dashboard api-registry · deps: UV-DA-dash-api-registry-validate
-- [ ] **UV-DA-sma-wiki-parity** (C1→haiku) Record behavior-parity evidence for sma-wiki.mjs · deps: UV-DA-sma-wiki-convert
-- [ ] **UV-DA-ui-app-shell-unit** (C2→sonnet) Unit tests for app-shell · deps: UV-DA-ui-app-shell-impl, UV-DA-ui-app-shell-states
-- [ ] **UV-DA-ui-app-shell-visual** (C1→haiku) Visual regression snapshots for app-shell · deps: UV-DA-ui-app-shell-states
-- [ ] **UV-DA-ui-brick-card-unit** (C2→sonnet) Unit tests for brick-card · deps: UV-DA-ui-brick-card-impl, UV-DA-ui-brick-card-states
-- [ ] **UV-DA-ui-brick-card-visual** (C1→haiku) Visual regression snapshots for brick-card · deps: UV-DA-ui-brick-card-states
-- [ ] **UV-DA-ui-brick-detail-unit** (C2→sonnet) Unit tests for brick-detail · deps: UV-DA-ui-brick-detail-impl, UV-DA-ui-brick-detail-states
-- [ ] **UV-DA-ui-brick-detail-visual** (C1→haiku) Visual regression snapshots for brick-detail · deps: UV-DA-ui-brick-detail-states
-- [ ] **UV-DA-ui-brick-wall-unit** (C2→sonnet) Unit tests for brick-wall · deps: UV-DA-ui-brick-wall-impl, UV-DA-ui-brick-wall-states
-- [ ] **UV-DA-ui-brick-wall-visual** (C1→haiku) Visual regression snapshots for brick-wall · deps: UV-DA-ui-brick-wall-states
-- [ ] **UV-DA-ui-conflict-heat-strip-unit** (C2→sonnet) Unit tests for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-impl, UV-DA-ui-conflict-heat-strip-states
-- [ ] **UV-DA-ui-conflict-heat-strip-visual** (C1→haiku) Visual regression snapshots for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-states
-- [ ] **UV-DA-ui-conflict-ledger-unit** (C2→sonnet) Unit tests for conflict-ledger · deps: UV-DA-ui-conflict-ledger-impl, UV-DA-ui-conflict-ledger-states
-- [ ] **UV-DA-ui-conflict-ledger-visual** (C1→haiku) Visual regression snapshots for conflict-ledger · deps: UV-DA-ui-conflict-ledger-states
-- [ ] **UV-DA-ui-empty-states-unit** (C2→sonnet) Unit tests for empty-states · deps: UV-DA-ui-empty-states-impl, UV-DA-ui-empty-states-states
-- [ ] **UV-DA-ui-empty-states-visual** (C1→haiku) Visual regression snapshots for empty-states · deps: UV-DA-ui-empty-states-states
-- [ ] **UV-DA-ui-graph-view-unit** (C2→sonnet) Unit tests for graph-view · deps: UV-DA-ui-graph-view-impl, UV-DA-ui-graph-view-states
-- [ ] **UV-DA-ui-graph-view-visual** (C1→haiku) Visual regression snapshots for graph-view · deps: UV-DA-ui-graph-view-states
-- [ ] **UV-DA-ui-lease-board-unit** (C2→sonnet) Unit tests for lease-board · deps: UV-DA-ui-lease-board-impl, UV-DA-ui-lease-board-states
-- [ ] **UV-DA-ui-lease-board-visual** (C1→haiku) Visual regression snapshots for lease-board · deps: UV-DA-ui-lease-board-states
-- [ ] **UV-DA-ui-lease-row-unit** (C2→sonnet) Unit tests for lease-row · deps: UV-DA-ui-lease-row-impl, UV-DA-ui-lease-row-states
-- [ ] **UV-DA-ui-lease-row-visual** (C1→haiku) Visual regression snapshots for lease-row · deps: UV-DA-ui-lease-row-states
-- [ ] **UV-DA-ui-module-filter-unit** (C2→sonnet) Unit tests for module-filter · deps: UV-DA-ui-module-filter-impl, UV-DA-ui-module-filter-states
-- [ ] **UV-DA-ui-module-filter-visual** (C1→haiku) Visual regression snapshots for module-filter · deps: UV-DA-ui-module-filter-states
-- [ ] **UV-DA-ui-provenance-ribbon-unit** (C2→sonnet) Unit tests for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-impl, UV-DA-ui-provenance-ribbon-states
-- [ ] **UV-DA-ui-provenance-ribbon-visual** (C1→haiku) Visual regression snapshots for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-states
-- [ ] **UV-DA-ui-registry-table-unit** (C2→sonnet) Unit tests for registry-table · deps: UV-DA-ui-registry-table-impl, UV-DA-ui-registry-table-states
-- [ ] **UV-DA-ui-registry-table-visual** (C1→haiku) Visual regression snapshots for registry-table · deps: UV-DA-ui-registry-table-states
-- [ ] **UV-DA-ui-seal-chip-unit** (C2→sonnet) Unit tests for seal-chip · deps: UV-DA-ui-seal-chip-impl, UV-DA-ui-seal-chip-states
-- [ ] **UV-DA-ui-seal-chip-visual** (C1→haiku) Visual regression snapshots for seal-chip · deps: UV-DA-ui-seal-chip-states
-- [ ] **UV-DA-ui-search-bar-unit** (C2→sonnet) Unit tests for search-bar · deps: UV-DA-ui-search-bar-impl, UV-DA-ui-search-bar-states
-- [ ] **UV-DA-ui-search-bar-visual** (C1→haiku) Visual regression snapshots for search-bar · deps: UV-DA-ui-search-bar-states
-- [ ] **UV-DA-ui-settings-panel-unit** (C2→sonnet) Unit tests for settings-panel · deps: UV-DA-ui-settings-panel-impl, UV-DA-ui-settings-panel-states
-- [ ] **UV-DA-ui-settings-panel-visual** (C1→haiku) Visual regression snapshots for settings-panel · deps: UV-DA-ui-settings-panel-states
-- [ ] **UV-DA-ui-stats-tiles-unit** (C2→sonnet) Unit tests for stats-tiles · deps: UV-DA-ui-stats-tiles-impl, UV-DA-ui-stats-tiles-states
-- [ ] **UV-DA-ui-stats-tiles-visual** (C1→haiku) Visual regression snapshots for stats-tiles · deps: UV-DA-ui-stats-tiles-states
-- [ ] **UV-DA-ui-theme-toggle-unit** (C2→sonnet) Unit tests for theme-toggle · deps: UV-DA-ui-theme-toggle-impl, UV-DA-ui-theme-toggle-states
-- [ ] **UV-DA-ui-theme-toggle-visual** (C1→haiku) Visual regression snapshots for theme-toggle · deps: UV-DA-ui-theme-toggle-states
-- [ ] **UV-DA-ui-toast-center-unit** (C2→sonnet) Unit tests for toast-center · deps: UV-DA-ui-toast-center-impl, UV-DA-ui-toast-center-states
-- [ ] **UV-DA-ui-toast-center-visual** (C1→haiku) Visual regression snapshots for toast-center · deps: UV-DA-ui-toast-center-states
-- [ ] **UV-DA-ui-verdict-stamp-unit** (C2→sonnet) Unit tests for verdict-stamp · deps: UV-DA-ui-verdict-stamp-impl, UV-DA-ui-verdict-stamp-states
-- [ ] **UV-DA-ui-verdict-stamp-visual** (C1→haiku) Visual regression snapshots for verdict-stamp · deps: UV-DA-ui-verdict-stamp-states
+- [x] **UV-DA-dash-api-conflicts-integration** (C3→sonnet) Integration tests for dashboard api-conflicts · deps: UV-DA-dash-api-conflicts-unit, UV-DA-dash-api-conflicts-authz
+- [x] **UV-DA-dash-api-conflicts-unit** (C2→sonnet) Unit tests for dashboard api-conflicts · deps: UV-DA-dash-api-conflicts-validate
+- [x] **UV-DA-dash-api-events-sse-integration** (C3→sonnet) Integration tests for dashboard api-events-sse · deps: UV-DA-dash-api-events-sse-unit, UV-DA-dash-api-events-sse-authz
+- [x] **UV-DA-dash-api-events-sse-unit** (C2→sonnet) Unit tests for dashboard api-events-sse · deps: UV-DA-dash-api-events-sse-validate
+- [x] **UV-DA-dash-api-graph-integration** (C3→sonnet) Integration tests for dashboard api-graph · deps: UV-DA-dash-api-graph-unit, UV-DA-dash-api-graph-authz
+- [x] **UV-DA-dash-api-graph-unit** (C2→sonnet) Unit tests for dashboard api-graph · deps: UV-DA-dash-api-graph-validate
+- [x] **UV-DA-dash-api-leases-integration** (C3→sonnet) Integration tests for dashboard api-leases · deps: UV-DA-dash-api-leases-unit, UV-DA-dash-api-leases-authz
+- [x] **UV-DA-dash-api-leases-unit** (C2→sonnet) Unit tests for dashboard api-leases · deps: UV-DA-dash-api-leases-validate
+- [x] **UV-DA-dash-api-registry-integration** (C3→sonnet) Integration tests for dashboard api-registry · deps: UV-DA-dash-api-registry-unit, UV-DA-dash-api-registry-authz
+- [x] **UV-DA-dash-api-registry-unit** (C2→sonnet) Unit tests for dashboard api-registry · deps: UV-DA-dash-api-registry-validate
+- [x] **UV-DA-sma-wiki-parity** (C1→haiku) Record behavior-parity evidence for sma-wiki.mjs · deps: UV-DA-sma-wiki-convert
+- [x] **UV-DA-ui-app-shell-unit** (C2→sonnet) Unit tests for app-shell · deps: UV-DA-ui-app-shell-impl, UV-DA-ui-app-shell-states
+- [x] **UV-DA-ui-app-shell-visual** (C1→haiku) Visual regression snapshots for app-shell · deps: UV-DA-ui-app-shell-states
+- [x] **UV-DA-ui-brick-card-unit** (C2→sonnet) Unit tests for brick-card · deps: UV-DA-ui-brick-card-impl, UV-DA-ui-brick-card-states
+- [x] **UV-DA-ui-brick-card-visual** (C1→haiku) Visual regression snapshots for brick-card · deps: UV-DA-ui-brick-card-states
+- [x] **UV-DA-ui-brick-detail-unit** (C2→sonnet) Unit tests for brick-detail · deps: UV-DA-ui-brick-detail-impl, UV-DA-ui-brick-detail-states
+- [x] **UV-DA-ui-brick-detail-visual** (C1→haiku) Visual regression snapshots for brick-detail · deps: UV-DA-ui-brick-detail-states
+- [x] **UV-DA-ui-brick-wall-unit** (C2→sonnet) Unit tests for brick-wall · deps: UV-DA-ui-brick-wall-impl, UV-DA-ui-brick-wall-states
+- [x] **UV-DA-ui-brick-wall-visual** (C1→haiku) Visual regression snapshots for brick-wall · deps: UV-DA-ui-brick-wall-states
+- [x] **UV-DA-ui-conflict-heat-strip-unit** (C2→sonnet) Unit tests for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-impl, UV-DA-ui-conflict-heat-strip-states
+- [x] **UV-DA-ui-conflict-heat-strip-visual** (C1→haiku) Visual regression snapshots for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-states
+- [x] **UV-DA-ui-conflict-ledger-unit** (C2→sonnet) Unit tests for conflict-ledger · deps: UV-DA-ui-conflict-ledger-impl, UV-DA-ui-conflict-ledger-states
+- [x] **UV-DA-ui-conflict-ledger-visual** (C1→haiku) Visual regression snapshots for conflict-ledger · deps: UV-DA-ui-conflict-ledger-states
+- [x] **UV-DA-ui-empty-states-unit** (C2→sonnet) Unit tests for empty-states · deps: UV-DA-ui-empty-states-impl, UV-DA-ui-empty-states-states
+- [x] **UV-DA-ui-empty-states-visual** (C1→haiku) Visual regression snapshots for empty-states · deps: UV-DA-ui-empty-states-states
+- [x] **UV-DA-ui-graph-view-unit** (C2→sonnet) Unit tests for graph-view · deps: UV-DA-ui-graph-view-impl, UV-DA-ui-graph-view-states
+- [x] **UV-DA-ui-graph-view-visual** (C1→haiku) Visual regression snapshots for graph-view · deps: UV-DA-ui-graph-view-states
+- [x] **UV-DA-ui-lease-board-unit** (C2→sonnet) Unit tests for lease-board · deps: UV-DA-ui-lease-board-impl, UV-DA-ui-lease-board-states
+- [x] **UV-DA-ui-lease-board-visual** (C1→haiku) Visual regression snapshots for lease-board · deps: UV-DA-ui-lease-board-states
+- [x] **UV-DA-ui-lease-row-unit** (C2→sonnet) Unit tests for lease-row · deps: UV-DA-ui-lease-row-impl, UV-DA-ui-lease-row-states
+- [x] **UV-DA-ui-lease-row-visual** (C1→haiku) Visual regression snapshots for lease-row · deps: UV-DA-ui-lease-row-states
+- [x] **UV-DA-ui-module-filter-unit** (C2→sonnet) Unit tests for module-filter · deps: UV-DA-ui-module-filter-impl, UV-DA-ui-module-filter-states
+- [x] **UV-DA-ui-module-filter-visual** (C1→haiku) Visual regression snapshots for module-filter · deps: UV-DA-ui-module-filter-states
+- [x] **UV-DA-ui-provenance-ribbon-unit** (C2→sonnet) Unit tests for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-impl, UV-DA-ui-provenance-ribbon-states
+- [x] **UV-DA-ui-provenance-ribbon-visual** (C1→haiku) Visual regression snapshots for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-states
+- [x] **UV-DA-ui-registry-table-unit** (C2→sonnet) Unit tests for registry-table · deps: UV-DA-ui-registry-table-impl, UV-DA-ui-registry-table-states
+- [x] **UV-DA-ui-registry-table-visual** (C1→haiku) Visual regression snapshots for registry-table · deps: UV-DA-ui-registry-table-states
+- [x] **UV-DA-ui-seal-chip-unit** (C2→sonnet) Unit tests for seal-chip · deps: UV-DA-ui-seal-chip-impl, UV-DA-ui-seal-chip-states
+- [x] **UV-DA-ui-seal-chip-visual** (C1→haiku) Visual regression snapshots for seal-chip · deps: UV-DA-ui-seal-chip-states
+- [x] **UV-DA-ui-search-bar-unit** (C2→sonnet) Unit tests for search-bar · deps: UV-DA-ui-search-bar-impl, UV-DA-ui-search-bar-states
+- [x] **UV-DA-ui-search-bar-visual** (C1→haiku) Visual regression snapshots for search-bar · deps: UV-DA-ui-search-bar-states
+- [x] **UV-DA-ui-settings-panel-unit** (C2→sonnet) Unit tests for settings-panel · deps: UV-DA-ui-settings-panel-impl, UV-DA-ui-settings-panel-states
+- [x] **UV-DA-ui-settings-panel-visual** (C1→haiku) Visual regression snapshots for settings-panel · deps: UV-DA-ui-settings-panel-states
+- [x] **UV-DA-ui-stats-tiles-unit** (C2→sonnet) Unit tests for stats-tiles · deps: UV-DA-ui-stats-tiles-impl, UV-DA-ui-stats-tiles-states
+- [x] **UV-DA-ui-stats-tiles-visual** (C1→haiku) Visual regression snapshots for stats-tiles · deps: UV-DA-ui-stats-tiles-states
+- [x] **UV-DA-ui-theme-toggle-unit** (C2→sonnet) Unit tests for theme-toggle · deps: UV-DA-ui-theme-toggle-impl, UV-DA-ui-theme-toggle-states
+- [x] **UV-DA-ui-theme-toggle-visual** (C1→haiku) Visual regression snapshots for theme-toggle · deps: UV-DA-ui-theme-toggle-states
+- [x] **UV-DA-ui-toast-center-unit** (C2→sonnet) Unit tests for toast-center · deps: UV-DA-ui-toast-center-impl, UV-DA-ui-toast-center-states
+- [x] **UV-DA-ui-toast-center-visual** (C1→haiku) Visual regression snapshots for toast-center · deps: UV-DA-ui-toast-center-states
+- [x] **UV-DA-ui-verdict-stamp-unit** (C2→sonnet) Unit tests for verdict-stamp · deps: UV-DA-ui-verdict-stamp-impl, UV-DA-ui-verdict-stamp-states
+- [x] **UV-DA-ui-verdict-stamp-visual** (C1→haiku) Visual regression snapshots for verdict-stamp · deps: UV-DA-ui-verdict-stamp-states

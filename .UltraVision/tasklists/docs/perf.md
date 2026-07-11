@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-DO-docs-perfbudget** (C2→sonnet) Performance budgets for docs
+- [x] **UV-DO-docs-perfbudget** (C2→sonnet) Performance budgets for docs

@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.community.onboarding; source=en; media=../media/{locale}/community-onboarding/ -->
 # Community brick submissions
 
 Community bricks enter SMARCH through one gated path:

@@ -405,3 +405,5 @@ An SVD-L2 artifact is acceptable when:
 - Turning SVD-L2 into marketing copy without evidence.
 - Hiding mocks, missing wiring, or unresolved risks inside a beautiful pitch.
 - Making the decision ask vague.
+
+<!-- docs-i18n: key=docs.sweetspot-visual-demo; source=en; media=media/{locale}/sweetspot-visual-demo/ -->

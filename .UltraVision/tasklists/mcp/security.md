@@ -6,12 +6,12 @@
 
 ## M1
 
-- [ ] **UV-MC-mcp-brick-get-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool brick-get · deps: UV-MC-mcp-brick-get-impl
-- [ ] **UV-MC-mcp-brick-search-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool brick-search · deps: UV-MC-mcp-brick-search-impl
-- [ ] **UV-MC-mcp-brick-trust-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool brick-trust · deps: UV-MC-mcp-brick-trust-impl
-- [ ] **UV-MC-mcp-build-list-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool build-list · deps: UV-MC-mcp-build-list-impl
-- [ ] **UV-MC-mcp-registry-doctor-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool registry-doctor · deps: UV-MC-mcp-registry-doctor-impl
-- [ ] **UV-MC-mcp-registry-why-blocked-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool registry-why-blocked · deps: UV-MC-mcp-registry-why-blocked-impl
-- [ ] **UV-MC-mcp-release-install-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool release-install · deps: UV-MC-mcp-release-install-impl
-- [ ] **UV-MC-mcp-server-card-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool server-card · deps: UV-MC-mcp-server-card-impl
-- [ ] **UV-MC-skeptic-install-path-escape** (C3→sonnet) Harden MCP release-install against path and symlink escapes
+- [x] **UV-MC-mcp-brick-get-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool brick-get · deps: UV-MC-mcp-brick-get-impl
+- [x] **UV-MC-mcp-brick-search-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool brick-search · deps: UV-MC-mcp-brick-search-impl
+- [x] **UV-MC-mcp-brick-trust-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool brick-trust · deps: UV-MC-mcp-brick-trust-impl
+- [x] **UV-MC-mcp-build-list-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool build-list · deps: UV-MC-mcp-build-list-impl
+- [x] **UV-MC-mcp-registry-doctor-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool registry-doctor · deps: UV-MC-mcp-registry-doctor-impl
+- [x] **UV-MC-mcp-registry-why-blocked-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool registry-why-blocked · deps: UV-MC-mcp-registry-why-blocked-impl
+- [x] **UV-MC-mcp-release-install-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool release-install · deps: UV-MC-mcp-release-install-impl
+- [x] **UV-MC-mcp-server-card-authz** (C3→sonnet) AuthN/AuthZ enforcement on MCP tool server-card · deps: UV-MC-mcp-server-card-impl
+- [x] **UV-MC-skeptic-install-path-escape** (C3→sonnet) Harden MCP release-install against path and symlink escapes

@@ -6,23 +6,23 @@
 
 ## M3
 
-- [ ] **UV-DA-ui-app-shell-motion** (C2→sonnet) Motion/micro-interaction polish for app-shell · deps: UV-DA-ui-app-shell-states
-- [ ] **UV-DA-ui-brick-card-motion** (C2→sonnet) Motion/micro-interaction polish for brick-card · deps: UV-DA-ui-brick-card-states
-- [ ] **UV-DA-ui-brick-detail-motion** (C2→sonnet) Motion/micro-interaction polish for brick-detail · deps: UV-DA-ui-brick-detail-states
-- [ ] **UV-DA-ui-brick-wall-motion** (C2→sonnet) Motion/micro-interaction polish for brick-wall · deps: UV-DA-ui-brick-wall-states
-- [ ] **UV-DA-ui-conflict-heat-strip-motion** (C2→sonnet) Motion/micro-interaction polish for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-states
-- [ ] **UV-DA-ui-conflict-ledger-motion** (C2→sonnet) Motion/micro-interaction polish for conflict-ledger · deps: UV-DA-ui-conflict-ledger-states
-- [ ] **UV-DA-ui-empty-states-motion** (C2→sonnet) Motion/micro-interaction polish for empty-states · deps: UV-DA-ui-empty-states-states
-- [ ] **UV-DA-ui-graph-view-motion** (C2→sonnet) Motion/micro-interaction polish for graph-view · deps: UV-DA-ui-graph-view-states
-- [ ] **UV-DA-ui-lease-board-motion** (C2→sonnet) Motion/micro-interaction polish for lease-board · deps: UV-DA-ui-lease-board-states
-- [ ] **UV-DA-ui-lease-row-motion** (C2→sonnet) Motion/micro-interaction polish for lease-row · deps: UV-DA-ui-lease-row-states
-- [ ] **UV-DA-ui-module-filter-motion** (C2→sonnet) Motion/micro-interaction polish for module-filter · deps: UV-DA-ui-module-filter-states
-- [ ] **UV-DA-ui-provenance-ribbon-motion** (C2→sonnet) Motion/micro-interaction polish for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-states
-- [ ] **UV-DA-ui-registry-table-motion** (C2→sonnet) Motion/micro-interaction polish for registry-table · deps: UV-DA-ui-registry-table-states
-- [ ] **UV-DA-ui-seal-chip-motion** (C2→sonnet) Motion/micro-interaction polish for seal-chip · deps: UV-DA-ui-seal-chip-states
-- [ ] **UV-DA-ui-search-bar-motion** (C2→sonnet) Motion/micro-interaction polish for search-bar · deps: UV-DA-ui-search-bar-states
-- [ ] **UV-DA-ui-settings-panel-motion** (C2→sonnet) Motion/micro-interaction polish for settings-panel · deps: UV-DA-ui-settings-panel-states
-- [ ] **UV-DA-ui-stats-tiles-motion** (C2→sonnet) Motion/micro-interaction polish for stats-tiles · deps: UV-DA-ui-stats-tiles-states
-- [ ] **UV-DA-ui-theme-toggle-motion** (C2→sonnet) Motion/micro-interaction polish for theme-toggle · deps: UV-DA-ui-theme-toggle-states
-- [ ] **UV-DA-ui-toast-center-motion** (C2→sonnet) Motion/micro-interaction polish for toast-center · deps: UV-DA-ui-toast-center-states
-- [ ] **UV-DA-ui-verdict-stamp-motion** (C2→sonnet) Motion/micro-interaction polish for verdict-stamp · deps: UV-DA-ui-verdict-stamp-states
+- [x] **UV-DA-ui-app-shell-motion** (C2→sonnet) Motion/micro-interaction polish for app-shell · deps: UV-DA-ui-app-shell-states
+- [x] **UV-DA-ui-brick-card-motion** (C2→sonnet) Motion/micro-interaction polish for brick-card · deps: UV-DA-ui-brick-card-states
+- [x] **UV-DA-ui-brick-detail-motion** (C2→sonnet) Motion/micro-interaction polish for brick-detail · deps: UV-DA-ui-brick-detail-states
+- [x] **UV-DA-ui-brick-wall-motion** (C2→sonnet) Motion/micro-interaction polish for brick-wall · deps: UV-DA-ui-brick-wall-states
+- [x] **UV-DA-ui-conflict-heat-strip-motion** (C2→sonnet) Motion/micro-interaction polish for conflict-heat-strip · deps: UV-DA-ui-conflict-heat-strip-states
+- [x] **UV-DA-ui-conflict-ledger-motion** (C2→sonnet) Motion/micro-interaction polish for conflict-ledger · deps: UV-DA-ui-conflict-ledger-states
+- [x] **UV-DA-ui-empty-states-motion** (C2→sonnet) Motion/micro-interaction polish for empty-states · deps: UV-DA-ui-empty-states-states
+- [x] **UV-DA-ui-graph-view-motion** (C2→sonnet) Motion/micro-interaction polish for graph-view · deps: UV-DA-ui-graph-view-states
+- [x] **UV-DA-ui-lease-board-motion** (C2→sonnet) Motion/micro-interaction polish for lease-board · deps: UV-DA-ui-lease-board-states
+- [x] **UV-DA-ui-lease-row-motion** (C2→sonnet) Motion/micro-interaction polish for lease-row · deps: UV-DA-ui-lease-row-states
+- [x] **UV-DA-ui-module-filter-motion** (C2→sonnet) Motion/micro-interaction polish for module-filter · deps: UV-DA-ui-module-filter-states
+- [x] **UV-DA-ui-provenance-ribbon-motion** (C2→sonnet) Motion/micro-interaction polish for provenance-ribbon · deps: UV-DA-ui-provenance-ribbon-states
+- [x] **UV-DA-ui-registry-table-motion** (C2→sonnet) Motion/micro-interaction polish for registry-table · deps: UV-DA-ui-registry-table-states
+- [x] **UV-DA-ui-seal-chip-motion** (C2→sonnet) Motion/micro-interaction polish for seal-chip · deps: UV-DA-ui-seal-chip-states
+- [x] **UV-DA-ui-search-bar-motion** (C2→sonnet) Motion/micro-interaction polish for search-bar · deps: UV-DA-ui-search-bar-states
+- [x] **UV-DA-ui-settings-panel-motion** (C2→sonnet) Motion/micro-interaction polish for settings-panel · deps: UV-DA-ui-settings-panel-states
+- [x] **UV-DA-ui-stats-tiles-motion** (C2→sonnet) Motion/micro-interaction polish for stats-tiles · deps: UV-DA-ui-stats-tiles-states
+- [x] **UV-DA-ui-theme-toggle-motion** (C2→sonnet) Motion/micro-interaction polish for theme-toggle · deps: UV-DA-ui-theme-toggle-states
+- [x] **UV-DA-ui-toast-center-motion** (C2→sonnet) Motion/micro-interaction polish for toast-center · deps: UV-DA-ui-toast-center-states
+- [x] **UV-DA-ui-verdict-stamp-motion** (C2→sonnet) Motion/micro-interaction polish for verdict-stamp · deps: UV-DA-ui-verdict-stamp-states

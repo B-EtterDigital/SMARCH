@@ -6,9 +6,9 @@
 
 ## M1
 
-- [ ] **UV-EV-fixture-portfolio** (C3→sonnet) Deterministic fixture portfolio generator (acme-*)
+- [x] **UV-EV-fixture-portfolio** (C3→sonnet) Deterministic fixture portfolio generator (acme-*)
 
 ## M3
 
-- [ ] **UV-EV-cmd-evals-run-impl** (C3→sonnet) Implement `sma evals-run` command
-- [ ] **UV-EV-harness** (C4→opus) Agent-eval harness with scored scenarios · deps: UV-SM-workforce-contract, UV-EV-fixture-portfolio
+- [x] **UV-EV-cmd-evals-run-impl** (C3→sonnet) Implement `sma evals-run` command
+- [x] **UV-EV-harness** (C4→opus) Agent-eval harness with scored scenarios · deps: UV-SM-workforce-contract, UV-EV-fixture-portfolio

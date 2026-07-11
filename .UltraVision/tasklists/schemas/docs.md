@@ -6,46 +6,46 @@
 
 ## M0
 
-- [ ] **UV-SC-schemas-charter** (C1→haiku) Write module charter for schemas
-- [ ] **UV-SC-schemas-docs** (C1→haiku) Module docs baseline for schemas
+- [x] **UV-SC-schemas-charter** (C1→haiku) Write module charter for schemas
+- [x] **UV-SC-schemas-docs** (C1→haiku) Module docs baseline for schemas
 
 ## M1
 
-- [ ] **UV-SC-active-leases-schema-docs** (C1→haiku) Document active-leases.schema.json model · deps: UV-SC-active-leases-schema-schema
-- [ ] **UV-SC-agent-context-event-schema-docs** (C1→haiku) Document agent-context-event.schema.json model · deps: UV-SC-agent-context-event-schema-schema
-- [ ] **UV-SC-backlog-schema-docs** (C1→haiku) Document backlog.schema.json model · deps: UV-SC-backlog-schema-schema
-- [ ] **UV-SC-brick-manifest-schema-docs** (C1→haiku) Document brick.manifest.schema.json model · deps: UV-SC-brick-manifest-schema-schema
-- [ ] **UV-SC-build-manifest-schema-docs** (C1→haiku) Document build.manifest.schema.json model · deps: UV-SC-build-manifest-schema-schema
-- [ ] **UV-SC-dependents-index-schema-docs** (C1→haiku) Document dependents-index.schema.json model · deps: UV-SC-dependents-index-schema-schema
-- [ ] **UV-SC-global-registry-schema-docs** (C1→haiku) Document global.registry.schema.json model · deps: UV-SC-global-registry-schema-schema
-- [ ] **UV-SC-import-lock-schema-docs** (C1→haiku) Document import-lock.schema.json model · deps: UV-SC-import-lock-schema-schema
-- [ ] **UV-SC-merge-proposal-schema-docs** (C1→haiku) Document merge-proposal.schema.json model · deps: UV-SC-merge-proposal-schema-schema
-- [ ] **UV-SC-placement-map-schema-docs** (C1→haiku) Document placement-map.schema.json model · deps: UV-SC-placement-map-schema-schema
-- [ ] **UV-SC-project-index-schema-docs** (C1→haiku) Document project.index.schema.json model · deps: UV-SC-project-index-schema-schema
-- [ ] **UV-SC-release-schema-docs** (C1→haiku) Document release.schema.json model · deps: UV-SC-release-schema-schema
-- [ ] **UV-SC-reuse-receipt-schema-docs** (C1→haiku) Document reuse-receipt.schema.json model · deps: UV-SC-reuse-receipt-schema-schema
-- [ ] **UV-SC-server-card-schema-docs** (C1→haiku) Document server-card-schema.json model · deps: UV-SC-server-card-schema-schema
+- [x] **UV-SC-active-leases-schema-docs** (C1→haiku) Document active-leases.schema.json model · deps: UV-SC-active-leases-schema-schema
+- [x] **UV-SC-agent-context-event-schema-docs** (C1→haiku) Document agent-context-event.schema.json model · deps: UV-SC-agent-context-event-schema-schema
+- [x] **UV-SC-backlog-schema-docs** (C1→haiku) Document backlog.schema.json model · deps: UV-SC-backlog-schema-schema
+- [x] **UV-SC-brick-manifest-schema-docs** (C1→haiku) Document brick.manifest.schema.json model · deps: UV-SC-brick-manifest-schema-schema
+- [x] **UV-SC-build-manifest-schema-docs** (C1→haiku) Document build.manifest.schema.json model · deps: UV-SC-build-manifest-schema-schema
+- [x] **UV-SC-dependents-index-schema-docs** (C1→haiku) Document dependents-index.schema.json model · deps: UV-SC-dependents-index-schema-schema
+- [x] **UV-SC-global-registry-schema-docs** (C1→haiku) Document global.registry.schema.json model · deps: UV-SC-global-registry-schema-schema
+- [x] **UV-SC-import-lock-schema-docs** (C1→haiku) Document import-lock.schema.json model · deps: UV-SC-import-lock-schema-schema
+- [x] **UV-SC-merge-proposal-schema-docs** (C1→haiku) Document merge-proposal.schema.json model · deps: UV-SC-merge-proposal-schema-schema
+- [x] **UV-SC-placement-map-schema-docs** (C1→haiku) Document placement-map.schema.json model · deps: UV-SC-placement-map-schema-schema
+- [x] **UV-SC-project-index-schema-docs** (C1→haiku) Document project.index.schema.json model · deps: UV-SC-project-index-schema-schema
+- [x] **UV-SC-release-schema-docs** (C1→haiku) Document release.schema.json model · deps: UV-SC-release-schema-schema
+- [x] **UV-SC-reuse-receipt-schema-docs** (C1→haiku) Document reuse-receipt.schema.json model · deps: UV-SC-reuse-receipt-schema-schema
+- [x] **UV-SC-server-card-schema-docs** (C1→haiku) Document server-card-schema.json model · deps: UV-SC-server-card-schema-schema
 
 ## M2
 
-- [ ] **UV-SC-ann-active-leases-schema-intro** (C1→haiku) Add an explained intro to annotate active-leases.schema.json
-- [ ] **UV-SC-ann-agent-context-event-schema-intro** (C1→haiku) Add an explained intro to annotate agent-context-event.schema.json
-- [ ] **UV-SC-ann-backlog-schema-intro** (C1→haiku) Add an explained intro to annotate backlog.schema.json
-- [ ] **UV-SC-ann-brick-manifest-schema-intro** (C1→haiku) Add an explained intro to annotate brick.manifest.schema.json
-- [ ] **UV-SC-ann-build-manifest-schema-intro** (C1→haiku) Add an explained intro to annotate build.manifest.schema.json
-- [ ] **UV-SC-ann-dependents-index-schema-intro** (C1→haiku) Add an explained intro to annotate dependents-index.schema.json
-- [ ] **UV-SC-ann-global-registry-schema-intro** (C1→haiku) Add an explained intro to annotate global.registry.schema.json
-- [ ] **UV-SC-ann-import-lock-schema-intro** (C1→haiku) Add an explained intro to annotate import-lock.schema.json
-- [ ] **UV-SC-ann-merge-proposal-schema-intro** (C1→haiku) Add an explained intro to annotate merge-proposal.schema.json
-- [ ] **UV-SC-ann-placement-map-schema-intro** (C1→haiku) Add an explained intro to annotate placement-map.schema.json
-- [ ] **UV-SC-ann-project-index-schema-intro** (C1→haiku) Add an explained intro to annotate project.index.schema.json
-- [ ] **UV-SC-ann-release-schema-intro** (C1→haiku) Add an explained intro to annotate release.schema.json
-- [ ] **UV-SC-ann-reuse-receipt-schema-intro** (C1→haiku) Add an explained intro to annotate reuse-receipt.schema.json
-- [ ] **UV-SC-capsule-manifest-schema-docs** (C1→haiku) Document capsule-manifest-schema.json model · deps: UV-SC-capsule-manifest-schema-schema
-- [ ] **UV-SC-workforce-packet-schema-docs** (C1→haiku) Document workforce-packet-schema.json model · deps: UV-SC-workforce-packet-schema-schema
+- [x] **UV-SC-ann-active-leases-schema-intro** (C1→haiku) Add an explained intro to annotate active-leases.schema.json
+- [x] **UV-SC-ann-agent-context-event-schema-intro** (C1→haiku) Add an explained intro to annotate agent-context-event.schema.json
+- [x] **UV-SC-ann-backlog-schema-intro** (C1→haiku) Add an explained intro to annotate backlog.schema.json
+- [x] **UV-SC-ann-brick-manifest-schema-intro** (C1→haiku) Add an explained intro to annotate brick.manifest.schema.json
+- [x] **UV-SC-ann-build-manifest-schema-intro** (C1→haiku) Add an explained intro to annotate build.manifest.schema.json
+- [x] **UV-SC-ann-dependents-index-schema-intro** (C1→haiku) Add an explained intro to annotate dependents-index.schema.json
+- [x] **UV-SC-ann-global-registry-schema-intro** (C1→haiku) Add an explained intro to annotate global.registry.schema.json
+- [x] **UV-SC-ann-import-lock-schema-intro** (C1→haiku) Add an explained intro to annotate import-lock.schema.json
+- [x] **UV-SC-ann-merge-proposal-schema-intro** (C1→haiku) Add an explained intro to annotate merge-proposal.schema.json
+- [x] **UV-SC-ann-placement-map-schema-intro** (C1→haiku) Add an explained intro to annotate placement-map.schema.json
+- [x] **UV-SC-ann-project-index-schema-intro** (C1→haiku) Add an explained intro to annotate project.index.schema.json
+- [x] **UV-SC-ann-release-schema-intro** (C1→haiku) Add an explained intro to annotate release.schema.json
+- [x] **UV-SC-ann-reuse-receipt-schema-intro** (C1→haiku) Add an explained intro to annotate reuse-receipt.schema.json
+- [x] **UV-SC-capsule-manifest-schema-docs** (C1→haiku) Document capsule-manifest-schema.json model · deps: UV-SC-capsule-manifest-schema-schema
+- [x] **UV-SC-workforce-packet-schema-docs** (C1→haiku) Document workforce-packet-schema.json model · deps: UV-SC-workforce-packet-schema-schema
 
 ## M3
 
-- [ ] **UV-SC-entitlement-schema-docs** (C1→haiku) Document entitlement-schema.json model · deps: UV-SC-entitlement-schema-schema
-- [ ] **UV-SC-eval-run-schema-docs** (C1→haiku) Document eval-run-schema.json model · deps: UV-SC-eval-run-schema-schema
-- [ ] **UV-SC-submission-bundle-schema-docs** (C1→haiku) Document submission-bundle-schema.json model · deps: UV-SC-submission-bundle-schema-schema
+- [x] **UV-SC-entitlement-schema-docs** (C1→haiku) Document entitlement-schema.json model · deps: UV-SC-entitlement-schema-schema
+- [x] **UV-SC-eval-run-schema-docs** (C1→haiku) Document eval-run-schema.json model · deps: UV-SC-eval-run-schema-schema
+- [x] **UV-SC-submission-bundle-schema-docs** (C1→haiku) Document submission-bundle-schema.json model · deps: UV-SC-submission-bundle-schema-schema

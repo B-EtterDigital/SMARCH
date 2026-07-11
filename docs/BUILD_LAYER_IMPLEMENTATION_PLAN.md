@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.build-layer-implementation-plan; source=en; media=media/{locale}/build-layer-implementation-plan/ -->
 # Build Layer Implementation Plan
 
 This plan records how SMARCH came to represent and validate reusable builds assembled from several bricks. Maintainers extending the build layer need it before changing schemas, scanners, registries, or promotion tooling. Read it when selecting the next implementation slice or checking a design decision against the intended model. Remember that a build must preserve the contracts and evidence of every brick it composes.

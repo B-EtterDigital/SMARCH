@@ -6,20 +6,20 @@
 
 ## M0
 
-- [ ] **UV-GA-gates-testharness** (C3→sonnet) Test harness and CI wiring for gates
+- [x] **UV-GA-gates-testharness** (C3→sonnet) Test harness and CI wiring for gates
 
 ## M1
 
-- [ ] **UV-GA-compliance-controls-parity** (C1→haiku) Record behavior-parity evidence for compliance-controls.mjs · deps: UV-GA-compliance-controls-convert
+- [x] **UV-GA-compliance-controls-parity** (C1→haiku) Record behavior-parity evidence for compliance-controls.mjs · deps: UV-GA-compliance-controls-convert
 
 ## M2
 
-- [ ] **UV-GA-sma-ci-parity** (C1→haiku) Record behavior-parity evidence for sma-ci.mjs · deps: UV-GA-sma-ci-convert
-- [ ] **UV-GA-sma-compliance-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-compliance-gate.mjs · deps: UV-GA-sma-compliance-gate-convert
-- [ ] **UV-GA-sma-license-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-license-gate.mjs · deps: UV-GA-sma-license-gate-convert
-- [ ] **UV-GA-sma-rule-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-rule-gate.mjs · deps: UV-GA-sma-rule-gate-convert
-- [ ] **UV-GA-sma-scope-drift-parity** (C1→haiku) Record behavior-parity evidence for sma-scope-drift.mjs · deps: UV-GA-sma-scope-drift-convert
-- [ ] **UV-GA-sma-security-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-security-gate.mjs · deps: UV-GA-sma-security-gate-convert
-- [ ] **UV-GA-sma-source-size-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-source-size-gate.mjs · deps: UV-GA-sma-source-size-gate-convert
-- [ ] **UV-GA-sma-validate-gen3-parity** (C1→haiku) Record behavior-parity evidence for sma-validate-gen3.mjs · deps: UV-GA-sma-validate-gen3-convert
-- [ ] **UV-GA-sma-validate-parity** (C1→haiku) Record behavior-parity evidence for sma-validate.mjs · deps: UV-GA-sma-validate-convert
+- [x] **UV-GA-sma-ci-parity** (C1→haiku) Record behavior-parity evidence for sma-ci.mjs · deps: UV-GA-sma-ci-convert
+- [x] **UV-GA-sma-compliance-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-compliance-gate.mjs · deps: UV-GA-sma-compliance-gate-convert
+- [x] **UV-GA-sma-license-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-license-gate.mjs · deps: UV-GA-sma-license-gate-convert
+- [x] **UV-GA-sma-rule-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-rule-gate.mjs · deps: UV-GA-sma-rule-gate-convert
+- [x] **UV-GA-sma-scope-drift-parity** (C1→haiku) Record behavior-parity evidence for sma-scope-drift.mjs · deps: UV-GA-sma-scope-drift-convert
+- [x] **UV-GA-sma-security-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-security-gate.mjs · deps: UV-GA-sma-security-gate-convert
+- [x] **UV-GA-sma-source-size-gate-parity** (C1→haiku) Record behavior-parity evidence for sma-source-size-gate.mjs · deps: UV-GA-sma-source-size-gate-convert
+- [x] **UV-GA-sma-validate-gen3-parity** (C1→haiku) Record behavior-parity evidence for sma-validate-gen3.mjs · deps: UV-GA-sma-validate-gen3-convert
+- [x] **UV-GA-sma-validate-parity** (C1→haiku) Record behavior-parity evidence for sma-validate.mjs · deps: UV-GA-sma-validate-convert

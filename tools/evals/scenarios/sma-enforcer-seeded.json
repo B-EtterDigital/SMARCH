@@ -1,0 +1,1 @@
+{"id":"sma-enforcer-seeded","skill":"sma-enforcer","packet":{"objective":"Run a read-only compliance inspection."},"expected":{"gate_outcomes":["node -e \"process.exit(0)\""],"files_shape":{"required":["skills/sma-enforcer/SKILL.md"]},"criteria":["violations fail closed"],"forbidden":["schemas/eval-forbidden.json"]}}

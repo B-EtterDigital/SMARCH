@@ -150,3 +150,5 @@ That is the complete first loop: install, prove, discover, diagnose, and reuse.
 When you want the vocabulary behind the output, keep the
 [glossary](GLOSSARY.md) nearby—especially [canonical](GLOSSARY.md#canonical),
 [provenance seal](GLOSSARY.md#provenance-seal), and [Gen3](GLOSSARY.md#gen3).
+
+<!-- docs-i18n: key=docs.quickstart; source=en; media=media/{locale}/quickstart/ -->

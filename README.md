@@ -15,6 +15,16 @@ without turning the repo into a junk drawer.
 ![license](https://img.shields.io/badge/license-Apache--2.0-blue)
 [![site](https://img.shields.io/badge/site-smarch.netlify.app-ffc21f)](https://smarch.netlify.app)
 
+![SMARCH demo: scan a portfolio, read the brick wall, watch two agents collide gracefully](docs/demo/demo.gif)
+
+*Above: a portfolio scanned into bricks, then two agents race for the same
+brick — the second gets a conflict report instead of a broken merge. That is
+the whole idea. ([re-record it yourself](docs/demo/README.md): `npm run demo:record`)*
+
+**New here — or new to coding?** The [intro lane](docs/intro/START_HERE.md)
+takes you from "what even is a module registry" to running your first agent
+swarm in 19 short, CI-verified lessons. No prior experience assumed.
+
 ## Quickstart (ten minutes)
 
 ```bash

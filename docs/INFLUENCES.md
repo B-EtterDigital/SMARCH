@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.influences; source=en; media=media/{locale}/influences/ -->
 # Influences and Credits
 
 This document records the projects and authors whose ideas shaped SMARCH. Maintainers, contributors, and public communicators need it when tracing a design choice or crediting prior work. Read it before presenting the framework's origins or extending a borrowed pattern. Remember to distinguish inspiration from code provenance and from claims of compatibility.

@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.curated-build-acceptance-definitions; source=en; media=media/{locale}/curated-build-acceptance-definitions/ -->
 # Curated Build Acceptance Definitions
 
 This reference defines the evidence required at each acceptance state for a curated build. Build owners and reviewers need it when deciding whether a candidate may advance. Read it before assigning a status or approving private publication. Remember that the status follows the weakest required proof, not the amount of work invested.

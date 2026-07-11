@@ -1,0 +1,1 @@
+{"id":"sma-gen3-seeded","skill":"sma-gen3","packet":{"objective":"Inspect module ownership without changing shared paths."},"expected":{"gate_outcomes":["node -e \"process.exit(0)\""],"files_shape":{"required":["skills/sma-gen3/SKILL.md"]},"criteria":["module ownership remains explicit"],"forbidden":["package.json.eval-forbidden"]}}

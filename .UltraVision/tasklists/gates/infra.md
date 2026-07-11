@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-GA-gates-graph** (C1→haiku) Graphify module graph for gates
-- [ ] **UV-GA-gates-ownership** (C2→sonnet) Register gates ownership in sma.gen3.json
+- [x] **UV-GA-gates-graph** (C1→haiku) Graphify module graph for gates
+- [x] **UV-GA-gates-ownership** (C2→sonnet) Register gates ownership in sma.gen3.json

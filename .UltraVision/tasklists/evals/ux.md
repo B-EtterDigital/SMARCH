@@ -6,4 +6,4 @@
 
 ## M3
 
-- [ ] **UV-EV-cmd-evals-run-errors** (C2→sonnet) Human-quality error output for `sma evals-run` · deps: UV-EV-cmd-evals-run-impl
+- [x] **UV-EV-cmd-evals-run-errors** (C2→sonnet) Human-quality error output for `sma evals-run` · deps: UV-EV-cmd-evals-run-impl

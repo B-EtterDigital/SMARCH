@@ -57,6 +57,13 @@ the practice portfolio.
 - **17: [Reading the plan, UVP](17-reading-the-plan-uvp.md).** Read an UltraVision plan as a set of explicit tasks, dependencies, and proof. **Available now** · `UV-DO-lesson-17-reading-the-plan-uvp-draft`
 - **18: [Your first agent swarm](18-your-first-agent-swarm.md).** Coordinate several agents on separate work without giving up ownership or verification. **Available now** · `UV-DO-lesson-18-your-first-agent-swarm-draft`
 
+## Help us make the lane easier to use
+
+Community translations are welcome; start with the
+[translation convention](TRANSLATIONS.md) so commands and lesson paths stay
+verifiable. The latest Markdown accessibility pass is recorded in the
+[intro accessibility checklist](ACCESSIBILITY_CHECKLIST.md).
+
 ## The no-stale-command promise
 
 CI runs every command published in this lane against a practice portfolio. A

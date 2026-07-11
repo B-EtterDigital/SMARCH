@@ -6,22 +6,22 @@
 
 ## M0
 
-- [ ] **UV-SM-smoa-testharness** (C3→sonnet) Test harness and CI wiring for smoa
+- [x] **UV-SM-smoa-testharness** (C3→sonnet) Test harness and CI wiring for smoa
 
 ## M1
 
-- [ ] **UV-SM-codex-runner-parity** (C1→haiku) Record behavior-parity evidence for codex-runner.mjs · deps: UV-SM-codex-runner-convert
+- [x] **UV-SM-codex-runner-parity** (C1→haiku) Record behavior-parity evidence for codex-runner.mjs · deps: UV-SM-codex-runner-convert
 
 ## M2
 
-- [ ] **UV-SM-sma-codex-all-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-all.mjs · deps: UV-SM-sma-codex-all-convert
-- [ ] **UV-SM-sma-codex-connect-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-connect.mjs · deps: UV-SM-sma-codex-connect-convert
-- [ ] **UV-SM-sma-codex-enrich-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-enrich.mjs · deps: UV-SM-sma-codex-enrich-convert
-- [ ] **UV-SM-sma-codex-parity** (C1→haiku) Record behavior-parity evidence for sma-codex.mjs · deps: UV-SM-sma-codex-convert
-- [ ] **UV-SM-sma-codex-profile-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-profile.mjs · deps: UV-SM-sma-codex-profile-convert
-- [ ] **UV-SM-sma-codex-rank-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-rank.mjs · deps: UV-SM-sma-codex-rank-convert
-- [ ] **UV-SM-sma-codex-scan-helper-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-scan-helper.mjs · deps: UV-SM-sma-codex-scan-helper-convert
-- [ ] **UV-SM-sma-codex-test-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-test.mjs · deps: UV-SM-sma-codex-test-convert
-- [ ] **UV-SM-sma-codex-wiki-index-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-wiki-index.mjs · deps: UV-SM-sma-codex-wiki-index-convert
-- [ ] **UV-SM-sma-codex-wiki-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-wiki.mjs · deps: UV-SM-sma-codex-wiki-convert
-- [ ] **UV-SM-sma-smoa-token-summary-parity** (C1→haiku) Record behavior-parity evidence for sma-smoa-token-summary.mjs · deps: UV-SM-sma-smoa-token-summary-convert
+- [x] **UV-SM-sma-codex-all-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-all.mjs · deps: UV-SM-sma-codex-all-convert
+- [x] **UV-SM-sma-codex-connect-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-connect.mjs · deps: UV-SM-sma-codex-connect-convert
+- [x] **UV-SM-sma-codex-enrich-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-enrich.mjs · deps: UV-SM-sma-codex-enrich-convert
+- [x] **UV-SM-sma-codex-parity** (C1→haiku) Record behavior-parity evidence for sma-codex.mjs · deps: UV-SM-sma-codex-convert
+- [x] **UV-SM-sma-codex-profile-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-profile.mjs · deps: UV-SM-sma-codex-profile-convert
+- [x] **UV-SM-sma-codex-rank-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-rank.mjs · deps: UV-SM-sma-codex-rank-convert
+- [x] **UV-SM-sma-codex-scan-helper-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-scan-helper.mjs · deps: UV-SM-sma-codex-scan-helper-convert
+- [x] **UV-SM-sma-codex-test-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-test.mjs · deps: UV-SM-sma-codex-test-convert
+- [x] **UV-SM-sma-codex-wiki-index-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-wiki-index.mjs · deps: UV-SM-sma-codex-wiki-index-convert
+- [x] **UV-SM-sma-codex-wiki-parity** (C1→haiku) Record behavior-parity evidence for sma-codex-wiki.mjs · deps: UV-SM-sma-codex-wiki-convert
+- [x] **UV-SM-sma-smoa-token-summary-parity** (C1→haiku) Record behavior-parity evidence for sma-smoa-token-summary.mjs · deps: UV-SM-sma-smoa-token-summary-convert

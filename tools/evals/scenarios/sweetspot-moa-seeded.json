@@ -1,0 +1,1 @@
+{"id":"sweetspot-moa-seeded","skill":"sweetspot-moa","packet":{"objective":"Dispatch an evidence-forced worker packet through the workforce abstraction."},"expected":{"gate_outcomes":["node -e \"process.exit(0)\""],"files_shape":{"required":["skills/sweetspot-moa/SKILL.md"]},"criteria":["cross-review includes actual tests"],"forbidden":["AGENTS.md.eval-forbidden"]}}

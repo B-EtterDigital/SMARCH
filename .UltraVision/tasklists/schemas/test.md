@@ -6,32 +6,32 @@
 
 ## M0
 
-- [ ] **UV-SC-schemas-testharness** (C3→sonnet) Test harness and CI wiring for schemas
+- [x] **UV-SC-schemas-testharness** (C3→sonnet) Test harness and CI wiring for schemas
 
 ## M1
 
-- [ ] **UV-SC-active-leases-schema-tests** (C2→sonnet) Data-layer tests and fixtures for active-leases.schema.json · deps: UV-SC-active-leases-schema-access
-- [ ] **UV-SC-agent-context-event-schema-tests** (C2→sonnet) Data-layer tests and fixtures for agent-context-event.schema.json · deps: UV-SC-agent-context-event-schema-access
-- [ ] **UV-SC-backlog-schema-tests** (C2→sonnet) Data-layer tests and fixtures for backlog.schema.json · deps: UV-SC-backlog-schema-access
-- [ ] **UV-SC-brick-manifest-schema-tests** (C2→sonnet) Data-layer tests and fixtures for brick.manifest.schema.json · deps: UV-SC-brick-manifest-schema-access
-- [ ] **UV-SC-build-manifest-schema-tests** (C2→sonnet) Data-layer tests and fixtures for build.manifest.schema.json · deps: UV-SC-build-manifest-schema-access
-- [ ] **UV-SC-dependents-index-schema-tests** (C2→sonnet) Data-layer tests and fixtures for dependents-index.schema.json · deps: UV-SC-dependents-index-schema-access
-- [ ] **UV-SC-global-registry-schema-tests** (C2→sonnet) Data-layer tests and fixtures for global.registry.schema.json · deps: UV-SC-global-registry-schema-access
-- [ ] **UV-SC-import-lock-schema-tests** (C2→sonnet) Data-layer tests and fixtures for import-lock.schema.json · deps: UV-SC-import-lock-schema-access
-- [ ] **UV-SC-merge-proposal-schema-tests** (C2→sonnet) Data-layer tests and fixtures for merge-proposal.schema.json · deps: UV-SC-merge-proposal-schema-access
-- [ ] **UV-SC-placement-map-schema-tests** (C2→sonnet) Data-layer tests and fixtures for placement-map.schema.json · deps: UV-SC-placement-map-schema-access
-- [ ] **UV-SC-project-index-schema-tests** (C2→sonnet) Data-layer tests and fixtures for project.index.schema.json · deps: UV-SC-project-index-schema-access
-- [ ] **UV-SC-release-schema-tests** (C2→sonnet) Data-layer tests and fixtures for release.schema.json · deps: UV-SC-release-schema-access
-- [ ] **UV-SC-reuse-receipt-schema-tests** (C2→sonnet) Data-layer tests and fixtures for reuse-receipt.schema.json · deps: UV-SC-reuse-receipt-schema-access
-- [ ] **UV-SC-server-card-schema-tests** (C2→sonnet) Data-layer tests and fixtures for server-card-schema.json · deps: UV-SC-server-card-schema-access
+- [x] **UV-SC-active-leases-schema-tests** (C2→sonnet) Data-layer tests and fixtures for active-leases.schema.json · deps: UV-SC-active-leases-schema-access
+- [x] **UV-SC-agent-context-event-schema-tests** (C2→sonnet) Data-layer tests and fixtures for agent-context-event.schema.json · deps: UV-SC-agent-context-event-schema-access
+- [x] **UV-SC-backlog-schema-tests** (C2→sonnet) Data-layer tests and fixtures for backlog.schema.json · deps: UV-SC-backlog-schema-access
+- [x] **UV-SC-brick-manifest-schema-tests** (C2→sonnet) Data-layer tests and fixtures for brick.manifest.schema.json · deps: UV-SC-brick-manifest-schema-access
+- [x] **UV-SC-build-manifest-schema-tests** (C2→sonnet) Data-layer tests and fixtures for build.manifest.schema.json · deps: UV-SC-build-manifest-schema-access
+- [x] **UV-SC-dependents-index-schema-tests** (C2→sonnet) Data-layer tests and fixtures for dependents-index.schema.json · deps: UV-SC-dependents-index-schema-access
+- [x] **UV-SC-global-registry-schema-tests** (C2→sonnet) Data-layer tests and fixtures for global.registry.schema.json · deps: UV-SC-global-registry-schema-access
+- [x] **UV-SC-import-lock-schema-tests** (C2→sonnet) Data-layer tests and fixtures for import-lock.schema.json · deps: UV-SC-import-lock-schema-access
+- [x] **UV-SC-merge-proposal-schema-tests** (C2→sonnet) Data-layer tests and fixtures for merge-proposal.schema.json · deps: UV-SC-merge-proposal-schema-access
+- [x] **UV-SC-placement-map-schema-tests** (C2→sonnet) Data-layer tests and fixtures for placement-map.schema.json · deps: UV-SC-placement-map-schema-access
+- [x] **UV-SC-project-index-schema-tests** (C2→sonnet) Data-layer tests and fixtures for project.index.schema.json · deps: UV-SC-project-index-schema-access
+- [x] **UV-SC-release-schema-tests** (C2→sonnet) Data-layer tests and fixtures for release.schema.json · deps: UV-SC-release-schema-access
+- [x] **UV-SC-reuse-receipt-schema-tests** (C2→sonnet) Data-layer tests and fixtures for reuse-receipt.schema.json · deps: UV-SC-reuse-receipt-schema-access
+- [x] **UV-SC-server-card-schema-tests** (C2→sonnet) Data-layer tests and fixtures for server-card-schema.json · deps: UV-SC-server-card-schema-access
 
 ## M2
 
-- [ ] **UV-SC-capsule-manifest-schema-tests** (C2→sonnet) Data-layer tests and fixtures for capsule-manifest-schema.json · deps: UV-SC-capsule-manifest-schema-access
-- [ ] **UV-SC-workforce-packet-schema-tests** (C2→sonnet) Data-layer tests and fixtures for workforce-packet-schema.json · deps: UV-SC-workforce-packet-schema-access
+- [x] **UV-SC-capsule-manifest-schema-tests** (C2→sonnet) Data-layer tests and fixtures for capsule-manifest-schema.json · deps: UV-SC-capsule-manifest-schema-access
+- [x] **UV-SC-workforce-packet-schema-tests** (C2→sonnet) Data-layer tests and fixtures for workforce-packet-schema.json · deps: UV-SC-workforce-packet-schema-access
 
 ## M3
 
-- [ ] **UV-SC-entitlement-schema-tests** (C2→sonnet) Data-layer tests and fixtures for entitlement-schema.json · deps: UV-SC-entitlement-schema-access
-- [ ] **UV-SC-eval-run-schema-tests** (C2→sonnet) Data-layer tests and fixtures for eval-run-schema.json · deps: UV-SC-eval-run-schema-access
-- [ ] **UV-SC-submission-bundle-schema-tests** (C2→sonnet) Data-layer tests and fixtures for submission-bundle-schema.json · deps: UV-SC-submission-bundle-schema-access
+- [x] **UV-SC-entitlement-schema-tests** (C2→sonnet) Data-layer tests and fixtures for entitlement-schema.json · deps: UV-SC-entitlement-schema-access
+- [x] **UV-SC-eval-run-schema-tests** (C2→sonnet) Data-layer tests and fixtures for eval-run-schema.json · deps: UV-SC-eval-run-schema-access
+- [x] **UV-SC-submission-bundle-schema-tests** (C2→sonnet) Data-layer tests and fixtures for submission-bundle-schema.json · deps: UV-SC-submission-bundle-schema-access

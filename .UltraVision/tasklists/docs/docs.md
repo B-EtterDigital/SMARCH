@@ -6,302 +6,302 @@
 
 ## M0
 
-- [ ] **UV-DO-code-of-conduct** (C1→haiku) CODE_OF_CONDUCT.md — Contributor Covenant 2.1
-- [ ] **UV-DO-doc-influences-accuracy** (C1→haiku) Evidence-check doc page: INFLUENCES.md · deps: UV-DO-doc-influences-write
-- [ ] **UV-DO-doc-influences-linkcheck** (C1→haiku) Wire INFLUENCES.md into navigation and search · deps: UV-DO-doc-influences-write
-- [ ] **UV-DO-doc-influences-write** (C2→sonnet) Write doc page: INFLUENCES.md
-- [ ] **UV-DO-doc-sync-runbook-accuracy** (C1→haiku) Evidence-check doc page: SYNC_RUNBOOK.md · deps: UV-DO-doc-sync-runbook-write
-- [ ] **UV-DO-doc-sync-runbook-linkcheck** (C1→haiku) Wire SYNC_RUNBOOK.md into navigation and search · deps: UV-DO-doc-sync-runbook-write
-- [ ] **UV-DO-doc-sync-runbook-write** (C2→sonnet) Write doc page: SYNC_RUNBOOK.md
-- [ ] **UV-DO-docs-charter** (C1→haiku) Write module charter for docs
-- [ ] **UV-DO-docs-docs** (C1→haiku) Module docs baseline for docs
+- [x] **UV-DO-code-of-conduct** (C1→haiku) CODE_OF_CONDUCT.md — Contributor Covenant 2.1
+- [x] **UV-DO-doc-influences-accuracy** (C1→haiku) Evidence-check doc page: INFLUENCES.md · deps: UV-DO-doc-influences-write
+- [x] **UV-DO-doc-influences-linkcheck** (C1→haiku) Wire INFLUENCES.md into navigation and search · deps: UV-DO-doc-influences-write
+- [x] **UV-DO-doc-influences-write** (C2→sonnet) Write doc page: INFLUENCES.md
+- [x] **UV-DO-doc-sync-runbook-accuracy** (C1→haiku) Evidence-check doc page: SYNC_RUNBOOK.md · deps: UV-DO-doc-sync-runbook-write
+- [x] **UV-DO-doc-sync-runbook-linkcheck** (C1→haiku) Wire SYNC_RUNBOOK.md into navigation and search · deps: UV-DO-doc-sync-runbook-write
+- [x] **UV-DO-doc-sync-runbook-write** (C2→sonnet) Write doc page: SYNC_RUNBOOK.md
+- [x] **UV-DO-docs-charter** (C1→haiku) Write module charter for docs
+- [x] **UV-DO-docs-docs** (C1→haiku) Module docs baseline for docs
 - [-] **UV-DO-influences-md** (C2→sonnet) ~~docs/INFLUENCES.md — consolidated lineage and credit~~ (obsolete: duplicate of templated UV-DO-doc-influences-* (bespoke spec folded into the dispatch packet))
 
 ## M1
 
-- [ ] **UV-DO-attribution-sweep** (C2→sonnet) Repoint scattered code-comment credits at INFLUENCES.md
-- [ ] **UV-DO-colophon** (C1→haiku) docs/COLOPHON.md — how this repo is built, with love
-- [ ] **UV-DO-commands-reference** (C3→sonnet) docs/COMMANDS.md — the complete annotated command reference
-- [ ] **UV-DO-demo-tape** (C2→sonnet) Scripted terminal demo (vhs) — scan → wall → collision · deps: UV-EV-fixture-portfolio
-- [ ] **UV-DO-doc-glossary-accuracy** (C1→haiku) Evidence-check doc page: GLOSSARY.md · deps: UV-DO-doc-glossary-write
-- [ ] **UV-DO-doc-glossary-linkcheck** (C1→haiku) Wire GLOSSARY.md into navigation and search · deps: UV-DO-doc-glossary-write
-- [ ] **UV-DO-doc-glossary-write** (C2→sonnet) Write doc page: GLOSSARY.md
-- [ ] **UV-DO-doc-mcp-accuracy** (C1→haiku) Evidence-check doc page: MCP_SERVER.md · deps: UV-DO-doc-mcp-write
-- [ ] **UV-DO-doc-mcp-linkcheck** (C1→haiku) Wire MCP_SERVER.md into navigation and search · deps: UV-DO-doc-mcp-write
-- [ ] **UV-DO-doc-mcp-write** (C2→sonnet) Write doc page: MCP_SERVER.md
-- [ ] **UV-DO-doc-quickstart-accuracy** (C1→haiku) Evidence-check doc page: QUICKSTART.md · deps: UV-DO-doc-quickstart-write
-- [ ] **UV-DO-doc-quickstart-linkcheck** (C1→haiku) Wire QUICKSTART.md into navigation and search · deps: UV-DO-doc-quickstart-write
-- [ ] **UV-DO-doc-quickstart-write** (C2→sonnet) Write doc page: QUICKSTART.md
-- [ ] **UV-DO-first-contribution** (C2→sonnet) CONTRIBUTING: 'your first contribution in 30 minutes' section
-- [ ] **UV-DO-glossary** (C1→haiku) docs/GLOSSARY.md — every acronym defined once
-- [ ] **UV-DO-in-adoption-roadmap-intro** (C1→haiku) Add an explained intro to ADOPTION_ROADMAP.md
-- [ ] **UV-DO-in-agent-skills-intro** (C1→haiku) Add an explained intro to AGENT_SKILLS.md
-- [ ] **UV-DO-in-brick-metadata-intro** (C1→haiku) Add an explained intro to BRICK_METADATA.md
-- [ ] **UV-DO-in-build-layer-implementation-plan-intro** (C1→haiku) Add an explained intro to BUILD_LAYER_IMPLEMENTATION_PLAN.md
-- [ ] **UV-DO-in-canonicalization-playbook-intro** (C1→haiku) Add an explained intro to CANONICALIZATION_PLAYBOOK.md
-- [ ] **UV-DO-in-codex-integration-intro** (C1→haiku) Add an explained intro to CODEX_INTEGRATION.md
-- [ ] **UV-DO-in-compact-brick-cards-intro** (C1→haiku) Add an explained intro to COMPACT_BRICK_CARDS.md
-- [ ] **UV-DO-in-compliance-layer-intro** (C1→haiku) Add an explained intro to COMPLIANCE-LAYER.md
-- [ ] **UV-DO-in-curated-build-acceptance-definitions-intro** (C1→haiku) Add an explained intro to CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md
-- [ ] **UV-DO-in-curated-build-lifecycle-playbook-intro** (C1→haiku) Add an explained intro to CURATED_BUILD_LIFECYCLE_PLAYBOOK.md
-- [ ] **UV-DO-in-curated-build-private-publish-lane-intro** (C1→haiku) Add an explained intro to CURATED_BUILD_PRIVATE_PUBLISH_LANE.md
-- [ ] **UV-DO-in-enforcement-intro** (C1→haiku) Add an explained intro to ENFORCEMENT.md
-- [ ] **UV-DO-in-engineering-review-response-intro** (C1→haiku) Add an explained intro to ENGINEERING_REVIEW_RESPONSE.md
-- [ ] **UV-DO-in-first-time-setup-intro** (C1→haiku) Add an explained intro to FIRST_TIME_SETUP.md
-- [ ] **UV-DO-in-framework-intro** (C1→haiku) Add an explained intro to FRAMEWORK.md
-- [ ] **UV-DO-in-governance-intro** (C1→haiku) Add an explained intro to GOVERNANCE.md
-- [ ] **UV-DO-in-hierarchy-intro** (C1→haiku) Add an explained intro to HIERARCHY.md
-- [ ] **UV-DO-in-influences-intro** (C1→haiku) Add an explained intro to INFLUENCES.md
-- [ ] **UV-DO-in-maturity-intro** (C1→haiku) Add an explained intro to MATURITY.md
-- [ ] **UV-DO-in-multi-agent-operations-intro** (C1→haiku) Add an explained intro to MULTI_AGENT_OPERATIONS.md
-- [ ] **UV-DO-in-privacy-intro** (C1→haiku) Add an explained intro to PRIVACY.md
-- [ ] **UV-DO-in-provenance-seal-license-lattice-intro** (C1→haiku) Add an explained intro to PROVENANCE_SEAL_LICENSE_LATTICE.md
-- [ ] **UV-DO-in-public-positioning-intro** (C1→haiku) Add an explained intro to PUBLIC_POSITIONING.md
-- [ ] **UV-DO-in-registry-workflow-intro** (C1→haiku) Add an explained intro to REGISTRY_WORKFLOW.md
-- [ ] **UV-DO-in-roadmap-100-intro** (C1→haiku) Add an explained intro to ROADMAP_100.md
-- [ ] **UV-DO-in-scanner-edge-cases-intro** (C1→haiku) Add an explained intro to SCANNER_EDGE_CASES.md
-- [ ] **UV-DO-in-scat-sweetspot-core-agent-testloop-intro** (C1→haiku) Add an explained intro to SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md
-- [ ] **UV-DO-in-security-and-swarm-gates-intro** (C1→haiku) Add an explained intro to SECURITY_AND_SWARM_GATES.md
-- [ ] **UV-DO-in-sff-sweetspot-frontend-fix-intro** (C1→haiku) Add an explained intro to SFF_SWEETSPOT_FRONTEND_FIX.md
-- [ ] **UV-DO-in-smoa-sweetspot-moa-intro** (C1→haiku) Add an explained intro to SMOA_SWEETSPOT_MOA.md
-- [ ] **UV-DO-in-ssa-v2-base-rules-intro** (C1→haiku) Add an explained intro to SSA_V2_BASE_RULES.md
-- [ ] **UV-DO-in-sup-sweetspot-ultra-plan-intro** (C1→haiku) Add an explained intro to SUP_SWEETSPOT_ULTRA_PLAN.md
-- [ ] **UV-DO-in-sweetspot-visual-demo-intro** (C1→haiku) Add an explained intro to SWEETSPOT_VISUAL_DEMO.md
-- [ ] **UV-DO-in-terminology-intro** (C1→haiku) Add an explained intro to TERMINOLOGY.md
-- [ ] **UV-DO-in-token-accounting-and-backlog-intro** (C1→haiku) Add an explained intro to TOKEN_ACCOUNTING_AND_BACKLOG.md
-- [ ] **UV-DO-in-transparency-intro** (C1→haiku) Add an explained intro to TRANSPARENCY.md
-- [ ] **UV-DO-in-update-propagation-intro** (C1→haiku) Add an explained intro to UPDATE_PROPAGATION.md
-- [ ] **UV-DO-in-user-wiki-and-course-intro** (C1→haiku) Add an explained intro to USER_WIKI_AND_COURSE.md
-- [ ] **UV-DO-influences-verify** (C1→haiku) Fact-check every INFLUENCES.md entry
-- [ ] **UV-DO-quickstart-verified** (C2→sonnet) CI-verified 5-minute quickstart · deps: UV-EV-fixture-portfolio
-- [ ] **UV-DO-readme-demo-first** (C3→sonnet) Restructure README demo-first · deps: UV-DO-demo-tape
-- [ ] **UV-DO-support-md** (C1→haiku) SUPPORT.md — where to get help
+- [x] **UV-DO-attribution-sweep** (C2→sonnet) Repoint scattered code-comment credits at INFLUENCES.md
+- [x] **UV-DO-colophon** (C1→haiku) docs/COLOPHON.md — how this repo is built, with love
+- [x] **UV-DO-commands-reference** (C3→sonnet) docs/COMMANDS.md — the complete annotated command reference
+- [x] **UV-DO-demo-tape** (C2→sonnet) Scripted terminal demo (vhs) — scan → wall → collision · deps: UV-EV-fixture-portfolio
+- [x] **UV-DO-doc-glossary-accuracy** (C1→haiku) Evidence-check doc page: GLOSSARY.md · deps: UV-DO-doc-glossary-write
+- [x] **UV-DO-doc-glossary-linkcheck** (C1→haiku) Wire GLOSSARY.md into navigation and search · deps: UV-DO-doc-glossary-write
+- [x] **UV-DO-doc-glossary-write** (C2→sonnet) Write doc page: GLOSSARY.md
+- [x] **UV-DO-doc-mcp-accuracy** (C1→haiku) Evidence-check doc page: MCP_SERVER.md · deps: UV-DO-doc-mcp-write
+- [x] **UV-DO-doc-mcp-linkcheck** (C1→haiku) Wire MCP_SERVER.md into navigation and search · deps: UV-DO-doc-mcp-write
+- [x] **UV-DO-doc-mcp-write** (C2→sonnet) Write doc page: MCP_SERVER.md
+- [x] **UV-DO-doc-quickstart-accuracy** (C1→haiku) Evidence-check doc page: QUICKSTART.md · deps: UV-DO-doc-quickstart-write
+- [x] **UV-DO-doc-quickstart-linkcheck** (C1→haiku) Wire QUICKSTART.md into navigation and search · deps: UV-DO-doc-quickstart-write
+- [x] **UV-DO-doc-quickstart-write** (C2→sonnet) Write doc page: QUICKSTART.md
+- [x] **UV-DO-first-contribution** (C2→sonnet) CONTRIBUTING: 'your first contribution in 30 minutes' section
+- [x] **UV-DO-glossary** (C1→haiku) docs/GLOSSARY.md — every acronym defined once
+- [x] **UV-DO-in-adoption-roadmap-intro** (C1→haiku) Add an explained intro to ADOPTION_ROADMAP.md
+- [x] **UV-DO-in-agent-skills-intro** (C1→haiku) Add an explained intro to AGENT_SKILLS.md
+- [x] **UV-DO-in-brick-metadata-intro** (C1→haiku) Add an explained intro to BRICK_METADATA.md
+- [x] **UV-DO-in-build-layer-implementation-plan-intro** (C1→haiku) Add an explained intro to BUILD_LAYER_IMPLEMENTATION_PLAN.md
+- [x] **UV-DO-in-canonicalization-playbook-intro** (C1→haiku) Add an explained intro to CANONICALIZATION_PLAYBOOK.md
+- [x] **UV-DO-in-codex-integration-intro** (C1→haiku) Add an explained intro to CODEX_INTEGRATION.md
+- [x] **UV-DO-in-compact-brick-cards-intro** (C1→haiku) Add an explained intro to COMPACT_BRICK_CARDS.md
+- [x] **UV-DO-in-compliance-layer-intro** (C1→haiku) Add an explained intro to COMPLIANCE-LAYER.md
+- [x] **UV-DO-in-curated-build-acceptance-definitions-intro** (C1→haiku) Add an explained intro to CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md
+- [x] **UV-DO-in-curated-build-lifecycle-playbook-intro** (C1→haiku) Add an explained intro to CURATED_BUILD_LIFECYCLE_PLAYBOOK.md
+- [x] **UV-DO-in-curated-build-private-publish-lane-intro** (C1→haiku) Add an explained intro to CURATED_BUILD_PRIVATE_PUBLISH_LANE.md
+- [x] **UV-DO-in-enforcement-intro** (C1→haiku) Add an explained intro to ENFORCEMENT.md
+- [x] **UV-DO-in-engineering-review-response-intro** (C1→haiku) Add an explained intro to ENGINEERING_REVIEW_RESPONSE.md
+- [x] **UV-DO-in-first-time-setup-intro** (C1→haiku) Add an explained intro to FIRST_TIME_SETUP.md
+- [x] **UV-DO-in-framework-intro** (C1→haiku) Add an explained intro to FRAMEWORK.md
+- [x] **UV-DO-in-governance-intro** (C1→haiku) Add an explained intro to GOVERNANCE.md
+- [x] **UV-DO-in-hierarchy-intro** (C1→haiku) Add an explained intro to HIERARCHY.md
+- [x] **UV-DO-in-influences-intro** (C1→haiku) Add an explained intro to INFLUENCES.md
+- [x] **UV-DO-in-maturity-intro** (C1→haiku) Add an explained intro to MATURITY.md
+- [x] **UV-DO-in-multi-agent-operations-intro** (C1→haiku) Add an explained intro to MULTI_AGENT_OPERATIONS.md
+- [x] **UV-DO-in-privacy-intro** (C1→haiku) Add an explained intro to PRIVACY.md
+- [x] **UV-DO-in-provenance-seal-license-lattice-intro** (C1→haiku) Add an explained intro to PROVENANCE_SEAL_LICENSE_LATTICE.md
+- [x] **UV-DO-in-public-positioning-intro** (C1→haiku) Add an explained intro to PUBLIC_POSITIONING.md
+- [x] **UV-DO-in-registry-workflow-intro** (C1→haiku) Add an explained intro to REGISTRY_WORKFLOW.md
+- [x] **UV-DO-in-roadmap-100-intro** (C1→haiku) Add an explained intro to ROADMAP_100.md
+- [x] **UV-DO-in-scanner-edge-cases-intro** (C1→haiku) Add an explained intro to SCANNER_EDGE_CASES.md
+- [x] **UV-DO-in-scat-sweetspot-core-agent-testloop-intro** (C1→haiku) Add an explained intro to SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md
+- [x] **UV-DO-in-security-and-swarm-gates-intro** (C1→haiku) Add an explained intro to SECURITY_AND_SWARM_GATES.md
+- [x] **UV-DO-in-sff-sweetspot-frontend-fix-intro** (C1→haiku) Add an explained intro to SFF_SWEETSPOT_FRONTEND_FIX.md
+- [x] **UV-DO-in-smoa-sweetspot-moa-intro** (C1→haiku) Add an explained intro to SMOA_SWEETSPOT_MOA.md
+- [x] **UV-DO-in-ssa-v2-base-rules-intro** (C1→haiku) Add an explained intro to SSA_V2_BASE_RULES.md
+- [x] **UV-DO-in-sup-sweetspot-ultra-plan-intro** (C1→haiku) Add an explained intro to SUP_SWEETSPOT_ULTRA_PLAN.md
+- [x] **UV-DO-in-sweetspot-visual-demo-intro** (C1→haiku) Add an explained intro to SWEETSPOT_VISUAL_DEMO.md
+- [x] **UV-DO-in-terminology-intro** (C1→haiku) Add an explained intro to TERMINOLOGY.md
+- [x] **UV-DO-in-token-accounting-and-backlog-intro** (C1→haiku) Add an explained intro to TOKEN_ACCOUNTING_AND_BACKLOG.md
+- [x] **UV-DO-in-transparency-intro** (C1→haiku) Add an explained intro to TRANSPARENCY.md
+- [x] **UV-DO-in-update-propagation-intro** (C1→haiku) Add an explained intro to UPDATE_PROPAGATION.md
+- [x] **UV-DO-in-user-wiki-and-course-intro** (C1→haiku) Add an explained intro to USER_WIKI_AND_COURSE.md
+- [x] **UV-DO-influences-verify** (C1→haiku) Fact-check every INFLUENCES.md entry
+- [x] **UV-DO-quickstart-verified** (C2→sonnet) CI-verified 5-minute quickstart · deps: UV-EV-fixture-portfolio
+- [x] **UV-DO-readme-demo-first** (C3→sonnet) Restructure README demo-first · deps: UV-DO-demo-tape
+- [x] **UV-DO-support-md** (C1→haiku) SUPPORT.md — where to get help
 
 ## M2
 
-- [ ] **UV-DO-doc-adoption-roadmap-accuracy** (C1→haiku) Evidence-check doc page: ADOPTION_ROADMAP.md · deps: UV-DO-doc-adoption-roadmap-write
-- [ ] **UV-DO-doc-adoption-roadmap-linkcheck** (C1→haiku) Wire ADOPTION_ROADMAP.md into navigation and search · deps: UV-DO-doc-adoption-roadmap-write
-- [ ] **UV-DO-doc-adoption-roadmap-write** (C2→sonnet) Write doc page: ADOPTION_ROADMAP.md
-- [ ] **UV-DO-doc-agent-skills-accuracy** (C1→haiku) Evidence-check doc page: AGENT_SKILLS.md · deps: UV-DO-doc-agent-skills-write
-- [ ] **UV-DO-doc-agent-skills-linkcheck** (C1→haiku) Wire AGENT_SKILLS.md into navigation and search · deps: UV-DO-doc-agent-skills-write
-- [ ] **UV-DO-doc-agent-skills-write** (C2→sonnet) Write doc page: AGENT_SKILLS.md
-- [ ] **UV-DO-doc-brick-metadata-accuracy** (C1→haiku) Evidence-check doc page: BRICK_METADATA.md · deps: UV-DO-doc-brick-metadata-write
-- [ ] **UV-DO-doc-brick-metadata-linkcheck** (C1→haiku) Wire BRICK_METADATA.md into navigation and search · deps: UV-DO-doc-brick-metadata-write
-- [ ] **UV-DO-doc-brick-metadata-write** (C2→sonnet) Write doc page: BRICK_METADATA.md
-- [ ] **UV-DO-doc-build-layer-implementation-plan-accuracy** (C1→haiku) Evidence-check doc page: BUILD_LAYER_IMPLEMENTATION_PLAN.md · deps: UV-DO-doc-build-layer-implementation-plan-write
-- [ ] **UV-DO-doc-build-layer-implementation-plan-linkcheck** (C1→haiku) Wire BUILD_LAYER_IMPLEMENTATION_PLAN.md into navigation and search · deps: UV-DO-doc-build-layer-implementation-plan-write
-- [ ] **UV-DO-doc-build-layer-implementation-plan-write** (C2→sonnet) Write doc page: BUILD_LAYER_IMPLEMENTATION_PLAN.md
-- [ ] **UV-DO-doc-canonicalization-playbook-accuracy** (C1→haiku) Evidence-check doc page: CANONICALIZATION_PLAYBOOK.md · deps: UV-DO-doc-canonicalization-playbook-write
-- [ ] **UV-DO-doc-canonicalization-playbook-linkcheck** (C1→haiku) Wire CANONICALIZATION_PLAYBOOK.md into navigation and search · deps: UV-DO-doc-canonicalization-playbook-write
-- [ ] **UV-DO-doc-canonicalization-playbook-write** (C2→sonnet) Write doc page: CANONICALIZATION_PLAYBOOK.md
-- [ ] **UV-DO-doc-capsule-accuracy** (C1→haiku) Evidence-check doc page: CAPSULE_BRICKS.md · deps: UV-DO-doc-capsule-write
-- [ ] **UV-DO-doc-capsule-linkcheck** (C1→haiku) Wire CAPSULE_BRICKS.md into navigation and search · deps: UV-DO-doc-capsule-write
-- [ ] **UV-DO-doc-capsule-write** (C2→sonnet) Write doc page: CAPSULE_BRICKS.md
-- [ ] **UV-DO-doc-codex-integration-accuracy** (C1→haiku) Evidence-check doc page: CODEX_INTEGRATION.md · deps: UV-DO-doc-codex-integration-write
-- [ ] **UV-DO-doc-codex-integration-linkcheck** (C1→haiku) Wire CODEX_INTEGRATION.md into navigation and search · deps: UV-DO-doc-codex-integration-write
-- [ ] **UV-DO-doc-codex-integration-write** (C2→sonnet) Write doc page: CODEX_INTEGRATION.md
-- [ ] **UV-DO-doc-compact-brick-cards-accuracy** (C1→haiku) Evidence-check doc page: COMPACT_BRICK_CARDS.md · deps: UV-DO-doc-compact-brick-cards-write
-- [ ] **UV-DO-doc-compact-brick-cards-linkcheck** (C1→haiku) Wire COMPACT_BRICK_CARDS.md into navigation and search · deps: UV-DO-doc-compact-brick-cards-write
-- [ ] **UV-DO-doc-compact-brick-cards-write** (C2→sonnet) Write doc page: COMPACT_BRICK_CARDS.md
-- [ ] **UV-DO-doc-compliance-layer-accuracy** (C1→haiku) Evidence-check doc page: COMPLIANCE-LAYER.md · deps: UV-DO-doc-compliance-layer-write
-- [ ] **UV-DO-doc-compliance-layer-linkcheck** (C1→haiku) Wire COMPLIANCE-LAYER.md into navigation and search · deps: UV-DO-doc-compliance-layer-write
-- [ ] **UV-DO-doc-compliance-layer-write** (C2→sonnet) Write doc page: COMPLIANCE-LAYER.md
-- [ ] **UV-DO-doc-curated-build-acceptance-definitions-accuracy** (C1→haiku) Evidence-check doc page: CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md · deps: UV-DO-doc-curated-build-acceptance-definitions-write
-- [ ] **UV-DO-doc-curated-build-acceptance-definitions-linkcheck** (C1→haiku) Wire CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md into navigation and search · deps: UV-DO-doc-curated-build-acceptance-definitions-write
-- [ ] **UV-DO-doc-curated-build-acceptance-definitions-write** (C2→sonnet) Write doc page: CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md
-- [ ] **UV-DO-doc-curated-build-lifecycle-playbook-accuracy** (C1→haiku) Evidence-check doc page: CURATED_BUILD_LIFECYCLE_PLAYBOOK.md · deps: UV-DO-doc-curated-build-lifecycle-playbook-write
-- [ ] **UV-DO-doc-curated-build-lifecycle-playbook-linkcheck** (C1→haiku) Wire CURATED_BUILD_LIFECYCLE_PLAYBOOK.md into navigation and search · deps: UV-DO-doc-curated-build-lifecycle-playbook-write
-- [ ] **UV-DO-doc-curated-build-lifecycle-playbook-write** (C2→sonnet) Write doc page: CURATED_BUILD_LIFECYCLE_PLAYBOOK.md
-- [ ] **UV-DO-doc-curated-build-private-publish-lane-accuracy** (C1→haiku) Evidence-check doc page: CURATED_BUILD_PRIVATE_PUBLISH_LANE.md · deps: UV-DO-doc-curated-build-private-publish-lane-write
-- [ ] **UV-DO-doc-curated-build-private-publish-lane-linkcheck** (C1→haiku) Wire CURATED_BUILD_PRIVATE_PUBLISH_LANE.md into navigation and search · deps: UV-DO-doc-curated-build-private-publish-lane-write
-- [ ] **UV-DO-doc-curated-build-private-publish-lane-write** (C2→sonnet) Write doc page: CURATED_BUILD_PRIVATE_PUBLISH_LANE.md
-- [ ] **UV-DO-doc-enforcement-accuracy** (C1→haiku) Evidence-check doc page: ENFORCEMENT.md · deps: UV-DO-doc-enforcement-write
-- [ ] **UV-DO-doc-enforcement-linkcheck** (C1→haiku) Wire ENFORCEMENT.md into navigation and search · deps: UV-DO-doc-enforcement-write
-- [ ] **UV-DO-doc-enforcement-write** (C2→sonnet) Write doc page: ENFORCEMENT.md
-- [ ] **UV-DO-doc-engineering-review-response-accuracy** (C1→haiku) Evidence-check doc page: ENGINEERING_REVIEW_RESPONSE.md · deps: UV-DO-doc-engineering-review-response-write
-- [ ] **UV-DO-doc-engineering-review-response-linkcheck** (C1→haiku) Wire ENGINEERING_REVIEW_RESPONSE.md into navigation and search · deps: UV-DO-doc-engineering-review-response-write
-- [ ] **UV-DO-doc-engineering-review-response-write** (C2→sonnet) Write doc page: ENGINEERING_REVIEW_RESPONSE.md
-- [ ] **UV-DO-doc-first-time-setup-accuracy** (C1→haiku) Evidence-check doc page: FIRST_TIME_SETUP.md · deps: UV-DO-doc-first-time-setup-write
-- [ ] **UV-DO-doc-first-time-setup-linkcheck** (C1→haiku) Wire FIRST_TIME_SETUP.md into navigation and search · deps: UV-DO-doc-first-time-setup-write
-- [ ] **UV-DO-doc-first-time-setup-write** (C2→sonnet) Write doc page: FIRST_TIME_SETUP.md
-- [ ] **UV-DO-doc-framework-accuracy** (C1→haiku) Evidence-check doc page: FRAMEWORK.md · deps: UV-DO-doc-framework-write
-- [ ] **UV-DO-doc-framework-linkcheck** (C1→haiku) Wire FRAMEWORK.md into navigation and search · deps: UV-DO-doc-framework-write
-- [ ] **UV-DO-doc-framework-write** (C2→sonnet) Write doc page: FRAMEWORK.md
-- [ ] **UV-DO-doc-governance-accuracy** (C1→haiku) Evidence-check doc page: GOVERNANCE.md · deps: UV-DO-doc-governance-write
-- [ ] **UV-DO-doc-governance-linkcheck** (C1→haiku) Wire GOVERNANCE.md into navigation and search · deps: UV-DO-doc-governance-write
-- [ ] **UV-DO-doc-governance-write** (C2→sonnet) Write doc page: GOVERNANCE.md
-- [ ] **UV-DO-doc-hierarchy-accuracy** (C1→haiku) Evidence-check doc page: HIERARCHY.md · deps: UV-DO-doc-hierarchy-write
-- [ ] **UV-DO-doc-hierarchy-linkcheck** (C1→haiku) Wire HIERARCHY.md into navigation and search · deps: UV-DO-doc-hierarchy-write
-- [ ] **UV-DO-doc-hierarchy-write** (C2→sonnet) Write doc page: HIERARCHY.md
-- [ ] **UV-DO-doc-maturity-accuracy** (C1→haiku) Evidence-check doc page: MATURITY.md · deps: UV-DO-doc-maturity-write
-- [ ] **UV-DO-doc-maturity-linkcheck** (C1→haiku) Wire MATURITY.md into navigation and search · deps: UV-DO-doc-maturity-write
-- [ ] **UV-DO-doc-maturity-write** (C2→sonnet) Write doc page: MATURITY.md
-- [ ] **UV-DO-doc-multi-agent-operations-accuracy** (C1→haiku) Evidence-check doc page: MULTI_AGENT_OPERATIONS.md · deps: UV-DO-doc-multi-agent-operations-write
-- [ ] **UV-DO-doc-multi-agent-operations-linkcheck** (C1→haiku) Wire MULTI_AGENT_OPERATIONS.md into navigation and search · deps: UV-DO-doc-multi-agent-operations-write
-- [ ] **UV-DO-doc-multi-agent-operations-write** (C2→sonnet) Write doc page: MULTI_AGENT_OPERATIONS.md
-- [ ] **UV-DO-doc-privacy-accuracy** (C1→haiku) Evidence-check doc page: PRIVACY.md · deps: UV-DO-doc-privacy-write
-- [ ] **UV-DO-doc-privacy-linkcheck** (C1→haiku) Wire PRIVACY.md into navigation and search · deps: UV-DO-doc-privacy-write
-- [ ] **UV-DO-doc-privacy-write** (C2→sonnet) Write doc page: PRIVACY.md
-- [ ] **UV-DO-doc-provenance-seal-license-lattice-accuracy** (C1→haiku) Evidence-check doc page: PROVENANCE_SEAL_LICENSE_LATTICE.md · deps: UV-DO-doc-provenance-seal-license-lattice-write
-- [ ] **UV-DO-doc-provenance-seal-license-lattice-linkcheck** (C1→haiku) Wire PROVENANCE_SEAL_LICENSE_LATTICE.md into navigation and search · deps: UV-DO-doc-provenance-seal-license-lattice-write
-- [ ] **UV-DO-doc-provenance-seal-license-lattice-write** (C2→sonnet) Write doc page: PROVENANCE_SEAL_LICENSE_LATTICE.md
-- [ ] **UV-DO-doc-public-positioning-accuracy** (C1→haiku) Evidence-check doc page: PUBLIC_POSITIONING.md · deps: UV-DO-doc-public-positioning-write
-- [ ] **UV-DO-doc-public-positioning-linkcheck** (C1→haiku) Wire PUBLIC_POSITIONING.md into navigation and search · deps: UV-DO-doc-public-positioning-write
-- [ ] **UV-DO-doc-public-positioning-write** (C2→sonnet) Write doc page: PUBLIC_POSITIONING.md
-- [ ] **UV-DO-doc-registry-workflow-accuracy** (C1→haiku) Evidence-check doc page: REGISTRY_WORKFLOW.md · deps: UV-DO-doc-registry-workflow-write
-- [ ] **UV-DO-doc-registry-workflow-linkcheck** (C1→haiku) Wire REGISTRY_WORKFLOW.md into navigation and search · deps: UV-DO-doc-registry-workflow-write
-- [ ] **UV-DO-doc-registry-workflow-write** (C2→sonnet) Write doc page: REGISTRY_WORKFLOW.md
-- [ ] **UV-DO-doc-roadmap-100-accuracy** (C1→haiku) Evidence-check doc page: ROADMAP_100.md · deps: UV-DO-doc-roadmap-100-write
-- [ ] **UV-DO-doc-roadmap-100-linkcheck** (C1→haiku) Wire ROADMAP_100.md into navigation and search · deps: UV-DO-doc-roadmap-100-write
-- [ ] **UV-DO-doc-roadmap-100-write** (C2→sonnet) Write doc page: ROADMAP_100.md
-- [ ] **UV-DO-doc-scanner-edge-cases-accuracy** (C1→haiku) Evidence-check doc page: SCANNER_EDGE_CASES.md · deps: UV-DO-doc-scanner-edge-cases-write
-- [ ] **UV-DO-doc-scanner-edge-cases-linkcheck** (C1→haiku) Wire SCANNER_EDGE_CASES.md into navigation and search · deps: UV-DO-doc-scanner-edge-cases-write
-- [ ] **UV-DO-doc-scanner-edge-cases-write** (C2→sonnet) Write doc page: SCANNER_EDGE_CASES.md
-- [ ] **UV-DO-doc-scat-sweetspot-core-agent-testloop-accuracy** (C1→haiku) Evidence-check doc page: SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md · deps: UV-DO-doc-scat-sweetspot-core-agent-testloop-write
-- [ ] **UV-DO-doc-scat-sweetspot-core-agent-testloop-linkcheck** (C1→haiku) Wire SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md into navigation and search · deps: UV-DO-doc-scat-sweetspot-core-agent-testloop-write
-- [ ] **UV-DO-doc-scat-sweetspot-core-agent-testloop-write** (C2→sonnet) Write doc page: SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md
-- [ ] **UV-DO-doc-security-and-swarm-gates-accuracy** (C1→haiku) Evidence-check doc page: SECURITY_AND_SWARM_GATES.md · deps: UV-DO-doc-security-and-swarm-gates-write
-- [ ] **UV-DO-doc-security-and-swarm-gates-linkcheck** (C1→haiku) Wire SECURITY_AND_SWARM_GATES.md into navigation and search · deps: UV-DO-doc-security-and-swarm-gates-write
-- [ ] **UV-DO-doc-security-and-swarm-gates-write** (C2→sonnet) Write doc page: SECURITY_AND_SWARM_GATES.md
-- [ ] **UV-DO-doc-sff-sweetspot-frontend-fix-accuracy** (C1→haiku) Evidence-check doc page: SFF_SWEETSPOT_FRONTEND_FIX.md · deps: UV-DO-doc-sff-sweetspot-frontend-fix-write
-- [ ] **UV-DO-doc-sff-sweetspot-frontend-fix-linkcheck** (C1→haiku) Wire SFF_SWEETSPOT_FRONTEND_FIX.md into navigation and search · deps: UV-DO-doc-sff-sweetspot-frontend-fix-write
-- [ ] **UV-DO-doc-sff-sweetspot-frontend-fix-write** (C2→sonnet) Write doc page: SFF_SWEETSPOT_FRONTEND_FIX.md
-- [ ] **UV-DO-doc-smoa-sweetspot-moa-accuracy** (C1→haiku) Evidence-check doc page: SMOA_SWEETSPOT_MOA.md · deps: UV-DO-doc-smoa-sweetspot-moa-write
-- [ ] **UV-DO-doc-smoa-sweetspot-moa-linkcheck** (C1→haiku) Wire SMOA_SWEETSPOT_MOA.md into navigation and search · deps: UV-DO-doc-smoa-sweetspot-moa-write
-- [ ] **UV-DO-doc-smoa-sweetspot-moa-write** (C2→sonnet) Write doc page: SMOA_SWEETSPOT_MOA.md
-- [ ] **UV-DO-doc-ssa-v2-base-rules-accuracy** (C1→haiku) Evidence-check doc page: SSA_V2_BASE_RULES.md · deps: UV-DO-doc-ssa-v2-base-rules-write
-- [ ] **UV-DO-doc-ssa-v2-base-rules-linkcheck** (C1→haiku) Wire SSA_V2_BASE_RULES.md into navigation and search · deps: UV-DO-doc-ssa-v2-base-rules-write
-- [ ] **UV-DO-doc-ssa-v2-base-rules-write** (C2→sonnet) Write doc page: SSA_V2_BASE_RULES.md
-- [ ] **UV-DO-doc-sup-sweetspot-ultra-plan-accuracy** (C1→haiku) Evidence-check doc page: SUP_SWEETSPOT_ULTRA_PLAN.md · deps: UV-DO-doc-sup-sweetspot-ultra-plan-write
-- [ ] **UV-DO-doc-sup-sweetspot-ultra-plan-linkcheck** (C1→haiku) Wire SUP_SWEETSPOT_ULTRA_PLAN.md into navigation and search · deps: UV-DO-doc-sup-sweetspot-ultra-plan-write
-- [ ] **UV-DO-doc-sup-sweetspot-ultra-plan-write** (C2→sonnet) Write doc page: SUP_SWEETSPOT_ULTRA_PLAN.md
-- [ ] **UV-DO-doc-sweetspot-visual-demo-accuracy** (C1→haiku) Evidence-check doc page: SWEETSPOT_VISUAL_DEMO.md · deps: UV-DO-doc-sweetspot-visual-demo-write
-- [ ] **UV-DO-doc-sweetspot-visual-demo-linkcheck** (C1→haiku) Wire SWEETSPOT_VISUAL_DEMO.md into navigation and search · deps: UV-DO-doc-sweetspot-visual-demo-write
-- [ ] **UV-DO-doc-sweetspot-visual-demo-write** (C2→sonnet) Write doc page: SWEETSPOT_VISUAL_DEMO.md
-- [ ] **UV-DO-doc-terminology-accuracy** (C1→haiku) Evidence-check doc page: TERMINOLOGY.md · deps: UV-DO-doc-terminology-write
-- [ ] **UV-DO-doc-terminology-linkcheck** (C1→haiku) Wire TERMINOLOGY.md into navigation and search · deps: UV-DO-doc-terminology-write
-- [ ] **UV-DO-doc-terminology-write** (C2→sonnet) Write doc page: TERMINOLOGY.md
-- [ ] **UV-DO-doc-token-accounting-and-backlog-accuracy** (C1→haiku) Evidence-check doc page: TOKEN_ACCOUNTING_AND_BACKLOG.md · deps: UV-DO-doc-token-accounting-and-backlog-write
-- [ ] **UV-DO-doc-token-accounting-and-backlog-linkcheck** (C1→haiku) Wire TOKEN_ACCOUNTING_AND_BACKLOG.md into navigation and search · deps: UV-DO-doc-token-accounting-and-backlog-write
-- [ ] **UV-DO-doc-token-accounting-and-backlog-write** (C2→sonnet) Write doc page: TOKEN_ACCOUNTING_AND_BACKLOG.md
-- [ ] **UV-DO-doc-transparency-accuracy** (C1→haiku) Evidence-check doc page: TRANSPARENCY.md · deps: UV-DO-doc-transparency-write
-- [ ] **UV-DO-doc-transparency-linkcheck** (C1→haiku) Wire TRANSPARENCY.md into navigation and search · deps: UV-DO-doc-transparency-write
-- [ ] **UV-DO-doc-transparency-write** (C2→sonnet) Write doc page: TRANSPARENCY.md
-- [ ] **UV-DO-doc-update-propagation-accuracy** (C1→haiku) Evidence-check doc page: UPDATE_PROPAGATION.md · deps: UV-DO-doc-update-propagation-write
-- [ ] **UV-DO-doc-update-propagation-linkcheck** (C1→haiku) Wire UPDATE_PROPAGATION.md into navigation and search · deps: UV-DO-doc-update-propagation-write
-- [ ] **UV-DO-doc-update-propagation-write** (C2→sonnet) Write doc page: UPDATE_PROPAGATION.md
-- [ ] **UV-DO-doc-user-wiki-and-course-accuracy** (C1→haiku) Evidence-check doc page: USER_WIKI_AND_COURSE.md · deps: UV-DO-doc-user-wiki-and-course-write
-- [ ] **UV-DO-doc-user-wiki-and-course-linkcheck** (C1→haiku) Wire USER_WIKI_AND_COURSE.md into navigation and search · deps: UV-DO-doc-user-wiki-and-course-write
-- [ ] **UV-DO-doc-user-wiki-and-course-write** (C2→sonnet) Write doc page: USER_WIKI_AND_COURSE.md
-- [ ] **UV-DO-doc-workforce-accuracy** (C1→haiku) Evidence-check doc page: WORKFORCE_BACKENDS.md · deps: UV-DO-doc-workforce-write
-- [ ] **UV-DO-doc-workforce-linkcheck** (C1→haiku) Wire WORKFORCE_BACKENDS.md into navigation and search · deps: UV-DO-doc-workforce-write
-- [ ] **UV-DO-doc-workforce-write** (C2→sonnet) Write doc page: WORKFORCE_BACKENDS.md
-- [ ] **UV-DO-good-first-issues** (C2→sonnet) Seed and document the good-first-issue pipeline
-- [ ] **UV-DO-in-ex-build-intro** (C1→haiku) Add an explained intro to walkthrough of build.sweetspot.json
-- [ ] **UV-DO-in-ex-module-intro** (C1→haiku) Add an explained intro to walkthrough of module.sweetspot.json
-- [ ] **UV-DO-in-ex-sweetspot-visual-demo-intro** (C1→haiku) Add an explained intro to walkthrough of sweetspot-visual-demo.module.sweetspot.json
-- [ ] **UV-DO-in-security-md-intro** (C1→haiku) Add an explained intro to root SECURITY.md intro
-- [ ] **UV-DO-in-spe-intro** (C1→haiku) Add an explained intro to SPE performance framework intro
-- [ ] **UV-DO-in-srs-obs-intro** (C1→haiku) Add an explained intro to SRS observability intro
-- [ ] **UV-DO-in-srs-sec-intro** (C1→haiku) Add an explained intro to SRS security intro
-- [ ] **UV-DO-in-sstf-intro** (C1→haiku) Add an explained intro to SSTF test framework intro
-- [ ] **UV-DO-in-tour-capsule-intro** (C1→haiku) Add an explained intro to modules/capsule.md (module tour)
-- [ ] **UV-DO-in-tour-ci-intro** (C1→haiku) Add an explained intro to modules/ci.md (module tour)
-- [ ] **UV-DO-in-tour-commun-intro** (C1→haiku) Add an explained intro to modules/commun.md (module tour)
-- [ ] **UV-DO-in-tour-coord-intro** (C1→haiku) Add an explained intro to modules/coord.md (module tour)
-- [ ] **UV-DO-in-tour-dash-intro** (C1→haiku) Add an explained intro to modules/dash.md (module tour)
-- [ ] **UV-DO-in-tour-docs-intro** (C1→haiku) Add an explained intro to modules/docs.md (module tour)
-- [ ] **UV-DO-in-tour-evals-intro** (C1→haiku) Add an explained intro to modules/evals.md (module tour)
-- [ ] **UV-DO-in-tour-gates-intro** (C1→haiku) Add an explained intro to modules/gates.md (module tour)
-- [ ] **UV-DO-in-tour-graph-intro** (C1→haiku) Add an explained intro to modules/graph.md (module tour)
-- [ ] **UV-DO-in-tour-mcp-intro** (C1→haiku) Add an explained intro to modules/mcp.md (module tour)
-- [ ] **UV-DO-in-tour-prov-intro** (C1→haiku) Add an explained intro to modules/prov.md (module tour)
-- [ ] **UV-DO-in-tour-reg-intro** (C1→haiku) Add an explained intro to modules/reg.md (module tour)
-- [ ] **UV-DO-in-tour-rust-intro** (C1→haiku) Add an explained intro to modules/rust.md (module tour)
-- [ ] **UV-DO-in-tour-schemas-intro** (C1→haiku) Add an explained intro to modules/schemas.md (module tour)
-- [ ] **UV-DO-in-tour-skills-intro** (C1→haiku) Add an explained intro to modules/skills.md (module tour)
-- [ ] **UV-DO-in-tour-smoa-intro** (C1→haiku) Add an explained intro to modules/smoa.md (module tour)
-- [ ] **UV-DO-in-tour-sync-intro** (C1→haiku) Add an explained intro to modules/sync.md (module tour)
-- [ ] **UV-DO-in-tpl-agents-intro** (C1→haiku) Add an explained intro to templates/agents README
-- [ ] **UV-DO-in-tpl-brick-intro** (C1→haiku) Add an explained intro to templates/brick README
-- [ ] **UV-DO-in-tpl-build-verification-intro** (C1→haiku) Add an explained intro to templates/build-verification README
-- [ ] **UV-DO-in-tpl-github-intro** (C1→haiku) Add an explained intro to templates/github README
-- [ ] **UV-DO-in-tpl-project-intro** (C1→haiku) Add an explained intro to templates/project README
-- [ ] **UV-DO-in-tpl-security-intro** (C1→haiku) Add an explained intro to templates/security README
-- [ ] **UV-DO-lesson-01-what-is-a-brick-draft** (C2→sonnet) Write lesson: what is a brick
-- [ ] **UV-DO-lesson-01-what-is-a-brick-nav** (C1→haiku) Wire what is a brick into the intro-lane path · deps: UV-DO-lesson-01-what-is-a-brick-quiz
-- [ ] **UV-DO-lesson-01-what-is-a-brick-quiz** (C1→haiku) Self-check for what is a brick · deps: UV-DO-lesson-01-what-is-a-brick-beginner-review
-- [ ] **UV-DO-lesson-02-your-first-scan-draft** (C2→sonnet) Write lesson: your first scan
-- [ ] **UV-DO-lesson-02-your-first-scan-nav** (C1→haiku) Wire your first scan into the intro-lane path · deps: UV-DO-lesson-02-your-first-scan-quiz
-- [ ] **UV-DO-lesson-02-your-first-scan-quiz** (C1→haiku) Self-check for your first scan · deps: UV-DO-lesson-02-your-first-scan-beginner-review
-- [ ] **UV-DO-lesson-03-reading-the-brick-wall-draft** (C2→sonnet) Write lesson: reading the brick wall
-- [ ] **UV-DO-lesson-03-reading-the-brick-wall-nav** (C1→haiku) Wire reading the brick wall into the intro-lane path · deps: UV-DO-lesson-03-reading-the-brick-wall-quiz
-- [ ] **UV-DO-lesson-03-reading-the-brick-wall-quiz** (C1→haiku) Self-check for reading the brick wall · deps: UV-DO-lesson-03-reading-the-brick-wall-beginner-review
-- [ ] **UV-DO-lesson-04-manifests-explained-draft** (C2→sonnet) Write lesson: manifests explained
-- [ ] **UV-DO-lesson-04-manifests-explained-nav** (C1→haiku) Wire manifests explained into the intro-lane path · deps: UV-DO-lesson-04-manifests-explained-quiz
-- [ ] **UV-DO-lesson-04-manifests-explained-quiz** (C1→haiku) Self-check for manifests explained · deps: UV-DO-lesson-04-manifests-explained-beginner-review
-- [ ] **UV-DO-lesson-05-gates-what-blocks-and-why-draft** (C2→sonnet) Write lesson: gates what blocks and why
-- [ ] **UV-DO-lesson-05-gates-what-blocks-and-why-nav** (C1→haiku) Wire gates what blocks and why into the intro-lane path · deps: UV-DO-lesson-05-gates-what-blocks-and-why-quiz
-- [ ] **UV-DO-lesson-05-gates-what-blocks-and-why-quiz** (C1→haiku) Self-check for gates what blocks and why · deps: UV-DO-lesson-05-gates-what-blocks-and-why-beginner-review
-- [ ] **UV-DO-lesson-06-your-first-clone-draft** (C2→sonnet) Write lesson: your first clone
-- [ ] **UV-DO-lesson-06-your-first-clone-nav** (C1→haiku) Wire your first clone into the intro-lane path · deps: UV-DO-lesson-06-your-first-clone-quiz
-- [ ] **UV-DO-lesson-06-your-first-clone-quiz** (C1→haiku) Self-check for your first clone · deps: UV-DO-lesson-06-your-first-clone-beginner-review
-- [ ] **UV-DO-lesson-07-provenance-and-seals-draft** (C2→sonnet) Write lesson: provenance and seals
-- [ ] **UV-DO-lesson-07-provenance-and-seals-nav** (C1→haiku) Wire provenance and seals into the intro-lane path · deps: UV-DO-lesson-07-provenance-and-seals-quiz
-- [ ] **UV-DO-lesson-07-provenance-and-seals-quiz** (C1→haiku) Self-check for provenance and seals · deps: UV-DO-lesson-07-provenance-and-seals-beginner-review
-- [ ] **UV-DO-lesson-08-leases-working-alongside-agents-draft** (C2→sonnet) Write lesson: leases working alongside agents
-- [ ] **UV-DO-lesson-08-leases-working-alongside-agents-nav** (C1→haiku) Wire leases working alongside agents into the intro-lane path · deps: UV-DO-lesson-08-leases-working-alongside-agents-quiz
-- [ ] **UV-DO-lesson-08-leases-working-alongside-agents-quiz** (C1→haiku) Self-check for leases working alongside agents · deps: UV-DO-lesson-08-leases-working-alongside-agents-beginner-review
-- [ ] **UV-DO-lesson-09-conflicts-are-normal-draft** (C2→sonnet) Write lesson: conflicts are normal
-- [ ] **UV-DO-lesson-09-conflicts-are-normal-nav** (C1→haiku) Wire conflicts are normal into the intro-lane path · deps: UV-DO-lesson-09-conflicts-are-normal-quiz
-- [ ] **UV-DO-lesson-09-conflicts-are-normal-quiz** (C1→haiku) Self-check for conflicts are normal · deps: UV-DO-lesson-09-conflicts-are-normal-beginner-review
-- [ ] **UV-DO-lesson-10-your-first-capsule-draft** (C2→sonnet) Write lesson: your first capsule
-- [ ] **UV-DO-lesson-10-your-first-capsule-nav** (C1→haiku) Wire your first capsule into the intro-lane path · deps: UV-DO-lesson-10-your-first-capsule-quiz
-- [ ] **UV-DO-lesson-10-your-first-capsule-quiz** (C1→haiku) Self-check for your first capsule · deps: UV-DO-lesson-10-your-first-capsule-beginner-review
-- [ ] **UV-DO-lesson-11-the-graph-asking-questions-draft** (C2→sonnet) Write lesson: the graph asking questions
-- [ ] **UV-DO-lesson-11-the-graph-asking-questions-nav** (C1→haiku) Wire the graph asking questions into the intro-lane path · deps: UV-DO-lesson-11-the-graph-asking-questions-quiz
-- [ ] **UV-DO-lesson-11-the-graph-asking-questions-quiz** (C1→haiku) Self-check for the graph asking questions · deps: UV-DO-lesson-11-the-graph-asking-questions-beginner-review
-- [ ] **UV-DO-lesson-12-agents-and-skills-setup-draft** (C2→sonnet) Write lesson: agents and skills setup
-- [ ] **UV-DO-lesson-12-agents-and-skills-setup-nav** (C1→haiku) Wire agents and skills setup into the intro-lane path · deps: UV-DO-lesson-12-agents-and-skills-setup-quiz
-- [ ] **UV-DO-lesson-12-agents-and-skills-setup-quiz** (C1→haiku) Self-check for agents and skills setup · deps: UV-DO-lesson-12-agents-and-skills-setup-beginner-review
-- [ ] **UV-DO-lesson-13-contributing-your-first-brick-draft** (C2→sonnet) Write lesson: contributing your first brick
-- [ ] **UV-DO-lesson-13-contributing-your-first-brick-nav** (C1→haiku) Wire contributing your first brick into the intro-lane path · deps: UV-DO-lesson-13-contributing-your-first-brick-quiz
-- [ ] **UV-DO-lesson-13-contributing-your-first-brick-quiz** (C1→haiku) Self-check for contributing your first brick · deps: UV-DO-lesson-13-contributing-your-first-brick-beginner-review
-- [ ] **UV-DO-lesson-14-canonical-the-registry-story-draft** (C2→sonnet) Write lesson: canonical the registry story
-- [ ] **UV-DO-lesson-14-canonical-the-registry-story-nav** (C1→haiku) Wire canonical the registry story into the intro-lane path · deps: UV-DO-lesson-14-canonical-the-registry-story-quiz
-- [ ] **UV-DO-lesson-14-canonical-the-registry-story-quiz** (C1→haiku) Self-check for canonical the registry story · deps: UV-DO-lesson-14-canonical-the-registry-story-beginner-review
-- [ ] **UV-DO-lesson-15-mcp-connect-your-agent-draft** (C2→sonnet) Write lesson: mcp connect your agent
-- [ ] **UV-DO-lesson-15-mcp-connect-your-agent-nav** (C1→haiku) Wire mcp connect your agent into the intro-lane path · deps: UV-DO-lesson-15-mcp-connect-your-agent-quiz
-- [ ] **UV-DO-lesson-15-mcp-connect-your-agent-quiz** (C1→haiku) Self-check for mcp connect your agent · deps: UV-DO-lesson-15-mcp-connect-your-agent-beginner-review
-- [ ] **UV-DO-lesson-16-glossary-safari-draft** (C2→sonnet) Write lesson: glossary safari
-- [ ] **UV-DO-lesson-16-glossary-safari-nav** (C1→haiku) Wire glossary safari into the intro-lane path · deps: UV-DO-lesson-16-glossary-safari-quiz
-- [ ] **UV-DO-lesson-16-glossary-safari-quiz** (C1→haiku) Self-check for glossary safari · deps: UV-DO-lesson-16-glossary-safari-beginner-review
-- [ ] **UV-DO-lesson-17-reading-the-plan-uvp-draft** (C2→sonnet) Write lesson: reading the plan uvp
-- [ ] **UV-DO-lesson-17-reading-the-plan-uvp-nav** (C1→haiku) Wire reading the plan uvp into the intro-lane path · deps: UV-DO-lesson-17-reading-the-plan-uvp-quiz
-- [ ] **UV-DO-lesson-17-reading-the-plan-uvp-quiz** (C1→haiku) Self-check for reading the plan uvp · deps: UV-DO-lesson-17-reading-the-plan-uvp-beginner-review
-- [ ] **UV-DO-lesson-18-your-first-agent-swarm-draft** (C2→sonnet) Write lesson: your first agent swarm
-- [ ] **UV-DO-lesson-18-your-first-agent-swarm-nav** (C1→haiku) Wire your first agent swarm into the intro-lane path · deps: UV-DO-lesson-18-your-first-agent-swarm-quiz
-- [ ] **UV-DO-lesson-18-your-first-agent-swarm-quiz** (C1→haiku) Self-check for your first agent swarm · deps: UV-DO-lesson-18-your-first-agent-swarm-beginner-review
-- [ ] **UV-DO-orientation-zero** (C1→haiku) docs/intro/00-orientation.md — 'what even is all this?'
-- [ ] **UV-DO-readme-newcoder-pointer** (C1→haiku) README: 'new here? start with the intro lane' section
-- [ ] **UV-DO-skeptic-contributing-refresh** (C2→sonnet) Update CONTRIBUTING.md for erasable TypeScript and gated brick submissions
-- [ ] **UV-DO-start-here** (C2→sonnet) docs/intro/START_HERE.md — the front door of the intro lane
+- [x] **UV-DO-doc-adoption-roadmap-accuracy** (C1→haiku) Evidence-check doc page: ADOPTION_ROADMAP.md · deps: UV-DO-doc-adoption-roadmap-write
+- [x] **UV-DO-doc-adoption-roadmap-linkcheck** (C1→haiku) Wire ADOPTION_ROADMAP.md into navigation and search · deps: UV-DO-doc-adoption-roadmap-write
+- [x] **UV-DO-doc-adoption-roadmap-write** (C2→sonnet) Write doc page: ADOPTION_ROADMAP.md
+- [x] **UV-DO-doc-agent-skills-accuracy** (C1→haiku) Evidence-check doc page: AGENT_SKILLS.md · deps: UV-DO-doc-agent-skills-write
+- [x] **UV-DO-doc-agent-skills-linkcheck** (C1→haiku) Wire AGENT_SKILLS.md into navigation and search · deps: UV-DO-doc-agent-skills-write
+- [x] **UV-DO-doc-agent-skills-write** (C2→sonnet) Write doc page: AGENT_SKILLS.md
+- [x] **UV-DO-doc-brick-metadata-accuracy** (C1→haiku) Evidence-check doc page: BRICK_METADATA.md · deps: UV-DO-doc-brick-metadata-write
+- [x] **UV-DO-doc-brick-metadata-linkcheck** (C1→haiku) Wire BRICK_METADATA.md into navigation and search · deps: UV-DO-doc-brick-metadata-write
+- [x] **UV-DO-doc-brick-metadata-write** (C2→sonnet) Write doc page: BRICK_METADATA.md
+- [x] **UV-DO-doc-build-layer-implementation-plan-accuracy** (C1→haiku) Evidence-check doc page: BUILD_LAYER_IMPLEMENTATION_PLAN.md · deps: UV-DO-doc-build-layer-implementation-plan-write
+- [x] **UV-DO-doc-build-layer-implementation-plan-linkcheck** (C1→haiku) Wire BUILD_LAYER_IMPLEMENTATION_PLAN.md into navigation and search · deps: UV-DO-doc-build-layer-implementation-plan-write
+- [x] **UV-DO-doc-build-layer-implementation-plan-write** (C2→sonnet) Write doc page: BUILD_LAYER_IMPLEMENTATION_PLAN.md
+- [x] **UV-DO-doc-canonicalization-playbook-accuracy** (C1→haiku) Evidence-check doc page: CANONICALIZATION_PLAYBOOK.md · deps: UV-DO-doc-canonicalization-playbook-write
+- [x] **UV-DO-doc-canonicalization-playbook-linkcheck** (C1→haiku) Wire CANONICALIZATION_PLAYBOOK.md into navigation and search · deps: UV-DO-doc-canonicalization-playbook-write
+- [x] **UV-DO-doc-canonicalization-playbook-write** (C2→sonnet) Write doc page: CANONICALIZATION_PLAYBOOK.md
+- [x] **UV-DO-doc-capsule-accuracy** (C1→haiku) Evidence-check doc page: CAPSULE_BRICKS.md · deps: UV-DO-doc-capsule-write
+- [x] **UV-DO-doc-capsule-linkcheck** (C1→haiku) Wire CAPSULE_BRICKS.md into navigation and search · deps: UV-DO-doc-capsule-write
+- [x] **UV-DO-doc-capsule-write** (C2→sonnet) Write doc page: CAPSULE_BRICKS.md
+- [x] **UV-DO-doc-codex-integration-accuracy** (C1→haiku) Evidence-check doc page: CODEX_INTEGRATION.md · deps: UV-DO-doc-codex-integration-write
+- [x] **UV-DO-doc-codex-integration-linkcheck** (C1→haiku) Wire CODEX_INTEGRATION.md into navigation and search · deps: UV-DO-doc-codex-integration-write
+- [x] **UV-DO-doc-codex-integration-write** (C2→sonnet) Write doc page: CODEX_INTEGRATION.md
+- [x] **UV-DO-doc-compact-brick-cards-accuracy** (C1→haiku) Evidence-check doc page: COMPACT_BRICK_CARDS.md · deps: UV-DO-doc-compact-brick-cards-write
+- [x] **UV-DO-doc-compact-brick-cards-linkcheck** (C1→haiku) Wire COMPACT_BRICK_CARDS.md into navigation and search · deps: UV-DO-doc-compact-brick-cards-write
+- [x] **UV-DO-doc-compact-brick-cards-write** (C2→sonnet) Write doc page: COMPACT_BRICK_CARDS.md
+- [x] **UV-DO-doc-compliance-layer-accuracy** (C1→haiku) Evidence-check doc page: COMPLIANCE-LAYER.md · deps: UV-DO-doc-compliance-layer-write
+- [x] **UV-DO-doc-compliance-layer-linkcheck** (C1→haiku) Wire COMPLIANCE-LAYER.md into navigation and search · deps: UV-DO-doc-compliance-layer-write
+- [x] **UV-DO-doc-compliance-layer-write** (C2→sonnet) Write doc page: COMPLIANCE-LAYER.md
+- [x] **UV-DO-doc-curated-build-acceptance-definitions-accuracy** (C1→haiku) Evidence-check doc page: CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md · deps: UV-DO-doc-curated-build-acceptance-definitions-write
+- [x] **UV-DO-doc-curated-build-acceptance-definitions-linkcheck** (C1→haiku) Wire CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md into navigation and search · deps: UV-DO-doc-curated-build-acceptance-definitions-write
+- [x] **UV-DO-doc-curated-build-acceptance-definitions-write** (C2→sonnet) Write doc page: CURATED_BUILD_ACCEPTANCE_DEFINITIONS.md
+- [x] **UV-DO-doc-curated-build-lifecycle-playbook-accuracy** (C1→haiku) Evidence-check doc page: CURATED_BUILD_LIFECYCLE_PLAYBOOK.md · deps: UV-DO-doc-curated-build-lifecycle-playbook-write
+- [x] **UV-DO-doc-curated-build-lifecycle-playbook-linkcheck** (C1→haiku) Wire CURATED_BUILD_LIFECYCLE_PLAYBOOK.md into navigation and search · deps: UV-DO-doc-curated-build-lifecycle-playbook-write
+- [x] **UV-DO-doc-curated-build-lifecycle-playbook-write** (C2→sonnet) Write doc page: CURATED_BUILD_LIFECYCLE_PLAYBOOK.md
+- [x] **UV-DO-doc-curated-build-private-publish-lane-accuracy** (C1→haiku) Evidence-check doc page: CURATED_BUILD_PRIVATE_PUBLISH_LANE.md · deps: UV-DO-doc-curated-build-private-publish-lane-write
+- [x] **UV-DO-doc-curated-build-private-publish-lane-linkcheck** (C1→haiku) Wire CURATED_BUILD_PRIVATE_PUBLISH_LANE.md into navigation and search · deps: UV-DO-doc-curated-build-private-publish-lane-write
+- [x] **UV-DO-doc-curated-build-private-publish-lane-write** (C2→sonnet) Write doc page: CURATED_BUILD_PRIVATE_PUBLISH_LANE.md
+- [x] **UV-DO-doc-enforcement-accuracy** (C1→haiku) Evidence-check doc page: ENFORCEMENT.md · deps: UV-DO-doc-enforcement-write
+- [x] **UV-DO-doc-enforcement-linkcheck** (C1→haiku) Wire ENFORCEMENT.md into navigation and search · deps: UV-DO-doc-enforcement-write
+- [x] **UV-DO-doc-enforcement-write** (C2→sonnet) Write doc page: ENFORCEMENT.md
+- [x] **UV-DO-doc-engineering-review-response-accuracy** (C1→haiku) Evidence-check doc page: ENGINEERING_REVIEW_RESPONSE.md · deps: UV-DO-doc-engineering-review-response-write
+- [x] **UV-DO-doc-engineering-review-response-linkcheck** (C1→haiku) Wire ENGINEERING_REVIEW_RESPONSE.md into navigation and search · deps: UV-DO-doc-engineering-review-response-write
+- [x] **UV-DO-doc-engineering-review-response-write** (C2→sonnet) Write doc page: ENGINEERING_REVIEW_RESPONSE.md
+- [x] **UV-DO-doc-first-time-setup-accuracy** (C1→haiku) Evidence-check doc page: FIRST_TIME_SETUP.md · deps: UV-DO-doc-first-time-setup-write
+- [x] **UV-DO-doc-first-time-setup-linkcheck** (C1→haiku) Wire FIRST_TIME_SETUP.md into navigation and search · deps: UV-DO-doc-first-time-setup-write
+- [x] **UV-DO-doc-first-time-setup-write** (C2→sonnet) Write doc page: FIRST_TIME_SETUP.md
+- [x] **UV-DO-doc-framework-accuracy** (C1→haiku) Evidence-check doc page: FRAMEWORK.md · deps: UV-DO-doc-framework-write
+- [x] **UV-DO-doc-framework-linkcheck** (C1→haiku) Wire FRAMEWORK.md into navigation and search · deps: UV-DO-doc-framework-write
+- [x] **UV-DO-doc-framework-write** (C2→sonnet) Write doc page: FRAMEWORK.md
+- [x] **UV-DO-doc-governance-accuracy** (C1→haiku) Evidence-check doc page: GOVERNANCE.md · deps: UV-DO-doc-governance-write
+- [x] **UV-DO-doc-governance-linkcheck** (C1→haiku) Wire GOVERNANCE.md into navigation and search · deps: UV-DO-doc-governance-write
+- [x] **UV-DO-doc-governance-write** (C2→sonnet) Write doc page: GOVERNANCE.md
+- [x] **UV-DO-doc-hierarchy-accuracy** (C1→haiku) Evidence-check doc page: HIERARCHY.md · deps: UV-DO-doc-hierarchy-write
+- [x] **UV-DO-doc-hierarchy-linkcheck** (C1→haiku) Wire HIERARCHY.md into navigation and search · deps: UV-DO-doc-hierarchy-write
+- [x] **UV-DO-doc-hierarchy-write** (C2→sonnet) Write doc page: HIERARCHY.md
+- [x] **UV-DO-doc-maturity-accuracy** (C1→haiku) Evidence-check doc page: MATURITY.md · deps: UV-DO-doc-maturity-write
+- [x] **UV-DO-doc-maturity-linkcheck** (C1→haiku) Wire MATURITY.md into navigation and search · deps: UV-DO-doc-maturity-write
+- [x] **UV-DO-doc-maturity-write** (C2→sonnet) Write doc page: MATURITY.md
+- [x] **UV-DO-doc-multi-agent-operations-accuracy** (C1→haiku) Evidence-check doc page: MULTI_AGENT_OPERATIONS.md · deps: UV-DO-doc-multi-agent-operations-write
+- [x] **UV-DO-doc-multi-agent-operations-linkcheck** (C1→haiku) Wire MULTI_AGENT_OPERATIONS.md into navigation and search · deps: UV-DO-doc-multi-agent-operations-write
+- [x] **UV-DO-doc-multi-agent-operations-write** (C2→sonnet) Write doc page: MULTI_AGENT_OPERATIONS.md
+- [x] **UV-DO-doc-privacy-accuracy** (C1→haiku) Evidence-check doc page: PRIVACY.md · deps: UV-DO-doc-privacy-write
+- [x] **UV-DO-doc-privacy-linkcheck** (C1→haiku) Wire PRIVACY.md into navigation and search · deps: UV-DO-doc-privacy-write
+- [x] **UV-DO-doc-privacy-write** (C2→sonnet) Write doc page: PRIVACY.md
+- [x] **UV-DO-doc-provenance-seal-license-lattice-accuracy** (C1→haiku) Evidence-check doc page: PROVENANCE_SEAL_LICENSE_LATTICE.md · deps: UV-DO-doc-provenance-seal-license-lattice-write
+- [x] **UV-DO-doc-provenance-seal-license-lattice-linkcheck** (C1→haiku) Wire PROVENANCE_SEAL_LICENSE_LATTICE.md into navigation and search · deps: UV-DO-doc-provenance-seal-license-lattice-write
+- [x] **UV-DO-doc-provenance-seal-license-lattice-write** (C2→sonnet) Write doc page: PROVENANCE_SEAL_LICENSE_LATTICE.md
+- [x] **UV-DO-doc-public-positioning-accuracy** (C1→haiku) Evidence-check doc page: PUBLIC_POSITIONING.md · deps: UV-DO-doc-public-positioning-write
+- [x] **UV-DO-doc-public-positioning-linkcheck** (C1→haiku) Wire PUBLIC_POSITIONING.md into navigation and search · deps: UV-DO-doc-public-positioning-write
+- [x] **UV-DO-doc-public-positioning-write** (C2→sonnet) Write doc page: PUBLIC_POSITIONING.md
+- [x] **UV-DO-doc-registry-workflow-accuracy** (C1→haiku) Evidence-check doc page: REGISTRY_WORKFLOW.md · deps: UV-DO-doc-registry-workflow-write
+- [x] **UV-DO-doc-registry-workflow-linkcheck** (C1→haiku) Wire REGISTRY_WORKFLOW.md into navigation and search · deps: UV-DO-doc-registry-workflow-write
+- [x] **UV-DO-doc-registry-workflow-write** (C2→sonnet) Write doc page: REGISTRY_WORKFLOW.md
+- [x] **UV-DO-doc-roadmap-100-accuracy** (C1→haiku) Evidence-check doc page: ROADMAP_100.md · deps: UV-DO-doc-roadmap-100-write
+- [x] **UV-DO-doc-roadmap-100-linkcheck** (C1→haiku) Wire ROADMAP_100.md into navigation and search · deps: UV-DO-doc-roadmap-100-write
+- [x] **UV-DO-doc-roadmap-100-write** (C2→sonnet) Write doc page: ROADMAP_100.md
+- [x] **UV-DO-doc-scanner-edge-cases-accuracy** (C1→haiku) Evidence-check doc page: SCANNER_EDGE_CASES.md · deps: UV-DO-doc-scanner-edge-cases-write
+- [x] **UV-DO-doc-scanner-edge-cases-linkcheck** (C1→haiku) Wire SCANNER_EDGE_CASES.md into navigation and search · deps: UV-DO-doc-scanner-edge-cases-write
+- [x] **UV-DO-doc-scanner-edge-cases-write** (C2→sonnet) Write doc page: SCANNER_EDGE_CASES.md
+- [x] **UV-DO-doc-scat-sweetspot-core-agent-testloop-accuracy** (C1→haiku) Evidence-check doc page: SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md · deps: UV-DO-doc-scat-sweetspot-core-agent-testloop-write
+- [x] **UV-DO-doc-scat-sweetspot-core-agent-testloop-linkcheck** (C1→haiku) Wire SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md into navigation and search · deps: UV-DO-doc-scat-sweetspot-core-agent-testloop-write
+- [x] **UV-DO-doc-scat-sweetspot-core-agent-testloop-write** (C2→sonnet) Write doc page: SCAT_SWEETSPOT_CORE_AGENT_TESTLOOP.md
+- [x] **UV-DO-doc-security-and-swarm-gates-accuracy** (C1→haiku) Evidence-check doc page: SECURITY_AND_SWARM_GATES.md · deps: UV-DO-doc-security-and-swarm-gates-write
+- [x] **UV-DO-doc-security-and-swarm-gates-linkcheck** (C1→haiku) Wire SECURITY_AND_SWARM_GATES.md into navigation and search · deps: UV-DO-doc-security-and-swarm-gates-write
+- [x] **UV-DO-doc-security-and-swarm-gates-write** (C2→sonnet) Write doc page: SECURITY_AND_SWARM_GATES.md
+- [x] **UV-DO-doc-sff-sweetspot-frontend-fix-accuracy** (C1→haiku) Evidence-check doc page: SFF_SWEETSPOT_FRONTEND_FIX.md · deps: UV-DO-doc-sff-sweetspot-frontend-fix-write
+- [x] **UV-DO-doc-sff-sweetspot-frontend-fix-linkcheck** (C1→haiku) Wire SFF_SWEETSPOT_FRONTEND_FIX.md into navigation and search · deps: UV-DO-doc-sff-sweetspot-frontend-fix-write
+- [x] **UV-DO-doc-sff-sweetspot-frontend-fix-write** (C2→sonnet) Write doc page: SFF_SWEETSPOT_FRONTEND_FIX.md
+- [x] **UV-DO-doc-smoa-sweetspot-moa-accuracy** (C1→haiku) Evidence-check doc page: SMOA_SWEETSPOT_MOA.md · deps: UV-DO-doc-smoa-sweetspot-moa-write
+- [x] **UV-DO-doc-smoa-sweetspot-moa-linkcheck** (C1→haiku) Wire SMOA_SWEETSPOT_MOA.md into navigation and search · deps: UV-DO-doc-smoa-sweetspot-moa-write
+- [x] **UV-DO-doc-smoa-sweetspot-moa-write** (C2→sonnet) Write doc page: SMOA_SWEETSPOT_MOA.md
+- [x] **UV-DO-doc-ssa-v2-base-rules-accuracy** (C1→haiku) Evidence-check doc page: SSA_V2_BASE_RULES.md · deps: UV-DO-doc-ssa-v2-base-rules-write
+- [x] **UV-DO-doc-ssa-v2-base-rules-linkcheck** (C1→haiku) Wire SSA_V2_BASE_RULES.md into navigation and search · deps: UV-DO-doc-ssa-v2-base-rules-write
+- [x] **UV-DO-doc-ssa-v2-base-rules-write** (C2→sonnet) Write doc page: SSA_V2_BASE_RULES.md
+- [x] **UV-DO-doc-sup-sweetspot-ultra-plan-accuracy** (C1→haiku) Evidence-check doc page: SUP_SWEETSPOT_ULTRA_PLAN.md · deps: UV-DO-doc-sup-sweetspot-ultra-plan-write
+- [x] **UV-DO-doc-sup-sweetspot-ultra-plan-linkcheck** (C1→haiku) Wire SUP_SWEETSPOT_ULTRA_PLAN.md into navigation and search · deps: UV-DO-doc-sup-sweetspot-ultra-plan-write
+- [x] **UV-DO-doc-sup-sweetspot-ultra-plan-write** (C2→sonnet) Write doc page: SUP_SWEETSPOT_ULTRA_PLAN.md
+- [x] **UV-DO-doc-sweetspot-visual-demo-accuracy** (C1→haiku) Evidence-check doc page: SWEETSPOT_VISUAL_DEMO.md · deps: UV-DO-doc-sweetspot-visual-demo-write
+- [x] **UV-DO-doc-sweetspot-visual-demo-linkcheck** (C1→haiku) Wire SWEETSPOT_VISUAL_DEMO.md into navigation and search · deps: UV-DO-doc-sweetspot-visual-demo-write
+- [x] **UV-DO-doc-sweetspot-visual-demo-write** (C2→sonnet) Write doc page: SWEETSPOT_VISUAL_DEMO.md
+- [x] **UV-DO-doc-terminology-accuracy** (C1→haiku) Evidence-check doc page: TERMINOLOGY.md · deps: UV-DO-doc-terminology-write
+- [x] **UV-DO-doc-terminology-linkcheck** (C1→haiku) Wire TERMINOLOGY.md into navigation and search · deps: UV-DO-doc-terminology-write
+- [x] **UV-DO-doc-terminology-write** (C2→sonnet) Write doc page: TERMINOLOGY.md
+- [x] **UV-DO-doc-token-accounting-and-backlog-accuracy** (C1→haiku) Evidence-check doc page: TOKEN_ACCOUNTING_AND_BACKLOG.md · deps: UV-DO-doc-token-accounting-and-backlog-write
+- [x] **UV-DO-doc-token-accounting-and-backlog-linkcheck** (C1→haiku) Wire TOKEN_ACCOUNTING_AND_BACKLOG.md into navigation and search · deps: UV-DO-doc-token-accounting-and-backlog-write
+- [x] **UV-DO-doc-token-accounting-and-backlog-write** (C2→sonnet) Write doc page: TOKEN_ACCOUNTING_AND_BACKLOG.md
+- [x] **UV-DO-doc-transparency-accuracy** (C1→haiku) Evidence-check doc page: TRANSPARENCY.md · deps: UV-DO-doc-transparency-write
+- [x] **UV-DO-doc-transparency-linkcheck** (C1→haiku) Wire TRANSPARENCY.md into navigation and search · deps: UV-DO-doc-transparency-write
+- [x] **UV-DO-doc-transparency-write** (C2→sonnet) Write doc page: TRANSPARENCY.md
+- [x] **UV-DO-doc-update-propagation-accuracy** (C1→haiku) Evidence-check doc page: UPDATE_PROPAGATION.md · deps: UV-DO-doc-update-propagation-write
+- [x] **UV-DO-doc-update-propagation-linkcheck** (C1→haiku) Wire UPDATE_PROPAGATION.md into navigation and search · deps: UV-DO-doc-update-propagation-write
+- [x] **UV-DO-doc-update-propagation-write** (C2→sonnet) Write doc page: UPDATE_PROPAGATION.md
+- [x] **UV-DO-doc-user-wiki-and-course-accuracy** (C1→haiku) Evidence-check doc page: USER_WIKI_AND_COURSE.md · deps: UV-DO-doc-user-wiki-and-course-write
+- [x] **UV-DO-doc-user-wiki-and-course-linkcheck** (C1→haiku) Wire USER_WIKI_AND_COURSE.md into navigation and search · deps: UV-DO-doc-user-wiki-and-course-write
+- [x] **UV-DO-doc-user-wiki-and-course-write** (C2→sonnet) Write doc page: USER_WIKI_AND_COURSE.md
+- [x] **UV-DO-doc-workforce-accuracy** (C1→haiku) Evidence-check doc page: WORKFORCE_BACKENDS.md · deps: UV-DO-doc-workforce-write
+- [x] **UV-DO-doc-workforce-linkcheck** (C1→haiku) Wire WORKFORCE_BACKENDS.md into navigation and search · deps: UV-DO-doc-workforce-write
+- [x] **UV-DO-doc-workforce-write** (C2→sonnet) Write doc page: WORKFORCE_BACKENDS.md
+- [x] **UV-DO-good-first-issues** (C2→sonnet) Seed and document the good-first-issue pipeline
+- [x] **UV-DO-in-ex-build-intro** (C1→haiku) Add an explained intro to walkthrough of build.sweetspot.json
+- [x] **UV-DO-in-ex-module-intro** (C1→haiku) Add an explained intro to walkthrough of module.sweetspot.json
+- [x] **UV-DO-in-ex-sweetspot-visual-demo-intro** (C1→haiku) Add an explained intro to walkthrough of sweetspot-visual-demo.module.sweetspot.json
+- [x] **UV-DO-in-security-md-intro** (C1→haiku) Add an explained intro to root SECURITY.md intro
+- [x] **UV-DO-in-spe-intro** (C1→haiku) Add an explained intro to SPE performance framework intro
+- [x] **UV-DO-in-srs-obs-intro** (C1→haiku) Add an explained intro to SRS observability intro
+- [x] **UV-DO-in-srs-sec-intro** (C1→haiku) Add an explained intro to SRS security intro
+- [x] **UV-DO-in-sstf-intro** (C1→haiku) Add an explained intro to SSTF test framework intro
+- [x] **UV-DO-in-tour-capsule-intro** (C1→haiku) Add an explained intro to modules/capsule.md (module tour)
+- [x] **UV-DO-in-tour-ci-intro** (C1→haiku) Add an explained intro to modules/ci.md (module tour)
+- [x] **UV-DO-in-tour-commun-intro** (C1→haiku) Add an explained intro to modules/commun.md (module tour)
+- [x] **UV-DO-in-tour-coord-intro** (C1→haiku) Add an explained intro to modules/coord.md (module tour)
+- [x] **UV-DO-in-tour-dash-intro** (C1→haiku) Add an explained intro to modules/dash.md (module tour)
+- [x] **UV-DO-in-tour-docs-intro** (C1→haiku) Add an explained intro to modules/docs.md (module tour)
+- [x] **UV-DO-in-tour-evals-intro** (C1→haiku) Add an explained intro to modules/evals.md (module tour)
+- [x] **UV-DO-in-tour-gates-intro** (C1→haiku) Add an explained intro to modules/gates.md (module tour)
+- [x] **UV-DO-in-tour-graph-intro** (C1→haiku) Add an explained intro to modules/graph.md (module tour)
+- [x] **UV-DO-in-tour-mcp-intro** (C1→haiku) Add an explained intro to modules/mcp.md (module tour)
+- [x] **UV-DO-in-tour-prov-intro** (C1→haiku) Add an explained intro to modules/prov.md (module tour)
+- [x] **UV-DO-in-tour-reg-intro** (C1→haiku) Add an explained intro to modules/reg.md (module tour)
+- [x] **UV-DO-in-tour-rust-intro** (C1→haiku) Add an explained intro to modules/rust.md (module tour)
+- [x] **UV-DO-in-tour-schemas-intro** (C1→haiku) Add an explained intro to modules/schemas.md (module tour)
+- [x] **UV-DO-in-tour-skills-intro** (C1→haiku) Add an explained intro to modules/skills.md (module tour)
+- [x] **UV-DO-in-tour-smoa-intro** (C1→haiku) Add an explained intro to modules/smoa.md (module tour)
+- [x] **UV-DO-in-tour-sync-intro** (C1→haiku) Add an explained intro to modules/sync.md (module tour)
+- [x] **UV-DO-in-tpl-agents-intro** (C1→haiku) Add an explained intro to templates/agents README
+- [x] **UV-DO-in-tpl-brick-intro** (C1→haiku) Add an explained intro to templates/brick README
+- [x] **UV-DO-in-tpl-build-verification-intro** (C1→haiku) Add an explained intro to templates/build-verification README
+- [x] **UV-DO-in-tpl-github-intro** (C1→haiku) Add an explained intro to templates/github README
+- [x] **UV-DO-in-tpl-project-intro** (C1→haiku) Add an explained intro to templates/project README
+- [x] **UV-DO-in-tpl-security-intro** (C1→haiku) Add an explained intro to templates/security README
+- [x] **UV-DO-lesson-01-what-is-a-brick-draft** (C2→sonnet) Write lesson: what is a brick
+- [x] **UV-DO-lesson-01-what-is-a-brick-nav** (C1→haiku) Wire what is a brick into the intro-lane path · deps: UV-DO-lesson-01-what-is-a-brick-quiz
+- [x] **UV-DO-lesson-01-what-is-a-brick-quiz** (C1→haiku) Self-check for what is a brick · deps: UV-DO-lesson-01-what-is-a-brick-beginner-review
+- [x] **UV-DO-lesson-02-your-first-scan-draft** (C2→sonnet) Write lesson: your first scan
+- [x] **UV-DO-lesson-02-your-first-scan-nav** (C1→haiku) Wire your first scan into the intro-lane path · deps: UV-DO-lesson-02-your-first-scan-quiz
+- [x] **UV-DO-lesson-02-your-first-scan-quiz** (C1→haiku) Self-check for your first scan · deps: UV-DO-lesson-02-your-first-scan-beginner-review
+- [x] **UV-DO-lesson-03-reading-the-brick-wall-draft** (C2→sonnet) Write lesson: reading the brick wall
+- [x] **UV-DO-lesson-03-reading-the-brick-wall-nav** (C1→haiku) Wire reading the brick wall into the intro-lane path · deps: UV-DO-lesson-03-reading-the-brick-wall-quiz
+- [x] **UV-DO-lesson-03-reading-the-brick-wall-quiz** (C1→haiku) Self-check for reading the brick wall · deps: UV-DO-lesson-03-reading-the-brick-wall-beginner-review
+- [x] **UV-DO-lesson-04-manifests-explained-draft** (C2→sonnet) Write lesson: manifests explained
+- [x] **UV-DO-lesson-04-manifests-explained-nav** (C1→haiku) Wire manifests explained into the intro-lane path · deps: UV-DO-lesson-04-manifests-explained-quiz
+- [x] **UV-DO-lesson-04-manifests-explained-quiz** (C1→haiku) Self-check for manifests explained · deps: UV-DO-lesson-04-manifests-explained-beginner-review
+- [x] **UV-DO-lesson-05-gates-what-blocks-and-why-draft** (C2→sonnet) Write lesson: gates what blocks and why
+- [x] **UV-DO-lesson-05-gates-what-blocks-and-why-nav** (C1→haiku) Wire gates what blocks and why into the intro-lane path · deps: UV-DO-lesson-05-gates-what-blocks-and-why-quiz
+- [x] **UV-DO-lesson-05-gates-what-blocks-and-why-quiz** (C1→haiku) Self-check for gates what blocks and why · deps: UV-DO-lesson-05-gates-what-blocks-and-why-beginner-review
+- [x] **UV-DO-lesson-06-your-first-clone-draft** (C2→sonnet) Write lesson: your first clone
+- [x] **UV-DO-lesson-06-your-first-clone-nav** (C1→haiku) Wire your first clone into the intro-lane path · deps: UV-DO-lesson-06-your-first-clone-quiz
+- [x] **UV-DO-lesson-06-your-first-clone-quiz** (C1→haiku) Self-check for your first clone · deps: UV-DO-lesson-06-your-first-clone-beginner-review
+- [x] **UV-DO-lesson-07-provenance-and-seals-draft** (C2→sonnet) Write lesson: provenance and seals
+- [x] **UV-DO-lesson-07-provenance-and-seals-nav** (C1→haiku) Wire provenance and seals into the intro-lane path · deps: UV-DO-lesson-07-provenance-and-seals-quiz
+- [x] **UV-DO-lesson-07-provenance-and-seals-quiz** (C1→haiku) Self-check for provenance and seals · deps: UV-DO-lesson-07-provenance-and-seals-beginner-review
+- [x] **UV-DO-lesson-08-leases-working-alongside-agents-draft** (C2→sonnet) Write lesson: leases working alongside agents
+- [x] **UV-DO-lesson-08-leases-working-alongside-agents-nav** (C1→haiku) Wire leases working alongside agents into the intro-lane path · deps: UV-DO-lesson-08-leases-working-alongside-agents-quiz
+- [x] **UV-DO-lesson-08-leases-working-alongside-agents-quiz** (C1→haiku) Self-check for leases working alongside agents · deps: UV-DO-lesson-08-leases-working-alongside-agents-beginner-review
+- [x] **UV-DO-lesson-09-conflicts-are-normal-draft** (C2→sonnet) Write lesson: conflicts are normal
+- [x] **UV-DO-lesson-09-conflicts-are-normal-nav** (C1→haiku) Wire conflicts are normal into the intro-lane path · deps: UV-DO-lesson-09-conflicts-are-normal-quiz
+- [x] **UV-DO-lesson-09-conflicts-are-normal-quiz** (C1→haiku) Self-check for conflicts are normal · deps: UV-DO-lesson-09-conflicts-are-normal-beginner-review
+- [x] **UV-DO-lesson-10-your-first-capsule-draft** (C2→sonnet) Write lesson: your first capsule
+- [x] **UV-DO-lesson-10-your-first-capsule-nav** (C1→haiku) Wire your first capsule into the intro-lane path · deps: UV-DO-lesson-10-your-first-capsule-quiz
+- [x] **UV-DO-lesson-10-your-first-capsule-quiz** (C1→haiku) Self-check for your first capsule · deps: UV-DO-lesson-10-your-first-capsule-beginner-review
+- [x] **UV-DO-lesson-11-the-graph-asking-questions-draft** (C2→sonnet) Write lesson: the graph asking questions
+- [x] **UV-DO-lesson-11-the-graph-asking-questions-nav** (C1→haiku) Wire the graph asking questions into the intro-lane path · deps: UV-DO-lesson-11-the-graph-asking-questions-quiz
+- [x] **UV-DO-lesson-11-the-graph-asking-questions-quiz** (C1→haiku) Self-check for the graph asking questions · deps: UV-DO-lesson-11-the-graph-asking-questions-beginner-review
+- [x] **UV-DO-lesson-12-agents-and-skills-setup-draft** (C2→sonnet) Write lesson: agents and skills setup
+- [x] **UV-DO-lesson-12-agents-and-skills-setup-nav** (C1→haiku) Wire agents and skills setup into the intro-lane path · deps: UV-DO-lesson-12-agents-and-skills-setup-quiz
+- [x] **UV-DO-lesson-12-agents-and-skills-setup-quiz** (C1→haiku) Self-check for agents and skills setup · deps: UV-DO-lesson-12-agents-and-skills-setup-beginner-review
+- [x] **UV-DO-lesson-13-contributing-your-first-brick-draft** (C2→sonnet) Write lesson: contributing your first brick
+- [x] **UV-DO-lesson-13-contributing-your-first-brick-nav** (C1→haiku) Wire contributing your first brick into the intro-lane path · deps: UV-DO-lesson-13-contributing-your-first-brick-quiz
+- [x] **UV-DO-lesson-13-contributing-your-first-brick-quiz** (C1→haiku) Self-check for contributing your first brick · deps: UV-DO-lesson-13-contributing-your-first-brick-beginner-review
+- [x] **UV-DO-lesson-14-canonical-the-registry-story-draft** (C2→sonnet) Write lesson: canonical the registry story
+- [x] **UV-DO-lesson-14-canonical-the-registry-story-nav** (C1→haiku) Wire canonical the registry story into the intro-lane path · deps: UV-DO-lesson-14-canonical-the-registry-story-quiz
+- [x] **UV-DO-lesson-14-canonical-the-registry-story-quiz** (C1→haiku) Self-check for canonical the registry story · deps: UV-DO-lesson-14-canonical-the-registry-story-beginner-review
+- [x] **UV-DO-lesson-15-mcp-connect-your-agent-draft** (C2→sonnet) Write lesson: mcp connect your agent
+- [x] **UV-DO-lesson-15-mcp-connect-your-agent-nav** (C1→haiku) Wire mcp connect your agent into the intro-lane path · deps: UV-DO-lesson-15-mcp-connect-your-agent-quiz
+- [x] **UV-DO-lesson-15-mcp-connect-your-agent-quiz** (C1→haiku) Self-check for mcp connect your agent · deps: UV-DO-lesson-15-mcp-connect-your-agent-beginner-review
+- [x] **UV-DO-lesson-16-glossary-safari-draft** (C2→sonnet) Write lesson: glossary safari
+- [x] **UV-DO-lesson-16-glossary-safari-nav** (C1→haiku) Wire glossary safari into the intro-lane path · deps: UV-DO-lesson-16-glossary-safari-quiz
+- [x] **UV-DO-lesson-16-glossary-safari-quiz** (C1→haiku) Self-check for glossary safari · deps: UV-DO-lesson-16-glossary-safari-beginner-review
+- [x] **UV-DO-lesson-17-reading-the-plan-uvp-draft** (C2→sonnet) Write lesson: reading the plan uvp
+- [x] **UV-DO-lesson-17-reading-the-plan-uvp-nav** (C1→haiku) Wire reading the plan uvp into the intro-lane path · deps: UV-DO-lesson-17-reading-the-plan-uvp-quiz
+- [x] **UV-DO-lesson-17-reading-the-plan-uvp-quiz** (C1→haiku) Self-check for reading the plan uvp · deps: UV-DO-lesson-17-reading-the-plan-uvp-beginner-review
+- [x] **UV-DO-lesson-18-your-first-agent-swarm-draft** (C2→sonnet) Write lesson: your first agent swarm
+- [x] **UV-DO-lesson-18-your-first-agent-swarm-nav** (C1→haiku) Wire your first agent swarm into the intro-lane path · deps: UV-DO-lesson-18-your-first-agent-swarm-quiz
+- [x] **UV-DO-lesson-18-your-first-agent-swarm-quiz** (C1→haiku) Self-check for your first agent swarm · deps: UV-DO-lesson-18-your-first-agent-swarm-beginner-review
+- [x] **UV-DO-orientation-zero** (C1→haiku) docs/intro/00-orientation.md — 'what even is all this?'
+- [x] **UV-DO-readme-newcoder-pointer** (C1→haiku) README: 'new here? start with the intro lane' section
+- [x] **UV-DO-skeptic-contributing-refresh** (C2→sonnet) Update CONTRIBUTING.md for erasable TypeScript and gated brick submissions
+- [x] **UV-DO-start-here** (C2→sonnet) docs/intro/START_HERE.md — the front door of the intro lane
 
 ## M3
 
-- [ ] **UV-DO-doc-community-onboarding-accuracy** (C1→haiku) Evidence-check doc page: community/ONBOARDING.md · deps: UV-DO-doc-community-onboarding-write
-- [ ] **UV-DO-doc-community-onboarding-linkcheck** (C1→haiku) Wire community/ONBOARDING.md into navigation and search · deps: UV-DO-doc-community-onboarding-write
-- [ ] **UV-DO-doc-community-onboarding-write** (C2→sonnet) Write doc page: community/ONBOARDING.md
-- [ ] **UV-DO-doc-community-showcase-accuracy** (C1→haiku) Evidence-check doc page: community/SHOWCASE.md · deps: UV-DO-doc-community-showcase-write
-- [ ] **UV-DO-doc-community-showcase-linkcheck** (C1→haiku) Wire community/SHOWCASE.md into navigation and search · deps: UV-DO-doc-community-showcase-write
-- [ ] **UV-DO-doc-community-showcase-write** (C2→sonnet) Write doc page: community/SHOWCASE.md
-- [ ] **UV-DO-doc-dashboard-accuracy** (C1→haiku) Evidence-check doc page: DASHBOARD.md · deps: UV-DO-doc-dashboard-write
-- [ ] **UV-DO-doc-dashboard-linkcheck** (C1→haiku) Wire DASHBOARD.md into navigation and search · deps: UV-DO-doc-dashboard-write
-- [ ] **UV-DO-doc-dashboard-write** (C2→sonnet) Write doc page: DASHBOARD.md
-- [ ] **UV-DO-doc-evals-accuracy** (C1→haiku) Evidence-check doc page: AGENT_EVALS.md · deps: UV-DO-doc-evals-write
-- [ ] **UV-DO-doc-evals-linkcheck** (C1→haiku) Wire AGENT_EVALS.md into navigation and search · deps: UV-DO-doc-evals-write
-- [ ] **UV-DO-doc-evals-write** (C2→sonnet) Write doc page: AGENT_EVALS.md
-- [ ] **UV-DO-doc-monetization-accuracy** (C1→haiku) Evidence-check doc page: MONETIZATION_LANE.md · deps: UV-DO-doc-monetization-write
-- [ ] **UV-DO-doc-monetization-linkcheck** (C1→haiku) Wire MONETIZATION_LANE.md into navigation and search · deps: UV-DO-doc-monetization-write
-- [ ] **UV-DO-doc-monetization-write** (C2→sonnet) Write doc page: MONETIZATION_LANE.md
-- [ ] **UV-DO-translations-welcome** (C1→haiku) docs/intro/TRANSLATIONS.md — translations welcome
+- [x] **UV-DO-doc-community-onboarding-accuracy** (C1→haiku) Evidence-check doc page: community/ONBOARDING.md · deps: UV-DO-doc-community-onboarding-write
+- [x] **UV-DO-doc-community-onboarding-linkcheck** (C1→haiku) Wire community/ONBOARDING.md into navigation and search · deps: UV-DO-doc-community-onboarding-write
+- [x] **UV-DO-doc-community-onboarding-write** (C2→sonnet) Write doc page: community/ONBOARDING.md
+- [x] **UV-DO-doc-community-showcase-accuracy** (C1→haiku) Evidence-check doc page: community/SHOWCASE.md · deps: UV-DO-doc-community-showcase-write
+- [x] **UV-DO-doc-community-showcase-linkcheck** (C1→haiku) Wire community/SHOWCASE.md into navigation and search · deps: UV-DO-doc-community-showcase-write
+- [x] **UV-DO-doc-community-showcase-write** (C2→sonnet) Write doc page: community/SHOWCASE.md
+- [x] **UV-DO-doc-dashboard-accuracy** (C1→haiku) Evidence-check doc page: DASHBOARD.md · deps: UV-DO-doc-dashboard-write
+- [x] **UV-DO-doc-dashboard-linkcheck** (C1→haiku) Wire DASHBOARD.md into navigation and search · deps: UV-DO-doc-dashboard-write
+- [x] **UV-DO-doc-dashboard-write** (C2→sonnet) Write doc page: DASHBOARD.md
+- [x] **UV-DO-doc-evals-accuracy** (C1→haiku) Evidence-check doc page: AGENT_EVALS.md · deps: UV-DO-doc-evals-write
+- [x] **UV-DO-doc-evals-linkcheck** (C1→haiku) Wire AGENT_EVALS.md into navigation and search · deps: UV-DO-doc-evals-write
+- [x] **UV-DO-doc-evals-write** (C2→sonnet) Write doc page: AGENT_EVALS.md
+- [x] **UV-DO-doc-monetization-accuracy** (C1→haiku) Evidence-check doc page: MONETIZATION_LANE.md · deps: UV-DO-doc-monetization-write
+- [x] **UV-DO-doc-monetization-linkcheck** (C1→haiku) Wire MONETIZATION_LANE.md into navigation and search · deps: UV-DO-doc-monetization-write
+- [x] **UV-DO-doc-monetization-write** (C2→sonnet) Write doc page: MONETIZATION_LANE.md
+- [x] **UV-DO-translations-welcome** (C1→haiku) docs/intro/TRANSLATIONS.md — translations welcome

@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SM-smoa-perfbudget** (C2→sonnet) Performance budgets for smoa
+- [x] **UV-SM-smoa-perfbudget** (C2→sonnet) Performance budgets for smoa

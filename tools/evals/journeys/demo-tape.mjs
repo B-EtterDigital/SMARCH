@@ -29,7 +29,7 @@ export async function runJourney() {
     for (const snippet of [
       'Output "demo.gif"',
       "npm run fixtures:gen",
-      "node tools/sma-scan.mjs",
+      "node tools/sma-scan.ts",
       "SMA_AGENT=agent-a npm run start:edit",
       "SMA_AGENT=agent-b npm run start:edit",
     ]) assert.ok(tape.includes(snippet), `demo tape missing contract: ${snippet}`);

@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-RS-rust-graph** (C1→haiku) Graphify module graph for rust
-- [ ] **UV-RS-rust-ownership** (C2→sonnet) Register rust ownership in sma.gen3.json
+- [x] **UV-RS-rust-graph** (C1→haiku) Graphify module graph for rust
+- [x] **UV-RS-rust-ownership** (C2→sonnet) Register rust ownership in sma.gen3.json

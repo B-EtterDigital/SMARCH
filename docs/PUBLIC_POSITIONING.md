@@ -73,3 +73,5 @@ Track:
 - unresolved high/critical findings
 
 Without metrics, SMA is a philosophy. With metrics, it can become an engineering practice.
+
+<!-- docs-i18n: key=docs.public-positioning; source=en; media=media/{locale}/public-positioning/ -->

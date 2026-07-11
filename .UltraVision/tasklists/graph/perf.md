@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-GR-graph-perfbudget** (C2→sonnet) Performance budgets for graph
+- [x] **UV-GR-graph-perfbudget** (C2→sonnet) Performance budgets for graph

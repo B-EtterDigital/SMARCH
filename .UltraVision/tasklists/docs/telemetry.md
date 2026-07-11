@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-DO-docs-telemetry** (C3→sonnet) Telemetry coverage baseline for docs
+- [x] **UV-DO-docs-telemetry** (C3→sonnet) Telemetry coverage baseline for docs

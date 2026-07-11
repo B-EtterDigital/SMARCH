@@ -175,3 +175,5 @@ The next agent finds it via `sma-backlog.mjs list --project <dependent>` and dec
 - The `brick.replication` field is **optional** — existing manifests stay valid.
 - `sma-clone.mjs`, `sma-update-plan.mjs`, `sma-import-verify.mjs` are unchanged.
 - `--apply` only writes new files (`.smarch/incoming-updates/*` and `.smarch/update-plan-*.json`); it never modifies source files in any dependent.
+
+<!-- docs-i18n: key=docs.update-propagation; source=en; media=media/{locale}/update-propagation/ -->

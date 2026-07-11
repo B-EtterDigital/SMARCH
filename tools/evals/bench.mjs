@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "../..");
 const FIXTURE_ROOT = path.join(SCRIPT_DIR, "fixtures", "portfolio");
-const SCANNER_PATH = path.join(REPO_ROOT, "tools", "sma-scan.mjs");
+const SCANNER_PATH = path.join(REPO_ROOT, "tools", "sma-scan.ts");
 const GRAPHIFY_PATH = path.join(REPO_ROOT, "tools", "sma-graphify.mjs");
 const TARGET_FILE_COUNT = 10_000;
 const HEADROOM_PERCENT = 20;

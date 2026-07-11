@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SY-cmd-sync-public-errors** (C2→sonnet) Human-quality error output for `sma sync-public` · deps: UV-SY-cmd-sync-public-impl
+- [x] **UV-SY-cmd-sync-public-errors** (C2→sonnet) Human-quality error output for `sma sync-public` · deps: UV-SY-cmd-sync-public-impl

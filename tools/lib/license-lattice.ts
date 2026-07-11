@@ -33,6 +33,8 @@ const OPENNESS_RANK = new Map(OPENNESS.map((v, i) => [v, i]));
 export const VISIBILITY = ['private', 'internal', 'community', 'public'];
 const VISIBILITY_RANK = new Map(VISIBILITY.map((v, i) => [v, i]));
 
+export const LICENSE_TIERS = ['open', 'commercial'];
+
 // ---------------------------------------------------------------------------
 // License classification. copyleft_rank ascends: the combined work must carry
 // at least the strongest copyleft present among its components.
@@ -234,6 +236,26 @@ export function checkComposition(declared, components) {
 
   const violations = [];
 
+  const declaredTier = LICENSE_TIERS.includes(declared.license_tier) ? declared.license_tier : 'open';
+  const commercialComponents = (components || []).filter((component) => component.license_tier === 'commercial');
+  if (declaredTier === 'open' && commercialComponents.length && !declared.commercial_waiver) {
+    violations.push({
+      code: 'COMMERCIAL_TIER_WAIVER_REQUIRED',
+      severity: 'block',
+      message: `open canonical composition depends on commercial brick(s) ${commercialComponents.map((c) => c.brick_id).join(', ')} without an explicit commercial waiver`,
+      components: commercialComponents.map((c) => c.brick_id),
+    });
+  }
+  for (const component of commercialComponents) {
+    if (!component.commercial_terms) {
+      violations.push({
+        code: 'COMMERCIAL_TERMS_MISSING',
+        severity: 'block',
+        message: `commercial brick ${component.brick_id} does not declare commercial_terms`,
+      });
+    }
+  }
+
   // 1. Visibility escalation — declared more visible than the least-visible brick.
   if (components && components.length && visibilityRank(declaredVisibility) > visibilityRank(meetVis)) {
     violations.push({
@@ -301,6 +323,7 @@ export function checkComposition(declared, components) {
       license_class: describeEffectiveLicense(combined),
       attribution_required: combined.attribution_required,
       strongest_copyleft: combined.strongest_copyleft,
+      license_tier: commercialComponents.length ? 'commercial' : declaredTier,
     },
     violations,
   };

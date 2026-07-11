@@ -6,14 +6,14 @@
 
 ## M0
 
-- [ ] **UV-CP-capsule-testharness** (C3→sonnet) Test harness and CI wiring for capsule
+- [x] **UV-CP-capsule-testharness** (C3→sonnet) Test harness and CI wiring for capsule
 
 ## M2
 
-- [ ] **UV-CP-cmd-brick-inspect-e2e** (C2→sonnet) End-to-end test of `sma brick-inspect` against a real workspace · deps: UV-CP-cmd-brick-inspect-impl
-- [ ] **UV-CP-cmd-brick-inspect-unit** (C2→sonnet) Unit tests for sma brick-inspect · deps: UV-CP-cmd-brick-inspect-impl
-- [ ] **UV-CP-cmd-brick-new-e2e** (C2→sonnet) End-to-end test of `sma brick-new` against a real workspace · deps: UV-CP-cmd-brick-new-impl
-- [ ] **UV-CP-cmd-brick-new-unit** (C2→sonnet) Unit tests for sma brick-new · deps: UV-CP-cmd-brick-new-impl
-- [ ] **UV-CP-cmd-brick-run-e2e** (C2→sonnet) End-to-end test of `sma brick-run` against a real workspace · deps: UV-CP-cmd-brick-run-impl
-- [ ] **UV-CP-cmd-brick-run-unit** (C2→sonnet) Unit tests for sma brick-run · deps: UV-CP-cmd-brick-run-impl
-- [ ] **UV-CP-gates-by-construction-proof** (C3→sonnet) CI proof: capsule ⇒ gates pass by construction · deps: UV-CP-brick-run
+- [x] **UV-CP-cmd-brick-inspect-e2e** (C2→sonnet) End-to-end test of `sma brick-inspect` against a real workspace · deps: UV-CP-cmd-brick-inspect-impl
+- [x] **UV-CP-cmd-brick-inspect-unit** (C2→sonnet) Unit tests for sma brick-inspect · deps: UV-CP-cmd-brick-inspect-impl
+- [x] **UV-CP-cmd-brick-new-e2e** (C2→sonnet) End-to-end test of `sma brick-new` against a real workspace · deps: UV-CP-cmd-brick-new-impl
+- [x] **UV-CP-cmd-brick-new-unit** (C2→sonnet) Unit tests for sma brick-new · deps: UV-CP-cmd-brick-new-impl
+- [x] **UV-CP-cmd-brick-run-e2e** (C2→sonnet) End-to-end test of `sma brick-run` against a real workspace · deps: UV-CP-cmd-brick-run-impl
+- [x] **UV-CP-cmd-brick-run-unit** (C2→sonnet) Unit tests for sma brick-run · deps: UV-CP-cmd-brick-run-impl
+- [x] **UV-CP-gates-by-construction-proof** (C3→sonnet) CI proof: capsule ⇒ gates pass by construction · deps: UV-CP-brick-run

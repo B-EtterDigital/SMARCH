@@ -1,0 +1,55 @@
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-display: swap; font-weight: 400; src: url("../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-display: swap; font-weight: 600; src: url("../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-display: swap; font-weight: 400; src: url("../node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-display: swap; font-weight: 600; src: url("../node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-600-normal.woff2") format("woff2"); }
+
+:root {
+  --ground: #0e1420;
+  --ground-elevated: #141d2b;
+  --grid-lines: rgba(255, 255, 255, 0.07);
+  --structure: #5fd4f4;
+  --lease: #f4b860;
+  --pass: #7bc97b;
+  --fail: #e5484d;
+  --ink: #e8e6e1;
+  --muted: #8a93a6;
+  --rule: rgba(232, 230, 225, 0.22);
+  --font-data: "IBM Plex Mono", monospace;
+  --font-ui: "Space Grotesk", sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --focus: 2px solid var(--structure);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --ground: #f3efe6;
+  --ground-elevated: #e8e2d5;
+  --grid-lines: rgba(26, 34, 51, 0.08);
+  --ink: #1a2233;
+  --muted: #596276;
+  --rule: rgba(26, 34, 51, 0.25);
+  --structure: #08758f;
+  --lease: #8a5a00;
+  --pass: #23713a;
+  --fail: #b5272d;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--ground); }
+body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--ink); background-color: var(--ground); font-family: var(--font-ui); font-size: clamp(14px, 0.2vw + 13px, 16px); }
+button, input { font: inherit; }
+button { color: inherit; }
+code, kbd, pre, .mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+:focus-visible { outline: var(--focus); outline-offset: 2px; }
+::selection { color: var(--ground); background: var(--structure); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 120ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 120ms !important; transition-property: opacity !important; }
+}

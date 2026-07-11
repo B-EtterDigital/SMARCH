@@ -1,0 +1,1 @@
+{"id":"sweetspot-frontend-fix-seeded","skill":"sweetspot-frontend-fix","packet":{"objective":"Review a locked design without inventing a replacement."},"expected":{"gate_outcomes":["node -e \"process.exit(0)\""],"files_shape":{"required":["skills/sweetspot-frontend-fix/SKILL.md"]},"criteria":["design lock remains authoritative"],"forbidden":[".sff/eval-forbidden"]}}

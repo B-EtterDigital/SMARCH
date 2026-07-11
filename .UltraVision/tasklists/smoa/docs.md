@@ -6,36 +6,36 @@
 
 ## M0
 
-- [ ] **UV-SM-smoa-charter** (C1→haiku) Write module charter for smoa
-- [ ] **UV-SM-smoa-docs** (C1→haiku) Module docs baseline for smoa
+- [x] **UV-SM-smoa-charter** (C1→haiku) Write module charter for smoa
+- [x] **UV-SM-smoa-docs** (C1→haiku) Module docs baseline for smoa
 
 ## M1
 
-- [ ] **UV-SM-x-codex-runner-example** (C1→haiku) Add a runnable example for codex-runner.mjs to the commands reference · deps: UV-SM-x-codex-runner-header
-- [ ] **UV-SM-x-codex-runner-header** (C1→haiku) Add a WHY header to codex-runner.mjs
-- [ ] **UV-SM-x-sma-codex-all-example** (C1→haiku) Add a runnable example for sma-codex-all.mjs to the commands reference · deps: UV-SM-x-sma-codex-all-header
-- [ ] **UV-SM-x-sma-codex-all-header** (C1→haiku) Add a WHY header to sma-codex-all.mjs
-- [ ] **UV-SM-x-sma-codex-connect-example** (C1→haiku) Add a runnable example for sma-codex-connect.mjs to the commands reference · deps: UV-SM-x-sma-codex-connect-header
-- [ ] **UV-SM-x-sma-codex-connect-header** (C1→haiku) Add a WHY header to sma-codex-connect.mjs
-- [ ] **UV-SM-x-sma-codex-enrich-example** (C1→haiku) Add a runnable example for sma-codex-enrich.mjs to the commands reference · deps: UV-SM-x-sma-codex-enrich-header
-- [ ] **UV-SM-x-sma-codex-enrich-header** (C1→haiku) Add a WHY header to sma-codex-enrich.mjs
-- [ ] **UV-SM-x-sma-codex-example** (C1→haiku) Add a runnable example for sma-codex.mjs to the commands reference · deps: UV-SM-x-sma-codex-header
-- [ ] **UV-SM-x-sma-codex-header** (C1→haiku) Add a WHY header to sma-codex.mjs
-- [ ] **UV-SM-x-sma-codex-profile-example** (C1→haiku) Add a runnable example for sma-codex-profile.mjs to the commands reference · deps: UV-SM-x-sma-codex-profile-header
-- [ ] **UV-SM-x-sma-codex-profile-header** (C1→haiku) Add a WHY header to sma-codex-profile.mjs
-- [ ] **UV-SM-x-sma-codex-rank-example** (C1→haiku) Add a runnable example for sma-codex-rank.mjs to the commands reference · deps: UV-SM-x-sma-codex-rank-header
-- [ ] **UV-SM-x-sma-codex-rank-header** (C1→haiku) Add a WHY header to sma-codex-rank.mjs
-- [ ] **UV-SM-x-sma-codex-scan-helper-example** (C1→haiku) Add a runnable example for sma-codex-scan-helper.mjs to the commands reference · deps: UV-SM-x-sma-codex-scan-helper-header
-- [ ] **UV-SM-x-sma-codex-scan-helper-header** (C1→haiku) Add a WHY header to sma-codex-scan-helper.mjs
-- [ ] **UV-SM-x-sma-codex-test-example** (C1→haiku) Add a runnable example for sma-codex-test.mjs to the commands reference · deps: UV-SM-x-sma-codex-test-header
-- [ ] **UV-SM-x-sma-codex-test-header** (C1→haiku) Add a WHY header to sma-codex-test.mjs
-- [ ] **UV-SM-x-sma-codex-wiki-example** (C1→haiku) Add a runnable example for sma-codex-wiki.mjs to the commands reference · deps: UV-SM-x-sma-codex-wiki-header
-- [ ] **UV-SM-x-sma-codex-wiki-header** (C1→haiku) Add a WHY header to sma-codex-wiki.mjs
-- [ ] **UV-SM-x-sma-codex-wiki-index-example** (C1→haiku) Add a runnable example for sma-codex-wiki-index.mjs to the commands reference · deps: UV-SM-x-sma-codex-wiki-index-header
-- [ ] **UV-SM-x-sma-codex-wiki-index-header** (C1→haiku) Add a WHY header to sma-codex-wiki-index.mjs
-- [ ] **UV-SM-x-sma-smoa-token-summary-example** (C1→haiku) Add a runnable example for sma-smoa-token-summary.mjs to the commands reference · deps: UV-SM-x-sma-smoa-token-summary-header
-- [ ] **UV-SM-x-sma-smoa-token-summary-header** (C1→haiku) Add a WHY header to sma-smoa-token-summary.mjs
+- [x] **UV-SM-x-codex-runner-example** (C1→haiku) Add a runnable example for codex-runner.mjs to the commands reference · deps: UV-SM-x-codex-runner-header
+- [x] **UV-SM-x-codex-runner-header** (C1→haiku) Add a WHY header to codex-runner.mjs
+- [x] **UV-SM-x-sma-codex-all-example** (C1→haiku) Add a runnable example for sma-codex-all.mjs to the commands reference · deps: UV-SM-x-sma-codex-all-header
+- [x] **UV-SM-x-sma-codex-all-header** (C1→haiku) Add a WHY header to sma-codex-all.mjs
+- [x] **UV-SM-x-sma-codex-connect-example** (C1→haiku) Add a runnable example for sma-codex-connect.mjs to the commands reference · deps: UV-SM-x-sma-codex-connect-header
+- [x] **UV-SM-x-sma-codex-connect-header** (C1→haiku) Add a WHY header to sma-codex-connect.mjs
+- [x] **UV-SM-x-sma-codex-enrich-example** (C1→haiku) Add a runnable example for sma-codex-enrich.mjs to the commands reference · deps: UV-SM-x-sma-codex-enrich-header
+- [x] **UV-SM-x-sma-codex-enrich-header** (C1→haiku) Add a WHY header to sma-codex-enrich.mjs
+- [x] **UV-SM-x-sma-codex-example** (C1→haiku) Add a runnable example for sma-codex.mjs to the commands reference · deps: UV-SM-x-sma-codex-header
+- [x] **UV-SM-x-sma-codex-header** (C1→haiku) Add a WHY header to sma-codex.mjs
+- [x] **UV-SM-x-sma-codex-profile-example** (C1→haiku) Add a runnable example for sma-codex-profile.mjs to the commands reference · deps: UV-SM-x-sma-codex-profile-header
+- [x] **UV-SM-x-sma-codex-profile-header** (C1→haiku) Add a WHY header to sma-codex-profile.mjs
+- [x] **UV-SM-x-sma-codex-rank-example** (C1→haiku) Add a runnable example for sma-codex-rank.mjs to the commands reference · deps: UV-SM-x-sma-codex-rank-header
+- [x] **UV-SM-x-sma-codex-rank-header** (C1→haiku) Add a WHY header to sma-codex-rank.mjs
+- [x] **UV-SM-x-sma-codex-scan-helper-example** (C1→haiku) Add a runnable example for sma-codex-scan-helper.mjs to the commands reference · deps: UV-SM-x-sma-codex-scan-helper-header
+- [x] **UV-SM-x-sma-codex-scan-helper-header** (C1→haiku) Add a WHY header to sma-codex-scan-helper.mjs
+- [x] **UV-SM-x-sma-codex-test-example** (C1→haiku) Add a runnable example for sma-codex-test.mjs to the commands reference · deps: UV-SM-x-sma-codex-test-header
+- [x] **UV-SM-x-sma-codex-test-header** (C1→haiku) Add a WHY header to sma-codex-test.mjs
+- [x] **UV-SM-x-sma-codex-wiki-example** (C1→haiku) Add a runnable example for sma-codex-wiki.mjs to the commands reference · deps: UV-SM-x-sma-codex-wiki-header
+- [x] **UV-SM-x-sma-codex-wiki-header** (C1→haiku) Add a WHY header to sma-codex-wiki.mjs
+- [x] **UV-SM-x-sma-codex-wiki-index-example** (C1→haiku) Add a runnable example for sma-codex-wiki-index.mjs to the commands reference · deps: UV-SM-x-sma-codex-wiki-index-header
+- [x] **UV-SM-x-sma-codex-wiki-index-header** (C1→haiku) Add a WHY header to sma-codex-wiki-index.mjs
+- [x] **UV-SM-x-sma-smoa-token-summary-example** (C1→haiku) Add a runnable example for sma-smoa-token-summary.mjs to the commands reference · deps: UV-SM-x-sma-smoa-token-summary-header
+- [x] **UV-SM-x-sma-smoa-token-summary-header** (C1→haiku) Add a WHY header to sma-smoa-token-summary.mjs
 
 ## M2
 
-- [ ] **UV-SM-skill-update-workforce** (C2→sonnet) Point the SMOA skill's dispatch at the abstraction · deps: UV-SM-workforce-contract
+- [x] **UV-SM-skill-update-workforce** (C2→sonnet) Point the SMOA skill's dispatch at the abstraction · deps: UV-SM-workforce-contract

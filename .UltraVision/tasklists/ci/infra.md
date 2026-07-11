@@ -6,9 +6,9 @@
 
 ## M0
 
-- [ ] **UV-CI-ci-graph** (C1→haiku) Graphify module graph for ci
-- [ ] **UV-CI-ci-ownership** (C2→sonnet) Register ci ownership in sma.gen3.json
+- [x] **UV-CI-ci-graph** (C1→haiku) Graphify module graph for ci
+- [x] **UV-CI-ci-ownership** (C2→sonnet) Register ci ownership in sma.gen3.json
 
 ## M1
 
-- [ ] **UV-CI-issue-templates** (C2→sonnet) Issue + discussion templates for humans of every level
+- [x] **UV-CI-issue-templates** (C2→sonnet) Issue + discussion templates for humans of every level

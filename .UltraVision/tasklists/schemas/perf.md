@@ -6,32 +6,32 @@
 
 ## M0
 
-- [ ] **UV-SC-schemas-perfbudget** (C2→sonnet) Performance budgets for schemas
+- [x] **UV-SC-schemas-perfbudget** (C2→sonnet) Performance budgets for schemas
 
 ## M1
 
-- [ ] **UV-SC-active-leases-schema-perf** (C3→sonnet) Query performance budget for active-leases.schema.json · deps: UV-SC-active-leases-schema-access
-- [ ] **UV-SC-agent-context-event-schema-perf** (C3→sonnet) Query performance budget for agent-context-event.schema.json · deps: UV-SC-agent-context-event-schema-access
-- [ ] **UV-SC-backlog-schema-perf** (C3→sonnet) Query performance budget for backlog.schema.json · deps: UV-SC-backlog-schema-access
-- [ ] **UV-SC-brick-manifest-schema-perf** (C3→sonnet) Query performance budget for brick.manifest.schema.json · deps: UV-SC-brick-manifest-schema-access
-- [ ] **UV-SC-build-manifest-schema-perf** (C3→sonnet) Query performance budget for build.manifest.schema.json · deps: UV-SC-build-manifest-schema-access
-- [ ] **UV-SC-dependents-index-schema-perf** (C3→sonnet) Query performance budget for dependents-index.schema.json · deps: UV-SC-dependents-index-schema-access
-- [ ] **UV-SC-global-registry-schema-perf** (C3→sonnet) Query performance budget for global.registry.schema.json · deps: UV-SC-global-registry-schema-access
-- [ ] **UV-SC-import-lock-schema-perf** (C3→sonnet) Query performance budget for import-lock.schema.json · deps: UV-SC-import-lock-schema-access
-- [ ] **UV-SC-merge-proposal-schema-perf** (C3→sonnet) Query performance budget for merge-proposal.schema.json · deps: UV-SC-merge-proposal-schema-access
-- [ ] **UV-SC-placement-map-schema-perf** (C3→sonnet) Query performance budget for placement-map.schema.json · deps: UV-SC-placement-map-schema-access
-- [ ] **UV-SC-project-index-schema-perf** (C3→sonnet) Query performance budget for project.index.schema.json · deps: UV-SC-project-index-schema-access
-- [ ] **UV-SC-release-schema-perf** (C3→sonnet) Query performance budget for release.schema.json · deps: UV-SC-release-schema-access
-- [ ] **UV-SC-reuse-receipt-schema-perf** (C3→sonnet) Query performance budget for reuse-receipt.schema.json · deps: UV-SC-reuse-receipt-schema-access
-- [ ] **UV-SC-server-card-schema-perf** (C3→sonnet) Query performance budget for server-card-schema.json · deps: UV-SC-server-card-schema-access
+- [x] **UV-SC-active-leases-schema-perf** (C3→sonnet) Query performance budget for active-leases.schema.json · deps: UV-SC-active-leases-schema-access
+- [x] **UV-SC-agent-context-event-schema-perf** (C3→sonnet) Query performance budget for agent-context-event.schema.json · deps: UV-SC-agent-context-event-schema-access
+- [x] **UV-SC-backlog-schema-perf** (C3→sonnet) Query performance budget for backlog.schema.json · deps: UV-SC-backlog-schema-access
+- [x] **UV-SC-brick-manifest-schema-perf** (C3→sonnet) Query performance budget for brick.manifest.schema.json · deps: UV-SC-brick-manifest-schema-access
+- [x] **UV-SC-build-manifest-schema-perf** (C3→sonnet) Query performance budget for build.manifest.schema.json · deps: UV-SC-build-manifest-schema-access
+- [x] **UV-SC-dependents-index-schema-perf** (C3→sonnet) Query performance budget for dependents-index.schema.json · deps: UV-SC-dependents-index-schema-access
+- [x] **UV-SC-global-registry-schema-perf** (C3→sonnet) Query performance budget for global.registry.schema.json · deps: UV-SC-global-registry-schema-access
+- [x] **UV-SC-import-lock-schema-perf** (C3→sonnet) Query performance budget for import-lock.schema.json · deps: UV-SC-import-lock-schema-access
+- [x] **UV-SC-merge-proposal-schema-perf** (C3→sonnet) Query performance budget for merge-proposal.schema.json · deps: UV-SC-merge-proposal-schema-access
+- [x] **UV-SC-placement-map-schema-perf** (C3→sonnet) Query performance budget for placement-map.schema.json · deps: UV-SC-placement-map-schema-access
+- [x] **UV-SC-project-index-schema-perf** (C3→sonnet) Query performance budget for project.index.schema.json · deps: UV-SC-project-index-schema-access
+- [x] **UV-SC-release-schema-perf** (C3→sonnet) Query performance budget for release.schema.json · deps: UV-SC-release-schema-access
+- [x] **UV-SC-reuse-receipt-schema-perf** (C3→sonnet) Query performance budget for reuse-receipt.schema.json · deps: UV-SC-reuse-receipt-schema-access
+- [x] **UV-SC-server-card-schema-perf** (C3→sonnet) Query performance budget for server-card-schema.json · deps: UV-SC-server-card-schema-access
 
 ## M2
 
-- [ ] **UV-SC-capsule-manifest-schema-perf** (C3→sonnet) Query performance budget for capsule-manifest-schema.json · deps: UV-SC-capsule-manifest-schema-access
-- [ ] **UV-SC-workforce-packet-schema-perf** (C3→sonnet) Query performance budget for workforce-packet-schema.json · deps: UV-SC-workforce-packet-schema-access
+- [x] **UV-SC-capsule-manifest-schema-perf** (C3→sonnet) Query performance budget for capsule-manifest-schema.json · deps: UV-SC-capsule-manifest-schema-access
+- [x] **UV-SC-workforce-packet-schema-perf** (C3→sonnet) Query performance budget for workforce-packet-schema.json · deps: UV-SC-workforce-packet-schema-access
 
 ## M3
 
-- [ ] **UV-SC-entitlement-schema-perf** (C3→sonnet) Query performance budget for entitlement-schema.json · deps: UV-SC-entitlement-schema-access
-- [ ] **UV-SC-eval-run-schema-perf** (C3→sonnet) Query performance budget for eval-run-schema.json · deps: UV-SC-eval-run-schema-access
-- [ ] **UV-SC-submission-bundle-schema-perf** (C3→sonnet) Query performance budget for submission-bundle-schema.json · deps: UV-SC-submission-bundle-schema-access
+- [x] **UV-SC-entitlement-schema-perf** (C3→sonnet) Query performance budget for entitlement-schema.json · deps: UV-SC-entitlement-schema-access
+- [x] **UV-SC-eval-run-schema-perf** (C3→sonnet) Query performance budget for eval-run-schema.json · deps: UV-SC-eval-run-schema-access
+- [x] **UV-SC-submission-bundle-schema-perf** (C3→sonnet) Query performance budget for submission-bundle-schema.json · deps: UV-SC-submission-bundle-schema-access

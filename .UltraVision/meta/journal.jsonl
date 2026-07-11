@@ -2649,3 +2649,784 @@
 {"ts": "2026-07-11T03:22:05+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-impl", "detail": "node tools/sma-doc-lint.mjs"}
 {"ts": "2026-07-11T03:22:06+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-monitor", "detail": "node tools/sma-doc-lint.mjs"}
 {"ts": "2026-07-11T03:22:06+00:00", "action": "complete", "id": "UV-EV-j-submission-to-promotion-spec", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T03:23:37+00:00", "action": "claim", "id": "UV-DA-server-api", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:37+00:00", "action": "claim", "id": "UV-DA-skeptic-spa-compose", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:37+00:00", "action": "claim", "id": "UV-DA-srs-reporter", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:37+00:00", "action": "claim", "id": "UV-DA-web-scaffold", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:38+00:00", "action": "claim", "id": "UV-DO-doc-adoption-roadmap-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:38+00:00", "action": "claim", "id": "UV-DO-doc-adoption-roadmap-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:38+00:00", "action": "claim", "id": "UV-DO-doc-agent-skills-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:39+00:00", "action": "claim", "id": "UV-DO-doc-agent-skills-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:39+00:00", "action": "claim", "id": "UV-DO-doc-brick-metadata-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:39+00:00", "action": "claim", "id": "UV-DO-doc-brick-metadata-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:40+00:00", "action": "claim", "id": "UV-DO-doc-build-layer-implementation-plan-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:40+00:00", "action": "claim", "id": "UV-DO-doc-build-layer-implementation-plan-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:41+00:00", "action": "claim", "id": "UV-DO-doc-canonicalization-playbook-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:41+00:00", "action": "claim", "id": "UV-DO-doc-canonicalization-playbook-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:41+00:00", "action": "claim", "id": "UV-DO-doc-capsule-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:42+00:00", "action": "claim", "id": "UV-DO-doc-capsule-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:42+00:00", "action": "claim", "id": "UV-DO-doc-codex-integration-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:42+00:00", "action": "claim", "id": "UV-DO-doc-codex-integration-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:43+00:00", "action": "claim", "id": "UV-DO-doc-community-onboarding-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:43+00:00", "action": "claim", "id": "UV-DO-doc-community-onboarding-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:43+00:00", "action": "claim", "id": "UV-DO-doc-community-showcase-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:44+00:00", "action": "claim", "id": "UV-DO-doc-community-showcase-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:44+00:00", "action": "claim", "id": "UV-DO-doc-compact-brick-cards-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:44+00:00", "action": "claim", "id": "UV-DO-doc-compact-brick-cards-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:45+00:00", "action": "claim", "id": "UV-DO-doc-compliance-layer-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:45+00:00", "action": "claim", "id": "UV-DO-doc-compliance-layer-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:46+00:00", "action": "claim", "id": "UV-DO-doc-curated-build-acceptance-definitions-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:46+00:00", "action": "claim", "id": "UV-DO-doc-curated-build-acceptance-definitions-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:46+00:00", "action": "claim", "id": "UV-DO-doc-curated-build-lifecycle-playbook-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:47+00:00", "action": "claim", "id": "UV-DO-doc-curated-build-lifecycle-playbook-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:47+00:00", "action": "claim", "id": "UV-DO-doc-curated-build-private-publish-lane-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:47+00:00", "action": "claim", "id": "UV-DO-doc-curated-build-private-publish-lane-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:48+00:00", "action": "claim", "id": "UV-DO-doc-dashboard-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:48+00:00", "action": "claim", "id": "UV-DO-doc-dashboard-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:48+00:00", "action": "claim", "id": "UV-DO-doc-enforcement-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:49+00:00", "action": "claim", "id": "UV-DO-doc-enforcement-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:49+00:00", "action": "claim", "id": "UV-DO-doc-engineering-review-response-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:49+00:00", "action": "claim", "id": "UV-DO-doc-engineering-review-response-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:50+00:00", "action": "claim", "id": "UV-DO-doc-evals-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:50+00:00", "action": "claim", "id": "UV-DO-doc-evals-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:51+00:00", "action": "claim", "id": "UV-DO-doc-first-time-setup-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:51+00:00", "action": "claim", "id": "UV-DO-doc-first-time-setup-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:51+00:00", "action": "claim", "id": "UV-DO-doc-framework-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:52+00:00", "action": "claim", "id": "UV-DO-doc-framework-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:52+00:00", "action": "claim", "id": "UV-DO-doc-glossary-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:52+00:00", "action": "claim", "id": "UV-DO-doc-governance-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:53+00:00", "action": "claim", "id": "UV-DO-doc-governance-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:53+00:00", "action": "claim", "id": "UV-DO-doc-hierarchy-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:53+00:00", "action": "claim", "id": "UV-DO-doc-hierarchy-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:54+00:00", "action": "claim", "id": "UV-DO-doc-influences-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:54+00:00", "action": "claim", "id": "UV-DO-doc-maturity-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:54+00:00", "action": "claim", "id": "UV-DO-doc-maturity-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:55+00:00", "action": "claim", "id": "UV-DO-doc-mcp-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:55+00:00", "action": "claim", "id": "UV-DO-doc-mcp-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:55+00:00", "action": "claim", "id": "UV-DO-doc-monetization-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:56+00:00", "action": "claim", "id": "UV-DO-doc-monetization-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:56+00:00", "action": "claim", "id": "UV-DO-doc-multi-agent-operations-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:56+00:00", "action": "claim", "id": "UV-DO-doc-multi-agent-operations-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:57+00:00", "action": "claim", "id": "UV-DO-doc-privacy-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:57+00:00", "action": "claim", "id": "UV-DO-doc-privacy-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:57+00:00", "action": "claim", "id": "UV-DO-doc-provenance-seal-license-lattice-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:58+00:00", "action": "claim", "id": "UV-DO-doc-provenance-seal-license-lattice-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:58+00:00", "action": "claim", "id": "UV-DO-doc-public-positioning-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:58+00:00", "action": "claim", "id": "UV-DO-doc-public-positioning-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:59+00:00", "action": "claim", "id": "UV-DO-doc-quickstart-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:59+00:00", "action": "claim", "id": "UV-DO-doc-registry-workflow-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:23:59+00:00", "action": "claim", "id": "UV-DO-doc-registry-workflow-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:00+00:00", "action": "claim", "id": "UV-DO-doc-roadmap-100-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:00+00:00", "action": "claim", "id": "UV-DO-doc-roadmap-100-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:00+00:00", "action": "claim", "id": "UV-DO-doc-scanner-edge-cases-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:01+00:00", "action": "claim", "id": "UV-DO-doc-scanner-edge-cases-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:01+00:00", "action": "claim", "id": "UV-DO-doc-scat-sweetspot-core-agent-testloop-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:01+00:00", "action": "claim", "id": "UV-DO-doc-scat-sweetspot-core-agent-testloop-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:02+00:00", "action": "claim", "id": "UV-DO-doc-security-and-swarm-gates-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:02+00:00", "action": "claim", "id": "UV-DO-doc-security-and-swarm-gates-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:03+00:00", "action": "claim", "id": "UV-DO-doc-sff-sweetspot-frontend-fix-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:03+00:00", "action": "claim", "id": "UV-DO-doc-sff-sweetspot-frontend-fix-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:04+00:00", "action": "claim", "id": "UV-DO-doc-smoa-sweetspot-moa-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:04+00:00", "action": "claim", "id": "UV-DO-doc-smoa-sweetspot-moa-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:05+00:00", "action": "claim", "id": "UV-DO-doc-ssa-v2-base-rules-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:05+00:00", "action": "claim", "id": "UV-DO-doc-ssa-v2-base-rules-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:05+00:00", "action": "claim", "id": "UV-DO-doc-sup-sweetspot-ultra-plan-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:06+00:00", "action": "claim", "id": "UV-DO-doc-sup-sweetspot-ultra-plan-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:06+00:00", "action": "claim", "id": "UV-DO-doc-sweetspot-visual-demo-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:07+00:00", "action": "claim", "id": "UV-DO-doc-sweetspot-visual-demo-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:07+00:00", "action": "claim", "id": "UV-DO-doc-sync-runbook-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:07+00:00", "action": "claim", "id": "UV-DO-doc-sync-runbook-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:08+00:00", "action": "claim", "id": "UV-DO-doc-terminology-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:08+00:00", "action": "claim", "id": "UV-DO-doc-terminology-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:09+00:00", "action": "claim", "id": "UV-DO-doc-token-accounting-and-backlog-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:09+00:00", "action": "claim", "id": "UV-DO-doc-token-accounting-and-backlog-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:09+00:00", "action": "claim", "id": "UV-DO-doc-transparency-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:10+00:00", "action": "claim", "id": "UV-DO-doc-transparency-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:10+00:00", "action": "claim", "id": "UV-DO-doc-update-propagation-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:10+00:00", "action": "claim", "id": "UV-DO-doc-update-propagation-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:11+00:00", "action": "claim", "id": "UV-DO-doc-user-wiki-and-course-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:11+00:00", "action": "claim", "id": "UV-DO-doc-user-wiki-and-course-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:12+00:00", "action": "claim", "id": "UV-DO-doc-workforce-i18n", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:12+00:00", "action": "claim", "id": "UV-DO-doc-workforce-write", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:12+00:00", "action": "claim", "id": "UV-DO-glossary", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:13+00:00", "action": "claim", "id": "UV-DO-good-first-issues", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:13+00:00", "action": "claim", "id": "UV-DO-intro-a11y-pass", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:13+00:00", "action": "claim", "id": "UV-DO-quickstart-verified", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:14+00:00", "action": "claim", "id": "UV-DO-readme-demo-first", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:14+00:00", "action": "claim", "id": "UV-DO-readme-newcoder-pointer", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:15+00:00", "action": "claim", "id": "UV-DO-skeptic-contributing-refresh", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:15+00:00", "action": "claim", "id": "UV-DO-translations-welcome", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:15+00:00", "action": "claim", "id": "UV-RS-crate-scaffold", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:16+00:00", "action": "claim", "id": "UV-RS-node-adapter", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:16+00:00", "action": "claim", "id": "UV-RS-parity-tests", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:16+00:00", "action": "claim", "id": "UV-RS-release-binaries", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:17+00:00", "action": "claim", "id": "UV-RS-skeptic-merkle-parity", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:17+00:00", "action": "claim", "id": "UV-RG-hotfile-portfolio-config-convert", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:17+00:00", "action": "claim", "id": "UV-RG-hotfile-sma-convert", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:18+00:00", "action": "claim", "id": "UV-RG-hotfile-sma-paths-convert", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:18+00:00", "action": "claim", "id": "UV-RG-scan-walk-extraction", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:18+00:00", "action": "claim", "id": "UV-RG-split-sma-scan", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:19+00:00", "action": "claim", "id": "UV-DA-split-sma-wiki", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:19+00:00", "action": "claim", "id": "UV-CI-issue-templates", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:19+00:00", "action": "claim", "id": "UV-CI-workflow-ci", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:20+00:00", "action": "claim", "id": "UV-CI-workflow-release", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:20+00:00", "action": "claim", "id": "UV-CP-gates-by-construction-proof", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:20+00:00", "action": "claim", "id": "UV-CP-promote-fastlane", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:20+00:00", "action": "claim", "id": "UV-CM-entitlement-check", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:21+00:00", "action": "claim", "id": "UV-CM-skeptic-trusted-revalidation", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:21+00:00", "action": "claim", "id": "UV-CO-auto-context-endedit", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:21+00:00", "action": "claim", "id": "UV-SM-skeptic-opencode-backend", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:22+00:00", "action": "claim", "id": "UV-SM-skeptic-token-summary-backends", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:22+00:00", "action": "claim", "id": "UV-SM-skill-update-workforce", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:22+00:00", "action": "claim", "id": "UV-PR-commercial-license-tags", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:23+00:00", "action": "claim", "id": "UV-GR-tree-sitter-spike", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:23+00:00", "action": "claim", "id": "UV-SK-skeptic-manifest-inventory", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:23+00:00", "action": "claim", "id": "UV-MC-fixture-selftest", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:24+00:00", "action": "claim", "id": "UV-MC-server-card", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:24+00:00", "action": "claim", "id": "UV-EV-harness", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:24:24+00:00", "action": "claim", "id": "UV-EV-skeptic-eval-matrix", "agent": "codex-w14"}
+{"ts": "2026-07-11T03:35:44+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:44+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:45+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:46+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:47+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:47+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:48+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:48+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:49+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:50+00:00", "action": "claim", "id": "UV-DA-ui-app-shell-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:51+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:52+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:53+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:53+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:54+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:55+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:56+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:57+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:58+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:59+00:00", "action": "claim", "id": "UV-DA-ui-brick-card-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:35:59+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:00+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:00+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:01+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:02+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:03+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:04+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:04+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:05+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:06+00:00", "action": "claim", "id": "UV-DA-ui-brick-detail-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:06+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:07+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:08+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:08+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:09+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:09+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:10+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:10+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:11+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:11+00:00", "action": "claim", "id": "UV-DA-ui-brick-wall-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:12+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:12+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:13+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:13+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:14+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:14+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:15+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:16+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:16+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:17+00:00", "action": "claim", "id": "UV-DA-ui-conflict-heat-strip-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:18+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:19+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:20+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:20+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:21+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:22+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:24+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:25+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:25+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:26+00:00", "action": "claim", "id": "UV-DA-ui-conflict-ledger-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:28+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:29+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:29+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:30+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:30+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:31+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:32+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:33+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:34+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:35+00:00", "action": "claim", "id": "UV-DA-ui-empty-states-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:35+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:36+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:38+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:39+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:42+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:43+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:44+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:46+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:47+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:49+00:00", "action": "claim", "id": "UV-DA-ui-graph-view-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:51+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:53+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:55+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:56+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:36:58+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:00+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:02+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:03+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:04+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:05+00:00", "action": "claim", "id": "UV-DA-ui-lease-board-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:06+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:08+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:09+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:10+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:11+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:11+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:13+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:15+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:15+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:17+00:00", "action": "claim", "id": "UV-DA-ui-lease-row-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:18+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:19+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:19+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:21+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:22+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:22+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:23+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:24+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:25+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:26+00:00", "action": "claim", "id": "UV-DA-ui-module-filter-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:26+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:27+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:27+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:28+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:29+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:29+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:30+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:31+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:32+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:33+00:00", "action": "claim", "id": "UV-DA-ui-provenance-ribbon-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:33+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:34+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:34+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:35+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:35+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:36+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:37+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:37+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:38+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:39+00:00", "action": "claim", "id": "UV-DA-ui-registry-table-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:39+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:40+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:41+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:41+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:42+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:43+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:44+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:44+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:45+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:46+00:00", "action": "claim", "id": "UV-DA-ui-seal-chip-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:46+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:47+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:47+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:48+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:48+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:49+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:51+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:52+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:53+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:53+00:00", "action": "claim", "id": "UV-DA-ui-search-bar-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:54+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:54+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:55+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:55+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:56+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:56+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:57+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:58+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:58+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:37:59+00:00", "action": "claim", "id": "UV-DA-ui-settings-panel-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:00+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:00+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:01+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:01+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:01+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:02+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:02+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:03+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:03+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:04+00:00", "action": "claim", "id": "UV-DA-ui-stats-tiles-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:04+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:05+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:05+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:06+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:07+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:07+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:08+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:08+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:08+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:09+00:00", "action": "claim", "id": "UV-DA-ui-theme-toggle-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:09+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:10+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:10+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:11+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:11+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:12+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:12+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:13+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:13+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:14+00:00", "action": "claim", "id": "UV-DA-ui-toast-center-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:14+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-a11y", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:14+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:15+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-i18n", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:16+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:16+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-motion", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:17+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:17+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-states", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:18+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:18+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:19+00:00", "action": "claim", "id": "UV-DA-ui-verdict-stamp-visual", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:20+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-authz", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:21+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:21+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:22+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-integration", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:22+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:23+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-resilience", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:24+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:24+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:24+00:00", "action": "claim", "id": "UV-DA-dash-api-conflicts-validate", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:25+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-authz", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:26+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:26+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:27+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-integration", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:27+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:28+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-resilience", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:28+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:29+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:29+00:00", "action": "claim", "id": "UV-DA-dash-api-events-sse-validate", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:30+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-authz", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:30+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:31+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:32+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-integration", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:33+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:33+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-resilience", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:34+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:35+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:35+00:00", "action": "claim", "id": "UV-DA-dash-api-graph-validate", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:35+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-authz", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:36+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:37+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:37+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-integration", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:38+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:38+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-resilience", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:39+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:40+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:41+00:00", "action": "claim", "id": "UV-DA-dash-api-leases-validate", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:41+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-authz", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:42+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-docs", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:42+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-impl", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:43+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-integration", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:43+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-perf", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:43+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-resilience", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:44+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-telemetry", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:44+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-unit", "agent": "codex-w15"}
+{"ts": "2026-07-11T03:38:45+00:00", "action": "claim", "id": "UV-DA-dash-api-registry-validate", "agent": "codex-w15"}
+{"ts": "2026-07-11T04:04:04+00:00", "action": "complete", "id": "UV-DA-server-api", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:05+00:00", "action": "complete", "id": "UV-DA-skeptic-spa-compose", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:06+00:00", "action": "complete", "id": "UV-DA-srs-reporter", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:06+00:00", "action": "complete", "id": "UV-DA-web-scaffold", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:07+00:00", "action": "complete", "id": "UV-DO-doc-adoption-roadmap-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:09+00:00", "action": "complete", "id": "UV-DO-doc-adoption-roadmap-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:10+00:00", "action": "complete", "id": "UV-DO-doc-agent-skills-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:10+00:00", "action": "complete", "id": "UV-DO-doc-agent-skills-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:13+00:00", "action": "complete", "id": "UV-DO-doc-brick-metadata-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:14+00:00", "action": "complete", "id": "UV-DO-doc-brick-metadata-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:16+00:00", "action": "complete", "id": "UV-DO-doc-build-layer-implementation-plan-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:19+00:00", "action": "complete", "id": "UV-DO-doc-build-layer-implementation-plan-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:20+00:00", "action": "complete", "id": "UV-DO-doc-canonicalization-playbook-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:21+00:00", "action": "complete", "id": "UV-DO-doc-canonicalization-playbook-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:22+00:00", "action": "complete", "id": "UV-DO-doc-capsule-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:24+00:00", "action": "complete", "id": "UV-DO-doc-capsule-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:24+00:00", "action": "complete", "id": "UV-DO-doc-codex-integration-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:26+00:00", "action": "complete", "id": "UV-DO-doc-codex-integration-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:27+00:00", "action": "complete", "id": "UV-DO-doc-community-onboarding-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:28+00:00", "action": "complete", "id": "UV-DO-doc-community-onboarding-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:28+00:00", "action": "complete", "id": "UV-DO-doc-community-showcase-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:29+00:00", "action": "complete", "id": "UV-DO-doc-community-showcase-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:31+00:00", "action": "complete", "id": "UV-DO-doc-compact-brick-cards-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:32+00:00", "action": "complete", "id": "UV-DO-doc-compact-brick-cards-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:34+00:00", "action": "complete", "id": "UV-DO-doc-compliance-layer-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:36+00:00", "action": "complete", "id": "UV-DO-doc-compliance-layer-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:37+00:00", "action": "complete", "id": "UV-DO-doc-curated-build-acceptance-definitions-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:38+00:00", "action": "complete", "id": "UV-DO-doc-curated-build-acceptance-definitions-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:38+00:00", "action": "complete", "id": "UV-DO-doc-curated-build-lifecycle-playbook-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:39+00:00", "action": "complete", "id": "UV-DO-doc-curated-build-lifecycle-playbook-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:40+00:00", "action": "complete", "id": "UV-DO-doc-curated-build-private-publish-lane-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:41+00:00", "action": "complete", "id": "UV-DO-doc-curated-build-private-publish-lane-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:42+00:00", "action": "complete", "id": "UV-DO-doc-dashboard-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:44+00:00", "action": "complete", "id": "UV-DO-doc-dashboard-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:44+00:00", "action": "complete", "id": "UV-DO-doc-enforcement-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:46+00:00", "action": "complete", "id": "UV-DO-doc-enforcement-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:47+00:00", "action": "complete", "id": "UV-DO-doc-engineering-review-response-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:49+00:00", "action": "complete", "id": "UV-DO-doc-engineering-review-response-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:50+00:00", "action": "complete", "id": "UV-DO-doc-evals-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:51+00:00", "action": "complete", "id": "UV-DO-doc-evals-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:51+00:00", "action": "complete", "id": "UV-DO-doc-first-time-setup-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:53+00:00", "action": "complete", "id": "UV-DO-doc-first-time-setup-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:54+00:00", "action": "complete", "id": "UV-DO-doc-framework-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:55+00:00", "action": "complete", "id": "UV-DO-doc-framework-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:56+00:00", "action": "complete", "id": "UV-DO-doc-glossary-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:57+00:00", "action": "complete", "id": "UV-DO-doc-governance-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:58+00:00", "action": "complete", "id": "UV-DO-doc-governance-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:04:59+00:00", "action": "complete", "id": "UV-DO-doc-hierarchy-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:00+00:00", "action": "complete", "id": "UV-DO-doc-hierarchy-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:00+00:00", "action": "complete", "id": "UV-DO-doc-influences-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:01+00:00", "action": "complete", "id": "UV-DO-doc-maturity-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:02+00:00", "action": "complete", "id": "UV-DO-doc-maturity-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:02+00:00", "action": "complete", "id": "UV-DO-doc-mcp-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:03+00:00", "action": "complete", "id": "UV-DO-doc-mcp-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:03+00:00", "action": "complete", "id": "UV-DO-doc-monetization-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:04+00:00", "action": "complete", "id": "UV-DO-doc-monetization-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:05+00:00", "action": "complete", "id": "UV-DO-doc-multi-agent-operations-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:06+00:00", "action": "complete", "id": "UV-DO-doc-multi-agent-operations-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:07+00:00", "action": "complete", "id": "UV-DO-doc-privacy-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:07+00:00", "action": "complete", "id": "UV-DO-doc-privacy-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:08+00:00", "action": "complete", "id": "UV-DO-doc-provenance-seal-license-lattice-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:09+00:00", "action": "complete", "id": "UV-DO-doc-provenance-seal-license-lattice-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:10+00:00", "action": "complete", "id": "UV-DO-doc-public-positioning-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:11+00:00", "action": "complete", "id": "UV-DO-doc-public-positioning-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:12+00:00", "action": "complete", "id": "UV-DO-doc-quickstart-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:13+00:00", "action": "complete", "id": "UV-DO-doc-registry-workflow-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:15+00:00", "action": "complete", "id": "UV-DO-doc-registry-workflow-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:16+00:00", "action": "complete", "id": "UV-DO-doc-roadmap-100-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:17+00:00", "action": "complete", "id": "UV-DO-doc-roadmap-100-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:18+00:00", "action": "complete", "id": "UV-DO-doc-scanner-edge-cases-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:18+00:00", "action": "complete", "id": "UV-DO-doc-scanner-edge-cases-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:19+00:00", "action": "complete", "id": "UV-DO-doc-scat-sweetspot-core-agent-testloop-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:19+00:00", "action": "complete", "id": "UV-DO-doc-scat-sweetspot-core-agent-testloop-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:20+00:00", "action": "complete", "id": "UV-DO-doc-security-and-swarm-gates-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:21+00:00", "action": "complete", "id": "UV-DO-doc-security-and-swarm-gates-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:22+00:00", "action": "complete", "id": "UV-DO-doc-sff-sweetspot-frontend-fix-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:23+00:00", "action": "complete", "id": "UV-DO-doc-sff-sweetspot-frontend-fix-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:23+00:00", "action": "complete", "id": "UV-DO-doc-smoa-sweetspot-moa-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:24+00:00", "action": "complete", "id": "UV-DO-doc-smoa-sweetspot-moa-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:24+00:00", "action": "complete", "id": "UV-DO-doc-ssa-v2-base-rules-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:25+00:00", "action": "complete", "id": "UV-DO-doc-ssa-v2-base-rules-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:25+00:00", "action": "complete", "id": "UV-DO-doc-sup-sweetspot-ultra-plan-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:26+00:00", "action": "complete", "id": "UV-DO-doc-sup-sweetspot-ultra-plan-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:27+00:00", "action": "complete", "id": "UV-DO-doc-sweetspot-visual-demo-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:27+00:00", "action": "complete", "id": "UV-DO-doc-sweetspot-visual-demo-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:28+00:00", "action": "complete", "id": "UV-DO-doc-sync-runbook-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:28+00:00", "action": "complete", "id": "UV-DO-doc-sync-runbook-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:29+00:00", "action": "complete", "id": "UV-DO-doc-terminology-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:29+00:00", "action": "complete", "id": "UV-DO-doc-terminology-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:30+00:00", "action": "complete", "id": "UV-DO-doc-token-accounting-and-backlog-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:30+00:00", "action": "complete", "id": "UV-DO-doc-token-accounting-and-backlog-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:31+00:00", "action": "complete", "id": "UV-DO-doc-transparency-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:31+00:00", "action": "complete", "id": "UV-DO-doc-transparency-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:32+00:00", "action": "complete", "id": "UV-DO-doc-update-propagation-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:33+00:00", "action": "complete", "id": "UV-DO-doc-update-propagation-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:33+00:00", "action": "complete", "id": "UV-DO-doc-user-wiki-and-course-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:34+00:00", "action": "complete", "id": "UV-DO-doc-user-wiki-and-course-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:34+00:00", "action": "complete", "id": "UV-DO-doc-workforce-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:35+00:00", "action": "complete", "id": "UV-DO-doc-workforce-write", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:35+00:00", "action": "complete", "id": "UV-DO-glossary", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:36+00:00", "action": "complete", "id": "UV-DO-good-first-issues", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:37+00:00", "action": "complete", "id": "UV-DO-intro-a11y-pass", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:38+00:00", "action": "complete", "id": "UV-DO-quickstart-verified", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:38+00:00", "action": "complete", "id": "UV-DO-readme-demo-first", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:39+00:00", "action": "complete", "id": "UV-DO-readme-newcoder-pointer", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:40+00:00", "action": "complete", "id": "UV-DO-skeptic-contributing-refresh", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:40+00:00", "action": "complete", "id": "UV-DO-translations-welcome", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:41+00:00", "action": "complete", "id": "UV-RS-crate-scaffold", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:41+00:00", "action": "complete", "id": "UV-RS-node-adapter", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:42+00:00", "action": "complete", "id": "UV-RS-parity-tests", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:42+00:00", "action": "complete", "id": "UV-RS-release-binaries", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:43+00:00", "action": "complete", "id": "UV-RS-skeptic-merkle-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:44+00:00", "action": "complete", "id": "UV-RG-hotfile-portfolio-config-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:44+00:00", "action": "complete", "id": "UV-RG-hotfile-sma-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:45+00:00", "action": "complete", "id": "UV-RG-hotfile-sma-paths-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:46+00:00", "action": "complete", "id": "UV-RG-scan-walk-extraction", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:46+00:00", "action": "complete", "id": "UV-RG-split-sma-scan", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:47+00:00", "action": "complete", "id": "UV-DA-split-sma-wiki", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:47+00:00", "action": "complete", "id": "UV-CI-issue-templates", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:48+00:00", "action": "complete", "id": "UV-CI-workflow-ci", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:48+00:00", "action": "complete", "id": "UV-CI-workflow-release", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:49+00:00", "action": "complete", "id": "UV-CP-gates-by-construction-proof", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:50+00:00", "action": "complete", "id": "UV-CP-promote-fastlane", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:50+00:00", "action": "complete", "id": "UV-CM-entitlement-check", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:51+00:00", "action": "complete", "id": "UV-CM-skeptic-trusted-revalidation", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:51+00:00", "action": "complete", "id": "UV-CO-auto-context-endedit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:52+00:00", "action": "complete", "id": "UV-SM-skeptic-opencode-backend", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:53+00:00", "action": "complete", "id": "UV-SM-skeptic-token-summary-backends", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:53+00:00", "action": "complete", "id": "UV-SM-skill-update-workforce", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:54+00:00", "action": "complete", "id": "UV-PR-commercial-license-tags", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:54+00:00", "action": "complete", "id": "UV-GR-tree-sitter-spike", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:55+00:00", "action": "complete", "id": "UV-SK-skeptic-manifest-inventory", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:56+00:00", "action": "complete", "id": "UV-MC-fixture-selftest", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:56+00:00", "action": "complete", "id": "UV-MC-server-card", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:57+00:00", "action": "complete", "id": "UV-EV-harness", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:58+00:00", "action": "complete", "id": "UV-EV-skeptic-eval-matrix", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:05:58+00:00", "action": "complete", "id": "UV-DO-demo-tape", "detail": "test -s docs/demo/demo.gif"}
+{"ts": "2026-07-11T04:18:53+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:54+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:54+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:55+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:55+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:56+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:56+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:57+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:57+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:57+00:00", "action": "complete", "id": "UV-DA-ui-app-shell-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:58+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:58+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:59+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:18:59+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:00+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:00+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:01+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:01+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:02+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:02+00:00", "action": "complete", "id": "UV-DA-ui-brick-card-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:03+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:03+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:04+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:04+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:04+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:05+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:05+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:06+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:06+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:07+00:00", "action": "complete", "id": "UV-DA-ui-brick-detail-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:07+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:08+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:08+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:09+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:09+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:10+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:11+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:11+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:12+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:12+00:00", "action": "complete", "id": "UV-DA-ui-brick-wall-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:13+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:13+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:14+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:14+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:15+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:16+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:17+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:18+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:18+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:19+00:00", "action": "complete", "id": "UV-DA-ui-conflict-heat-strip-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:20+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:20+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:21+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:21+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:22+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:23+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:23+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:24+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:25+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:25+00:00", "action": "complete", "id": "UV-DA-ui-conflict-ledger-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:26+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:26+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:27+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:27+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:28+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:28+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:28+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:29+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:29+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:30+00:00", "action": "complete", "id": "UV-DA-ui-empty-states-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:30+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:31+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:31+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:32+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:32+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:33+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:33+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:34+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:34+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:35+00:00", "action": "complete", "id": "UV-DA-ui-graph-view-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:35+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:36+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:36+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:36+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:37+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:37+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:38+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:38+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:39+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:39+00:00", "action": "complete", "id": "UV-DA-ui-lease-board-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:40+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:40+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:41+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:42+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:42+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:43+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:43+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:44+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:44+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:45+00:00", "action": "complete", "id": "UV-DA-ui-lease-row-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:45+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:46+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:46+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:47+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:47+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:48+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:48+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:49+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:49+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:50+00:00", "action": "complete", "id": "UV-DA-ui-module-filter-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:50+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:51+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:51+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:52+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:52+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:52+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:53+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:53+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:54+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:54+00:00", "action": "complete", "id": "UV-DA-ui-provenance-ribbon-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:55+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:55+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:56+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:56+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:57+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:57+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:58+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:58+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:59+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:19:59+00:00", "action": "complete", "id": "UV-DA-ui-registry-table-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:00+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:00+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:00+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:01+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:01+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:02+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:02+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:03+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:03+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:04+00:00", "action": "complete", "id": "UV-DA-ui-seal-chip-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:04+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:05+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:05+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:06+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:06+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:06+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:07+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:07+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:08+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:08+00:00", "action": "complete", "id": "UV-DA-ui-search-bar-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:09+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:09+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:10+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:10+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:11+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:11+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:12+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:12+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:13+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:13+00:00", "action": "complete", "id": "UV-DA-ui-settings-panel-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:14+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:14+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:14+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:15+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:15+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:16+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:16+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:17+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:17+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:18+00:00", "action": "complete", "id": "UV-DA-ui-stats-tiles-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:18+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:18+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:19+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:19+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:20+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:20+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:21+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:21+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:22+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:22+00:00", "action": "complete", "id": "UV-DA-ui-theme-toggle-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:23+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:23+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:24+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:24+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:25+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:25+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:26+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:26+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:27+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:27+00:00", "action": "complete", "id": "UV-DA-ui-toast-center-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:27+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-a11y", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:28+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:28+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-i18n", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:29+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:29+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-motion", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:30+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:30+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-states", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:31+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:31+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:32+00:00", "action": "complete", "id": "UV-DA-ui-verdict-stamp-visual", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:32+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:33+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:33+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:33+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:34+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:34+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:35+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:35+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:35+00:00", "action": "complete", "id": "UV-DA-dash-api-conflicts-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:36+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:36+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:37+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:37+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:37+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:38+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:38+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:39+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:39+00:00", "action": "complete", "id": "UV-DA-dash-api-events-sse-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:39+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:40+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:40+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:41+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:41+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:42+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:42+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:42+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:43+00:00", "action": "complete", "id": "UV-DA-dash-api-graph-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:43+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:44+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:44+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:45+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:45+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:45+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:46+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:46+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:47+00:00", "action": "complete", "id": "UV-DA-dash-api-leases-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:47+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-authz", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:48+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-docs", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:48+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-impl", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:48+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-integration", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:49+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-perf", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:49+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-resilience", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:50+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:50+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:20:51+00:00", "action": "complete", "id": "UV-DA-dash-api-registry-validate", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T04:31:37+00:00", "action": "claim", "id": "UV-CI-final-gen3-map-ts", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:37+00:00", "action": "claim", "id": "UV-CI-final-ci-runs-gates", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:37+00:00", "action": "claim", "id": "UV-DA-final-live-data-proof", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:37+00:00", "action": "claim", "id": "UV-MC-final-capability-enforce", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:38+00:00", "action": "claim", "id": "UV-MC-final-server-card-disk", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:38+00:00", "action": "claim", "id": "UV-CP-final-promotion-evidence", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:38+00:00", "action": "claim", "id": "UV-SM-final-claude-backend-contract", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:38+00:00", "action": "claim", "id": "UV-CM-final-submission-schema", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:31:39+00:00", "action": "claim", "id": "UV-SK-final-plugin-inventory-filter", "agent": "codex-w16"}
+{"ts": "2026-07-11T04:47:59+00:00", "action": "complete", "id": "UV-CI-final-gen3-map-ts", "detail": "npm run check"}
+{"ts": "2026-07-11T04:48:16+00:00", "action": "complete", "id": "UV-CI-final-ci-runs-gates", "detail": "npm run check"}
+{"ts": "2026-07-11T04:48:35+00:00", "action": "complete", "id": "UV-DA-final-live-data-proof", "detail": "npm run check"}
+{"ts": "2026-07-11T04:48:54+00:00", "action": "complete", "id": "UV-MC-final-capability-enforce", "detail": "npm run check"}
+{"ts": "2026-07-11T04:49:10+00:00", "action": "complete", "id": "UV-MC-final-server-card-disk", "detail": "npm run check"}
+{"ts": "2026-07-11T04:49:27+00:00", "action": "complete", "id": "UV-CP-final-promotion-evidence", "detail": "npm run check"}
+{"ts": "2026-07-11T04:49:43+00:00", "action": "complete", "id": "UV-SM-final-claude-backend-contract", "detail": "npm run check"}
+{"ts": "2026-07-11T04:50:01+00:00", "action": "complete", "id": "UV-CM-final-submission-schema", "detail": "npm run check"}
+{"ts": "2026-07-11T04:50:17+00:00", "action": "complete", "id": "UV-SK-final-plugin-inventory-filter", "detail": "npm run check"}

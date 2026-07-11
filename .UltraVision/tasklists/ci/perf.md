@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CI-ci-perfbudget** (C2→sonnet) Performance budgets for ci
+- [x] **UV-CI-ci-perfbudget** (C2→sonnet) Performance budgets for ci

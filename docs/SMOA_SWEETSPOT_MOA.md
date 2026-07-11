@@ -108,3 +108,5 @@ codex cost, labeled `est.`).
 `skills/sweetspot-moa/SKILL.md` — activation rules, role table, effort
 calibration, packet schema, cross-review contract, termination rules,
 aliases (`SMOE` → `SMOA`).
+
+<!-- docs-i18n: key=docs.smoa-sweetspot-moa; source=en; media=media/{locale}/smoa-sweetspot-moa/ -->

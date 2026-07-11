@@ -56,3 +56,5 @@ residency, or retention claims from an example or an older deployment.
 
 See [Privacy, data protection, and residency](PRIVACY.md) for the local data
 boundary of the SMARCH tooling.
+
+<!-- docs-i18n: key=docs.transparency; source=en; media=media/{locale}/transparency/ -->

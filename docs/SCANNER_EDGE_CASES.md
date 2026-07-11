@@ -77,3 +77,5 @@ After manifest generation, the next scan should show:
 - validation warnings used as the promotion backlog
 
 If unmanifested candidates remain, the bootstrapper and scanner disagree and the tooling needs to be fixed before moving to the next project.
+
+<!-- docs-i18n: key=docs.scanner-edge-cases; source=en; media=media/{locale}/scanner-edge-cases/ -->

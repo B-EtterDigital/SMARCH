@@ -10,9 +10,9 @@
     "change_policy": "Tool-list additions are additive; renamed or removed fields and changed authorization semantics require a new versioned $id.",
     "rollback": "Restore the previous server-card implementation and schema together; clients must tolerate newly-added tool names.",
     "readers": ["MCP clients", "tools/mcp/selftest.mjs"],
-    "writers": ["tools/mcp/tools/server-card.mjs"],
-    "lifecycle": "Generated on request from static server metadata and discarded by the server after transport.",
-    "retention": "No server-side retention; clients may cache it for the server version lifetime.",
+    "writers": ["tools/mcp/tools/server-card.mjs", "tools/mcp/generate-server-card.mjs"],
+    "lifecycle": "Generated from static server metadata and published at .well-known/mcp/server-card.json; CI checks byte-for-byte freshness.",
+    "retention": "Tracked discovery artifact retained for the server version lifetime; clients may cache it.",
     "performance": "Static in-memory response; database query and index budgets are not applicable. The tool has a 500 ms timeout."
   },
   "required": ["name", "description", "version", "transport", "repository", "tools", "authorization"],

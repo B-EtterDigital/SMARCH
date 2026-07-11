@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SY-sync-perfbudget** (C2→sonnet) Performance budgets for sync
+- [x] **UV-SY-sync-perfbudget** (C2→sonnet) Performance budgets for sync

@@ -77,3 +77,5 @@ single screenshot).
 - **SMOA:** every frontend `design_spec` embeds the lock excerpt +
   blacklist. Codex reviews code against the lock; Fable reviews screenshots
   against it. Design judgment never moves to the workforce.
+
+<!-- docs-i18n: key=docs.sff-sweetspot-frontend-fix; source=en; media=media/{locale}/sff-sweetspot-frontend-fix/ -->

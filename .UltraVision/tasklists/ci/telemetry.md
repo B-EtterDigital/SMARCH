@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CI-ci-telemetry** (C3→sonnet) Telemetry coverage baseline for ci
+- [x] **UV-CI-ci-telemetry** (C3→sonnet) Telemetry coverage baseline for ci

@@ -6,4 +6,4 @@
 
 ## M3
 
-- [ ] **UV-CM-cmd-submit-errors** (C2→sonnet) Human-quality error output for `sma submit` · deps: UV-CM-cmd-submit-impl
+- [x] **UV-CM-cmd-submit-errors** (C2→sonnet) Human-quality error output for `sma submit` · deps: UV-CM-cmd-submit-impl

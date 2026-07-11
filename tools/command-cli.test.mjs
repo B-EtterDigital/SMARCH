@@ -12,7 +12,7 @@ function invoke(script, args) {
 
 test("umbrella sma router exposes every hardened command", () => {
   for (const command of ["mcp-serve", "brick-new", "brick-run", "brick-inspect", "submit", "sync-public", "evals-run"]) {
-    const result = invoke("sma.mjs", [command, "--help"]);
+    const result = invoke("sma.ts", [command, "--help"]);
     assert.equal(result.status, 0, `${command}: ${result.stderr}`);
     assert.match(result.stdout, /Usage:/, command);
     assert.match(result.stdout, /Exit codes:/, command);

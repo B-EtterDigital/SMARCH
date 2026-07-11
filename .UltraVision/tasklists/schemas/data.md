@@ -6,47 +6,47 @@
 
 ## M1
 
-- [ ] **UV-SC-active-leases-schema-rollback** (C3→sonnet) Rollback path for active-leases.schema.json migration · deps: UV-SC-active-leases-schema-schema
-- [ ] **UV-SC-active-leases-schema-schema** (C3→sonnet) Schema and forward migration for active-leases.schema.json
-- [ ] **UV-SC-agent-context-event-schema-rollback** (C3→sonnet) Rollback path for agent-context-event.schema.json migration · deps: UV-SC-agent-context-event-schema-schema
-- [ ] **UV-SC-agent-context-event-schema-schema** (C3→sonnet) Schema and forward migration for agent-context-event.schema.json
-- [ ] **UV-SC-backlog-schema-rollback** (C3→sonnet) Rollback path for backlog.schema.json migration · deps: UV-SC-backlog-schema-schema
-- [ ] **UV-SC-backlog-schema-schema** (C3→sonnet) Schema and forward migration for backlog.schema.json
-- [ ] **UV-SC-brick-manifest-schema-rollback** (C3→sonnet) Rollback path for brick.manifest.schema.json migration · deps: UV-SC-brick-manifest-schema-schema
-- [ ] **UV-SC-brick-manifest-schema-schema** (C3→sonnet) Schema and forward migration for brick.manifest.schema.json
-- [ ] **UV-SC-build-manifest-schema-rollback** (C3→sonnet) Rollback path for build.manifest.schema.json migration · deps: UV-SC-build-manifest-schema-schema
-- [ ] **UV-SC-build-manifest-schema-schema** (C3→sonnet) Schema and forward migration for build.manifest.schema.json
-- [ ] **UV-SC-dependents-index-schema-rollback** (C3→sonnet) Rollback path for dependents-index.schema.json migration · deps: UV-SC-dependents-index-schema-schema
-- [ ] **UV-SC-dependents-index-schema-schema** (C3→sonnet) Schema and forward migration for dependents-index.schema.json
-- [ ] **UV-SC-global-registry-schema-rollback** (C3→sonnet) Rollback path for global.registry.schema.json migration · deps: UV-SC-global-registry-schema-schema
-- [ ] **UV-SC-global-registry-schema-schema** (C3→sonnet) Schema and forward migration for global.registry.schema.json
-- [ ] **UV-SC-import-lock-schema-rollback** (C3→sonnet) Rollback path for import-lock.schema.json migration · deps: UV-SC-import-lock-schema-schema
-- [ ] **UV-SC-import-lock-schema-schema** (C3→sonnet) Schema and forward migration for import-lock.schema.json
-- [ ] **UV-SC-merge-proposal-schema-rollback** (C3→sonnet) Rollback path for merge-proposal.schema.json migration · deps: UV-SC-merge-proposal-schema-schema
-- [ ] **UV-SC-merge-proposal-schema-schema** (C3→sonnet) Schema and forward migration for merge-proposal.schema.json
-- [ ] **UV-SC-placement-map-schema-rollback** (C3→sonnet) Rollback path for placement-map.schema.json migration · deps: UV-SC-placement-map-schema-schema
-- [ ] **UV-SC-placement-map-schema-schema** (C3→sonnet) Schema and forward migration for placement-map.schema.json
-- [ ] **UV-SC-project-index-schema-rollback** (C3→sonnet) Rollback path for project.index.schema.json migration · deps: UV-SC-project-index-schema-schema
-- [ ] **UV-SC-project-index-schema-schema** (C3→sonnet) Schema and forward migration for project.index.schema.json
-- [ ] **UV-SC-release-schema-rollback** (C3→sonnet) Rollback path for release.schema.json migration · deps: UV-SC-release-schema-schema
-- [ ] **UV-SC-release-schema-schema** (C3→sonnet) Schema and forward migration for release.schema.json
-- [ ] **UV-SC-reuse-receipt-schema-rollback** (C3→sonnet) Rollback path for reuse-receipt.schema.json migration · deps: UV-SC-reuse-receipt-schema-schema
-- [ ] **UV-SC-reuse-receipt-schema-schema** (C3→sonnet) Schema and forward migration for reuse-receipt.schema.json
-- [ ] **UV-SC-server-card-schema-rollback** (C3→sonnet) Rollback path for server-card-schema.json migration · deps: UV-SC-server-card-schema-schema
-- [ ] **UV-SC-server-card-schema-schema** (C3→sonnet) Schema and forward migration for server-card-schema.json
+- [x] **UV-SC-active-leases-schema-rollback** (C3→sonnet) Rollback path for active-leases.schema.json migration · deps: UV-SC-active-leases-schema-schema
+- [x] **UV-SC-active-leases-schema-schema** (C3→sonnet) Schema and forward migration for active-leases.schema.json
+- [x] **UV-SC-agent-context-event-schema-rollback** (C3→sonnet) Rollback path for agent-context-event.schema.json migration · deps: UV-SC-agent-context-event-schema-schema
+- [x] **UV-SC-agent-context-event-schema-schema** (C3→sonnet) Schema and forward migration for agent-context-event.schema.json
+- [x] **UV-SC-backlog-schema-rollback** (C3→sonnet) Rollback path for backlog.schema.json migration · deps: UV-SC-backlog-schema-schema
+- [x] **UV-SC-backlog-schema-schema** (C3→sonnet) Schema and forward migration for backlog.schema.json
+- [x] **UV-SC-brick-manifest-schema-rollback** (C3→sonnet) Rollback path for brick.manifest.schema.json migration · deps: UV-SC-brick-manifest-schema-schema
+- [x] **UV-SC-brick-manifest-schema-schema** (C3→sonnet) Schema and forward migration for brick.manifest.schema.json
+- [x] **UV-SC-build-manifest-schema-rollback** (C3→sonnet) Rollback path for build.manifest.schema.json migration · deps: UV-SC-build-manifest-schema-schema
+- [x] **UV-SC-build-manifest-schema-schema** (C3→sonnet) Schema and forward migration for build.manifest.schema.json
+- [x] **UV-SC-dependents-index-schema-rollback** (C3→sonnet) Rollback path for dependents-index.schema.json migration · deps: UV-SC-dependents-index-schema-schema
+- [x] **UV-SC-dependents-index-schema-schema** (C3→sonnet) Schema and forward migration for dependents-index.schema.json
+- [x] **UV-SC-global-registry-schema-rollback** (C3→sonnet) Rollback path for global.registry.schema.json migration · deps: UV-SC-global-registry-schema-schema
+- [x] **UV-SC-global-registry-schema-schema** (C3→sonnet) Schema and forward migration for global.registry.schema.json
+- [x] **UV-SC-import-lock-schema-rollback** (C3→sonnet) Rollback path for import-lock.schema.json migration · deps: UV-SC-import-lock-schema-schema
+- [x] **UV-SC-import-lock-schema-schema** (C3→sonnet) Schema and forward migration for import-lock.schema.json
+- [x] **UV-SC-merge-proposal-schema-rollback** (C3→sonnet) Rollback path for merge-proposal.schema.json migration · deps: UV-SC-merge-proposal-schema-schema
+- [x] **UV-SC-merge-proposal-schema-schema** (C3→sonnet) Schema and forward migration for merge-proposal.schema.json
+- [x] **UV-SC-placement-map-schema-rollback** (C3→sonnet) Rollback path for placement-map.schema.json migration · deps: UV-SC-placement-map-schema-schema
+- [x] **UV-SC-placement-map-schema-schema** (C3→sonnet) Schema and forward migration for placement-map.schema.json
+- [x] **UV-SC-project-index-schema-rollback** (C3→sonnet) Rollback path for project.index.schema.json migration · deps: UV-SC-project-index-schema-schema
+- [x] **UV-SC-project-index-schema-schema** (C3→sonnet) Schema and forward migration for project.index.schema.json
+- [x] **UV-SC-release-schema-rollback** (C3→sonnet) Rollback path for release.schema.json migration · deps: UV-SC-release-schema-schema
+- [x] **UV-SC-release-schema-schema** (C3→sonnet) Schema and forward migration for release.schema.json
+- [x] **UV-SC-reuse-receipt-schema-rollback** (C3→sonnet) Rollback path for reuse-receipt.schema.json migration · deps: UV-SC-reuse-receipt-schema-schema
+- [x] **UV-SC-reuse-receipt-schema-schema** (C3→sonnet) Schema and forward migration for reuse-receipt.schema.json
+- [x] **UV-SC-server-card-schema-rollback** (C3→sonnet) Rollback path for server-card-schema.json migration · deps: UV-SC-server-card-schema-schema
+- [x] **UV-SC-server-card-schema-schema** (C3→sonnet) Schema and forward migration for server-card-schema.json
 
 ## M2
 
-- [ ] **UV-SC-capsule-manifest-schema-rollback** (C3→sonnet) Rollback path for capsule-manifest-schema.json migration · deps: UV-SC-capsule-manifest-schema-schema
-- [ ] **UV-SC-capsule-manifest-schema-schema** (C3→sonnet) Schema and forward migration for capsule-manifest-schema.json
-- [ ] **UV-SC-workforce-packet-schema-rollback** (C3→sonnet) Rollback path for workforce-packet-schema.json migration · deps: UV-SC-workforce-packet-schema-schema
-- [ ] **UV-SC-workforce-packet-schema-schema** (C3→sonnet) Schema and forward migration for workforce-packet-schema.json
+- [x] **UV-SC-capsule-manifest-schema-rollback** (C3→sonnet) Rollback path for capsule-manifest-schema.json migration · deps: UV-SC-capsule-manifest-schema-schema
+- [x] **UV-SC-capsule-manifest-schema-schema** (C3→sonnet) Schema and forward migration for capsule-manifest-schema.json
+- [x] **UV-SC-workforce-packet-schema-rollback** (C3→sonnet) Rollback path for workforce-packet-schema.json migration · deps: UV-SC-workforce-packet-schema-schema
+- [x] **UV-SC-workforce-packet-schema-schema** (C3→sonnet) Schema and forward migration for workforce-packet-schema.json
 
 ## M3
 
-- [ ] **UV-SC-entitlement-schema-rollback** (C3→sonnet) Rollback path for entitlement-schema.json migration · deps: UV-SC-entitlement-schema-schema
-- [ ] **UV-SC-entitlement-schema-schema** (C3→sonnet) Schema and forward migration for entitlement-schema.json
-- [ ] **UV-SC-eval-run-schema-rollback** (C3→sonnet) Rollback path for eval-run-schema.json migration · deps: UV-SC-eval-run-schema-schema
-- [ ] **UV-SC-eval-run-schema-schema** (C3→sonnet) Schema and forward migration for eval-run-schema.json
-- [ ] **UV-SC-submission-bundle-schema-rollback** (C3→sonnet) Rollback path for submission-bundle-schema.json migration · deps: UV-SC-submission-bundle-schema-schema
-- [ ] **UV-SC-submission-bundle-schema-schema** (C3→sonnet) Schema and forward migration for submission-bundle-schema.json
+- [x] **UV-SC-entitlement-schema-rollback** (C3→sonnet) Rollback path for entitlement-schema.json migration · deps: UV-SC-entitlement-schema-schema
+- [x] **UV-SC-entitlement-schema-schema** (C3→sonnet) Schema and forward migration for entitlement-schema.json
+- [x] **UV-SC-eval-run-schema-rollback** (C3→sonnet) Rollback path for eval-run-schema.json migration · deps: UV-SC-eval-run-schema-schema
+- [x] **UV-SC-eval-run-schema-schema** (C3→sonnet) Schema and forward migration for eval-run-schema.json
+- [x] **UV-SC-submission-bundle-schema-rollback** (C3→sonnet) Rollback path for submission-bundle-schema.json migration · deps: UV-SC-submission-bundle-schema-schema
+- [x] **UV-SC-submission-bundle-schema-schema** (C3→sonnet) Schema and forward migration for submission-bundle-schema.json

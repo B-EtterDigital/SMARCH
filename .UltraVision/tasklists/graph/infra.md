@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-GR-graph-graph** (C1→haiku) Graphify module graph for graph
-- [ ] **UV-GR-graph-ownership** (C2→sonnet) Register graph ownership in sma.gen3.json
+- [x] **UV-GR-graph-graph** (C1→haiku) Graphify module graph for graph
+- [x] **UV-GR-graph-ownership** (C2→sonnet) Register graph ownership in sma.gen3.json

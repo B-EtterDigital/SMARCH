@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SM-smoa-telemetry** (C3→sonnet) Telemetry coverage baseline for smoa
+- [x] **UV-SM-smoa-telemetry** (C3→sonnet) Telemetry coverage baseline for smoa

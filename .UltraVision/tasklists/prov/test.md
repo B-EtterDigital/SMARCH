@@ -6,32 +6,32 @@
 
 ## M0
 
-- [ ] **UV-PR-prov-testharness** (C3→sonnet) Test harness and CI wiring for prov
+- [x] **UV-PR-prov-testharness** (C3→sonnet) Test harness and CI wiring for prov
 
 ## M1
 
-- [ ] **UV-PR-attestation-parity** (C1→haiku) Record behavior-parity evidence for attestation.mjs · deps: UV-PR-attestation-convert
-- [ ] **UV-PR-attestation-selftest-parity** (C1→haiku) Record behavior-parity evidence for attestation-selftest.mjs · deps: UV-PR-attestation-selftest-convert
-- [ ] **UV-PR-export-coverage-selftest-parity** (C1→haiku) Record behavior-parity evidence for export-coverage-selftest.mjs · deps: UV-PR-export-coverage-selftest-convert
-- [ ] **UV-PR-export-guard-parity** (C1→haiku) Record behavior-parity evidence for export-guard.mjs · deps: UV-PR-export-guard-convert
-- [ ] **UV-PR-export-guard-selftest-parity** (C1→haiku) Record behavior-parity evidence for export-guard-selftest.mjs · deps: UV-PR-export-guard-selftest-convert
-- [ ] **UV-PR-ledger-resolve-parity** (C1→haiku) Record behavior-parity evidence for ledger-resolve.mjs · deps: UV-PR-ledger-resolve-convert
-- [ ] **UV-PR-license-evidence-parity** (C1→haiku) Record behavior-parity evidence for license-evidence.mjs · deps: UV-PR-license-evidence-convert
-- [ ] **UV-PR-license-evidence-selftest-parity** (C1→haiku) Record behavior-parity evidence for license-evidence-selftest.mjs · deps: UV-PR-license-evidence-selftest-convert
-- [ ] **UV-PR-license-lattice-parity** (C1→haiku) Record behavior-parity evidence for license-lattice.mjs · deps: UV-PR-license-lattice-convert
-- [ ] **UV-PR-license-lattice-selftest-parity** (C1→haiku) Record behavior-parity evidence for license-lattice-selftest.mjs · deps: UV-PR-license-lattice-selftest-convert
-- [ ] **UV-PR-merkle-parity** (C1→haiku) Record behavior-parity evidence for merkle.mjs · deps: UV-PR-merkle-convert
-- [ ] **UV-PR-merkle-selftest-parity** (C1→haiku) Record behavior-parity evidence for merkle-selftest.mjs · deps: UV-PR-merkle-selftest-convert
-- [ ] **UV-PR-provenance-seal-parity** (C1→haiku) Record behavior-parity evidence for provenance-seal.mjs · deps: UV-PR-provenance-seal-convert
-- [ ] **UV-PR-provenance-seal-selftest-parity** (C1→haiku) Record behavior-parity evidence for provenance-seal-selftest.mjs · deps: UV-PR-provenance-seal-selftest-convert
-- [ ] **UV-PR-similarity-parity** (C1→haiku) Record behavior-parity evidence for similarity.mjs · deps: UV-PR-similarity-convert
-- [ ] **UV-PR-similarity-selftest-parity** (C1→haiku) Record behavior-parity evidence for similarity-selftest.mjs · deps: UV-PR-similarity-selftest-convert
+- [x] **UV-PR-attestation-parity** (C1→haiku) Record behavior-parity evidence for attestation.mjs · deps: UV-PR-attestation-convert
+- [x] **UV-PR-attestation-selftest-parity** (C1→haiku) Record behavior-parity evidence for attestation-selftest.mjs · deps: UV-PR-attestation-selftest-convert
+- [x] **UV-PR-export-coverage-selftest-parity** (C1→haiku) Record behavior-parity evidence for export-coverage-selftest.mjs · deps: UV-PR-export-coverage-selftest-convert
+- [x] **UV-PR-export-guard-parity** (C1→haiku) Record behavior-parity evidence for export-guard.mjs · deps: UV-PR-export-guard-convert
+- [x] **UV-PR-export-guard-selftest-parity** (C1→haiku) Record behavior-parity evidence for export-guard-selftest.mjs · deps: UV-PR-export-guard-selftest-convert
+- [x] **UV-PR-ledger-resolve-parity** (C1→haiku) Record behavior-parity evidence for ledger-resolve.mjs · deps: UV-PR-ledger-resolve-convert
+- [x] **UV-PR-license-evidence-parity** (C1→haiku) Record behavior-parity evidence for license-evidence.mjs · deps: UV-PR-license-evidence-convert
+- [x] **UV-PR-license-evidence-selftest-parity** (C1→haiku) Record behavior-parity evidence for license-evidence-selftest.mjs · deps: UV-PR-license-evidence-selftest-convert
+- [x] **UV-PR-license-lattice-parity** (C1→haiku) Record behavior-parity evidence for license-lattice.mjs · deps: UV-PR-license-lattice-convert
+- [x] **UV-PR-license-lattice-selftest-parity** (C1→haiku) Record behavior-parity evidence for license-lattice-selftest.mjs · deps: UV-PR-license-lattice-selftest-convert
+- [x] **UV-PR-merkle-parity** (C1→haiku) Record behavior-parity evidence for merkle.mjs · deps: UV-PR-merkle-convert
+- [x] **UV-PR-merkle-selftest-parity** (C1→haiku) Record behavior-parity evidence for merkle-selftest.mjs · deps: UV-PR-merkle-selftest-convert
+- [x] **UV-PR-provenance-seal-parity** (C1→haiku) Record behavior-parity evidence for provenance-seal.mjs · deps: UV-PR-provenance-seal-convert
+- [x] **UV-PR-provenance-seal-selftest-parity** (C1→haiku) Record behavior-parity evidence for provenance-seal-selftest.mjs · deps: UV-PR-provenance-seal-selftest-convert
+- [x] **UV-PR-similarity-parity** (C1→haiku) Record behavior-parity evidence for similarity.mjs · deps: UV-PR-similarity-convert
+- [x] **UV-PR-similarity-selftest-parity** (C1→haiku) Record behavior-parity evidence for similarity-selftest.mjs · deps: UV-PR-similarity-selftest-convert
 
 ## M2
 
-- [ ] **UV-PR-sma-anchor-parity** (C1→haiku) Record behavior-parity evidence for sma-anchor.mjs · deps: UV-PR-sma-anchor-convert
-- [ ] **UV-PR-sma-attest-parity** (C1→haiku) Record behavior-parity evidence for sma-attest.mjs · deps: UV-PR-sma-attest-convert
-- [ ] **UV-PR-sma-attest-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-attest-verify.mjs · deps: UV-PR-sma-attest-verify-convert
-- [ ] **UV-PR-sma-provenance-ledger-parity** (C1→haiku) Record behavior-parity evidence for sma-provenance-ledger.mjs · deps: UV-PR-sma-provenance-ledger-convert
-- [ ] **UV-PR-sma-provenance-summary-parity** (C1→haiku) Record behavior-parity evidence for sma-provenance-summary.mjs · deps: UV-PR-sma-provenance-summary-convert
-- [ ] **UV-PR-sma-provenance-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-provenance-verify.mjs · deps: UV-PR-sma-provenance-verify-convert
+- [x] **UV-PR-sma-anchor-parity** (C1→haiku) Record behavior-parity evidence for sma-anchor.mjs · deps: UV-PR-sma-anchor-convert
+- [x] **UV-PR-sma-attest-parity** (C1→haiku) Record behavior-parity evidence for sma-attest.mjs · deps: UV-PR-sma-attest-convert
+- [x] **UV-PR-sma-attest-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-attest-verify.mjs · deps: UV-PR-sma-attest-verify-convert
+- [x] **UV-PR-sma-provenance-ledger-parity** (C1→haiku) Record behavior-parity evidence for sma-provenance-ledger.mjs · deps: UV-PR-sma-provenance-ledger-convert
+- [x] **UV-PR-sma-provenance-summary-parity** (C1→haiku) Record behavior-parity evidence for sma-provenance-summary.mjs · deps: UV-PR-sma-provenance-summary-convert
+- [x] **UV-PR-sma-provenance-verify-parity** (C1→haiku) Record behavior-parity evidence for sma-provenance-verify.mjs · deps: UV-PR-sma-provenance-verify-convert

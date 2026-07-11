@@ -76,3 +76,5 @@ The F5-UltraVisionPlan skill is the normative SUP implementation: task schema,
 complexity rubric, inventory×template mechanics, checklist templates, the
 bundled Gen3 compliance checklist, and the `uvp` tool. Update that skill —
 not per-project forks — when SUP evolves.
+
+<!-- docs-i18n: key=docs.sup-sweetspot-ultra-plan; source=en; media=media/{locale}/sup-sweetspot-ultra-plan/ -->

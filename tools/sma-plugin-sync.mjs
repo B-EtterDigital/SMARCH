@@ -62,10 +62,7 @@ async function validateInventory(inventory) {
     entries.set(entry.name, entry);
   }
 
-  const diskSkillNames = (await fs.readdir(path.join(root, "skills"), { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+  const diskSkillNames = await diskSkillDirectories(path.join(root, "skills"));
   const inventorySkillNames = [...entries.keys()].sort();
 
   const missing = diskSkillNames.filter((name) => !entries.has(name));
@@ -88,6 +85,35 @@ async function validateInventory(inventory) {
   }
 
   return bundled;
+}
+
+async function diskSkillDirectories(skillsRoot) {
+  const names = [];
+  for (const entry of await fs.readdir(skillsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    try {
+      await fs.access(path.join(skillsRoot, entry.name, "SKILL.md"));
+      names.push(entry.name);
+    } catch {
+      // Generated assets and other support directories are not skill packages.
+    }
+  }
+  return names.sort();
+}
+
+async function selftestInventoryFilter() {
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "smarch-skill-inventory-"));
+  try {
+    await fs.mkdir(path.join(fixtureRoot, "real-skill"), { recursive: true });
+    await fs.writeFile(path.join(fixtureRoot, "real-skill", "SKILL.md"), "# fixture\n");
+    await fs.mkdir(path.join(fixtureRoot, "graphify-out"), { recursive: true });
+    const names = await diskSkillDirectories(fixtureRoot);
+    if (JSON.stringify(names) !== JSON.stringify(["real-skill"])) {
+      fail(`non-skill directory filter selftest failed: ${names.join(", ")}`);
+    }
+  } finally {
+    await fs.rm(fixtureRoot, { recursive: true, force: true });
+  }
 }
 
 function parseSkillFrontmatter(markdown, relativePath) {
@@ -242,6 +268,7 @@ async function main() {
   const check = args.includes("--check");
   const selftest = args.includes("--selftest");
   if (selftest && !check) fail("--selftest requires --check");
+  if (selftest) await selftestInventoryFilter();
   const [inventory, packageJson] = await Promise.all([
     readJson(inventoryPath),
     readJson(packagePath),

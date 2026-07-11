@@ -27,6 +27,7 @@
 import { argv, exit } from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
@@ -42,7 +43,7 @@ if (args.selftest || command === 'selftest') {
   exit(0);
 }
 
-if (args.help || !args.lease || !args.project || !args.brick || !args.intent) {
+if (args.help || !args.lease || !args.project || !args.brick || (!args.intent && !args.auto)) {
   usage();
   exit(args.help ? 0 : 2);
 }
@@ -54,18 +55,21 @@ try {
     throw new Error('--require-cleanup-ok cannot be combined with --no-dirty-delta');
   }
 
-  const preflightDirtyDelta = args.requireCleanupOk ? captureDirtyDelta(args.lease) : null;
+  const preflightDirtyDelta = (args.requireCleanupOk || args.auto) ? captureDirtyDelta(args.lease) : null;
   const preflightCleanup = preflightDirtyDelta?.ok ? dirtyCleanupStatus(preflightDirtyDelta, { preflight: true }) : null;
   if (args.requireCleanupOk) {
     enforceCleanupOk(preflightDirtyDelta, preflightCleanup);
   }
 
+  const closingIntent = args.auto
+    ? deriveAutoIntent(preflightDirtyDelta, args.intent, args.historyFile)
+    : args.intent;
   const contextArgs = [
     resolve(TOOLS_DIR, 'sma-context.ts'), 'append',
     '--project', args.project,
     '--brick', args.brick,
     '--kind', kind,
-    '--intent', args.intent,
+    '--intent', closingIntent,
     '--lease', args.lease,
     '--json',
   ];
@@ -93,7 +97,7 @@ try {
       '--auto-context',
       '--json',
     ];
-    if (args.decision || args.intent) releaseArgs.push('--reason', args.decision ?? args.intent);
+    if (args.decision || closingIntent) releaseArgs.push('--reason', args.decision ?? closingIntent);
     const relRes = spawnSync('node', releaseArgs, { encoding: 'utf8' });
     if (relRes.status !== 0) {
       process.stderr.write(relRes.stderr ?? '');
@@ -224,6 +228,14 @@ function runSelftest() {
     formatReadinessScore({ active_lane_capacity_percent: 75, readiness_score_percent: 0 }) === 'launch 75%, integration 0%',
     'readiness formatter should separate launch capacity from integration readiness',
   );
+  const auto = deriveAutoIntent({
+    ok: true,
+    changed_files: ['tools/example.ts', 'docs/EXAMPLE.md'],
+  }, '', '');
+  assertSelftest(auto.includes('2 files changed'), '--auto should count changed files');
+  assertSelftest(auto.includes('tools/example.ts'), '--auto should name changed files');
+  const fallback = deriveAutoIntent({ ok: false }, 'fallback intent', '');
+  assertSelftest(fallback === 'fallback intent', '--auto should fall back to --intent');
   assertSelftest(
     formatLaunchStatusSuffix({ launch_allowed: true, release_allowed: false, active_lane: 'module-observe' }) === ' (module-observe ready; release blocked)',
     'status suffix should keep release blocked while module launch is allowed',
@@ -257,6 +269,9 @@ function captureDirtyDelta(label) {
   try {
     const parsed = JSON.parse(res.stdout);
     const delta = parsed.delta ?? {};
+    const changedFiles = [...(delta.new || []), ...(delta.status_changed || [])]
+      .map((entry) => typeof entry === 'string' ? entry : (entry.path || entry.file || entry.to || ''))
+      .filter(Boolean);
     return {
       ok: true,
       label: parsed.label ?? label,
@@ -270,10 +285,42 @@ function captureDirtyDelta(label) {
         status_changed_count: Array.isArray(delta.status_changed) ? delta.status_changed.length : 0,
         unchanged_count: Number(delta.unchanged_count ?? 0),
       },
+      changed_files: [...new Set(changedFiles)],
     };
   } catch (err) {
     return { ok: false, error: `invalid dirty delta JSON: ${err.message}` };
   }
+}
+
+function deriveAutoIntent(report, fallback = '', historyFile = '') {
+  const files = report?.ok && Array.isArray(report.changed_files) ? report.changed_files : [];
+  const gates = readGateHistory(historyFile);
+  const parts = [];
+  if (files.length) {
+    const shown = files.slice(0, 8).join(', ');
+    parts.push(`${files.length} file${files.length === 1 ? '' : 's'} changed: ${shown}${files.length > 8 ? ` (+${files.length - 8} more)` : ''}`);
+  }
+  if (gates.length) parts.push(`gates run: ${gates.join('; ')}`);
+  if (parts.length) return parts.join('. ');
+  if (fallback) return fallback;
+  return 'edit session closed with no dirty-baseline changes detected';
+}
+
+function readGateHistory(historyFile) {
+  if (!historyFile) return [];
+  try {
+    const text = requireReadFile(historyFile);
+    return text.split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => /(?:npm|pnpm|yarn|node|npx|cargo)\s+(?:run\s+)?(?:check|test|typecheck|gate|selftest|ci|lint)/i.test(line))
+      .slice(-8);
+  } catch {
+    return [];
+  }
+}
+
+function requireReadFile(file) {
+  return readFileSync(resolve(file), 'utf8');
 }
 
 function formatDirtyDelta(report) {
@@ -356,14 +403,16 @@ function shellArg(value) {
 
 function usage() {
   console.log(`Usage:
-  sma-end-edit.ts --lease <lease_id> --project <id> --brick <id> --intent "..."
+  sma-end-edit.ts --lease <lease_id> --project <id> --brick <id> [--intent "..." | --auto]
                    [--decision "..."] [--rejected "alt::reason"]... [--file <path>]...
                    [--commit <sha>] [--verify-cmd "..." --verify-status <s>]
                    [--kind edit_applied|decision_recorded] [--no-release]
                    [--require-cleanup-ok] [--no-dirty-delta]
-                   [--no-preflight-tldr] [--json]
+                   [--history-file <path>] [--no-preflight-tldr] [--json]
 
 Prints a dirty delta and cleanup ok/required status unless --no-dirty-delta is set.
+With --auto, derives the closing summary from that delta and optional shell-history file;
+--intent is used only as the fallback when no automatic evidence is available.
 Also prints a compact Gen3 big-picture TLDR unless --no-preflight-tldr is set.
 With --require-cleanup-ok, exits 4 before logging/releasing when the task delta
 still has new or status-changed dirty paths.

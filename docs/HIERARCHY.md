@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.hierarchy; source=en; media=media/{locale}/hierarchy/ -->
 # SMA Hierarchy
 
 This reference explains how Sweetspot projects organize products, builds, bricks, components, and files. Architects and registry maintainers need it when choosing the correct boundary for new work. Read it before creating a manifest or moving an artifact between hierarchy levels. Remember that each level owns a distinct contract and should not masquerade as a smaller reusable unit.

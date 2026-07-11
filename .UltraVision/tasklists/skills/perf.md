@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SK-skills-perfbudget** (C2→sonnet) Performance budgets for skills
+- [x] **UV-SK-skills-perfbudget** (C2→sonnet) Performance budgets for skills

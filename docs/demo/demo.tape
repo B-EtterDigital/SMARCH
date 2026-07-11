@@ -15,7 +15,7 @@ Sleep 1s
 Show
 
 # Scene 1: generate the fixture portfolio and scan it.
-Type "npm run fixtures:gen && node tools/sma-scan.mjs --root tools/evals/fixtures/portfolio --out /tmp/demo-registry.json"
+Type "npm run fixtures:gen && node tools/sma-scan.ts --root tools/evals/fixtures/portfolio --out /tmp/demo-registry.json"
 Enter
 Sleep 5s
 

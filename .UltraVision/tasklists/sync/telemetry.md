@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-SY-cmd-sync-public-telemetry** (C1→haiku) Error telemetry for sma sync-public · deps: UV-SY-cmd-sync-public-impl
-- [ ] **UV-SY-sync-telemetry** (C3→sonnet) Telemetry coverage baseline for sync
+- [x] **UV-SY-cmd-sync-public-telemetry** (C1→haiku) Error telemetry for sma sync-public · deps: UV-SY-cmd-sync-public-impl
+- [x] **UV-SY-sync-telemetry** (C3→sonnet) Telemetry coverage baseline for sync

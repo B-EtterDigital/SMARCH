@@ -10,6 +10,24 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
+      - name: install dependencies
+        run: npm install
+      - name: run the TypeScript and Gen3 gate battery
+        run: npm run check
+      - name: scan repository history for leaked secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: scan publishable files for leaked secrets
+        run: node tools/sma-leak-gate.mjs
+      - name: verify the CI workflow contract
+        run: node tools/gates-workflow-selftest.mjs
+      - name: run user journey checks
+        run: node tools/evals/journeys/index.mjs
+      - name: verify evaluation fixture snapshots
+        run: node tools/evals/fixture-snapshot.mjs --check
+      - name: verify MCP discovery card is fresh
+        run: node tools/mcp/generate-server-card.mjs --check
       - name: syntax-check every tool
         run: |
           set -e

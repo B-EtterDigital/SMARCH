@@ -26,6 +26,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { assertExportAllowed, ExportBlockedError } from "./lib/export-guard.ts";
+import { verifyCommercialEntitlement } from "./lib/commercial-entitlement.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const projectsRoot = path.resolve(repoRoot, "..", "Projects");
@@ -44,6 +45,9 @@ function parseArgs(argv): Record<string, any> {
     list: false,
     force: false,
     allowClosed: false,
+    entitlement: process.env.SMA_ENTITLEMENT_FILE || "",
+    licensee: process.env.SMA_LICENSEE || "",
+    entitlementTrustedKeys: process.env.SMA_ENTITLEMENT_TRUSTED_KEYS || "",
     registryOrigin: process.env.SMA_REGISTRY_ORIGIN || ""
   };
   for (let i = 0; i < argv.length; i += 1) {
@@ -56,6 +60,9 @@ function parseArgs(argv): Record<string, any> {
     else if (a === "--search" && n) { o.search = n.toLowerCase(); i += 1; }
     else if (a === "--doc-dir" && n) { o.docDir = n; i += 1; }
     else if (a === "--registry-origin" && n) { o.registryOrigin = n; i += 1; }
+    else if (a === "--entitlement" && n) { o.entitlement = path.resolve(n); i += 1; }
+    else if (a === "--licensee" && n) { o.licensee = n; i += 1; }
+    else if (a === "--entitlement-trusted-keys" && n) { o.entitlementTrustedKeys = path.resolve(n); i += 1; }
     else if (a === "--write") o.write = true;
     else if (a === "--list") o.list = true;
     else if (a === "--force") o.force = true;
@@ -742,6 +749,7 @@ async function main() {
         process.exit(2);
       }
       const resolvedManifest = await readJson(resolvedBrick.manifest_path);
+      verifyCommercialEntitlement({ manifest: resolvedManifest, brickId: resolvedBrick.id, licensee: opts.licensee, entitlementFile: opts.entitlement, trustedKeysFile: opts.entitlementTrustedKeys });
       const resolvedSemantics = resolvedManifest.semantics || {};
       const sourceProjectRoot = await inferSourceProjectRoot(
         resolvedBrick.manifest_path,
@@ -1435,6 +1443,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
   if (!brick) { console.error(`error: no brick matched id "${opts.brick}"`); process.exit(2); }
 
   const manifest = await readJson(brick.manifest_path);
+  verifyCommercialEntitlement({ manifest, brickId: brick.id, licensee: opts.licensee, entitlementFile: opts.entitlement, trustedKeysFile: opts.entitlementTrustedKeys });
   const sem = manifest.semantics || {};
   const artifactVersion = semverOrFallback(firstDefined(brick.version, manifest.brick?.version, manifest.build?.version), "0.0.0");
   const sourceProjectRoot = await inferSourceProjectRoot(brick.manifest_path, brick.source_paths || [], brick.project || "");

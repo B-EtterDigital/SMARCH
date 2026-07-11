@@ -6,6 +6,6 @@
 
 ## M2
 
-- [ ] **UV-CP-cmd-brick-inspect-errors** (C2→sonnet) Human-quality error output for `sma brick-inspect` · deps: UV-CP-cmd-brick-inspect-impl
-- [ ] **UV-CP-cmd-brick-new-errors** (C2→sonnet) Human-quality error output for `sma brick-new` · deps: UV-CP-cmd-brick-new-impl
-- [ ] **UV-CP-cmd-brick-run-errors** (C2→sonnet) Human-quality error output for `sma brick-run` · deps: UV-CP-cmd-brick-run-impl
+- [x] **UV-CP-cmd-brick-inspect-errors** (C2→sonnet) Human-quality error output for `sma brick-inspect` · deps: UV-CP-cmd-brick-inspect-impl
+- [x] **UV-CP-cmd-brick-new-errors** (C2→sonnet) Human-quality error output for `sma brick-new` · deps: UV-CP-cmd-brick-new-impl
+- [x] **UV-CP-cmd-brick-run-errors** (C2→sonnet) Human-quality error output for `sma brick-run` · deps: UV-CP-cmd-brick-run-impl

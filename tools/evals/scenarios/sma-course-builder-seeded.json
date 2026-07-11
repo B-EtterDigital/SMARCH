@@ -1,0 +1,1 @@
+{"id":"sma-course-builder-seeded","skill":"sma-course-builder","packet":{"objective":"Check that course guidance stays grounded in shipped features."},"expected":{"gate_outcomes":["node -e \"process.exit(0)\""],"files_shape":{"required":["skills/sma-course-builder/SKILL.md"]},"criteria":["course claims are evidence-backed"],"forbidden":["docs/eval-forbidden.md"]}}

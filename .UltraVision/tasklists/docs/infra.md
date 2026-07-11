@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-DO-docs-graph** (C1→haiku) Graphify module graph for docs
-- [ ] **UV-DO-docs-ownership** (C2→sonnet) Register docs ownership in sma.gen3.json
+- [x] **UV-DO-docs-graph** (C1→haiku) Graphify module graph for docs
+- [x] **UV-DO-docs-ownership** (C2→sonnet) Register docs ownership in sma.gen3.json

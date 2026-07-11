@@ -6,5 +6,5 @@
 
 ## M0
 
-- [ ] **UV-CO-coord-graph** (C1→haiku) Graphify module graph for coord
-- [ ] **UV-CO-coord-ownership** (C2→sonnet) Register coord ownership in sma.gen3.json
+- [x] **UV-CO-coord-graph** (C1→haiku) Graphify module graph for coord
+- [x] **UV-CO-coord-ownership** (C2→sonnet) Register coord ownership in sma.gen3.json

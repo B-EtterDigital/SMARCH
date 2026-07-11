@@ -10,6 +10,42 @@ const SERVER_NAME = "smarch-registry";
 const SERVER_VERSION = "0.1.0";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const toolsDirectory = path.resolve(__dirname, "tools");
+const DEFAULT_CAPABILITIES = Object.freeze(["registry:read"]);
+
+export function parseGrantedCapabilities(value = process.env.SMARCH_MCP_CAPABILITIES) {
+  if (value === undefined) return new Set(DEFAULT_CAPABILITIES);
+  return new Set(String(value)
+    .split(/[\s,]+/)
+    .map((capability) => capability.trim())
+    .filter(Boolean));
+}
+
+export async function invokeTool(tool, args, grantedCapabilities) {
+  const requiredCapability = tool?.authorization?.required_capability;
+  if (typeof requiredCapability !== "string" || !requiredCapability) {
+    throw new McpToolError(
+      "MCP_TOOL_INVALID",
+      "The MCP tool does not declare a required capability",
+      { tool: tool?.name || "unknown" },
+    );
+  }
+  if (!grantedCapabilities.has(requiredCapability)) {
+    const error = new McpToolError(
+      "MCP_CAPABILITY_REQUIRED",
+      "The MCP client has not been granted the capability required by this tool",
+      { tool: tool.name, required_capability: requiredCapability },
+    );
+    console.error(JSON.stringify({
+      area: `mcp:${tool.name}`,
+      severity: "error",
+      event: "tool_denied",
+      code: error.code,
+      required_capability: requiredCapability,
+    }));
+    throw error;
+  }
+  return tool.handler(args);
+}
 
 function sdkInstallError(error) {
   const wrapped = new Error(
@@ -49,8 +85,9 @@ export async function loadToolModules(directory = toolsDirectory) {
 
   const seen = new Set();
   for (const tool of modules) {
-    if (!tool.name || !tool.description || !tool.inputSchema || typeof tool.handler !== "function") {
-      throw new Error("MCP_TOOL_INVALID: every tool module must export name, description, inputSchema, and handler");
+    if (!tool.name || !tool.description || !tool.inputSchema || typeof tool.handler !== "function"
+      || typeof tool.authorization?.required_capability !== "string") {
+      throw new Error("MCP_TOOL_INVALID: every tool module must export name, description, inputSchema, handler, and authorization.required_capability");
     }
     if (seen.has(tool.name)) throw new Error(`MCP_TOOL_DUPLICATE: ${tool.name}`);
     seen.add(tool.name);
@@ -77,7 +114,7 @@ function toolError(error) {
   };
 }
 
-export async function createServer() {
+export async function createServer(options = {}) {
   const {
     Server,
     CallToolRequestSchema,
@@ -85,6 +122,9 @@ export async function createServer() {
   } = await loadSdk();
   const tools = await loadToolModules();
   const byName = new Map(tools.map((tool) => [tool.name, tool]));
+  const grantedCapabilities = options.grantedCapabilities instanceof Set
+    ? options.grantedCapabilities
+    : parseGrantedCapabilities(options.grantedCapabilities);
   const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     { capabilities: { tools: {} } },
@@ -106,7 +146,7 @@ export async function createServer() {
       "No MCP tool matched the request",
     ));
     try {
-      return toolResult(await tool.handler(request.params.arguments || {}));
+      return toolResult(await invokeTool(tool, request.params.arguments || {}, grantedCapabilities));
     } catch (error) {
       // Tool handlers emit their own structured, payload-free failure telemetry.
       return toolError(error);

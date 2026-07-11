@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-SK-skills-telemetry** (C3→sonnet) Telemetry coverage baseline for skills
+- [x] **UV-SK-skills-telemetry** (C3→sonnet) Telemetry coverage baseline for skills

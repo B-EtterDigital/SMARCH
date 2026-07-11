@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.brick-metadata; source=en; media=media/{locale}/brick-metadata/ -->
 # Brick Metadata
 
 This reference explains the metadata that makes a reusable brick understandable to tools and reviewers. Brick authors and registry maintainers need it while creating or reviewing a manifest. Read it before publishing a brick or changing its boundaries, evidence, or provenance. Remember that metadata is a contract backed by the brick's current code and proof.

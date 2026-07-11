@@ -130,3 +130,5 @@ Every visible component renders correctly across the project's configured themes
 - banning one-off pixel values for genuine geometry (canvas math, SVG `viewBox`, animation timing curves)
 - preventing product-specific palettes from being defined as tokens (a brick's brand accent token is fine; a brick hardcoding `#FF8A3D` is not)
 - forcing all components into a single design system — product-specific surfaces (Acme Story canvas nodes, game UI) can have their own visual language, but must still be theme-aware and respect accessibility prefs
+
+<!-- docs-i18n: key=docs.ssa-v2-base-rules; source=en; media=media/{locale}/ssa-v2-base-rules/ -->

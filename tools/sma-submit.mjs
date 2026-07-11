@@ -121,7 +121,6 @@ function npmCommand() {
 
 function runGate(root, script) {
   const command = `npm run ${script}`;
-  const startedAt = new Date().toISOString();
   const result = run(npmCommand(), ['run', script], { cwd: root });
   const output = `${result.stdout || ''}${result.stderr || ''}`;
   if (result.status !== 0) {
@@ -129,10 +128,9 @@ function runGate(root, script) {
   }
   return {
     command,
-    status: 'passed',
-    exit_code: result.status,
-    started_at: startedAt,
-    output_sha256: sha256Buffer(Buffer.from(output)),
+    status: result.status,
+    stdout_sha256: sha256Buffer(Buffer.from(result.stdout || '')),
+    stderr_sha256: sha256Buffer(Buffer.from(result.stderr || '')),
   };
 }
 
@@ -233,9 +231,15 @@ function validateInlineBundle(bundle) {
   }
   if (!Array.isArray(bundle?.verification?.gates) || bundle.verification.gates.length !== 2) errors.push('verification.gates must contain two results');
   for (const command of ['npm run gate:all', 'npm run gate:leaks']) {
-    if (!(bundle?.verification?.gates || []).some((gate) => gate.command === command && gate.status === 'passed' && gate.exit_code === 0)) {
+    if (!(bundle?.verification?.gates || []).some((gate) => gate.command === command && gate.status === 0)) {
       errors.push(`missing passing gate evidence: ${command}`);
     }
+  }
+  for (const [index, gate] of (bundle?.verification?.gates || []).entries()) {
+    const keys = Object.keys(gate || {}).sort();
+    if (JSON.stringify(keys) !== JSON.stringify(['command', 'status', 'stderr_sha256', 'stdout_sha256'])) errors.push(`verification.gates[${index}] has non-canonical fields`);
+    if (!/^[a-f0-9]{64}$/.test(gate?.stdout_sha256 || '')) errors.push(`verification.gates[${index}].stdout_sha256 is invalid`);
+    if (!/^[a-f0-9]{64}$/.test(gate?.stderr_sha256 || '')) errors.push(`verification.gates[${index}].stderr_sha256 is invalid`);
   }
   return errors;
 }
@@ -443,6 +447,14 @@ function runSelftest() {
     if (added.status !== 0) throw new Error('selftest could not stage fixture files');
     const result = createSubmission({ root: fixtureRoot, brick: 'fixture-brick', out: 'out' });
     if (!result.ok || result.brick_id !== manifest.brick.id || result.file_count !== 2) throw new Error('selftest bundle verification result was incorrect');
+    for (const gate of result.gates) {
+      const keys = Object.keys(gate).sort();
+      const canonicalKeys = ['command', 'status', 'stderr_sha256', 'stdout_sha256'];
+      if (JSON.stringify(keys) !== JSON.stringify(canonicalKeys)) throw new Error(`selftest gate does not match canonical schema: ${keys.join(', ')}`);
+      if (gate.status !== 0 || !/^[a-f0-9]{64}$/.test(gate.stdout_sha256) || !/^[a-f0-9]{64}$/.test(gate.stderr_sha256)) {
+        throw new Error('selftest canonical gate values are invalid');
+      }
+    }
     if (!existsSync(resolve(fixtureRoot, '.gate-all-ran'))) throw new Error('selftest gate:all did not execute');
     if (!existsSync(resolve(fixtureRoot, '.gate-leaks-ran'))) throw new Error('selftest gate:leaks did not execute');
     if (!existsSync(result.archive) || !existsSync(result.checklist)) throw new Error('selftest outputs were not emitted');

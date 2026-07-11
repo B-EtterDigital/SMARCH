@@ -1,3 +1,4 @@
+<!-- docs-i18n: key=docs.enforcement; source=en; media=media/{locale}/enforcement/ -->
 # Enforcement
 
 This guide defines the checks that turn Sweetspot architecture rules into pass or fail decisions. Maintainers and continuous-integration owners need it when wiring validation or investigating a blocked change. Read it before relaxing a gate, adding a warning, or changing release policy. Remember that an unenforced requirement is guidance, not a dependable project contract.

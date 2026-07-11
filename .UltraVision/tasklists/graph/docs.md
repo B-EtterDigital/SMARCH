@@ -6,12 +6,12 @@
 
 ## M0
 
-- [ ] **UV-GR-graph-charter** (C1→haiku) Write module charter for graph
-- [ ] **UV-GR-graph-docs** (C1→haiku) Module docs baseline for graph
+- [x] **UV-GR-graph-charter** (C1→haiku) Write module charter for graph
+- [x] **UV-GR-graph-docs** (C1→haiku) Module docs baseline for graph
 
 ## M1
 
-- [ ] **UV-GR-x-sma-graph-packets-example** (C1→haiku) Add a runnable example for sma-graph-packets.mjs to the commands reference · deps: UV-GR-x-sma-graph-packets-header
-- [ ] **UV-GR-x-sma-graph-packets-header** (C1→haiku) Add a WHY header to sma-graph-packets.mjs
-- [ ] **UV-GR-x-sma-graphify-example** (C1→haiku) Add a runnable example for sma-graphify.mjs to the commands reference · deps: UV-GR-x-sma-graphify-header
-- [ ] **UV-GR-x-sma-graphify-header** (C1→haiku) Add a WHY header to sma-graphify.mjs
+- [x] **UV-GR-x-sma-graph-packets-example** (C1→haiku) Add a runnable example for sma-graph-packets.mjs to the commands reference · deps: UV-GR-x-sma-graph-packets-header
+- [x] **UV-GR-x-sma-graph-packets-header** (C1→haiku) Add a WHY header to sma-graph-packets.mjs
+- [x] **UV-GR-x-sma-graphify-example** (C1→haiku) Add a runnable example for sma-graphify.mjs to the commands reference · deps: UV-GR-x-sma-graphify-header
+- [x] **UV-GR-x-sma-graphify-header** (C1→haiku) Add a WHY header to sma-graphify.mjs

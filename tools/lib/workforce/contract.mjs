@@ -2,6 +2,9 @@
 
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { homedir } from "node:os";
 
 const DEFAULT_BACKEND = "codex";
 const DEFAULT_TIMEOUT_MS = 600_000;
@@ -38,6 +41,30 @@ function normalize(result) {
     tokensOut: Number.isFinite(result.tokensOut) ? result.tokensOut : 0,
     raw: result.raw ?? result,
   };
+}
+
+function recordUsage(selection, model, result, startedAt) {
+  if (process.env.SMA_WORKFORCE_NO_USAGE_LOG === "1") return;
+  if (typeof selection !== "string") return;
+  const file = process.env.SMA_WORKFORCE_USAGE_LOG || join(homedir(), ".smarch", "workforce-usage.jsonl");
+  const backend = String(result?.raw?.backend || selection).toLowerCase();
+  const record = {
+    schema: "smarch.workforce-usage.v1",
+    timestamp: new Date().toISOString(),
+    backend,
+    model: String(model || result?.raw?.response?.model || backend),
+    tokens_in: Number(result?.tokensIn || 0),
+    tokens_out: Number(result?.tokensOut || 0),
+    ok: result?.ok === true,
+    duration_ms: Date.now() - startedAt,
+    session_id: result?.raw?.sessionId || null,
+  };
+  try {
+    mkdirSync(dirname(file), { recursive: true });
+    appendFileSync(file, `${JSON.stringify(record)}\n`, { mode: 0o600 });
+  } catch {
+    // Accounting must not turn a successful executor call into a failed task.
+  }
 }
 
 async function resolveBackend(selection) {
@@ -94,7 +121,7 @@ async function runAttempt(executor, packet, options, timeoutMs) {
  * object exposing execute(packet, options), which keeps contract tests local.
  *
  * @param {unknown} packet
- * @param {{ backend?: string | Function | { execute: Function }, model?: string, effort?: string, schema?: string, readOnly?: boolean, timeoutMs?: number }} [options]
+ * @param {{ backend?: string | Function | { execute: Function }, model?: string, effort?: string, schema?: string, readOnly?: boolean, timeoutMs?: number, cwd?: string }} [options]
  */
 export async function dispatch(packet, {
   backend,
@@ -103,6 +130,7 @@ export async function dispatch(packet, {
   schema,
   readOnly = false,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  cwd,
 } = {}) {
   if (packet === undefined || packet === null) {
     return failure("workforce packet is required");
@@ -137,6 +165,7 @@ export async function dispatch(packet, {
         effort,
         schema,
         readOnly: Boolean(readOnly),
+        cwd,
       }, remainingMs);
     } catch (error) {
       lastResult = {
@@ -147,7 +176,9 @@ export async function dispatch(packet, {
     }
 
     if (lastResult?.ok === true || lastResult?.retryable === false || attempt === MAX_ATTEMPTS) {
-      return normalize(lastResult);
+      const normalized = normalize(lastResult);
+      recordUsage(selection, model, normalized, startedAt);
+      return normalized;
     }
 
     const delayMs = Math.min(BACKOFF_MS * (2 ** (attempt - 1)), timeoutMs - (Date.now() - startedAt));

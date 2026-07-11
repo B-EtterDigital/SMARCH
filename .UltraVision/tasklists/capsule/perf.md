@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-CP-capsule-perfbudget** (C2→sonnet) Performance budgets for capsule
+- [x] **UV-CP-capsule-perfbudget** (C2→sonnet) Performance budgets for capsule

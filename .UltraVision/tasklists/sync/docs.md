@@ -6,11 +6,11 @@
 
 ## M0
 
-- [ ] **UV-SY-cmd-sync-public-docs** (C1→haiku) Document sma sync-public · deps: UV-SY-cmd-sync-public-impl
-- [ ] **UV-SY-sync-charter** (C1→haiku) Write module charter for sync
-- [ ] **UV-SY-sync-docs** (C1→haiku) Module docs baseline for sync
+- [x] **UV-SY-cmd-sync-public-docs** (C1→haiku) Document sma sync-public · deps: UV-SY-cmd-sync-public-impl
+- [x] **UV-SY-sync-charter** (C1→haiku) Write module charter for sync
+- [x] **UV-SY-sync-docs** (C1→haiku) Module docs baseline for sync
 
 ## M1
 
-- [ ] **UV-SY-x-sma-sync-public-example** (C1→haiku) Add a runnable example for sma-sync-public.mjs to the commands reference · deps: UV-SY-x-sma-sync-public-header
-- [ ] **UV-SY-x-sma-sync-public-header** (C1→haiku) Add a WHY header to sma-sync-public.mjs
+- [x] **UV-SY-x-sma-sync-public-example** (C1→haiku) Add a runnable example for sma-sync-public.mjs to the commands reference · deps: UV-SY-x-sma-sync-public-header
+- [x] **UV-SY-x-sma-sync-public-header** (C1→haiku) Add a WHY header to sma-sync-public.mjs

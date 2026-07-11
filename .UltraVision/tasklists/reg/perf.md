@@ -6,4 +6,4 @@
 
 ## M0
 
-- [ ] **UV-RG-reg-perfbudget** (C2→sonnet) Performance budgets for reg
+- [x] **UV-RG-reg-perfbudget** (C2→sonnet) Performance budgets for reg

@@ -14,6 +14,7 @@ export const CHECKS = [
   { id: "fixture-snapshot", script: path.join(SCRIPT_DIR, "fixture-snapshot.mjs"), args: ["--selftest"] },
   { id: "lesson-curriculum", script: path.join(SCRIPT_DIR, "journeys", "lessons.mjs"), args: ["--selftest"] },
   { id: "plugin-clean-profile", script: path.join(REPO_ROOT, "tools", "sma-plugin-sync.mjs"), args: ["--check", "--selftest"] },
+  { id: "skill-scenario-matrix", script: path.join(SCRIPT_DIR, "scenario-runner.mjs"), args: ["--selftest"] },
 ];
 
 export function usage() {

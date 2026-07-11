@@ -6,25 +6,25 @@
 
 ## M0
 
-- [ ] **UV-DO-docs-testharness** (C3→sonnet) Test harness and CI wiring for docs
+- [x] **UV-DO-docs-testharness** (C3→sonnet) Test harness and CI wiring for docs
 
 ## M2
 
-- [ ] **UV-DO-lesson-01-what-is-a-brick-tryit** (C1→haiku) Verify every try-it block in what is a brick · deps: UV-DO-lesson-01-what-is-a-brick-draft
-- [ ] **UV-DO-lesson-02-your-first-scan-tryit** (C1→haiku) Verify every try-it block in your first scan · deps: UV-DO-lesson-02-your-first-scan-draft
-- [ ] **UV-DO-lesson-03-reading-the-brick-wall-tryit** (C1→haiku) Verify every try-it block in reading the brick wall · deps: UV-DO-lesson-03-reading-the-brick-wall-draft
-- [ ] **UV-DO-lesson-04-manifests-explained-tryit** (C1→haiku) Verify every try-it block in manifests explained · deps: UV-DO-lesson-04-manifests-explained-draft
-- [ ] **UV-DO-lesson-05-gates-what-blocks-and-why-tryit** (C1→haiku) Verify every try-it block in gates what blocks and why · deps: UV-DO-lesson-05-gates-what-blocks-and-why-draft
-- [ ] **UV-DO-lesson-06-your-first-clone-tryit** (C1→haiku) Verify every try-it block in your first clone · deps: UV-DO-lesson-06-your-first-clone-draft
-- [ ] **UV-DO-lesson-07-provenance-and-seals-tryit** (C1→haiku) Verify every try-it block in provenance and seals · deps: UV-DO-lesson-07-provenance-and-seals-draft
-- [ ] **UV-DO-lesson-08-leases-working-alongside-agents-tryit** (C1→haiku) Verify every try-it block in leases working alongside agents · deps: UV-DO-lesson-08-leases-working-alongside-agents-draft
-- [ ] **UV-DO-lesson-09-conflicts-are-normal-tryit** (C1→haiku) Verify every try-it block in conflicts are normal · deps: UV-DO-lesson-09-conflicts-are-normal-draft
-- [ ] **UV-DO-lesson-10-your-first-capsule-tryit** (C1→haiku) Verify every try-it block in your first capsule · deps: UV-DO-lesson-10-your-first-capsule-draft
-- [ ] **UV-DO-lesson-11-the-graph-asking-questions-tryit** (C1→haiku) Verify every try-it block in the graph asking questions · deps: UV-DO-lesson-11-the-graph-asking-questions-draft
-- [ ] **UV-DO-lesson-12-agents-and-skills-setup-tryit** (C1→haiku) Verify every try-it block in agents and skills setup · deps: UV-DO-lesson-12-agents-and-skills-setup-draft
-- [ ] **UV-DO-lesson-13-contributing-your-first-brick-tryit** (C1→haiku) Verify every try-it block in contributing your first brick · deps: UV-DO-lesson-13-contributing-your-first-brick-draft
-- [ ] **UV-DO-lesson-14-canonical-the-registry-story-tryit** (C1→haiku) Verify every try-it block in canonical the registry story · deps: UV-DO-lesson-14-canonical-the-registry-story-draft
-- [ ] **UV-DO-lesson-15-mcp-connect-your-agent-tryit** (C1→haiku) Verify every try-it block in mcp connect your agent · deps: UV-DO-lesson-15-mcp-connect-your-agent-draft
-- [ ] **UV-DO-lesson-16-glossary-safari-tryit** (C1→haiku) Verify every try-it block in glossary safari · deps: UV-DO-lesson-16-glossary-safari-draft
-- [ ] **UV-DO-lesson-17-reading-the-plan-uvp-tryit** (C1→haiku) Verify every try-it block in reading the plan uvp · deps: UV-DO-lesson-17-reading-the-plan-uvp-draft
-- [ ] **UV-DO-lesson-18-your-first-agent-swarm-tryit** (C1→haiku) Verify every try-it block in your first agent swarm · deps: UV-DO-lesson-18-your-first-agent-swarm-draft
+- [x] **UV-DO-lesson-01-what-is-a-brick-tryit** (C1→haiku) Verify every try-it block in what is a brick · deps: UV-DO-lesson-01-what-is-a-brick-draft
+- [x] **UV-DO-lesson-02-your-first-scan-tryit** (C1→haiku) Verify every try-it block in your first scan · deps: UV-DO-lesson-02-your-first-scan-draft
+- [x] **UV-DO-lesson-03-reading-the-brick-wall-tryit** (C1→haiku) Verify every try-it block in reading the brick wall · deps: UV-DO-lesson-03-reading-the-brick-wall-draft
+- [x] **UV-DO-lesson-04-manifests-explained-tryit** (C1→haiku) Verify every try-it block in manifests explained · deps: UV-DO-lesson-04-manifests-explained-draft
+- [x] **UV-DO-lesson-05-gates-what-blocks-and-why-tryit** (C1→haiku) Verify every try-it block in gates what blocks and why · deps: UV-DO-lesson-05-gates-what-blocks-and-why-draft
+- [x] **UV-DO-lesson-06-your-first-clone-tryit** (C1→haiku) Verify every try-it block in your first clone · deps: UV-DO-lesson-06-your-first-clone-draft
+- [x] **UV-DO-lesson-07-provenance-and-seals-tryit** (C1→haiku) Verify every try-it block in provenance and seals · deps: UV-DO-lesson-07-provenance-and-seals-draft
+- [x] **UV-DO-lesson-08-leases-working-alongside-agents-tryit** (C1→haiku) Verify every try-it block in leases working alongside agents · deps: UV-DO-lesson-08-leases-working-alongside-agents-draft
+- [x] **UV-DO-lesson-09-conflicts-are-normal-tryit** (C1→haiku) Verify every try-it block in conflicts are normal · deps: UV-DO-lesson-09-conflicts-are-normal-draft
+- [x] **UV-DO-lesson-10-your-first-capsule-tryit** (C1→haiku) Verify every try-it block in your first capsule · deps: UV-DO-lesson-10-your-first-capsule-draft
+- [x] **UV-DO-lesson-11-the-graph-asking-questions-tryit** (C1→haiku) Verify every try-it block in the graph asking questions · deps: UV-DO-lesson-11-the-graph-asking-questions-draft
+- [x] **UV-DO-lesson-12-agents-and-skills-setup-tryit** (C1→haiku) Verify every try-it block in agents and skills setup · deps: UV-DO-lesson-12-agents-and-skills-setup-draft
+- [x] **UV-DO-lesson-13-contributing-your-first-brick-tryit** (C1→haiku) Verify every try-it block in contributing your first brick · deps: UV-DO-lesson-13-contributing-your-first-brick-draft
+- [x] **UV-DO-lesson-14-canonical-the-registry-story-tryit** (C1→haiku) Verify every try-it block in canonical the registry story · deps: UV-DO-lesson-14-canonical-the-registry-story-draft
+- [x] **UV-DO-lesson-15-mcp-connect-your-agent-tryit** (C1→haiku) Verify every try-it block in mcp connect your agent · deps: UV-DO-lesson-15-mcp-connect-your-agent-draft
+- [x] **UV-DO-lesson-16-glossary-safari-tryit** (C1→haiku) Verify every try-it block in glossary safari · deps: UV-DO-lesson-16-glossary-safari-draft
+- [x] **UV-DO-lesson-17-reading-the-plan-uvp-tryit** (C1→haiku) Verify every try-it block in reading the plan uvp · deps: UV-DO-lesson-17-reading-the-plan-uvp-draft
+- [x] **UV-DO-lesson-18-your-first-agent-swarm-tryit** (C1→haiku) Verify every try-it block in your first agent swarm · deps: UV-DO-lesson-18-your-first-agent-swarm-draft

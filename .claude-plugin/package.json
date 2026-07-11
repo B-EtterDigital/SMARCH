@@ -1,0 +1,7 @@
+{
+  "name": "@betterdigital/smarch-claude-plugin",
+  "version": "0.1.0",
+  "private": false,
+  "files": ["plugin.json", "marketplace.json"],
+  "license": "Apache-2.0"
+}
