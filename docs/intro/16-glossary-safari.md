@@ -29,6 +29,10 @@ You will explore the **fixture portfolio**, a small collection of safe practice
 projects at `tools/evals/fixtures/portfolio`. A generated registry file is
 written only to the lesson's temporary folder.
 
+You do not need to memorize the four terms before running the exercise. Keep
+this page open, follow one printed line at a time, and use each link as your
+field guide when a word feels slippery.
+
 ## Try it
 
 Run this block from the SMARCH folder. The first command rebuilds the practice
@@ -76,6 +80,11 @@ Manifest: found
 Gate command: node --check src/modules/*/index.mjs
 ```
 
+> **Stuck? This is normal.** The two setup commands hide their usual progress
+> output, so the terminal may be quiet for a moment. Wait for the five safari
+> lines. If none appear, re-run the whole block so the temporary registry is
+> created before the final script reads it.
+
 ## What you just did
 
 You scanned three practice projects into one registry, selected the Activity
@@ -89,7 +98,38 @@ When another SMARCH result mentions a [lease](../GLOSSARY.md#lease), a
 glossary, read one definition, then return to the task. Tiny loops beat heroic
 memorization.
 
+## Check your understanding
+
+1. A scan result contains an unfamiliar word. What is the safari move?
+
+   <details><summary>Answer</summary>
+
+   Look up that one word in the glossary, return to the result, and continue
+   with the extra context. You do not need to memorize the whole glossary.
+
+   </details>
+
+2. How do the registry, brick, and manifest relate in this exercise?
+
+   <details><summary>Answer</summary>
+
+   The registry inventories bricks, and each brick's manifest describes its
+   identity and rules.
+
+   </details>
+
+3. Why is the printed gate command more useful than merely seeing that the
+   manifest exists?
+
+   <details><summary>Answer</summary>
+
+   The manifest identifies the brick, while the gate command tells you how a
+   required check can actually be proved.
+
+   </details>
+
 ## Where to go next
 
-Continue with lesson 17, Reading the plan with `uvp`. You will use the same
-curious, one-clue-at-a-time approach on a plan made for coding agents.
+[← Previous: 15, MCP, connect your agent](15-mcp-connect-your-agent.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 17, Reading the plan with `uvp` →](17-reading-the-plan-uvp.md)

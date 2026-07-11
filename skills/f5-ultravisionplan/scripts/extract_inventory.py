@@ -178,7 +178,11 @@ def read_text(path: str) -> str:
             return ""
         with open(path, "r", encoding="utf-8", errors="ignore") as fh:
             return fh.read()
-    except OSError:
+    except OSError as exc:
+        print(
+            f"warning: area=uvp.inventory severity=warning context=read-text path={path} error={exc}",
+            file=sys.stderr,
+        )
         return ""
 
 
@@ -321,7 +325,12 @@ def walk_repo(repo: str) -> Tuple[List[Tuple[str, str]], bool]:
                 try:
                     if os.path.getsize(ab) > MAX_FILE_BYTES:
                         continue
-                except OSError:
+                except OSError as exc:
+                    print(
+                        "warning: area=uvp.inventory severity=warning "
+                        f"context=file-size path={ab} error={exc}",
+                        file=sys.stderr,
+                    )
                     continue
             files.append((rel, ab))
         if truncated:

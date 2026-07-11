@@ -46,7 +46,7 @@ import {
   ACTOR_KINDS,
   VERIFY_STATUSES,
   listBricksWithContext,
-} from './lib/context-log.mjs';
+} from './lib/context-log.ts';
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));

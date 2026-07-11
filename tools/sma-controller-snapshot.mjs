@@ -21,13 +21,13 @@ import { existsSync, mkdirSync, readFileSync, readlinkSync, statSync, writeFileS
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { readActiveLeases } from './lib/gen3-state.mjs';
+import { readActiveLeases } from './lib/gen3-state.ts';
 import {
   listBricksWithContext,
   readContextLog,
   projectRoot,
-} from './lib/context-log.mjs';
-import { discoverPortfolioProjects, priorityProjectIds } from './lib/portfolio-projects.mjs';
+} from './lib/context-log.ts';
+import { discoverPortfolioProjects, priorityProjectIds } from './lib/portfolio-projects.ts';
 import {
   buildActionReport,
   buildCleanupPacketReport,
@@ -35,7 +35,7 @@ import {
   renderActionReportMarkdown,
   renderCleanupPacketMarkdown,
   renderGraphPacketMarkdown,
-} from './lib/controller-action-report.mjs';
+} from './lib/controller-action-report.ts';
 
 const args = parseArgs(argv.slice(2));
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');

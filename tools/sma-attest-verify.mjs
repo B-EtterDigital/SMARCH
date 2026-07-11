@@ -12,7 +12,7 @@
  * SMA attest-verify — STAND-ALONE attestation bundle verifier.
  *
  * Proves a third party can verify a single brick with ONLY the bundle plus
- * tools/lib/merkle.mjs — the full provenance/license/fingerprint ledgers are
+ * tools/lib/merkle.ts — the full provenance/license/fingerprint ledgers are
  * never read. Given a bundle directory it checks:
  *
  *   (a) sbom.spdx.json, sbom.cdx.json, intoto.json are well-formed JSON with the
@@ -34,7 +34,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { verifyBrickInclusion } from './lib/merkle.mjs';
+import { verifyBrickInclusion } from './lib/merkle.ts';
 
 const STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
 const PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
@@ -42,7 +42,7 @@ const BUILDER_ID = 'https://sma.local/brick-scanner';
 
 /**
  * Verify a bundle directory. Returns { ok, dir, brick_id, checks:[{name,ok,detail}] }.
- * Reads only the four bundle files; imports only merkle.mjs.
+ * Reads only the four bundle files; imports only merkle.ts.
  */
 export function verifyBundle(dir) {
   const checks = [];
@@ -179,7 +179,7 @@ function main() {
     for (const c of res.checks) {
       console.log(`  [${c.ok ? 'PASS' : 'FAIL'}] ${c.name}${c.detail ? `  (${c.detail})` : ''}`);
     }
-    console.log(`\n${res.ok ? 'PASS — bundle verified with just merkle.mjs' : 'FAIL — bundle did not verify'}: ${dir}`);
+    console.log(`\n${res.ok ? 'PASS — bundle verified with just merkle.ts' : 'FAIL — bundle did not verify'}: ${dir}`);
   }
   process.exit(res.ok ? 0 : 1);
 }

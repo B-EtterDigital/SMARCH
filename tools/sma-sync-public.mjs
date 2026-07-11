@@ -39,16 +39,36 @@ const APPLY_JOURNAL_VERSION = 1;
 let args = {};
 try {
   args = parseArgs(process.argv.slice(2));
-  if (args.selftest) {
+  if (args.help) {
+    console.log(usage());
+  } else if (args.selftest) {
     runSelftest();
   } else {
     const result = executeSync(args);
-    printResult(result, args.json);
+    printResult(result, args.json, args.quiet);
+    if (args.verbose) console.error(`sma-sync-public: checked ${result.add_count + result.change_count + result.remove_count} changes`);
   }
 } catch (error) {
-  if (error.report && !args.selftest) printResult(error.report, args.json);
-  printError(error.code || 'UNEXPECTED_ERROR', error.message);
+  if (error.report && !args.selftest) printResult(error.report, args.json, args.quiet);
+  else if (args.json) console.log(JSON.stringify({ status: 'failed', error: { code: error.code || 'UNEXPECTED_ERROR', message: error.message } }));
+  printError(error.code || 'UNEXPECTED_ERROR', error.message, error);
   process.exit(error.exitCode || 2);
+}
+
+function usage() {
+  return `Synchronize a filtered private tree to a public target.
+
+Usage:
+  sma sync-public --from <source> --to <target> [--config <file>] [--write] [--allow-no-gitleaks] [--json]
+  sma sync-public --selftest
+
+Options: --from, --to, --config, --write, --allow-no-gitleaks, --json, --quiet, --verbose, --selftest, --help
+Examples:
+  sma sync-public --from . --to ../public --json
+  sma sync-public --from . --to ../public --write
+
+Exit codes: 0 success; 2 usage/config; 1 leak/security block; 3 missing source; 4 apply/recovery failure.
+Known limitation: --write requires gitleaks unless --allow-no-gitleaks is explicitly supplied.`;
 }
 
 function executeSync(options, execution = {}) {
@@ -511,11 +531,12 @@ function countOccurrences(text, needle) {
   return count;
 }
 
-function printResult(result, json) {
+function printResult(result, json, quiet = false) {
   if (json) {
     console.log(JSON.stringify(result, null, 2));
     return;
   }
+  if (quiet) return;
   console.log(`SMA public sync: ${result.status}`);
   console.log(`mode: ${result.mode}`);
   console.log(`files: ${result.add_count} add, ${result.change_count} change, ${result.remove_count} remove`);
@@ -715,13 +736,24 @@ function assert(condition, message) {
   if (!condition) throw codedError('SELFTEST_FAILED', message);
 }
 
-function printError(code, message) {
-  console.error(JSON.stringify({ tool: 'sma-sync-public', code, message }));
+function printError(code, message, error = {}) {
+  const nextCommand = code === 'ARGUMENT_INVALID'
+    ? 'Run `sma sync-public --help`.'
+    : code === 'SOURCE_NOT_FOUND'
+      ? 'Correct --from and retry.'
+      : code === 'GITLEAKS_REQUIRED'
+        ? 'Install gitleaks or explicitly pass --allow-no-gitleaks.'
+        : 'Fix the reported sync condition, then retry with --json.';
+  console.error(JSON.stringify({ area: 'cli:sync-public', severity: error.exitCode === 1 ? 'error' : 'warning', tool: 'sma-sync-public', code, message, next_command: nextCommand, context: { write: Boolean(args.write) } }));
 }
 
 function codedError(code, message) {
   const error = /** @type {Error & {code?: string, exitCode?: number, report?: any}} */ (new Error(message));
   error.code = code;
+  if (code === 'SOURCE_NOT_FOUND') error.exitCode = 3;
+  else if (code.startsWith('APPLY_')) error.exitCode = 4;
+  else if (['LEAK_GATE_FAILED', 'GITLEAKS_FAILED', 'GITLEAKS_REQUIRED'].includes(code)) error.exitCode = 1;
+  else error.exitCode = 2;
   return error;
 }
 
@@ -738,8 +770,8 @@ function parseArgs(list) {
       out.allowNoGitleaks = true;
       continue;
     }
-    if (arg === '--write' || arg === '--json' || arg === '--selftest') {
-      out[arg.slice(2)] = true;
+    if (arg === '--write' || arg === '--json' || arg === '--selftest' || arg === '--quiet' || arg === '--verbose' || arg === '--help' || arg === '-h') {
+      out[arg === '-h' ? 'help' : arg.slice(2)] = true;
       continue;
     }
     if (arg === '--from' || arg === '--to' || arg === '--config') {
@@ -751,5 +783,6 @@ function parseArgs(list) {
     }
     throw codedError('ARGUMENT_INVALID', `unknown argument: ${arg}`);
   }
+  if (out.quiet && out.verbose) throw codedError('ARGUMENT_INVALID', '--quiet and --verbose cannot be combined');
   return out;
 }

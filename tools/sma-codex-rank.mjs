@@ -25,7 +25,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { codex } from "./lib/codex-runner.mjs";
+import { codex } from "./lib/codex-runner.ts";
 import { smaPath } from "./lib/sma-paths.ts";
 
 function parseArgs(argv) {

@@ -34,7 +34,7 @@
 import { argv, exit } from 'node:process';
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
-import { readContextLog } from './lib/context-log.mjs';
+import { readContextLog } from './lib/context-log.ts';
 
 const args = parseArgs(argv.slice(2));
 

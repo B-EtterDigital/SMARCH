@@ -18,7 +18,7 @@ import {
   summarizeBlockerCodes,
   toArray,
   uniqueStrings,
-} from "./lib/curated-build-utils.mjs";
+} from "./lib/curated-build-utils.ts";
 
 const DEFAULT_OUT = "publish/publish-leaks.generated.json";
 const REMEDIATION_ID_BY_RULE = {

@@ -30,6 +30,10 @@ Feed inside the fixture portfolio at `tools/evals/fixtures/portfolio`. The
 coordination files live in a temporary sandbox, so no real project lease is
 created.
 
+The block uses ordinary shell job control: `&` starts each practice agent in
+the background, and `wait` collects its result. You do not need to predict
+which color wins. The lesson checks only that exactly one does.
+
 ## Try it
 
 Run this block from the SMARCH folder. Two background commands start close
@@ -142,6 +146,10 @@ Conflict recorded: yes
 Active leases after finish: 0
 ```
 
+> **Stuck? This is normal.** The winning color can change from run to run. That
+> is expected. Focus on `Exactly one lease won: yes`, `Conflict recorded: yes`,
+> and `Active leases after finish: 0`; together they prove the race stayed safe.
+
 ## What you just did
 
 You started two real `start:edit` commands with different agent identities and
@@ -154,8 +162,36 @@ That small collision is the lesson: a useful swarm is not a crowd editing the
 same file. It is a coordinated group whose members can notice overlap, back
 off, and keep the project trustworthy.
 
+## Check your understanding
+
+1. Both agents want the same brick. What is the safe result?
+
+   <details><summary>Answer</summary>
+
+   Exactly one acquires the lease. The other stops, records the overlap, and
+   leaves the shared brick alone.
+
+   </details>
+
+2. Why is the losing agent's non-zero result good news in this exercise?
+
+   <details><summary>Answer</summary>
+
+   It proves the coordination command blocked overlapping work instead of
+   allowing both agents to edit the same surface.
+
+   </details>
+
+3. How should a swarm become faster without weakening ownership?
+
+   <details><summary>Answer</summary>
+
+   Split work across separate bricks so agents can proceed independently, and
+   keep leases for the shared surfaces that cannot be split.
+
+   </details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and try spotting a
-task that can be split across different bricks. Separate surfaces are where a
-swarm gets fast; leases keep the rare shared surface safe.
+[← Previous: 17, Reading the plan with `uvp`](17-reading-the-plan-uvp.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) · End of the beginner lane

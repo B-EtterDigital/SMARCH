@@ -35,6 +35,11 @@ strict check blocks while the conflict is open, records the handoff, and proves
 the check becomes clear. `--json` asks each command for a machine-readable
 record, which the final few lines turn into a friendly summary.
 
+> **Stuck? This is normal.** The strict check is supposed to return a failure
+> while the practice conflict is open. The `if` block catches that result and
+> continues. Run the full block; running only the strict check will stop at the
+> exact safety boundary this lesson is demonstrating.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -129,10 +134,44 @@ This is the healthy loop: detect, record, back off, coordinate, resolve, then
 continue. The report preserves useful history without making the collision
 dramatic.
 
+## Check your understanding
+
+1. You discover another worker needs the same brick. Is the conflict report
+   evidence that either worker did something wrong?
+
+<details>
+<summary>Show answer</summary>
+
+No. It is normal coordination information. The report makes the overlap and
+resolution plan visible before edits collide.
+
+</details>
+
+2. Why should the blocked worker back off after recording the conflict?
+
+<details>
+<summary>Show answer</summary>
+
+Continuing would risk changing the same surface at the same time. Backing off
+preserves both workers' progress until a handoff is agreed.
+
+</details>
+
+3. When should the strict check become successful again?
+
+<details>
+<summary>Show answer</summary>
+
+After the workers coordinate, record the decision, and resolve every open
+conflict for that scope.
+
+</details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and continue with
-lesson 10, Your first capsule. You now know how to inspect a brick, scan a
-portfolio, read its proof, reuse it with provenance, coordinate through leases,
-and handle collisions without panic. That is a solid little toolkit for the
-next experiment.
+- **Previous:** [08: Leases, working alongside agents](08-leases-working-alongside-agents.md)
+- **Next:** [10: Your first capsule](10-your-first-capsule.md)
+
+You now know how to inspect a brick, scan a portfolio, read its proof, reuse it
+with provenance, coordinate through leases, and handle collisions without
+panic. That is a solid little toolkit for the next experiment.

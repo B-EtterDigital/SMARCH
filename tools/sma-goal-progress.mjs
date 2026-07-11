@@ -23,7 +23,7 @@ import {
   buildGoalProgressReport,
   renderGoalProgressSection,
   runGoalProgressSelfTest,
-} from './lib/gen3-goal-progress.mjs';
+} from './lib/gen3-goal-progress.ts';
 
 
 const args = parseArgs(argv.slice(2));

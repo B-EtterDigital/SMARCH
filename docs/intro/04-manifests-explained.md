@@ -36,6 +36,11 @@ portfolio—the folder containing three demo projects—then reads one manifest.
 JSON is the text format used by this manifest; `JSON.parse` turns that text into
 fields the short Node.js program can print.
 
+> **Stuck? This is normal.** JSON punctuation can look noisy at first, but you
+> do not need to write or memorize it here. Run the entire block unchanged; the
+> short program reads the fields for you. If it cannot find the manifest,
+> confirm you started in the SMARCH folder.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -82,8 +87,44 @@ reading the source code, you found the brick's identity, responsible team,
 boundary, public entry file, and reuse guidance. That is why manifests are
 useful: important promises become visible and checkable.
 
+## Check your understanding
+
+1. Another module wants to use this brick. Which manifest field should guide
+   it to the supported entry point?
+
+<details>
+<summary>Show answer</summary>
+
+The public path. It names the file other code is allowed to use.
+
+</details>
+
+2. Why does the lesson call a manifest a contract even though it is not a
+   legal document?
+
+<details>
+<summary>Show answer</summary>
+
+Its fields are agreed facts that both humans and tools can read and check, so
+they do not have to guess about identity, ownership, boundaries, or reuse.
+
+</details>
+
+3. `Clone readiness: guided` appears in the output. What should you do before
+   copying the brick?
+
+<details>
+<summary>Show answer</summary>
+
+Follow the reuse instructions stored with the manifest. `guided` means copying
+is possible, but human review and guidance are still required.
+
+</details>
+
 ## Where to go next
 
-Continue to [05: Gates, what blocks and why](05-gates-what-blocks-and-why.md).
-You will use one of those checkable promises to see a safety stop happen on
-purpose—and then watch the same check pass on a smaller brick.
+- **Previous:** [03: Reading the brick wall](03-reading-the-brick-wall.md)
+- **Next:** [05: Gates, what blocks and why](05-gates-what-blocks-and-why.md)
+
+Next, you will use one of those checkable promises to see a safety stop happen
+on purpose—and then watch the same check pass on a smaller brick.

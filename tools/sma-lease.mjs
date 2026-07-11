@@ -78,7 +78,7 @@ import {
   appendContextEvent,
   resolveActorId,
   resolveSessionId,
-} from './lib/context-log.mjs';
+} from './lib/context-log.ts';
 
 
 const REGISTRY_PATH = env.SMA_LEASE_REGISTRY_PATH

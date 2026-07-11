@@ -74,6 +74,13 @@ const COMMANDS = {
   wiki:            { script: 'sma-wiki.mjs',           desc: 'Regenerate the brick wiki' },
   validate:        { script: 'sma-validate.mjs',       desc: 'Validate manifests against schemas' },
   security:        { script: 'sma-security-gate.mjs',  desc: 'Run the security gate' },
+  'mcp-serve':     { script: 'mcp/serve-cli.mjs',      desc: 'Serve the registry over MCP stdio' },
+  'brick-new':     { script: 'sma-brick-new.mjs',      desc: 'Create a runnable capsule brick' },
+  'brick-run':     { script: 'sma-brick-run.mjs',      desc: 'Run capsule fixtures' },
+  'brick-inspect': { script: 'sma-brick-inspect.mjs',  desc: 'Inspect capsule manifest, gates, and fixtures' },
+  submit:          { script: 'sma-submit.mjs',         desc: 'Package a brick for curator intake' },
+  'sync-public':   { script: 'sma-sync-public.mjs',    desc: 'Safely synchronize a public tree' },
+  'evals-run':     { script: 'evals/run.mjs',          desc: 'Run evaluation quality gates' },
 
   // backlog
   backlog:         { script: 'sma-backlog.mjs',        desc: 'Per-project backlog of imperfections' },

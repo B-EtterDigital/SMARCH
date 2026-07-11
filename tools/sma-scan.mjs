@@ -10,7 +10,7 @@ import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { featureClusterForBrick } from "./lib/feature-clusters.mjs";
+import { featureClusterForBrick } from "./lib/feature-clusters.ts";
 import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/stable-generated.ts";
 import { validateManifest } from "./sma-validate.mjs";
 import { PROJECTS_ROOT } from "./lib/sma-paths.ts";

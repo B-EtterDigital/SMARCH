@@ -25,7 +25,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { assertExportAllowed, ExportBlockedError } from "./lib/export-guard.mjs";
+import { assertExportAllowed, ExportBlockedError } from "./lib/export-guard.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const projectsRoot = path.resolve(repoRoot, "..", "Projects");

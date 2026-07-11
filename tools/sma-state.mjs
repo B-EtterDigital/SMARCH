@@ -17,8 +17,8 @@ import {
   portfolioProjectsRoot,
   priorityProjectIds,
   sortByPortfolioPriority,
-} from "./lib/portfolio-projects.mjs";
-import { collectGlobalGen3 } from "./lib/gen3-state.mjs";
+} from "./lib/portfolio-projects.ts";
+import { collectGlobalGen3 } from "./lib/gen3-state.ts";
 import {
   normalizeSmaStateSnapshot,
   writeJsonIfMeaningfulChanged,

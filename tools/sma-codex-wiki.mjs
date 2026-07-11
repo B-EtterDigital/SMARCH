@@ -38,7 +38,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { codexBatch } from "./lib/codex-runner.mjs";
+import { codexBatch } from "./lib/codex-runner.ts";
 import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 function parseArgs(argv) {

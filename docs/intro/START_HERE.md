@@ -34,28 +34,28 @@ integrations when they become relevant.
 
 ## The lesson path
 
-Lesson 00 is available now. Lessons 01–18 are **coming in this plan**; their UV
-task IDs are included so you can trace each planned lesson.
+Lessons 00–18 are available now. Every command block is re-run in CI against
+the practice portfolio.
 
 - **00: [Orientation: what even is all this?](00-orientation.md)**. Learn what a module registry is, why agents need coordination, and where things live. **Available now** · `UV-DO-orientation-zero`
-- **01: What is a brick?** Meet the small, reviewable unit at the heart of SMARCH. **Coming in this plan** · `UV-DO-lesson-01-what-is-a-brick-draft`
-- **02: Your first scan.** Let SMARCH discover what is present in a practice portfolio. **Coming in this plan** · `UV-DO-lesson-02-your-first-scan-draft`
-- **03: Reading the brick wall.** Turn a wall of discovered modules into a useful view of the system. **Coming in this plan** · `UV-DO-lesson-03-reading-the-brick-wall-draft`
-- **04: Manifests explained.** Read the machine-checkable contract that describes a brick. **Coming in this plan** · `UV-DO-lesson-04-manifests-explained-draft`
-- **05: Gates, what blocks and why.** Understand the checks that stop unsafe or incomplete work from moving forward. **Coming in this plan** · `UV-DO-lesson-05-gates-what-blocks-and-why-draft`
-- **06: Your first clone.** Reuse a brick while keeping its source and responsibilities clear. **Coming in this plan** · `UV-DO-lesson-06-your-first-clone-draft`
-- **07: Provenance and seals.** See how SMARCH records where a brick came from and whether its history still matches. **Coming in this plan** · `UV-DO-lesson-07-provenance-and-seals-draft`
-- **08: Leases, working alongside agents.** Claim a bounded area so humans and agents can work in parallel without guessing. **Coming in this plan** · `UV-DO-lesson-08-leases-working-alongside-agents-draft`
-- **09: Conflicts are normal.** Surface overlapping intent before edits collide and turn it into a decision. **Coming in this plan** · `UV-DO-lesson-09-conflicts-are-normal-draft`
-- **10: Your first capsule.** Package useful context so another agent can continue with fewer missing pieces. **Coming in this plan** · `UV-DO-lesson-10-your-first-capsule-draft`
-- **11: The graph, asking questions.** Query relationships in the codebase instead of reading every file by hand. **Coming in this plan** · `UV-DO-lesson-11-the-graph-asking-questions-draft`
-- **12: Agents and skills setup.** Give an AI agent the local instructions it needs to follow SMARCH rules. **Coming in this plan** · `UV-DO-lesson-12-agents-and-skills-setup-draft`
-- **13: Contributing your first brick.** Prepare a module so other people and projects can understand and assess it. **Coming in this plan** · `UV-DO-lesson-13-contributing-your-first-brick-draft`
-- **14: Canonical, the registry story.** Learn how one preferred module becomes the trusted choice without hiding alternatives. **Coming in this plan** · `UV-DO-lesson-14-canonical-the-registry-story-draft`
-- **15: MCP, connect your agent.** Connect an agent to SMARCH tools through the Model Context Protocol. **Coming in this plan** · `UV-DO-lesson-15-mcp-connect-your-agent-draft`
-- **16: Glossary safari.** Revisit the vocabulary by following how the ideas connect in real records. **Coming in this plan** · `UV-DO-lesson-16-glossary-safari-draft`
-- **17: Reading the plan, UVP.** Read an UltraVision plan as a set of explicit tasks, dependencies, and proof. **Coming in this plan** · `UV-DO-lesson-17-reading-the-plan-uvp-draft`
-- **18: Your first agent swarm.** Coordinate several agents on separate work without giving up ownership or verification. **Coming in this plan** · `UV-DO-lesson-18-your-first-agent-swarm-draft`
+- **01: [What is a brick?](01-what-is-a-brick.md)** Meet the small, reviewable unit at the heart of SMARCH. **Available now** · `UV-DO-lesson-01-what-is-a-brick-draft`
+- **02: [Your first scan](02-your-first-scan.md).** Let SMARCH discover what is present in a practice portfolio. **Available now** · `UV-DO-lesson-02-your-first-scan-draft`
+- **03: [Reading the brick wall](03-reading-the-brick-wall.md).** Turn a wall of discovered modules into a useful view of the system. **Available now** · `UV-DO-lesson-03-reading-the-brick-wall-draft`
+- **04: [Manifests explained](04-manifests-explained.md).** Read the machine-checkable contract that describes a brick. **Available now** · `UV-DO-lesson-04-manifests-explained-draft`
+- **05: [Gates, what blocks and why](05-gates-what-blocks-and-why.md).** Understand the checks that stop unsafe or incomplete work from moving forward. **Available now** · `UV-DO-lesson-05-gates-what-blocks-and-why-draft`
+- **06: [Your first clone](06-your-first-clone.md).** Reuse a brick while keeping its source and responsibilities clear. **Available now** · `UV-DO-lesson-06-your-first-clone-draft`
+- **07: [Provenance and seals](07-provenance-and-seals.md).** See how SMARCH records where a brick came from and whether its history still matches. **Available now** · `UV-DO-lesson-07-provenance-and-seals-draft`
+- **08: [Leases, working alongside agents](08-leases-working-alongside-agents.md).** Claim a bounded area so humans and agents can work in parallel without guessing. **Available now** · `UV-DO-lesson-08-leases-working-alongside-agents-draft`
+- **09: [Conflicts are normal](09-conflicts-are-normal.md).** Surface overlapping intent before edits collide and turn it into a decision. **Available now** · `UV-DO-lesson-09-conflicts-are-normal-draft`
+- **10: [Your first capsule](10-your-first-capsule.md).** Package useful context so another agent can continue with fewer missing pieces. **Available now** · `UV-DO-lesson-10-your-first-capsule-draft`
+- **11: [The graph, asking questions](11-the-graph-asking-questions.md).** Query relationships in the codebase instead of reading every file by hand. **Available now** · `UV-DO-lesson-11-the-graph-asking-questions-draft`
+- **12: [Agents and skills setup](12-agents-and-skills-setup.md).** Give an AI agent the local instructions it needs to follow SMARCH rules. **Available now** · `UV-DO-lesson-12-agents-and-skills-setup-draft`
+- **13: [Contributing your first brick](13-contributing-your-first-brick.md).** Prepare a module so other people and projects can understand and assess it. **Available now** · `UV-DO-lesson-13-contributing-your-first-brick-draft`
+- **14: [Canonical, the registry story](14-canonical-the-registry-story.md).** Learn how one preferred module becomes the trusted choice without hiding alternatives. **Available now** · `UV-DO-lesson-14-canonical-the-registry-story-draft`
+- **15: [MCP, connect your agent](15-mcp-connect-your-agent.md).** Connect an agent to SMARCH tools through the Model Context Protocol. **Available now** · `UV-DO-lesson-15-mcp-connect-your-agent-draft`
+- **16: [Glossary safari](16-glossary-safari.md).** Revisit the vocabulary by following how the ideas connect in real records. **Available now** · `UV-DO-lesson-16-glossary-safari-draft`
+- **17: [Reading the plan, UVP](17-reading-the-plan-uvp.md).** Read an UltraVision plan as a set of explicit tasks, dependencies, and proof. **Available now** · `UV-DO-lesson-17-reading-the-plan-uvp-draft`
+- **18: [Your first agent swarm](18-your-first-agent-swarm.md).** Coordinate several agents on separate work without giving up ownership or verification. **Available now** · `UV-DO-lesson-18-your-first-agent-swarm-draft`
 
 ## The no-stale-command promise
 

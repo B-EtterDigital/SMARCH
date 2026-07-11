@@ -35,7 +35,7 @@ import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { resolveBrickPath } from './lib/source-path-resolver.ts';
-import { verifySeal, verifySealSignature, fingerprintSource } from './lib/provenance-seal.mjs';
+import { verifySeal, verifySealSignature, fingerprintSource } from './lib/provenance-seal.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PROV_LEDGER = resolve(SMA_ROOT, 'registry/provenance-ledger.generated.json');

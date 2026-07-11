@@ -12,7 +12,7 @@
 import { argv, exit, env } from 'node:process';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { assertExportAllowed, ExportBlockedError } from './lib/export-guard.mjs';
+import { assertExportAllowed, ExportBlockedError } from './lib/export-guard.ts';
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));

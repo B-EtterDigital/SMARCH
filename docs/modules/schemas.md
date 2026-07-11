@@ -15,6 +15,8 @@ The schemas module is the single source of truth for data exchanged across Sweet
 
 Run `node tools/lib/schema-types/generate.mjs --check`, schema validation tests, the source-size gate, and the strict module Graphify summary.
 
+The configured module gate is `npm run validate:gen3 -- all`. Query the module graph with `npm run graphify:query -- --project sma --module schemas -- "<question>"`; its generated graph lives under `graphify-out/modules/schemas/`.
+
 ## How to work here
 
 Serialize schema edits, describe every field, and regenerate types in the same change. Treat breaking changes as versioned migrations and coordinate every dependent module before release.

@@ -4,13 +4,13 @@ import path from "node:path";
 import {
   fuzzyMatchScore,
   loadStateAndRegistry,
-} from "../lib/adoption-utils.mjs";
+} from "../lib/adoption-utils.ts";
 import {
   findBrick,
   findCuratedBuild,
   findProject,
   maybeReadJson,
-} from "../lib/sma-adoption.mjs";
+} from "../lib/sma-adoption.ts";
 import { SMA_ROOT } from "../lib/sma-paths.ts";
 
 const STATE_CANDIDATES = [

@@ -35,6 +35,120 @@ a live lease, dispatch, release ledger, or write global control-plane state.
 The example still exercises the real router and the command's argument parser
 without changing the checkout.
 
+## Capsule, submission, MCP, and evaluation commands
+
+### `mcp-serve`
+
+Serve the local SMARCH registry over MCP stdio. `--check` loads every MCP tool
+module and reports whether the optional MCP SDK is available; a successful
+module check can report `ready: false` until the SDK is installed. While the
+server is running, stdout is reserved exclusively for MCP JSON-RPC.
+
+```bash
+node tools/sma.mjs mcp-serve --check --json
+node tools/sma.mjs mcp-serve --verbose
+```
+
+Flags: `--check`, `--json` (check mode only), `--quiet`, `--verbose`, `--help`.
+Exit codes: `0` success, `2` usage, `3` missing optional SDK while serving,
+`4` invalid tool modules, and `1` runtime failure. The only transport is stdio.
+
+### `brick-new`
+
+Create a runnable capsule by copying the canonical `templates/capsule` files
+and replacing the manifest identity, name, source project, and provenance.
+
+```bash
+node tools/sma.mjs brick-new --id acme.identity --directory /tmp/acme-identity --json
+```
+
+Required flags: `--id`, `--directory`. Optional flags: `--name`, `--force`,
+`--json`, `--quiet`, `--verbose`, `--help`. Exit codes: `0` success, `2` usage,
+`3` destination exists, `4` template or creation failure. `--force` removes
+only the explicitly requested destination before recreating it.
+
+### `brick-run`
+
+Run every fixture in a capsule's `fixtures/run.json` against `src/index.ts`.
+Each stdout line is a JSON fixture result; real failures also emit structured
+telemetry on stderr. Default isolation uses all capabilities detected in the
+current Node runtime, while `--strict-sandbox` refuses incomplete isolation.
+
+```bash
+node tools/sma.mjs brick-run templates/capsule --json
+node tools/sma.mjs brick-run --strict-sandbox templates/capsule
+```
+
+Flags: `--capsule <directory>` or one positional directory,
+`--strict-sandbox`, `--allow-net`, `--json`, `--quiet`, `--verbose`,
+`--selftest`, `--help`. Exit codes: `0` pass, `2` usage, `3` missing input,
+`4` invalid input or fixture failure, `1` runtime failure. The default runner
+is a deterministic fixture harness, not an OS sandbox for hostile code.
+
+### `brick-inspect`
+
+Read a capsule manifest, report its declared `quality.verification` gates, and
+execute its real fixtures through `brick-run`.
+
+```bash
+node tools/sma.mjs brick-inspect templates/capsule --json
+```
+
+Flags: `--capsule <directory>` or one positional directory, `--json`,
+`--quiet`, `--verbose`, `--help`. Exit codes: `0` passing, `2` usage,
+`3` missing or invalid manifest, `4` fixture runner/failure. Inspection uses
+the runner's default sandbox mode; use `brick-run --strict-sandbox` separately
+when strict isolation proof is required.
+
+### `submit`
+
+Package a community brick for curator intake. Packaging validates the
+manifest, runs `gate:all` and `gate:leaks`, creates a deterministic archive,
+and verifies it before reporting success. Verification mode rechecks an
+existing archive without packaging source.
+
+```bash
+node tools/sma.mjs submit --brick ./my-brick --root . --json
+node tools/sma.mjs submit --verify submissions/brick.tar.gz --json
+```
+
+Flags: `--brick`, `--root`, `--manifest`, `--out`, `--verify`, `--json`,
+`--quiet`, `--verbose`, `--selftest`, `--help`. Exit codes: `0` success,
+`2` usage, `3` missing input, `4` validation/gate failure, `1` runtime failure.
+Packaging requires git, tar, and both root-project gate scripts.
+
+### `sync-public`
+
+Stage a filtered private-to-public tree sync, run the built-in leak gate plus
+gitleaks, and apply atomically only with `--write`. Dry-run is the default.
+
+```bash
+node tools/sma.mjs sync-public --from . --to ../public --json
+node tools/sma.mjs sync-public --from . --to ../public --write
+```
+
+Required flags: `--from`, `--to`. Optional flags: `--config`, `--write`,
+`--allow-no-gitleaks`, `--json`, `--quiet`, `--verbose`, `--selftest`,
+`--help`. Exit codes: `0` success, `2` usage/config, `1` leak/security block,
+`3` missing source, `4` apply/recovery failure. A write requires gitleaks
+unless the operator explicitly passes `--allow-no-gitleaks`.
+
+### `evals-run`
+
+Run the fixture snapshot, lesson curriculum, and clean plugin-profile quality
+gates serially. `--only` isolates one gate for diagnosis; JSON mode returns a
+single report object while stderr retains structured failure telemetry.
+
+```bash
+node tools/sma.mjs evals-run --json
+node tools/sma.mjs evals-run --only fixture-snapshot --verbose
+```
+
+Flags: `--only <fixture-snapshot|lesson-curriculum|plugin-clean-profile>`,
+`--json`, `--quiet`, `--verbose`, `--selftest`, `--help`. Exit codes: `0` all
+pass, `2` usage, `4` evaluation failure, `1` runner failure. Checks are
+serial and can take several minutes.
+
 ## Coordination (`coord`)
 
 ### `conflict`

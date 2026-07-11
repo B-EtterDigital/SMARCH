@@ -1,6 +1,6 @@
 {
  "schema": "smarch-public-ledger-v1",
- "generated_at": "2026-07-11T01:55:05.943Z",
+ "generated_at": "2026-07-11T02:19:34.111Z",
  "repo": "B-EtterDigital/SMARCH",
  "branch": "main",
  "algo": "sha256-chain-v2",
@@ -11,8 +11,8 @@
    "path": "tools/sma-ci.mjs",
    "content_hash": "c3ef03fa026cd7efeca57f496b57bcb9a91fa091b39a5f4184cb7eae22e06a7b",
    "anchor": "81d0a97181ed485763eb31aa317fd8c5b6528dc24fe7adfb995a3cd63e4f77c1",
-   "head": "e1a590177d13fb2b56d13eb62bee0069218dcce0e3c665e4c0cee29e49be2233",
-   "chain_length": 2,
+   "head": "5ecc6359683bd6c13a970803e5266131957f6f1fd631f77036615bada38091d0",
+   "chain_length": 3,
    "events": [
     {
      "actor_kind": "human",
@@ -29,16 +29,24 @@
      "timestamp": "2026-07-11T08:22:02+07:00",
      "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
      "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:55:06+07:00",
+     "commit": "7073837f2f02b9766aa929ec600b229a38c01c44",
+     "summary": "SMOA wave-10: TypeScript pilot proven (10 libs native .ts, 52 importers), doc accuracy sweep"
     }
    ]
   },
   {
    "brick_id": "smarch.tools.sma-scan",
    "path": "tools/sma-scan.mjs",
-   "content_hash": "f2c08a638f8c1d1d97a6bc0f4d9320afd756e38d73b5786a1ef94778cece2df9",
-   "anchor": "7c16fb5665d555c24f003b0753d5d7f7ec66d2941903eb39563ef73fe310910f",
-   "head": "7c8c5d257666aeffa9f23f58bb85a903e4ee6c7b28fbc18dd2774c5c3772a00a",
-   "chain_length": 4,
+   "content_hash": "039440123ffe018407ed6c8be73d32c60c3bfd2bd31c7bc89cc602bcc0d7f648",
+   "anchor": "11563d795fd92a5b051ca36d8cc262681287de90772be208229a2128a0a40dfc",
+   "head": "ef0b793fc759c882b10d92f7d670ef7c112ade35c40e66723a3065ce024f43ad",
+   "chain_length": 5,
    "events": [
     {
      "actor_kind": "human",
@@ -71,15 +79,23 @@
      "timestamp": "2026-07-11T08:22:02+07:00",
      "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
      "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:55:06+07:00",
+     "commit": "7073837f2f02b9766aa929ec600b229a38c01c44",
+     "summary": "SMOA wave-10: TypeScript pilot proven (10 libs native .ts, 52 importers), doc accuracy sweep"
     }
    ]
   },
   {
    "brick_id": "smarch.tools.install-agent-skills",
    "path": "tools/install-agent-skills.mjs",
-   "content_hash": "8faf890ba67931687105959953db1cae114a92466494778f5d7505d748c26f06",
-   "anchor": "51437f9f1c986b19edc723090bc54468d78a9d9d773ca53322bdfa5b65c3f835",
-   "head": "c2d9c88809e56ab791a5b0939b7e1be76f1e3d079d7491f49d7a61e787faf67c",
+   "content_hash": "9a9713c4fca55e37c4a811106e68a8741cef060cfee77d5498c2eb235a6036fd",
+   "anchor": "a40821519af60bd08c67c8cfa168bad9c63dcd26078e15a6404f651291f23ea2",
+   "head": "ae87f8ce61c1a36e1eba573c1442e5b8a8c39d91ce62793a870b66ec187ed121",
    "chain_length": 3,
    "events": [
     {
@@ -109,56 +125,22 @@
    ]
   },
   {
-   "brick_id": "smarch.tools.provenance-seal",
-   "path": "tools/lib/provenance-seal.mjs",
-   "content_hash": "88b1b6f848b21673327d348e783c2cc1563d68e21bfb9f8bb4bcac6ec04bd99d",
-   "anchor": "9894792fe6ac2a72693234c931c06085ffcb788afe6f9077c98d132ffbad2fe7",
-   "head": "64d673b9200d92733fa4c376fb5953e037efb3b573c659b94a8057a7eb9b34c2",
-   "chain_length": 2,
-   "events": [
-    {
-     "actor_kind": "human",
-     "actor_id": "dev@b-etter.digital",
-     "role": "architect",
-     "timestamp": "2026-07-10T19:56:58+07:00",
-     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
-     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
-    },
-    {
-     "actor_kind": "human",
-     "actor_id": "dev@b-etter.digital",
-     "role": "implementer",
-     "timestamp": "2026-07-11T08:22:02+07:00",
-     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
-     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
-    }
-   ]
+   "brick_id": "smarch.tools.provenance-seal.ts",
+   "path": "tools/lib/provenance-seal.ts",
+   "content_hash": "c829488bda59f388b61fd229d14c17327c206add6cf05ba9f348de8b8e2d1c63",
+   "anchor": "40507bebd2bf2c8407ad457b3fd71ea300fe6352222671fc261a6969502622ba",
+   "head": "40507bebd2bf2c8407ad457b3fd71ea300fe6352222671fc261a6969502622ba",
+   "chain_length": 0,
+   "events": []
   },
   {
-   "brick_id": "smarch.tools.license-lattice",
-   "path": "tools/lib/license-lattice.mjs",
-   "content_hash": "eeef2176fccbbf171b87df41b82c69a12996f793951aa486dac818bacdcfb42a",
-   "anchor": "27d39f26c00b369d4c606ea4c423e5bd943d55c5a921ec658fb8bdcb03d6fac1",
-   "head": "e2db54b02a48854f68a806a9ca58fb1bb12e18e5339cb38bced9f47aa9c24421",
-   "chain_length": 2,
-   "events": [
-    {
-     "actor_kind": "human",
-     "actor_id": "dev@b-etter.digital",
-     "role": "architect",
-     "timestamp": "2026-07-10T19:56:58+07:00",
-     "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
-     "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
-    },
-    {
-     "actor_kind": "human",
-     "actor_id": "dev@b-etter.digital",
-     "role": "implementer",
-     "timestamp": "2026-07-11T08:22:02+07:00",
-     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
-     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
-    }
-   ]
+   "brick_id": "smarch.tools.license-lattice.ts",
+   "path": "tools/lib/license-lattice.ts",
+   "content_hash": "4ad4cfadc5f55a84aadd0036b4594c6434488e586c00cfc4016bd884ce0ab710",
+   "anchor": "99c33916758f60bb62ac583b8f6979ad5abc56723754d68a19a5342a5e8cf1ad",
+   "head": "99c33916758f60bb62ac583b8f6979ad5abc56723754d68a19a5342a5e8cf1ad",
+   "chain_length": 0,
+   "events": []
   }
  ]
 }

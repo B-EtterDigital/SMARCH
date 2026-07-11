@@ -14,8 +14,8 @@ A brick is a focused piece of code with one clear job. Its
 [manifest](../GLOSSARY.md#manifest) is the machine-readable note that names the
 brick, lists the files it owns, and records which checks still need proof.
 
-Think of contributing a brick like adding a new cartridge to a workshop robot
-workshop. The code is the cartridge. The manifest is its label: what it does,
+Think of contributing a brick like adding a new cartridge to a workshop robot.
+The code is the cartridge. The manifest is its label: what it does,
 where it fits, and whether somebody has tested it yet. A label that says “not
 tested yet” is useful; a shiny label that guesses is not.
 
@@ -26,6 +26,10 @@ manifest with the safe [`project_bound`](../GLOSSARY.md#manifest) status,
 meaning the new brick still belongs to this practice project. Later evidence
 must support promotion to [canonical](../GLOSSARY.md#canonical), the preferred
 choice for reuse.
+
+The block uses `mktemp -d` to create a temporary folder chosen by your
+computer. It copies the fixture project there before writing anything. You do
+not need to find or clean up that folder to complete the lesson.
 
 ## Try it
 
@@ -116,6 +120,10 @@ Health: warn
 history and test evidence still need attention. Your brand-new cartridge has
 not flown to Mars yet.
 
+> **Stuck? This is normal.** `Health: warn` is expected here; it does not mean
+> your command failed. Look for `Manifest created: yes` and `Status:
+> project_bound`. Those lines confirm the safe first contribution worked.
+
 ## What you just did
 
 You wrote one tiny module, let the scanner discover it, generated its starter
@@ -123,8 +131,39 @@ manifest, and scanned again to prove the new brick entered the
 [registry](../GLOSSARY.md#registry). The brick now has a stable identity and an
 honest starting status, while the remaining proof is still visible.
 
+## Check your understanding
+
+1. The scanner finds a code folder with no manifest. Why does it call it an
+   unmanifested candidate instead of a canonical brick?
+
+   <details><summary>Answer</summary>
+
+   The folder looks like a possible brick, but it lacks the identity,
+   boundaries, and evidence needed for a trusted reusable status.
+
+   </details>
+
+2. Why is `project_bound` an honest starting status?
+
+   <details><summary>Answer</summary>
+
+   It says the brick belongs to the project where it was found while the proof
+   needed for wider reuse is still being gathered.
+
+   </details>
+
+3. After bootstrap, the health is `warn`. What should you do next: hide the
+   warning or investigate the missing evidence?
+
+   <details><summary>Answer</summary>
+
+   Investigate the missing source-history and test evidence. The visible
+   warning is useful; hiding it would turn an honest label into a guess.
+
+   </details>
+
 ## Where to go next
 
-Continue to [14: Canonical, the registry story](14-canonical-the-registry-story.md).
-You will see why the registry keeps new bricks project-bound and how it decides
-what deserves to become a preferred reusable choice.
+[← Previous: 12, Agents and skills setup](12-agents-and-skills-setup.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 14, Canonical, the registry story →](14-canonical-the-registry-story.md)

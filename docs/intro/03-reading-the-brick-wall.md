@@ -26,6 +26,11 @@ Run this block from the SMARCH folder. It builds a fresh registry from the
 practice projects, creates a self-contained web page, and prints the project
 groups you should see on that page.
 
+> **Stuck? This is normal.** The command creates an HTML file; it does not open
+> a browser for you. Copy the path printed after `Open this file in your
+> browser:` into your browser's address bar. If the page is blank, rerun the
+> whole block and use the newly printed path.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -93,8 +98,42 @@ You converted the registry into one web page, checked the total against the
 scan, and grouped the cards by project and status. The wall gave you a quick
 map while the registry kept the full machine-readable facts underneath it.
 
+## Check your understanding
+
+1. The wall shows 40 `project_bound` bricks and zero canonical bricks. Does
+   that mean the wall failed?
+
+<details>
+<summary>Show answer</summary>
+
+No. Those counts describe the practice data: all 40 bricks still belong to
+their projects and none has been promoted as a preferred choice.
+
+</details>
+
+2. When would you use the wall instead of reading the registry file directly?
+
+<details>
+<summary>Show answer</summary>
+
+Use the wall when you want to search, filter, or compare cards and project
+shelves visually. The registry remains the fuller machine-readable record.
+
+</details>
+
+3. How can you quickly check that no project shelf is missing bricks?
+
+<details>
+<summary>Show answer</summary>
+
+Add the three project counts. They total 40, matching the number reported by
+the scan.
+
+</details>
+
 ## Where to go next
 
-Visit the [lesson path](START_HERE.md#the-lesson-path) and continue with lesson
-04, Manifests explained. You will read more of the contract behind one brick
-card.
+- **Previous:** [02: Your first scan](02-your-first-scan.md)
+- **Next:** [04: Manifests explained](04-manifests-explained.md)
+
+Next, you will read more of the contract behind one brick card.

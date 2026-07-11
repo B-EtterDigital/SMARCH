@@ -41,7 +41,7 @@
 import fs from "node:fs/promises";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { readActiveLeases, readProjectContextCoverage } from "./lib/gen3-state.mjs";
+import { readActiveLeases, readProjectContextCoverage } from "./lib/gen3-state.ts";
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 function parseArgs(argv) {

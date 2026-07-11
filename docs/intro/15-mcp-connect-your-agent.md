@@ -105,6 +105,11 @@ Client setting screens differ, but the command, argument, and environment
 field keep the same meaning. Keep this lesson's temporary root while learning;
 pointing an agent at a production registry should be a deliberate choice.
 
+> **Stuck? This is normal.** MCP clients store settings in different places,
+> and you do not need to configure one to finish this lesson. First confirm the
+> temporary preflight prints `Transport: stdio` and the fixture match. Connect a
+> real client only after that local recipe makes sense.
+
 ## What you just did
 
 You made a safe MCP connection recipe, verified the server card, counted its
@@ -112,8 +117,38 @@ tools, and asked one tool to find Activity Feed in the practice registry. The
 agent-facing doorway now has a name and a tested command instead of a hopeful
 configuration pasted from the internet.
 
+## Check your understanding
+
+1. Why can this MCP server work without opening a network port?
+
+   <details><summary>Answer</summary>
+
+   It uses `stdio`: the agent starts the server process and exchanges messages
+   through that process's private input and output streams.
+
+   </details>
+
+2. What three facts from the temporary configuration does a real client need?
+
+   <details><summary>Answer</summary>
+
+   The server name, the command and argument that start it, and the `SMA_ROOT`
+   environment value pointing to the registry root.
+
+   </details>
+
+3. Why should you test against the fixture registry before pointing an agent
+   at production data?
+
+   <details><summary>Answer</summary>
+
+   The fixture proves the server and tools work without risking a real registry
+   or changing real agent settings.
+
+   </details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path). The next lesson will
-build on the same fixture portfolio and show another real workflow, one careful
-piece at a time.
+[← Previous: 14, Canonical, the registry story](14-canonical-the-registry-story.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 16, Glossary safari →](16-glossary-safari.md)

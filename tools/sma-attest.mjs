@@ -33,7 +33,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { leafHash, buildMerkle, inclusionProof, verifyBrickInclusion } from './lib/merkle.mjs';
+import { leafHash, buildMerkle, inclusionProof, verifyBrickInclusion } from './lib/merkle.ts';
 import { intotoStatement, spdxDocument, cyclonedxDocument } from './lib/attestation.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');

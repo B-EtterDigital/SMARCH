@@ -21,6 +21,10 @@ boundaries. The runner checks those constraints before it runs the fixture,
 which makes the example useful as an executable [gate](../GLOSSARY.md#gate),
 not just a hopeful code sample.
 
+You do not need to know how to write JavaScript or JSON for this exercise. The
+commands create a copy inside the generated practice portfolio, and the short
+script only reads back the template's name, entry file, and saved example.
+
 ## Try it
 
 Run this block from the SMARCH folder. It regenerates the safe fixture
@@ -72,14 +76,50 @@ Expected message: capsule ready
 fixture. The practice capsule does not use the network, write files, or import
 extra packages, so its boundary stays pleasantly tiny.
 
+> **Stuck? This is normal.** If `cp` says it cannot find the template, you are
+> probably not in the SMARCH folder. Run `pwd`; then `cd` to the folder that
+> contains `package.json` and try the whole block again. Re-running it is safe.
+
 ## What you just did
 
 You made a runnable capsule inside a generated practice project, inspected its
 contract, and proved its first example. More importantly, you now have a small
 place where an idea and its proof can grow together without surprise luggage.
 
+## Check your understanding
+
+1. The capsule runs, but its returned message differs from the fixture. What
+   should you trust first: the `PASS` label or the mismatch?
+
+   <details><summary>Answer</summary>
+
+   Trust the mismatch. The fixture records the expected output, so the runner
+   should not report `PASS` until the entry file and fixture agree.
+
+   </details>
+
+2. Why is the manifest more useful than a folder name alone?
+
+   <details><summary>Answer</summary>
+
+   It states the capsule's identity and boundaries in a form the runner can
+   check before executing the fixture.
+
+   </details>
+
+3. You want to try a risky network call. Does it belong in this tiny practice
+   capsule unchanged?
+
+   <details><summary>Answer</summary>
+
+   No. This capsule deliberately has no network boundary. Keep the experiment
+   inside its declared boundaries or make a separately reviewed capsule whose
+   manifest honestly declares the new capability.
+
+   </details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and continue with
-lesson 11, The graph, asking questions. You will let SMARCH map code
-relationships and answer a question without reading every file by hand.
+[← Previous: 09, Conflicts are normal](09-conflicts-are-normal.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 11, The graph, asking questions →](11-the-graph-asking-questions.md)

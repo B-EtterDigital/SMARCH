@@ -15,7 +15,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
-import { resolveProjectRoot as canonicalResolveProjectRoot, PROJECTS_ROOT } from "./lib/project-paths.mjs";
+import { resolveProjectRoot as canonicalResolveProjectRoot, PROJECTS_ROOT } from "./lib/project-paths.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -265,7 +265,7 @@ async function walkManifests(root) {
 }
 
 async function resolveProjectRoot(manifest, _projectsRoot) {
-  // Delegated to tools/lib/project-paths.mjs — the canonical resolver
+  // Delegated to tools/lib/project-paths.ts — the canonical resolver
   // that handles the curated override map (e.g. acme-desktop → acme-desktop)
   // and case-insensitive fallback. Register new external projects there.
   return canonicalResolveProjectRoot(manifest.source?.project);

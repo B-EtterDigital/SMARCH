@@ -13,7 +13,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdir
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
+import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.ts";
 import { buildEmbeddingIndex, selftestEmbeddingContentAddress, semanticRerankQuery } from "./lib/graph-embeddings.ts";
 import { queryGlobalGraph, selftestGlobalQuery } from "./lib/graph-global.mjs";
 import { communitySummaryBlock, generateCommunitySummaries, selftestCommunitySummaries } from "./lib/graph-summaries.mjs";

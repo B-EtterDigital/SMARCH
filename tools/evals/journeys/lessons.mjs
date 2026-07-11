@@ -43,7 +43,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/lib/provenance-seal.mjs"
+      "tools/lib/provenance-seal.ts"
     ]
   }],
   ["08-leases-working-alongside-agents.md", {

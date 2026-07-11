@@ -41,7 +41,7 @@ import { execFileSync } from 'node:child_process';
 import {
   readContextLog,
   projectRoot,
-} from './lib/context-log.mjs';
+} from './lib/context-log.ts';
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));

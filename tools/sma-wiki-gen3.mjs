@@ -20,7 +20,7 @@ import {
 } from 'node:fs';
 import { resolve } from 'node:path';
 import { argv, exit } from 'node:process';
-import { renderBrickDiffPage, renderBrickTreePage } from './lib/gen3-renderers.mjs';
+import { renderBrickDiffPage, renderBrickTreePage } from './lib/gen3-renderers.ts';
 
 
 const RELEASES_DIR = resolve(SMA_ROOT, 'releases');

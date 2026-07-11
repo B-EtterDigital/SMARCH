@@ -45,10 +45,10 @@ import { fileURLToPath } from 'node:url';
 
 import { resolveBrickPath } from './lib/source-path-resolver.ts';
 import { writeJsonIfMeaningfulChanged } from './lib/stable-generated.ts';
-import { fingerprintSource, computeSeal, signSealHead, generateSealKeypair } from './lib/provenance-seal.mjs';
-import { classifyLicense } from './lib/license-lattice.mjs';
-import { canonicalIdentity, sameIdentity, ownerFor } from './lib/ownership.mjs';
-import { scanDirectory, evaluateDeclarationMismatch } from './lib/license-evidence.mjs';
+import { fingerprintSource, computeSeal, signSealHead, generateSealKeypair } from './lib/provenance-seal.ts';
+import { classifyLicense } from './lib/license-lattice.ts';
+import { canonicalIdentity, sameIdentity, ownerFor } from './lib/ownership.ts';
+import { scanDirectory, evaluateDeclarationMismatch } from './lib/license-evidence.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_REGISTRY = 'scans/all-projects/latest.registry.json';

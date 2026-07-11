@@ -18,7 +18,7 @@ import {
   summarizeBlockerCodes,
   toArray,
   uniqueStrings,
-} from "./lib/curated-build-utils.mjs";
+} from "./lib/curated-build-utils.ts";
 
 const DEFAULT_OUT = "releases/release-drafts.generated.json";
 

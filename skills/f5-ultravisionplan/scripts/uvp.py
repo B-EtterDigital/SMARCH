@@ -219,7 +219,11 @@ def load_tasks_fast(root):
         con.commit()
         con.close()
         return tasks, by_id
-    except Exception:
+    except Exception as exc:
+        print(
+            f"warning: area=uvp.task-index severity=warning context=sqlite-fallback error={exc}",
+            file=sys.stderr,
+        )
         return load_tasks(root)
 
 
@@ -1187,12 +1191,18 @@ def cmd_report(args, root):
     jpath = root / "meta" / "journal.jsonl"
     events = []
     if jpath.is_file():
-        for line in jpath.read_text(encoding="utf-8").splitlines():
+        for line_number, line in enumerate(
+            jpath.read_text(encoding="utf-8").splitlines(), start=1
+        ):
             if line.strip():
                 try:
                     events.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as exc:
+                    print(
+                        "warning: area=uvp.stats severity=warning "
+                        f"context=journal-line-{line_number} error={exc}",
+                        file=sys.stderr,
+                    )
     completes = [e for e in events if e.get("action") == "complete" and e.get("id") in by_id]
     per_day, per_agent, per_tier = {}, {}, {}
     for e in completes:

@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { assertExportAllowed, ExportBlockedError } from "./lib/export-guard.mjs";
+import { assertExportAllowed, ExportBlockedError } from "./lib/export-guard.ts";
 
 const SCHEMA_VERSION = "1.0.0";
 const DEFAULT_REGISTRY_PATH = "scans/all-projects/latest.registry.json";

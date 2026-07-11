@@ -20,14 +20,14 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { argv, exit } from 'node:process';
 import { spawnSync } from 'node:child_process';
-import { readActiveLeases } from './lib/gen3-state.mjs';
+import { readActiveLeases } from './lib/gen3-state.ts';
 import {
   assertFreshPacketReport,
   formatPacketFreshness,
   maxAgeSeconds,
   packetLeaseFingerprint,
   packetFreshness,
-} from './lib/packet-freshness.mjs';
+} from './lib/packet-freshness.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_PACKET_FILE = resolve(SMA_ROOT, 'handoffs/graph-packets.generated.json');

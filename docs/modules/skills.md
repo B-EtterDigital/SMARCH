@@ -17,6 +17,8 @@ The skills module packages reusable agent instructions around documented Sweetsp
 
 Run the affected skill's self-test or fixture, installation smoke, source-size gate, and strict module Graphify summary. Verify that the trigger does not activate outside its documented scope.
 
+The configured module gate is `node tools/install-agent-skills.mjs --check`. Query the module graph with `npm run graphify:query -- --project sma --module skills -- "<question>"`; its generated graph lives under `graphify-out/modules/skills/`.
+
 ## How to work here
 
 Keep the workflow source in one place and make installed copies reproducible. Update documentation first when a skill would otherwise invent a missing product or process rule.

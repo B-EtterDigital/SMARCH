@@ -28,7 +28,7 @@ import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { argv, env, exit } from 'node:process';
-import { projectRoot } from './lib/context-log.mjs';
+import { projectRoot } from './lib/context-log.ts';
 
 const args = parseArgs(argv.slice(2));
 const DEFAULT_LIMIT = 12;

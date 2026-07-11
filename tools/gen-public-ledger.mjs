@@ -13,15 +13,15 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { computeSeal } from './lib/provenance-seal.mjs';
+import { computeSeal } from './lib/provenance-seal.ts';
 
 const LEDGER_PATH = 'registry/public-ledger.generated.json';
 const FILES = [
   'tools/sma-ci.mjs',
   'tools/sma-scan.mjs',
   'tools/install-agent-skills.mjs',
-  'tools/lib/provenance-seal.mjs',
-  'tools/lib/license-lattice.mjs',
+  'tools/lib/provenance-seal.ts',
+  'tools/lib/license-lattice.ts',
 ];
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 

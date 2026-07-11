@@ -15,6 +15,8 @@ The sync module exports approved repository content through scrub and leak gates
 
 Run the sync command in dry-run mode, leak and compliance gates, the source-size gate, and the strict module Graphify summary. Inspect the produced public diff before publication.
 
+The configured module gate is `node tools/sma-sync-public.mjs --selftest`. Query the module graph with `npm run graphify:query -- --project sma --module sync -- "<question>"`; its generated graph lives under `graphify-out/modules/sync/`.
+
 ## How to work here
 
 Keep the scrub map explicit and review additions to the public surface. Never bypass a failed leak gate or copy fork-only material into the canonical public source.

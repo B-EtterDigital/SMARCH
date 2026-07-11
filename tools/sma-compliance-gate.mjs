@@ -167,7 +167,7 @@ async function main() {
     return;
   }
 
-  const { COMPLIANCE_CONTROLS } = await import('./lib/compliance-controls.mjs');
+  const { COMPLIANCE_CONTROLS } = await import('./lib/compliance-controls.ts');
 
   /** @type {Array<{control: any, status: string, evidence?: string, note?: string}>} */
   const results = COMPLIANCE_CONTROLS.map((control) => {

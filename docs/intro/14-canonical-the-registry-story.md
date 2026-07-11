@@ -29,6 +29,10 @@ the evidence-led process of choosing a preferred brick. The report says
 whether the portfolio is ready for that work and names the evidence still
 missing. Only a separate promotion step can change a brick's status.
 
+In this lesson you are reading a report, not promoting anything. The practice
+portfolio is intentionally young, so “not ready” is a successful, informative
+answer rather than a failed exercise.
+
 ## Try it
 
 Run this block from the SMARCH folder. It rebuilds and scans
@@ -98,6 +102,11 @@ scanner has not seen enough families of related builds to recommend a broad
 canonicalization push. The long label is nerdy on purpose: a tool or agent can
 act on it without guessing what “not ready” meant.
 
+> **Stuck? This is normal.** The long reason
+> `not_enough_recurrent_build_families` can look like an error, but it is a
+> machine-readable explanation. If the block reaches that line, the report ran
+> correctly and told you why promotion should wait.
+
 ## What you just did
 
 You built a registry from three fixture projects, counted each readiness
@@ -105,8 +114,38 @@ status, and asked for the next canonicalization decision. The report answered
 “not yet” and named a specific reason. The helper left all 40 bricks
 project-bound because the fixture evidence did not support promotion.
 
+## Check your understanding
+
+1. A brick passes one check. Why does that not automatically make it
+   canonical?
+
+   <details><summary>Answer</summary>
+
+   Canonical means preferred for reuse, which needs repeated checks and use—not
+   one green result from one file.
+
+   </details>
+
+2. What useful decision can you make from a “not ready” report?
+
+   <details><summary>Answer</summary>
+
+   You can keep the bricks project-bound and use the named reason to decide
+   what evidence or repeated use must come next.
+
+   </details>
+
+3. Does building a canonicalization report change any brick's status?
+
+   <details><summary>Answer</summary>
+
+   No. The report summarizes readiness. Only a separate promotion step can
+   change status.
+
+   </details>
+
 ## Where to go next
 
-Continue to [15: MCP, connect your agent](15-mcp-connect-your-agent.md). You
-will give an agent a safe doorway into this same registry so it can search the
-evidence instead of scraping files by hand.
+[← Previous: 13, Contributing your first brick](13-contributing-your-first-brick.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 15, MCP, connect your agent →](15-mcp-connect-your-agent.md)

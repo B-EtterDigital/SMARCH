@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { internals } from "../codex-runner.mjs";
+import { internals } from "../codex-runner.ts";
 
 async function selftest() {
   assert.equal(

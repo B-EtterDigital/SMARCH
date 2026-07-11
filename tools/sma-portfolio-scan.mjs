@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
-import { discoverPortfolioProjects, portfolioProjectsRoot } from "./lib/portfolio-projects.mjs";
+import { discoverPortfolioProjects, portfolioProjectsRoot } from "./lib/portfolio-projects.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");

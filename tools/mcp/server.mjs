@@ -18,7 +18,7 @@ function sdkInstallError(error) {
   return wrapped;
 }
 
-async function loadSdk() {
+export async function loadSdk() {
   try {
     const [serverModule, stdioModule, typesModule] = await Promise.all([
       import("@modelcontextprotocol/sdk/server/index.js"),

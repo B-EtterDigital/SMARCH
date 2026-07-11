@@ -39,7 +39,7 @@ import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
 import { execFileSync } from 'node:child_process';
 import { resolveBrickPath } from './lib/source-path-resolver.ts';
-import { resolveProjectRoot as canonicalProjectRoot } from './lib/project-paths.mjs';
+import { resolveProjectRoot as canonicalProjectRoot } from './lib/project-paths.ts';
 import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.ts";
 
 function readdirSyncSafe(p) {
@@ -340,8 +340,8 @@ function scoreBrick(brick, dependentsByBrick) {
   }
 }
 
-// Single source of truth — delegates to lib/project-paths.mjs which mirrors
-// the portfolio override map. Adding a new project: edit project-paths.mjs.
+// Single source of truth — delegates to lib/project-paths.ts which mirrors
+// the portfolio override map. Adding a new project: edit project-paths.ts.
 function resolveProjectRootSync(projectId) {
   return canonicalProjectRoot(projectId);
 }

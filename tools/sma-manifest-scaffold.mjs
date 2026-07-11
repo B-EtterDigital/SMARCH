@@ -19,7 +19,7 @@ import {
   parseArgs,
   toArray,
   uniqueStrings,
-} from "./lib/curated-build-utils.mjs";
+} from "./lib/curated-build-utils.ts";
 
 const DEFAULT_OUT = "scaffolds/build-manifest-repairs.generated.json";
 

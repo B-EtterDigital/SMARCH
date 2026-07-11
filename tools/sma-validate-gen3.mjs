@@ -12,7 +12,7 @@
 import { argv, exit } from 'node:process';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { projectRoot } from './lib/context-log.mjs';
+import { projectRoot } from './lib/context-log.ts';
 import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.ts";
 
 

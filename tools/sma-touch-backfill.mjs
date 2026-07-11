@@ -18,7 +18,7 @@ import {
 import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
 import { execFileSync } from 'node:child_process';
-import { appendContextEvent } from './lib/context-log.mjs';
+import { appendContextEvent } from './lib/context-log.ts';
 
 const ROLES = new Set(['architect', 'implementer', 'reviewer', 'security', 'tester', 'refactor', 'release', 'scanner']);
 const ACTOR_KINDS = new Set(['human', 'ai_model', 'agent', 'automation', 'tool']);

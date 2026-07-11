@@ -17,7 +17,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
-import { resolveProjectRoot as canonicalResolveProjectRoot, PROJECTS_ROOT } from "./lib/project-paths.mjs";
+import { resolveProjectRoot as canonicalResolveProjectRoot, PROJECTS_ROOT } from "./lib/project-paths.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -302,7 +302,7 @@ async function walkManifests(root) {
 }
 
 async function resolveProjectRoot(manifest, _projectsRoot) {
-  // Delegated to tools/lib/project-paths.mjs — see same swap in sma-rule-gate.mjs.
+  // Delegated to tools/lib/project-paths.ts — see same swap in sma-rule-gate.mjs.
   return canonicalResolveProjectRoot(manifest.source?.project);
 }
 

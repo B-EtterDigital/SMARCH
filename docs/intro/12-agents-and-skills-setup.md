@@ -20,6 +20,11 @@ the SMA instruction section to `AGENTS.md`. Those instructions teach the agent
 to use [leases](../GLOSSARY.md#lease), respect ownership, and run the required
 [gates](../GLOSSARY.md#gate) before claiming success.
 
+This exercise does not install Codex or change your personal settings. It only
+shows what a project-local setup looks like inside the disposable practice
+project. A path beginning with a dot, such as `.codex`, is simply a folder that
+file browsers often hide by default.
+
 ## Try it
 
 Run this block from the SMARCH folder. It regenerates the fixture portfolio and
@@ -66,6 +71,10 @@ The three skill folders are real files the agent can load when their work
 matches. The `yes` confirms that project-level SMA rules were added too, so the
 agent receives both the field guides and the workshop rules.
 
+> **Stuck? This is normal.** If the installer says the target is missing, run
+> the entire block rather than only its last command. The first command creates
+> the practice project that the installer needs.
+
 ## What you just did
 
 You prepared a safe practice project for a Codex agent, then verified both
@@ -73,8 +82,40 @@ halves of the setup: reusable skills and project instructions. It is a small
 handoff made with love for creators of all kind—and for the next agent trying
 to do careful work without guessing.
 
+## Check your understanding
+
+1. An agent has the SMA skills but no project `AGENTS.md`. What important half
+   of the setup is missing?
+
+   <details><summary>Answer</summary>
+
+   The project-specific workshop rules are missing. Skills teach reusable
+   workflows; `AGENTS.md` tells the agent which local rules apply here.
+
+   </details>
+
+2. Why does this lesson install into the fixture project instead of your real
+   project?
+
+   <details><summary>Answer</summary>
+
+   It lets you inspect and verify the setup without changing real instructions
+   or personal agent settings.
+
+   </details>
+
+3. A task matches the SMA enforcement workflow. Should the agent guess the
+   steps from the skill folder's name?
+
+   <details><summary>Answer</summary>
+
+   No. It should load the focused skill instructions and follow the project's
+   `AGENTS.md`, including leases and gates.
+
+   </details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and continue with
-lesson 13, Skills in practice. You will choose a skill for a real task and see
-how focused instructions change the agent's workflow.
+[← Previous: 11, The graph, asking questions](11-the-graph-asking-questions.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 13, Contributing your first brick →](13-contributing-your-first-brick.md)

@@ -32,6 +32,11 @@ First, run the gate against the `acme-desktop` practice project. The shell
 temporarily allows the expected failure to finish, saves its exit code, and
 then confirms that the gate blocked for the planned reason.
 
+> **Stuck? This is normal.** The first gate is supposed to fail; that is the
+> experiment, not a mistake. The surrounding shell lines capture its exit code
+> so the lesson can continue. Run the full block rather than only the gate
+> command.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -100,8 +105,43 @@ oversized practice file with exit code 4, then passed a bounded brick with exit
 code 0. Most importantly, the failed output gave you a file, a measured value,
 and the rule it crossed—the ingredients needed for a useful fix.
 
+## Check your understanding
+
+1. The first command reports a failure. What tells you this is the intended
+   safety stop rather than a mysterious crash?
+
+<details>
+<summary>Show answer</summary>
+
+It names the source-size rule, the exact file, its measured line count, and
+exit code 4. The lesson also checks that specific exit code.
+
+</details>
+
+2. Why does the same gate pass for Activity Feed without changing the rule?
+
+<details>
+<summary>Show answer</summary>
+
+The checked folder changes. Activity Feed stays below the same 1,900-line
+threshold that the oversized fixture crosses.
+
+</details>
+
+3. A gate blocks your real work. What is the useful next move?
+
+<details>
+<summary>Show answer</summary>
+
+Read the named file, measured value, and crossed rule, then fix the cause. Do
+not treat the gate as a judgment or blindly disable it.
+
+</details>
+
 ## Where to go next
 
-Continue to [06: Your first clone](06-your-first-clone.md). You will reuse a
-practice brick and inspect the records SMARCH leaves behind, while the planted
-gate failure stays safely inside the demo portfolio.
+- **Previous:** [04: Manifests explained](04-manifests-explained.md)
+- **Next:** [06: Your first clone](06-your-first-clone.md)
+
+Next, you will reuse a practice brick and inspect the records SMARCH leaves
+behind, while the planted gate failure stays safely inside the demo portfolio.

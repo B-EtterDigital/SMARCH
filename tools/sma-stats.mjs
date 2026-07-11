@@ -17,7 +17,7 @@ import {
   PROJECTS_ROOT,
   PROJECT_PATH_OVERRIDES,
   PROJECT_ABSOLUTE_OVERRIDES,
-} from './lib/context-log.mjs';
+} from './lib/context-log.ts';
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));

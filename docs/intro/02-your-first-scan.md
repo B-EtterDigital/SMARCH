@@ -28,6 +28,11 @@ Run this block from the SMARCH folder. It regenerates the practice projects,
 scans their manifests, and writes the registry to a temporary folder so your
 working files stay tidy.
 
+> **Stuck? This is normal.** A warning count is not the same as a failed scan.
+> In this practice portfolio, `Warnings: 3` is the expected result. If the
+> command itself stops, return to the SMARCH folder and rerun the full block so
+> the fixtures are rebuilt first.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -71,7 +76,43 @@ You asked the scanner to search three practice projects. It found 40 brick
 manifests, kept their details in one registry file, and reported three warnings
 without changing the project code.
 
+## Check your understanding
+
+1. The scan finishes with three warnings. Should you throw away the registry?
+
+<details>
+<summary>Show answer</summary>
+
+No. The registry is still useful. A warning asks for closer inspection; it
+does not mean this practice scan failed.
+
+</details>
+
+2. Why scan instead of opening every manifest one by one?
+
+<details>
+<summary>Show answer</summary>
+
+A scan finds the manifests across several projects and gathers their facts in
+one searchable registry, so you can see the whole inventory before choosing
+where to work.
+
+</details>
+
+3. What evidence tells you the scan did not edit the practice bricks?
+
+<details>
+<summary>Show answer</summary>
+
+The scanner reads manifests and writes a separate registry file. Its job is
+inventory, not source editing.
+
+</details>
+
 ## Where to go next
 
-Continue to [03: Reading the brick wall](03-reading-the-brick-wall.md). You will
-turn the registry into a visual catalog and learn what its first numbers mean.
+- **Previous:** [01: What is a brick?](01-what-is-a-brick.md)
+- **Next:** [03: Reading the brick wall](03-reading-the-brick-wall.md)
+
+Next, you will turn the registry into a visual catalog and learn what its
+first numbers mean.

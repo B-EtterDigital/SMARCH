@@ -19,7 +19,7 @@ import {
   selectedBuildIdsFromArgs,
   toArray,
   uniqueStrings,
-} from "./lib/curated-build-utils.mjs";
+} from "./lib/curated-build-utils.ts";
 
 const DEFAULT_OUT = "handoffs/build-packets.generated.json";
 

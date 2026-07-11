@@ -14,8 +14,8 @@ import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { resolveBrickPath } from './lib/source-path-resolver.ts';
-import { normalizeSource, kGramShingles, simhash, hamming, winnow, jaccard } from './lib/similarity.mjs';
-import { canonicalIdentity, ownerFor, sameIdentity } from './lib/ownership.mjs';
+import { normalizeSource, kGramShingles, simhash, hamming, winnow, jaccard } from './lib/similarity.ts';
+import { canonicalIdentity, ownerFor, sameIdentity } from './lib/ownership.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REGISTRY = resolve(SMA_ROOT, 'scans/all-projects/latest.registry.json');

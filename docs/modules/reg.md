@@ -17,6 +17,8 @@ The registry module is the lifecycle hub for Sweetspot projects and reusable bri
 
 Run focused registry self-tests, validate generated output stability, then run the source-size gate and strict module Graphify summary. Lifecycle changes also need a representative scan-to-release path.
 
+The configured module gate is `npm run check`. Query the module graph with `npm run graphify:query -- --project sma --module reg -- "<question>"`; its generated graph lives under `graphify-out/modules/reg/`.
+
 ## How to work here
 
 Use the registry lease for global regeneration and keep fork updates separate from canonical source releases. Avoid hand-editing generated registry artifacts.

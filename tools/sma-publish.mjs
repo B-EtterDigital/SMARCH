@@ -12,9 +12,9 @@ import fs from "node:fs/promises";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkComposition } from "./lib/license-lattice.mjs";
-import { buildLicenseIndex } from "./lib/ledger-resolve.mjs";
-import { evaluateExport } from "./lib/export-guard.mjs";
+import { checkComposition } from "./lib/license-lattice.ts";
+import { buildLicenseIndex } from "./lib/ledger-resolve.ts";
+import { evaluateExport } from "./lib/export-guard.ts";
 
 const SMA_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const LICENSE_LEDGER_PATH = path.resolve(SMA_ROOT, "registry/license-ledger.generated.json");

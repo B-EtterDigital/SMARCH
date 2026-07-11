@@ -14,7 +14,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { codex } from "./lib/codex-runner.mjs";
+import { codex } from "./lib/codex-runner.ts";
 
 function parseArgs(argv) {
   const opts = { prompt: "", promptFile: "", schema: "", stdin: false, model: "gpt-5.4", noCache: false };

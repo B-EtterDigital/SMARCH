@@ -44,7 +44,7 @@ import { resolve, dirname } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
-import { PROJECT_PATH_OVERRIDES } from "./lib/project-paths.mjs";
+import { PROJECT_PATH_OVERRIDES } from "./lib/project-paths.ts";
 
 const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 const SMA_ROOT = resolve(TOOLS_DIR, '..');

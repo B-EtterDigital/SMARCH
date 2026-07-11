@@ -7,6 +7,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { emitFailure, CliError } from "./cli-contract.mjs";
 
 const FIXTURE_TIMEOUT_MS = 30_000;
 const RESULT_MARKER = "__SMA_CAPSULE_RESULT__";
@@ -32,12 +33,22 @@ async function main() {
   const results = await runCapsule(options.capsulePath || process.cwd(), {
     allowNet: options.allowNet,
     strictSandbox: options.strictSandbox,
+    emit: !options.quiet,
   });
-  if (results.some((result) => result.status === "FAIL")) process.exitCode = 1;
+  const failed = results.filter((result) => result.status === "FAIL");
+  for (const result of failed) {
+    emitFailure("brick-run", new CliError("FIXTURE_FAILED", `Fixture failed: ${result.fixture}`, {
+      exitCode: 4,
+      nextCommand: `Inspect fixtures/run.json and rerun \`sma brick-run ${options.capsulePath || process.cwd()}\`.`,
+      context: { fixture: result.fixture, error: result.error || null },
+    }));
+  }
+  if (options.verbose) process.stderr.write(`brick-run: ${results.length - failed.length}/${results.length} fixtures passed\n`);
+  if (failed.length) process.exitCode = 4;
 }
 
 function parseArgs(args) {
-  const options = { allowNet: false, selftest: false, strictSandbox: false, capsulePath: "" };
+  const options = { allowNet: false, selftest: false, strictSandbox: false, capsulePath: "", json: false, quiet: false, verbose: false };
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--selftest") {
@@ -46,13 +57,31 @@ function parseArgs(args) {
       options.allowNet = true;
     } else if (arg === "--strict-sandbox") {
       options.strictSandbox = true;
+    } else if (arg === "--json") {
+      options.json = true;
+    } else if (arg === "--quiet") {
+      options.quiet = true;
+    } else if (arg === "--verbose") {
+      options.verbose = true;
     } else if (arg === "--capsule") {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) throw new CapsuleError("USAGE", "--capsule requires a directory path");
       options.capsulePath = value;
       index += 1;
     } else if (arg === "--help" || arg === "-h") {
-      console.log("Usage: node tools/sma-brick-run.mjs [--strict-sandbox] [--allow-net] [--capsule] <capsule-directory> | --selftest");
+      console.log(`Run deterministic capsule fixtures.
+
+Usage:
+  sma brick-run [--strict-sandbox] [--allow-net] [--capsule] <directory> [--json]
+  sma brick-run --selftest
+
+Options: --strict-sandbox, --allow-net, --capsule, --json, --quiet, --verbose, --selftest, --help
+Examples:
+  sma brick-run templates/capsule --json
+  sma brick-run --strict-sandbox templates/capsule
+
+Exit codes: 0 pass; 2 usage; 3 missing input; 4 invalid input/fixture failure; 1 runtime failure.
+Known limitation: default mode may use documented isolation fallbacks; use --strict-sandbox to fail closed.`);
       process.exit(0);
     } else if (arg.startsWith("--")) {
       throw new CapsuleError("USAGE", `Unknown option: ${arg}`);
@@ -62,6 +91,7 @@ function parseArgs(args) {
       options.capsulePath = arg;
     }
   }
+  if (options.quiet && options.verbose) throw new CapsuleError("USAGE", "--quiet and --verbose cannot be combined");
   return options;
 }
 
@@ -799,5 +829,11 @@ main().catch((error) => {
       message: errorMessage(error),
     },
   });
-  process.exitCode = 1;
+  const code = error?.code || "RUNNER_ERROR";
+  const exitCode = code === "USAGE" ? 2 : code === "MISSING_FILE" ? 3 : ["INVALID_JSON", "INVALID_FIXTURES", "INVALID_MANIFEST", "CONSTRAINT_VIOLATION", "STRICT_SANDBOX_UNSUPPORTED"].includes(code) ? 4 : 1;
+  emitFailure("brick-run", new CliError(code, errorMessage(error), {
+    exitCode,
+    nextCommand: code === "USAGE" ? "Run `sma brick-run --help`." : "Fix the reported capsule input, then rerun `sma brick-run <directory> --json`.",
+  }));
+  process.exitCode = exitCode;
 });

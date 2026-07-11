@@ -17,11 +17,11 @@ import {
   parseArgs,
   toArray,
   uniqueStrings,
-} from "./lib/curated-build-utils.mjs";
+} from "./lib/curated-build-utils.ts";
 import {
   discoverPortfolioProjects,
   projectPriorityRank,
-} from "./lib/portfolio-projects.mjs";
+} from "./lib/portfolio-projects.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");

@@ -39,6 +39,12 @@ from being copied. It is appropriate here only because these generated
 fixtures are synthetic and public-safe; do not use it for real source without
 an authorized review.
 
+> **Stuck? This is normal.** This exercise writes a practice copy to
+> `~/DEV/smarch-first-clone` unless the lesson runner supplies a temporary
+> folder. If that folder already exists, the guided clone may update its own
+> SMARCH records. Use a different `SMARCH_CLONE_TARGET` if you want a fresh
+> practice destination.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -105,8 +111,43 @@ Open the printed checklist before adapting the clone:
 ~/DEV/smarch-first-clone/.sweetspot/clones/acme-desktop-activity-feed.md
 ```
 
+## Check your understanding
+
+1. The clone reports `Install status: installed`. Can you skip the checklist?
+
+<details>
+<summary>Show answer</summary>
+
+No. `installed` means the files were placed and recorded. The checklist still
+names the human review and adaptation work that remains.
+
+</details>
+
+2. Why does this clone create an import record instead of copying only the
+   source file?
+
+<details>
+<summary>Show answer</summary>
+
+The record preserves what arrived, where it came from, and what still needs
+review. That makes the copy understandable later.
+
+</details>
+
+3. When is `--allow-closed` appropriate in this lesson?
+
+<details>
+<summary>Show answer</summary>
+
+Only for the generated, synthetic, public-safe fixtures described here. Real
+restricted source needs authorized review rather than a casual bypass.
+
+</details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and continue with
-lesson 07, Provenance and seals. You will inspect how SMARCH proves where a
-brick came from and notices when that history no longer matches.
+- **Previous:** [05: Gates, what blocks and why](05-gates-what-blocks-and-why.md)
+- **Next:** [07: Provenance and seals](07-provenance-and-seals.md)
+
+Next, you will inspect how SMARCH proves where a brick came from and notices
+when that history no longer matches.

@@ -23,8 +23,8 @@ import {
   parseArgs,
   relativeFromCwd,
   topList
-} from "./lib/adoption-utils.mjs";
-import { collectProjectGen3 } from "./lib/gen3-state.mjs";
+} from "./lib/adoption-utils.ts";
+import { collectProjectGen3 } from "./lib/gen3-state.ts";
 
 const HELP_TEXT = `Usage: node tools/sma-doctor.mjs [options]
 

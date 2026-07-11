@@ -19,7 +19,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { env, exit } from 'node:process';
-import { KINDS, projectRoot } from './lib/context-log.mjs';
+import { KINDS, projectRoot } from './lib/context-log.ts';
 
 const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
 

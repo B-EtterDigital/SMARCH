@@ -9,7 +9,7 @@
 
 import path from "node:path";
 import process from "node:process";
-import { loadAdoptionContext, buildRecommendations, formatJson } from "./lib/sma-adoption.mjs";
+import { loadAdoptionContext, buildRecommendations, formatJson } from "./lib/sma-adoption.ts";
 
 const HELP = `SMARCH recommend-builds
 

@@ -22,8 +22,8 @@ import {
   parseArgs,
   topList,
   uniqueBy
-} from "./lib/adoption-utils.mjs";
-import { buildHandoffPaths } from "./lib/curated-build-utils.mjs";
+} from "./lib/adoption-utils.ts";
+import { buildHandoffPaths } from "./lib/curated-build-utils.ts";
 
 const HELP_TEXT = `Usage: node tools/sma-why-blocked.mjs [options] <query>
 

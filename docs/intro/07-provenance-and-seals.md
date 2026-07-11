@@ -35,6 +35,10 @@ Service, seals its recorded creator event, then changes a copy of that event to
 prove the check notices. If the practice files are missing, `fixtures:gen`
 recreates them first. The real fixture stays unchanged.
 
+> **Stuck? This is normal.** The words `Edited history detected: yes` describe
+> a successful test. The lesson deliberately changes an in-memory copy, then
+> expects the old seal to reject it. No fixture file is edited.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -52,7 +56,7 @@ const {
   computeSeal,
   fingerprintSource,
   verifySeal
-} = await import(`${process.env.SMARCH_DIR}/tools/lib/provenance-seal.mjs`);
+} = await import(`${process.env.SMARCH_DIR}/tools/lib/provenance-seal.ts`);
 
 const brickRoot = path.join(
   process.env.SMARCH_FIXTURE_PORTFOLIO,
@@ -121,9 +125,42 @@ every trust question by itself. A real project can add a cryptographic
 signature—proof made with a private digital key—and an external record for
 stronger protection.
 
+## Check your understanding
+
+1. An old seal rejects a changed history event. What has the seal proved?
+
+<details>
+<summary>Show answer</summary>
+
+It proved that the current history no longer matches what was sealed. It does
+not by itself prove that every creator claim is true.
+
+</details>
+
+2. Why include both a content fingerprint and ordered history events?
+
+<details>
+<summary>Show answer</summary>
+
+Together they make changes to the brick's files or its recorded creator
+history detectable when the seal is checked.
+
+</details>
+
+3. Does tamper-evident mean nobody can change the brick?
+
+<details>
+<summary>Show answer</summary>
+
+No. It means a later check can detect that sealed content or history changed;
+it does not make change impossible.
+
+</details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and continue with
-lesson 08, Leases: working alongside agents. You will make a polite,
-time-limited claim before touching a fixture brick, then release it for the
-next creator.
+- **Previous:** [06: Your first clone](06-your-first-clone.md)
+- **Next:** [08: Leases, working alongside agents](08-leases-working-alongside-agents.md)
+
+Next, you will make a polite, time-limited claim before touching a fixture
+brick, then release it for the next creator.

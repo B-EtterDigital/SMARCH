@@ -37,6 +37,11 @@ only because this practice happens inside a disposable sandbox. The
 `SMA_AGENT` and `SMA_SESSION_ID` labels identify the practice worker and its
 practice session.
 
+> **Stuck? This is normal.** A lease can refuse to start when someone else
+> already holds the same practice resource. That refusal protects their work.
+> Wait for the holder to finish, or use a fresh temporary lesson folder; do not
+> force the claim.
+
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
@@ -110,8 +115,42 @@ guessing whether your work was still in progress.
 In a real SMARCH task, the normal finish command also checks which files
 changed and prints a short project-status summary.
 
+## Check your understanding
+
+1. Another worker already holds the brick lease. Should you force your edit
+   through because your change is small?
+
+<details>
+<summary>Show answer</summary>
+
+No. Back off and coordinate with the holder. The lease exists to prevent two
+good changes from overwriting each other.
+
+</details>
+
+2. Why does a lease expire instead of lasting forever?
+
+<details>
+<summary>Show answer</summary>
+
+Expiration prevents an abandoned session from reserving the brick forever.
+
+</details>
+
+3. What makes `end:edit` more than an “unlock” command?
+
+<details>
+<summary>Show answer</summary>
+
+It records what happened before releasing the lease. In a real task it also
+checks changed files and prints project status.
+
+</details>
+
 ## Where to go next
 
-Return to the [lesson path](START_HERE.md#the-lesson-path) and continue with
-lesson 09, Conflicts are normal. You will record a collision, pause politely,
-and clear the record after a handoff.
+- **Previous:** [07: Provenance and seals](07-provenance-and-seals.md)
+- **Next:** [09: Conflicts are normal](09-conflicts-are-normal.md)
+
+Next, you will record a collision, pause politely, and clear the record after
+a handoff.

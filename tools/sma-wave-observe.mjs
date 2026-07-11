@@ -14,8 +14,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, dirname, resolve } from 'node:path';
 import { argv, exit, execPath } from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readContextLog } from './lib/context-log.mjs';
-import { readActiveLeases } from './lib/gen3-state.mjs';
+import { readContextLog } from './lib/context-log.ts';
+import { readActiveLeases } from './lib/gen3-state.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');

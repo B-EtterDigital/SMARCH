@@ -21,8 +21,8 @@ import {
   readContextLog,
   logPath,
   listBricksWithContext,
-} from './lib/context-log.mjs';
-import { discoverPortfolioProjects } from './lib/portfolio-projects.mjs';
+} from './lib/context-log.ts';
+import { discoverPortfolioProjects } from './lib/portfolio-projects.ts';
 
 
 const LEASES_PATH = resolve(SMA_ROOT, 'registry/active-leases.generated.json');

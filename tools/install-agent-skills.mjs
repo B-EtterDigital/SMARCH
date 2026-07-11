@@ -21,7 +21,7 @@ const platformTargets = {
 };
 
 function parseArgs(argv) {
-  const options = { target: process.cwd(), platform: "all", instructions: true, hooks: false };
+  const options = { target: process.cwd(), platform: "all", instructions: true, hooks: false, check: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -37,6 +37,8 @@ function parseArgs(argv) {
       options.instructions = false;
     } else if (arg === "--hooks") {
       options.hooks = true;
+    } else if (arg === "--check") {
+      options.check = true;
     } else if (arg === "--help" || arg === "-h") {
       console.log(`Install SMA agent skills
 
@@ -47,14 +49,41 @@ Platforms:
   claude-code, codex, opencode, all
 
 Options:
+  --check            Validate source skills and templates without writing files
   --no-instructions  Install skills without appending AGENTS.md / CLAUDE.md snippets
   --hooks            Merge ambient write hooks into .claude/settings.json
 `);
       process.exit(0);
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
     }
   }
 
   return options;
+}
+
+async function checkSources() {
+  const checked = [];
+
+  for (const skillName of skillNames) {
+    const skillPath = path.join(smaRoot, "skills", skillName, "SKILL.md");
+    const source = await fs.readFile(skillPath, "utf8");
+    if (!source.trim()) {
+      throw new Error(`Skill source is empty: ${skillPath}`);
+    }
+    checked.push(path.relative(smaRoot, skillPath));
+  }
+
+  for (const templateFile of ["AGENTS.sma.md", "CLAUDE.sma.md", "OPENCODE.sma.md"]) {
+    const templatePath = path.join(smaRoot, "templates", "agents", templateFile);
+    const source = await fs.readFile(templatePath, "utf8");
+    if (!source.includes("# SMA Enforcement")) {
+      throw new Error(`Instruction template lacks the SMA Enforcement heading: ${templatePath}`);
+    }
+    checked.push(path.relative(smaRoot, templatePath));
+  }
+
+  console.log(`SMA agent skill sources: passed (${checked.length} files)`);
 }
 
 function shellQuote(value) {
@@ -187,6 +216,11 @@ async function installForPlatform(target, platform) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  if (options.check) {
+    await checkSources();
+    return;
+  }
+
   const platforms = options.platform === "all"
     ? Object.keys(platformTargets)
     : [options.platform];

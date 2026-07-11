@@ -36,8 +36,8 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from '
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { checkComposition } from './lib/license-lattice.mjs';
-import { buildLicenseIndex } from './lib/ledger-resolve.mjs';
+import { checkComposition } from './lib/license-lattice.ts';
+import { buildLicenseIndex } from './lib/ledger-resolve.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LICENSE_LEDGER = resolve(SMA_ROOT, 'registry/license-ledger.generated.json');

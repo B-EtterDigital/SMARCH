@@ -33,8 +33,8 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { isVolatileSmaRegenLease, readActiveLeases } from './lib/gen3-state.mjs';
-import { buildGoalProgressReport, goalProgressDashboardStyles, renderGoalProgressSection } from './lib/gen3-goal-progress.mjs';
+import { isVolatileSmaRegenLease, readActiveLeases } from './lib/gen3-state.ts';
+import { buildGoalProgressReport, goalProgressDashboardStyles, renderGoalProgressSection } from './lib/gen3-goal-progress.ts';
 import { writeTextIfChanged } from './lib/stable-generated.ts';
 import { SMA_ROOT } from "./lib/sma-paths.ts";
 

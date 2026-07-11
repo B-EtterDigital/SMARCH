@@ -30,6 +30,7 @@ import { basename, dirname, join, posix, relative, resolve, sep } from 'node:pat
 import { fileURLToPath } from 'node:url';
 
 import { validateManifest } from './sma-validate.mjs';
+import { CliError, emitFailure } from './cli-contract.mjs';
 
 const TOOL_PATH = fileURLToPath(import.meta.url);
 const SMA_ROOT = resolve(dirname(TOOL_PATH), '..');
@@ -39,14 +40,21 @@ const OMIT_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', 
 
 function parseArgs(argv) {
   const args = {};
+  const valueFlags = new Set(['brick', 'root', 'manifest', 'out', 'verify']);
+  const booleanFlags = new Set(['json', 'quiet', 'verbose', 'selftest', 'help']);
   for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
-    if (!arg.startsWith('--')) throw new Error(`unexpected argument: ${arg}`);
+    let arg = argv[index];
+    if (arg === '-h') arg = '--help';
+    if (!arg.startsWith('--')) throw new CliError('USAGE_ERROR', `Unexpected argument: ${arg}`, { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
     const key = arg.slice(2).replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+    if (!valueFlags.has(key) && !booleanFlags.has(key)) throw new CliError('USAGE_ERROR', `Unknown option: ${arg}`, { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
     const next = argv[index + 1];
-    if (next === undefined || next.startsWith('--')) args[key] = true;
-    else { args[key] = next; index += 1; }
+    if (valueFlags.has(key)) {
+      if (next === undefined || next.startsWith('--')) throw new CliError('USAGE_ERROR', `${arg} requires a value.`, { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
+      args[key] = next; index += 1;
+    } else args[key] = true;
   }
+  if (args.quiet && args.verbose) throw new CliError('USAGE_ERROR', '--quiet and --verbose cannot be combined.', { exitCode: 2, nextCommand: 'Choose one output mode and retry.' });
   return args;
 }
 
@@ -56,10 +64,18 @@ function usage() {
 Usage:
   node tools/sma-submit.mjs --brick <directory> [--root <repo>] [--manifest <file>] [--out <directory>] [--json]
   node tools/sma-submit.mjs --verify <archive.tar.gz> [--json]
-  node tools/sma-submit.mjs --selftest
+  node tools/sma-submit.mjs --selftest [--json]
 
 The packaging command runs \`npm run gate:all\` and then \`npm run gate:leaks\`
-in --root. Both must pass before an archive is emitted.`;
+in --root. Both must pass before an archive is emitted.
+
+Options: --brick, --root, --manifest, --out, --verify, --json, --quiet, --verbose, --selftest, --help
+Examples:
+  sma submit --brick ./my-brick --root . --json
+  sma submit --verify submissions/brick.tar.gz --json
+
+Exit codes: 0 success; 2 usage; 3 missing input; 4 validation/gate failure; 1 runtime failure.
+Known limitation: packaging requires git, tar, and the root project's gate scripts.`;
 }
 
 function normalizePath(value) {
@@ -109,8 +125,7 @@ function runGate(root, script) {
   const result = run(npmCommand(), ['run', script], { cwd: root });
   const output = `${result.stdout || ''}${result.stderr || ''}`;
   if (result.status !== 0) {
-    process.stderr.write(output);
-    throw new Error(`${command} failed with exit ${result.status}`);
+    throw new CliError('GATE_FAILED', `${command} failed with exit ${result.status}`, { exitCode: 4, nextCommand: `Run \`${command}\` in ${root} and fix the reported gate.`, context: { command, output_tail: output.slice(-2000) } });
   }
   return {
     command,
@@ -437,9 +452,9 @@ function runSelftest() {
   }
 }
 
-function printResult(result, json) {
+function printResult(result, json, quiet = false) {
   if (json) console.log(JSON.stringify(result, null, 2));
-  else {
+  else if (!quiet) {
     console.log(`sma-submit: verified ${result.brick_id}@${result.version}`);
     console.log(`  archive:   ${result.archive}`);
     console.log(`  sha256:    ${result.archive_sha256}`);
@@ -455,9 +470,11 @@ function main() {
     return;
   }
   if (args.selftest) return runSelftest();
-  if (args.verify && args.verify !== true) return printResult(verifyArchive(args.verify), args.json);
-  if (!args.brick || args.brick === true) throw new Error('--brick <directory> is required');
-  return printResult(createSubmission(args), args.json);
+  if (args.verify) return printResult(verifyArchive(args.verify), args.json, args.quiet);
+  if (!args.brick) throw new CliError('USAGE_ERROR', '--brick <directory> is required.', { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
+  const result = createSubmission(args);
+  printResult(result, args.json, args.quiet);
+  if (args.verbose) process.stderr.write(`sma-submit: packaged ${result.file_count} source files\n`);
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === TOOL_PATH;
@@ -465,7 +482,13 @@ if (isMain) {
   try {
     main();
   } catch (error) {
-    console.error(`sma-submit: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    const message = error instanceof Error ? error.message : String(error);
+    const failure = error instanceof CliError ? error : new CliError(
+      /not found|does not exist|ENOENT/i.test(message) ? 'INPUT_NOT_FOUND' : 'SUBMISSION_FAILED',
+      message,
+      { exitCode: /not found|does not exist|ENOENT/i.test(message) ? 3 : 4, nextCommand: 'Run `sma submit --help`, verify the paths, and retry.' },
+    );
+    if (process.argv.includes('--json')) process.stdout.write(`${JSON.stringify({ ok: false, error: { code: failure.code, message: failure.message } })}\n`);
+    process.exitCode = emitFailure('submit', failure);
   }
 }

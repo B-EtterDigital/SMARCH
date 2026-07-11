@@ -28,6 +28,10 @@ folder of reusable workflow instructions—is installed. Reading is safe;
 commands such as `claim`, `complete`, and `verify` change plan state and belong
 to an active agent workflow, not this lesson.
 
+You need Git for this exercise because `git archive` copies the committed plan
+into the temporary folder. You do not need the optional SUP skill: the lesson
+still reads the task directly when `uvp.py` is absent.
+
 ## Try it
 
 Run this block from the SMARCH folder. It rebuilds the **fixture portfolio**, a
@@ -104,6 +108,10 @@ to see the command shape, the read-only form is:
 python3 ~/.claude/skills/f5-ultravisionplan/scripts/uvp.py --root .UltraVision next --module docs --limit 1
 ```
 
+> **Stuck? This is normal.** `Optional uvp read: skipped` is a valid result, not
+> a missing prerequisite. If `git archive` fails instead, confirm you are in
+> the SMARCH Git checkout and run the complete block again.
+
 ## What you just did
 
 You found one task in the committed plan and read its title, status,
@@ -115,8 +123,39 @@ You also learned the important boundary: `uvp next` reads what is ready, while
 state-changing commands belong to the agent that has permission and a safe
 coordination claim.
 
+## Check your understanding
+
+1. A task has zero dependencies but is not verified. Is it automatically safe
+   to claim as complete?
+
+   <details><summary>Answer</summary>
+
+   No. Zero dependencies only means no earlier task must finish first. Its
+   required gates and workflow still decide whether the work is accepted.
+
+   </details>
+
+2. Why does the lesson copy the committed plan before reading it?
+
+   <details><summary>Answer</summary>
+
+   The copy provides a stable, disposable view and prevents the lesson from
+   changing the live `.UltraVision` plan.
+
+   </details>
+
+3. When is `uvp next` appropriate, and when are commands such as `claim` or
+   `complete` appropriate?
+
+   <details><summary>Answer</summary>
+
+   `uvp next` is safe for reading ready work. State-changing commands belong to
+   an active agent workflow with permission and coordination ownership.
+
+   </details>
+
 ## Where to go next
 
-Continue with lesson 18, Your first agent swarm. You will watch two practice
-agents ask for the same tiny job and let the coordination tools settle the
-race without drama.
+[← Previous: 16, Glossary safari](16-glossary-safari.md) ·
+[Lesson path](START_HERE.md#the-lesson-path) ·
+[Next: 18, Your first agent swarm →](18-your-first-agent-swarm.md)
