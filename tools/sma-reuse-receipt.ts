@@ -36,6 +36,24 @@ import { resolve, join, extname, relative } from 'node:path';
 import { execSync } from 'node:child_process';
 import { argv, exit } from 'node:process';
 
+interface ReuseReceiptArgs {
+  help?: boolean;
+  target?: string;
+  targetProject?: string;
+  sourceProject?: string;
+  sourceCommit?: string;
+  item: string[];
+  infraTokens?: string;
+  multiplier?: string;
+  backlogId: string[];
+  actor?: string;
+  actorId?: string;
+  model?: string;
+  sessionId?: string;
+  write?: boolean;
+  json?: boolean;
+}
+
 const args = parseArgs(argv.slice(2));
 if (args.help || !args.target || !args.targetProject || !args.sourceProject) {
   console.log(`Usage:
@@ -50,8 +68,11 @@ if (args.help || !args.target || !args.targetProject || !args.sourceProject) {
 const MULTIPLIER = Number(args.multiplier ?? 3.8);
 const targetRoot = resolve(args.target);
 const items = (args.item ?? []).map((spec) => {
-  const [tpath, ...rest] = spec.split(':');
-  const opts = Object.fromEntries(rest.map((kv) => kv.split('=')));
+  const [tpath = '', ...rest] = spec.split(':');
+  const opts: Record<string, string> = Object.fromEntries(rest.map((kv) => {
+    const [key = '', value = ''] = kv.split('=');
+    return [key, value];
+  }));
   return { target_path: tpath, source_path: opts.source, kind: opts.kind ?? 'brick' };
 });
 
@@ -60,10 +81,10 @@ if (!items.length) {
   exit(2);
 }
 
-function countDir(dir) {
+function countDir(dir: string): { files: number; loc: number; static_tokens: number } {
   if (!existsSync(dir)) return { files: 0, loc: 0, static_tokens: 0 };
   let files = 0, loc = 0, chars = 0;
-  function walk(d) {
+  function walk(d: string): void {
     for (const ent of readdirSync(d, { withFileTypes: true })) {
       if (['node_modules', '.next', 'dist', 'build', '.git', '.expo'].includes(ent.name)) continue;
       const p = join(d, ent.name);
@@ -158,28 +179,28 @@ if (args.json) {
   console.log(`  backlog:      ${(args.backlogId ?? []).length} entry(s) opened in target project`);
 }
 
-function tryGitHead(dir) {
+function tryGitHead(dir: string): string {
   try { return execSync('git rev-parse HEAD', { cwd: dir, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); }
   catch { return ''; }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const out: Record<string, any> = { item: [], backlogId: [] };
+function parseArgs(argv: string[]): ReuseReceiptArgs {
+  const out: ReuseReceiptArgs = { item: [], backlogId: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') out.help = true;
-    else if (a === '--target') out.target = argv[++i];
-    else if (a === '--target-project') out.targetProject = argv[++i];
-    else if (a === '--source-project') out.sourceProject = argv[++i];
-    else if (a === '--source-commit') out.sourceCommit = argv[++i];
-    else if (a === '--item') out.item.push(argv[++i]);
-    else if (a === '--infra-tokens') out.infraTokens = argv[++i];
-    else if (a === '--multiplier') out.multiplier = argv[++i];
-    else if (a === '--backlog-id') out.backlogId.push(argv[++i]);
-    else if (a === '--actor') out.actor = argv[++i];
-    else if (a === '--actor-id') out.actorId = argv[++i];
-    else if (a === '--model') out.model = argv[++i];
-    else if (a === '--session-id') out.sessionId = argv[++i];
+    else if (a === '--target' && argv[i + 1]) out.target = argv[++i];
+    else if (a === '--target-project' && argv[i + 1]) out.targetProject = argv[++i];
+    else if (a === '--source-project' && argv[i + 1]) out.sourceProject = argv[++i];
+    else if (a === '--source-commit' && argv[i + 1]) out.sourceCommit = argv[++i];
+    else if (a === '--item' && argv[i + 1]) out.item.push(argv[++i]);
+    else if (a === '--infra-tokens' && argv[i + 1]) out.infraTokens = argv[++i];
+    else if (a === '--multiplier' && argv[i + 1]) out.multiplier = argv[++i];
+    else if (a === '--backlog-id' && argv[i + 1]) out.backlogId.push(argv[++i]);
+    else if (a === '--actor' && argv[i + 1]) out.actor = argv[++i];
+    else if (a === '--actor-id' && argv[i + 1]) out.actorId = argv[++i];
+    else if (a === '--model' && argv[i + 1]) out.model = argv[++i];
+    else if (a === '--session-id' && argv[i + 1]) out.sessionId = argv[++i];
     else if (a === '--write') out.write = true;
     else if (a === '--json') out.json = true;
   }

@@ -46,6 +46,9 @@ import {
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
+interface ContextCheckArgs { project: string; since: string; maxAgeMinutes: string; strict: boolean; json: boolean }
+interface CheckRow { manifest: string; brick: string | null; status: string; events_in_window: number; lifetime_events?: number }
+
 try {
   switch (cmd) {
     case 'check':
@@ -67,7 +70,7 @@ try {
       exit(2);
   }
 } catch (err) {
-  console.error(`sma-context-check: ${err.message}`);
+  console.error(`sma-context-check: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -91,7 +94,7 @@ function runCheck() {
   const modified = listModifiedManifests(root, args.since);
 
   const windowStart = computeWindowStart(args.since, args.maxAgeMinutes);
-  const results = [];
+  const results: CheckRow[] = [];
   for (const manifestPath of modified) {
     const brickId = readBrickId(manifestPath);
     if (!brickId) {
@@ -99,7 +102,7 @@ function runCheck() {
       continue;
     }
     const events = readContextLog(args.project, brickId);
-    const inWindow = events.filter((e) => Date.parse(e.timestamp) >= windowStart);
+    const inWindow = events.filter((event) => typeof event.timestamp === 'string' && Date.parse(event.timestamp) >= windowStart);
     results.push({
       manifest: relative(root, manifestPath),
       brick: brickId,
@@ -171,7 +174,7 @@ function runAudit() {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function listModifiedManifests(root, since) {
+function listModifiedManifests(root: string, since: string): string[] {
   // If `since` looks like a git ref, use git diff; otherwise git status.
   const isRef = since && !/^\d{4}-\d{2}-\d{2}/.test(since);
   try {
@@ -201,9 +204,9 @@ function listModifiedManifests(root, since) {
   }
 }
 
-function findAllManifests(root) {
-  const out = [];
-  const walk = (dir, depth) => {
+function findAllManifests(root: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string, depth: number): void => {
     if (depth > 12) return;
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
@@ -220,7 +223,7 @@ function findAllManifests(root) {
   return out;
 }
 
-function readBrickId(manifestPath) {
+function readBrickId(manifestPath: string): string | null {
   try {
     const data = JSON.parse(readFileSync(manifestPath, 'utf8'));
     return data?.brick?.id ?? data?.build?.id ?? null;
@@ -229,36 +232,36 @@ function readBrickId(manifestPath) {
   }
 }
 
-function computeWindowStart(since, maxAgeMinutes) {
+function computeWindowStart(since: string, maxAgeMinutes: string): number {
   if (since && /^\d{4}-\d{2}-\d{2}/.test(since)) return Date.parse(since);
   if (maxAgeMinutes) return Date.now() - Number(maxAgeMinutes) * 60 * 1000;
   return Date.now() - 24 * 60 * 60 * 1000;
 }
 
-function requireArg(key, flag) {
+function requireArg(key: keyof ContextCheckArgs, flag: string): void {
   if (args[key] === undefined || args[key] === null || args[key] === '') {
     throw new Error(`missing ${flag}`);
   }
 }
 
-function pad(s, n) {
+function pad(s: unknown, n: number): string {
   return String(s ?? '').slice(0, n).padEnd(n);
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): ContextCheckArgs {
+  const out: ContextCheckArgs = { project: '', since: '', maxAgeMinutes: '', strict: false, json: false };
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
-      out[camel] = true;
+      Object.assign(out, { [camel]: true });
       continue;
     }
-    out[camel] = next;
+    Object.assign(out, { [camel]: next });
     i += 1;
   }
   return out;

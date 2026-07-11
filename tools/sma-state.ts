@@ -43,6 +43,7 @@ const defaults = {
   out: path.resolve(repoRoot, "wiki/SMA_STATE.generated.json")
 };
 
+
 function parseArgs(argv): Record<string, any> {
   const options: Record<string, any> = { ...defaults };
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Simulates the command contract for a future hosted release store.
  * WHY: Federation needs a stable seam before a second deployed store justifies networking.
@@ -13,6 +15,22 @@ import { argv, exit, env } from 'node:process';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { assertExportAllowed, ExportBlockedError } from './lib/export-guard.ts';
+
+interface StoreArgs {
+  [key: string]: string | boolean | undefined;
+  brick?: string;
+  version?: string;
+  target?: string;
+  releasePath?: string;
+  origin?: string;
+  allowClosed?: boolean;
+  json?: boolean;
+}
+
+interface ReleaseDocument {
+  release?: { artifact_id?: string; version?: string; source_project?: string; derived_from_bricks?: { brick_id?: string }[] };
+  composition?: { brick_refs?: { brick_id?: string }[] };
+}
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
@@ -36,8 +54,8 @@ try {
       usage();
       exit(2);
   }
-} catch (err) {
-  console.error(`sma-store-remote: ${err.message}`);
+} catch (error: unknown) {
+  console.error(`sma-store-remote: ${error instanceof Error ? error.message : String(error)}`);
   exit(1);
 }
 
@@ -87,24 +105,27 @@ function runListVersions() {
 }
 
 function runPublish() {
-  requireArg('releasePath', '--release-path');
+  const releasePath = requireArg('releasePath', '--release-path');
   const origin = resolveOrigin();
-  const path = resolve(args.releasePath);
+  const path = resolve(releasePath);
   if (!existsSync(path)) throw new Error(`release artifact not found: ${path}`);
-  let release;
-  try { release = JSON.parse(readFileSync(path, 'utf8')); }
-  catch (e) { throw new Error(`could not parse release JSON: ${e.message}`); }
+  let release: ReleaseDocument;
+  try { release = JSON.parse(readFileSync(path, 'utf8')) as ReleaseDocument; }
+  catch (error: unknown) { throw new Error(`could not parse release JSON: ${error instanceof Error ? error.message : String(error)}`); }
 
   const id = release?.release?.artifact_id;
   const version = release?.release?.version;
-  if (!id || !version) throw new Error('release is missing artifact_id or version');
+  if (typeof id !== 'string' || typeof version !== 'string' || !id || !version) {
+    throw new Error('release is missing artifact_id or version');
+  }
 
   // Export choke-point (defense-in-depth): never upload a closed/private
   // artifact to a remote origin. Creation is already guarded in sma-release;
   // this stops a pre-existing closed release JSON from being pushed out.
   try {
     const componentIds = (release?.composition?.brick_refs || release?.release?.derived_from_bricks || [])
-      .map((r) => r?.brick_id).filter(Boolean);
+      .map((ref) => ref.brick_id)
+      .filter((brickId): brickId is string => typeof brickId === 'string' && brickId.length > 0);
     assertExportAllowed({
       operation: 'store-remote-publish',
       brickIds: componentIds.length ? componentIds : [id],
@@ -112,9 +133,9 @@ function runPublish() {
       targetVisibility: 'public',
       allowClosed: Boolean(args.allowClosed),
     });
-  } catch (err) {
-    if (err instanceof ExportBlockedError) { console.error(err.message); exit(3); }
-    throw err;
+  } catch (error: unknown) {
+    if (error instanceof ExportBlockedError) { console.error(error.message); exit(3); }
+    throw error;
   }
 
   const url = `${origin.replace(/\/$/, '')}/v1/releases/${enc(id)}/${enc(version)}.json`;
@@ -131,8 +152,8 @@ function runHealth() {
   emitStub('health', { url });
 }
 
-function emitStub(action, info) {
-  const out: Record<string, any> = {
+function emitStub(action: string, info: Record<string, unknown>) {
+  const out: Record<string, unknown> = {
     stub: true,
     action,
     info,
@@ -148,21 +169,23 @@ function resolveOrigin() {
   return origin;
 }
 
-function enc(s) { return encodeURIComponent(String(s)); }
+function enc(value: unknown) { return encodeURIComponent(String(value)); }
 
-function requireArg(key, flag) {
-  if (args[key] === undefined || args[key] === null || args[key] === '') {
+function requireArg(key: keyof StoreArgs, flag: string): string {
+  const value = args[key];
+  if (typeof value !== 'string' || value === '') {
     throw new Error(`missing ${flag}`);
   }
+  return value;
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): StoreArgs {
+  const out: StoreArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match, character: string) => character.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {

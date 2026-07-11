@@ -24,8 +24,17 @@ const defaults = {
   overwrite: false
 };
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = { ...defaults };
+interface InitOptions {
+  target: string;
+  projectId: string;
+  name: string;
+  platform: string;
+  mode: string;
+  overwrite: boolean;
+}
+
+function parseArgs(argv: string[]): InitOptions {
+  const options: InitOptions = { ...defaults };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -70,7 +79,7 @@ Modes:
   return options;
 }
 
-async function pathExists(target) {
+async function pathExists(target: string) {
   try {
     await fs.access(target);
     return true;
@@ -79,38 +88,39 @@ async function pathExists(target) {
   }
 }
 
-function slug(value) {
-  return String(value || "")
+function slug(value: unknown) {
+  const text = typeof value === "string" || typeof value === "number" ? String(value) : "";
+  return text
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "") || "project";
 }
 
-function run(command, args, cwd) {
-  return new Promise((resolve, reject) => {
+function run(command: string, args: string[], cwd: string) {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
 
-    child.stdout.on("data", (chunk) => {
+    child.stdout.on("data", (chunk: { toString: () => string; }) => {
       stdout += chunk.toString();
     });
 
-    child.stderr.on("data", (chunk) => {
+    child.stderr.on("data", (chunk: { toString: () => string; }) => {
       stderr += chunk.toString();
     });
 
-    child.on("close", (code) => {
+    child.on("close", (code: number) => {
       if (code === 0) {
         resolve({ stdout, stderr });
       } else {
-        reject(new Error(stderr || stdout || `${command} exited ${code}`));
+        reject(new Error(stderr || stdout || `${command} exited ${String(code)}`));
       }
     });
   });
 }
 
-async function writeJsonIfAllowed(filePath, value, overwrite) {
+async function writeJsonIfAllowed(filePath: string, value: unknown, overwrite: boolean) {
   if (!overwrite && await pathExists(filePath)) {
     return false;
   }
@@ -163,13 +173,7 @@ async function main() {
   const projectWritten = await writeJsonIfAllowed(path.join(options.target, ".sweetspot", "project.json"), projectJson, options.overwrite);
   const modulesWritten = await writeJsonIfAllowed(path.join(options.target, ".sweetspot", "modules.json"), modulesJson, options.overwrite);
 
-  await run("node", [
-    path.join(smaRoot, "tools", "install-agent-skills.ts"),
-    "--target",
-    options.target,
-    "--platform",
-    options.platform
-  ], smaRoot);
+  await installAgentSkills(options);
 
   console.log(JSON.stringify({
     target: options.target,
@@ -187,7 +191,11 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((error) => {
+async function installAgentSkills(options: InitOptions) {
+  await run("node", [path.join(smaRoot, "tools", "install-agent-skills.ts"), "--target", options.target, "--platform", options.platform], smaRoot);
+}
+
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 });

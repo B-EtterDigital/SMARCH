@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Ranks registered bricks against a plain-language product vision.
  * WHY: Builders need a fast shortlist of reusable parts before starting new implementation.
@@ -31,8 +33,56 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { smaPath } from "./lib/sma-paths.ts";
 
-function parseArgs(argv): Record<string, any> {
-  const opts = {
+interface MatchOptions {
+  registry: string;
+  scores: string;
+  cards: string;
+  vision: string;
+  visionFile: string;
+  top: number;
+  minStatus: string;
+  json: boolean;
+  compact: boolean;
+}
+
+interface BrickSemantics {
+  purpose?: string;
+  tags?: unknown[];
+  use_when?: unknown[];
+  clone_steps?: unknown;
+  public_api?: unknown;
+  compact?: { tagline?: string; hashtags?: unknown[]; verbs?: unknown[]; inputs?: unknown[]; outputs?: unknown[] };
+}
+
+interface RegistryBrick {
+  id: string;
+  name?: string;
+  project: string;
+  status?: string;
+  kind?: string;
+  source_paths?: string[];
+  domain?: string[];
+  manifest_path: string;
+}
+
+interface MatchResult {
+  id: string;
+  name?: string;
+  project: string;
+  status: string;
+  kind?: string;
+  paths?: string[];
+  score: number;
+  filter_score: number | null;
+  purpose: string | null;
+  matched_tags: unknown[];
+  clone_steps: unknown;
+  public_api: unknown;
+  compact: BrickSemantics['compact'] | null;
+}
+
+function parseArgs(argv: string[]): MatchOptions {
+  const opts: MatchOptions = {
     registry: smaPath("scans/all-projects/latest.registry.json"),
     scores: smaPath("security/reuse_all_scored.json"),
     cards: smaPath("security/brick_cards.jsonl"),
@@ -67,7 +117,7 @@ const STOPWORDS = new Set([
   "app", "app's", "application", "apps", "thing", "stuff", "something"
 ]);
 
-function tokenize(text) {
+function tokenize(text: unknown): string[] {
   return String(text || "")
     .toLowerCase()
     .replace(/[^a-z0-9+\-]/g, " ")
@@ -75,28 +125,28 @@ function tokenize(text) {
     .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
 }
 
-function tokenSet(text) {
+function tokenSet(text: unknown): Set<string> {
   return new Set(tokenize(text));
 }
 
-function overlap(aSet, bTokens) {
+function overlap(aSet: ReadonlySet<string>, bTokens: readonly string[]): number {
   if (!aSet.size || !bTokens.length) return 0;
   let hits = 0;
   for (const t of bTokens) if (aSet.has(t)) hits += 1;
   return hits;
 }
 
-async function readJson(p) {
-  try { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson<T>(p: string): Promise<T | null> {
+  try { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
   catch { return null; }
 }
 
-async function readManifest(p) {
-  try { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readManifest(p: string): Promise<{ semantics?: BrickSemantics } | null> {
+  try { return JSON.parse(await fs.readFile(p, "utf8")) as { semantics?: BrickSemantics }; }
   catch { return null; }
 }
 
-const statusRank = { project_bound: 0, candidate: 1, canonical: 2 };
+const statusRank: Record<string, number> = { project_bound: 0, candidate: 1, canonical: 2 };
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
@@ -114,16 +164,16 @@ async function main() {
     process.exit(2);
   }
 
-  const registry = await readJson(opts.registry);
+  const registry = await readJson<{ bricks?: RegistryBrick[] }>(opts.registry);
   if (!registry?.bricks) {
     console.error(`error: cannot load registry at ${opts.registry}`);
     process.exit(2);
   }
-  const scored = await readJson(opts.scores);
-  const filterScoreById = new Map();
+  const scored = await readJson<{ scored?: { id: string; score: number }[] }>(opts.scores);
+  const filterScoreById = new Map<string, number>();
   if (scored?.scored) for (const s of scored.scored) filterScoreById.set(s.id, s.score);
 
-  const results = [];
+  const results: MatchResult[] = [];
   for (const b of registry.bricks) {
     const mf = await readManifest(b.manifest_path);
     const sem = mf?.semantics || {};
@@ -143,7 +193,7 @@ async function main() {
     if (score <= 0) continue;
 
     const status = b.status || "project_bound";
-    if (opts.minStatus && statusRank[status] < statusRank[opts.minStatus]) continue;
+    if (opts.minStatus && (statusRank[status] ?? -Infinity) < (statusRank[opts.minStatus] ?? -Infinity)) continue;
 
     if (status === "canonical") score += 8;
     else if (status === "candidate") score += 4;

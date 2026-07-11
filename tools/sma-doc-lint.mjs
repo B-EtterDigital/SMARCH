@@ -10,6 +10,16 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIR, "..");
 const SHELL_FENCE = /^(?:bash|sh|shell|console)$/i;
 
+/** @typedef {{ root: string, json: boolean, selftest: boolean, help: boolean }} DocLintOptions */
+/** @typedef {{ rule: string, file: string, line: number, message: string }} Finding */
+/** @typedef {{ status: "passed" | "failed", root: string, files_checked: number, violation_count: number, by_rule: Record<string, number>, findings: Finding[] }} DocReport */
+/** @typedef {{ selftest: true, status: "passed" | "failed", cases_total: number, cases_passed: number, cases: SelftestCase[], failures: string[] }} SelftestReport */
+/** @typedef {{ name: string, passed: boolean, found: string[] }} SelftestCase */
+/** @typedef {{ text: string, offsets: number[] }} VisibleMarkdown */
+/** @typedef {{ label: string, target: string, line: number, labelStart: number, labelEnd: number }} MarkdownLink */
+/** @typedef {{ code: string, line: number }} ShellFence */
+/** @typedef {{ file: string, source: string }} RunnerSource */
+
 const HELP = `sma-doc-lint — keep SMARCH documentation explained and executable.
 
 Usage:
@@ -47,6 +57,7 @@ async function main() {
   if (report.status !== "passed") process.exitCode = 1;
 }
 
+/** @param {string[]} argv @returns {DocLintOptions} */
 function parseArgs(argv) {
   const options = { root: DEFAULT_ROOT, json: false, selftest: false, help: false };
   for (let index = 0; index < argv.length; index += 1) {
@@ -69,6 +80,7 @@ function parseArgs(argv) {
   return options;
 }
 
+/** @param {string} root @returns {Promise<DocReport>} */
 async function lintDocs(root) {
   const docsRoot = path.join(root, "docs");
   const glossaryPath = path.join(docsRoot, "GLOSSARY.md");
@@ -81,6 +93,7 @@ async function lintDocs(root) {
   const glossary = await fs.readFile(glossaryPath, "utf8");
   const acronyms = glossaryAcronyms(glossary);
   const runnerSources = await readJourneyRunners(path.join(root, "tools", "evals", "journeys"));
+  /** @type {Finding[]} */
   const findings = [];
 
   for (const file of topLevelDocs) {
@@ -103,6 +116,7 @@ async function lintDocs(root) {
   return makeReport(root, allDocs.length, findings);
 }
 
+/** @param {string} root @param {string} file @param {string} markdown @param {Finding[]} findings */
 function checkIntroParagraph(root, file, markdown, findings) {
   const h2 = markdown.search(/^##\s+/m);
   if (h2 < 0) return;
@@ -110,11 +124,12 @@ function checkIntroParagraph(root, file, markdown, findings) {
     .replace(/^#\s+.*$/gm, "")
     .replace(/<!--[\s\S]*?-->/g, "")
     .trim();
-  const paragraphs = before.split(/\n\s*\n/).map((value) => value.trim()).filter(Boolean);
+  const paragraphs = before.split(/\n\s*\n/).map((/** @type {string} */ value) => value.trim()).filter(Boolean);
   if (paragraphs.some((paragraph) => /[A-Za-z0-9]/.test(stripMarkdown(paragraph)))) return;
   findings.push(finding(root, file, 1, "intro-paragraph", "add an introductory paragraph before the first H2"));
 }
 
+/** @param {string} root @param {string} file @param {string} markdown @param {string} glossaryPath @param {string[]} acronyms @param {Finding[]} findings */
 function checkAcronymLinks(root, file, markdown, glossaryPath, acronyms, findings) {
   const visible = visibleMarkdown(markdown);
   for (const acronym of acronyms) {
@@ -133,6 +148,7 @@ function checkAcronymLinks(root, file, markdown, glossaryPath, acronyms, finding
   }
 }
 
+/** @param {string} root @param {string} file @param {string} markdown @param {RunnerSource[]} runnerSources @param {Finding[]} findings */
 function checkJourneyRegistration(root, file, markdown, runnerSources, findings) {
   const relativeDoc = relative(root, file);
   for (const fence of shellFences(markdown)) {
@@ -153,6 +169,9 @@ function checkJourneyRegistration(root, file, markdown, runnerSources, findings)
   }
 }
 
+/**
+* @param {string} source
+*/
 function runnerDiscoversIntroCommands(source) {
   const selectsIntroTree = /INTRO_DIR/.test(source) || /["']docs["'][\s\S]{0,80}["']intro["']/.test(source);
   const parsesShellFences = /parseBashBlocks|```(?:bash|sh|shell)/i.test(source);
@@ -160,6 +179,7 @@ function runnerDiscoversIntroCommands(source) {
   return selectsIntroTree && parsesShellFences && executesCommands;
 }
 
+/** @param {string} root @param {string} file @param {string} markdown @param {Map<string, string>} markdownByPath @param {Finding[]} findings */
 function checkInternalLinks(root, file, markdown, markdownByPath, findings) {
   for (const link of markdownLinks(markdown)) {
     const target = link.target.trim().replace(/^<|>$/g, "");
@@ -196,20 +216,29 @@ function checkInternalLinks(root, file, markdown, markdownByPath, findings) {
   }
 }
 
+/**
+* @param {string} markdown
+*/
 function glossaryAcronyms(markdown) {
   return [...markdown.matchAll(/^##\s+(.+?)\s*$/gm)]
     .map((match) => stripMarkdown(match[1]).trim())
     .filter((term) => /^[A-Z][A-Z0-9-]{1,}$/.test(term));
 }
 
+/**
+* @param {string} markdown
+*/
+/** @param {string} markdown @returns {VisibleMarkdown} */
 function visibleMarkdown(markdown) {
   const masked = [...markdown];
+  /** @param {number} start @param {number} end */
   const mask = (start, end) => { for (let index = start; index < end; index += 1) masked[index] = " "; };
   for (const match of markdown.matchAll(/```[\s\S]*?```|~~~[\s\S]*?~~~/g)) mask(match.index, match.index + match[0].length);
   for (const match of markdown.matchAll(/`[^`\n]*`|<!--[\s\S]*?-->/g)) mask(match.index, match.index + match[0].length);
   return { text: masked.join(""), offsets: Array.from({ length: markdown.length }, (_, index) => index) };
 }
 
+/** @param {string} markdown @param {number} index @returns {MarkdownLink | null} */
 function enclosingMarkdownLink(markdown, index) {
   for (const link of markdownLinks(markdown)) {
     if (index >= link.labelStart && index < link.labelEnd) return link;
@@ -217,7 +246,11 @@ function enclosingMarkdownLink(markdown, index) {
   return null;
 }
 
+/**
+* @param {string} markdown
+*/
 function markdownLinks(markdown) {
+  /** @type {MarkdownLink[]} */
   const links = [];
   const pattern = /(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
   for (const match of markdown.matchAll(pattern)) {
@@ -233,8 +266,12 @@ function markdownLinks(markdown) {
   return links;
 }
 
+/**
+* @param {string} markdown
+*/
 function markdownAnchors(markdown) {
   const anchors = new Set();
+  /** @type {Map<string, number>} */
   const seen = new Map();
   for (const match of markdown.matchAll(/^#{1,6}\s+(.+?)\s*#*\s*$/gm)) {
     const base = normalizeAnchor(stripMarkdown(match[1]));
@@ -246,6 +283,9 @@ function markdownAnchors(markdown) {
   return anchors;
 }
 
+/**
+* @param {string} value
+*/
 function normalizeAnchor(value) {
   return value.trim().toLowerCase()
     .replace(/<[^>]+>/g, "")
@@ -254,7 +294,11 @@ function normalizeAnchor(value) {
     .replace(/-+/g, "-");
 }
 
+/**
+* @param {string} markdown
+*/
 function shellFences(markdown) {
+  /** @type {ShellFence[]} */
   const fences = [];
   const pattern = /```([^\n\r]*)\r?\n([\s\S]*?)\r?\n```/g;
   for (const match of markdown.matchAll(pattern)) {
@@ -265,18 +309,23 @@ function shellFences(markdown) {
   return fences;
 }
 
+/** @param {string} dir @returns {Promise<RunnerSource[]>} */
 async function readJourneyRunners(dir) {
   if (!existsSync(dir)) return [];
-  const files = await walkFiles(dir, (file) => /\.(?:mjs|js|cjs|ts)$/.test(file));
+  const files = await walkFiles(dir, (/** @type {string} */ file) => /\.(?:mjs|js|cjs|ts)$/.test(file));
   return Promise.all(files.map(async (file) => ({ file, source: await fs.readFile(file, "utf8") })));
 }
 
+/** @param {string} dir @returns {Promise<string[]>} */
 async function walkMarkdown(dir) {
-  return walkFiles(dir, (file) => file.endsWith(".md"));
+  return walkFiles(dir, (/** @type {string} */ file) => file.endsWith(".md"));
 }
 
+/** @param {string} dir @param {(file: string) => boolean} include @returns {Promise<string[]>} */
 async function walkFiles(dir, include) {
+  /** @type {string[]} */
   const files = [];
+  /** @param {string} current */
   async function walk(current) {
     const entries = await fs.readdir(current, { withFileTypes: true });
     for (const entry of entries) {
@@ -289,6 +338,7 @@ async function walkFiles(dir, include) {
   return files.sort();
 }
 
+/** @param {string} sourceFile @param {string} target @param {string} expectedFile */
 function resolvesToFile(sourceFile, target, expectedFile) {
   const rawPath = target.replace(/^<|>$/g, "").split(/[?#]/, 1)[0];
   if (!rawPath) return sourceFile === expectedFile;
@@ -299,10 +349,16 @@ function resolvesToFile(sourceFile, target, expectedFile) {
   }
 }
 
+/**
+* @param {string} markdown
+*/
 function stripFrontmatter(markdown) {
   return markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
 }
 
+/**
+* @param {string} value
+*/
 function stripMarkdown(value) {
   return value
     .replace(/!?(?:\[([^\]]*)\])\([^)]*\)/g, "$1")
@@ -310,35 +366,46 @@ function stripMarkdown(value) {
     .replace(/<[^>]+>/g, "");
 }
 
+/**
+* @param {string} code
+*/
 function firstCommand(code) {
-  return code.split(/\r?\n/).map((line) => line.trim()).find((line) => line && !line.startsWith("#")) || "empty block";
+  return code.split(/\r?\n/).map((/** @type {string} */ line) => line.trim()).find((/** @type {string} */ line) => line && !line.startsWith("#")) || "empty block";
 }
 
+/** @param {string} markdown @param {number} index */
 function lineAt(markdown, index) {
   return markdown.slice(0, index).split(/\r?\n/).length;
 }
 
+/**
+* @param {string} value
+*/
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** @param {string} parent @param {string} file */
 function isWithin(parent, file) {
   const rel = path.relative(parent, file);
   return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
 }
 
+/** @param {string} root @param {string} file */
 function relative(root, file) {
   return path.relative(root, file).split(path.sep).join("/");
 }
 
+/** @param {string} root @param {string} file @param {number} line @param {string} rule @param {string} message @returns {Finding} */
 function finding(root, file, line, rule, message) {
   return { rule, file: relative(root, file), line, message };
 }
 
+/** @param {string} root @param {number} filesChecked @param {Finding[]} findings @returns {DocReport} */
 function makeReport(root, filesChecked, findings) {
   const byRule = Object.fromEntries(
     ["intro-paragraph", "acronym-glossary-link", "intro-command-registration", "internal-link"]
-      .map((rule) => [rule, findings.filter((item) => item.rule === rule).length]),
+      .map((rule) => [rule, findings.filter((/** @type {{ rule: string; }} */ item) => item.rule === rule).length]),
   );
   return {
     status: findings.length === 0 ? "passed" : "failed",
@@ -350,12 +417,13 @@ function makeReport(root, filesChecked, findings) {
   };
 }
 
+/** @param {DocReport | SelftestReport} report @param {boolean} json */
 function printResult(report, json) {
   if (json) {
     console.log(JSON.stringify(report, null, 2));
     return;
   }
-  if (report.selftest) {
+  if ('selftest' in report) {
     console.log(`[doc-lint] selftest ${report.status.toUpperCase()} — ${report.cases_passed}/${report.cases_total} case(s)`);
     for (const failure of report.failures) console.log(`  FAIL ${failure}`);
     return;
@@ -364,8 +432,10 @@ function printResult(report, json) {
   for (const item of report.findings) console.log(`  ${item.file}:${item.line} [${item.rule}] ${item.message}`);
 }
 
+/** @returns {Promise<SelftestReport>} */
 async function runSelftest() {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), "sma-doc-lint-"));
+  /** @type {SelftestCase[]} */
   const cases = [];
   try {
     const base = async () => {
@@ -377,6 +447,7 @@ async function runSelftest() {
       await fs.writeFile(path.join(temp, "docs", "intro", "lesson.md"), "# Lesson\n\nRun the registered exercise.\n\n\u0060\u0060\u0060bash\necho registered\n\u0060\u0060\u0060\n");
       await fs.writeFile(path.join(temp, "tools", "evals", "journeys", "lesson.mjs"), "const lesson = 'docs/intro/lesson.md';\nvoid lesson;\n");
     };
+    /** @param {string} name @param {string | null} rule @param {(() => Promise<void>) | null} mutate */
     const expect = async (name, rule, mutate) => {
       await base();
       if (mutate) await mutate();

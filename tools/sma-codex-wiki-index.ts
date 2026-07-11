@@ -38,10 +38,13 @@ function parseArgs(argv: string[]) {
 
 async function exists(p: string): Promise<boolean> { try { await fs.access(p); return true; } catch { return false; } }
 
-function parseFrontMatter(text: string): Record<string, any> {
+type FrontMatter = Record<string, string | string[]>;
+type WikiPage = { project: string; file: string; full: string; fm: FrontMatter; title: string };
+
+function parseFrontMatter(text: string): FrontMatter {
   const m = text.match(/^---\n([\s\S]*?)\n---/);
   if (!m) return {};
-  const out: Record<string, any> = {};
+  const out: FrontMatter = {};
   for (const line of m[1].split("\n")) {
     const idx = line.indexOf(":");
     if (idx < 0) continue;
@@ -49,7 +52,11 @@ function parseFrontMatter(text: string): Record<string, any> {
     let val = line.slice(idx + 1).trim();
     if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
     if (val.startsWith("[") && val.endsWith("]")) {
-      try { val = JSON.parse(val); } catch { /* ignore */ }
+      try {
+        const parsed: unknown = JSON.parse(val);
+        if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) out[key] = parsed;
+      } catch { /* ignore */ }
+      if (Array.isArray(out[key])) continue;
     }
     out[key] = val;
   }
@@ -61,7 +68,7 @@ async function main() {
   if (!(await exists(opts.root))) { console.error(`no wiki root at ${opts.root}`); process.exit(2); }
 
   const projects = await fs.readdir(opts.root, { withFileTypes: true });
-  const pages = []; // {project, file, fm, title}
+  const pages: WikiPage[] = [];
   for (const p of projects) {
     if (!p.isDirectory()) continue;
     const pdir = path.join(opts.root, p.name);
@@ -71,15 +78,16 @@ async function main() {
       const full = path.join(pdir, e);
       const text = await fs.readFile(full, "utf8");
       const fm = parseFrontMatter(text);
-      pages.push({ project: p.name, file: e, full, fm, title: fm.title || e.replace(/\.md$/, "") });
+      pages.push({ project: p.name, file: e, full, fm, title: typeof fm.title === 'string' ? fm.title : e.replace(/\.md$/, "") });
     }
   }
 
   // Per-project index
-  const byProject = new Map();
+  const byProject = new Map<string, WikiPage[]>();
   for (const p of pages) {
-    if (!byProject.has(p.project)) byProject.set(p.project, []);
-    byProject.get(p.project).push(p);
+    const list = byProject.get(p.project) ?? [];
+    list.push(p);
+    byProject.set(p.project, list);
   }
   for (const [proj, list] of byProject) {
     list.sort((a, b) => a.title.localeCompare(b.title));
@@ -107,7 +115,7 @@ async function main() {
     `- A **portable** \`.portable.md\` variant next to the main page, designed to be copied into the target project's \`docs/\` folder alongside the cloned brick.`,
     "",
     "## Projects", "",
-    ...Array.from(byProject.keys()).sort().map((p) => `- [${p}](${p}/INDEX.md) — ${byProject.get(p).length} page(s)`),
+    ...Array.from(byProject.keys()).sort().map((p) => `- [${p}](${p}/INDEX.md) — ${(byProject.get(p) ?? []).length} page(s)`),
     "",
     "## All pages (alphabetical by project/title)", "",
     "| Project | Brick | Status | Archetype |",
@@ -118,18 +126,20 @@ async function main() {
   await fs.writeFile(path.join(opts.root, "README.md"), master);
 
   // Tags index
-  const byTag = new Map();
-  const byArchetype = new Map();
+  const byTag = new Map<string, WikiPage[]>();
+  const byArchetype = new Map<string, WikiPage[]>();
   for (const p of pages) {
     const tags = Array.isArray(p.fm.tags) ? p.fm.tags : [];
     for (const t of tags) {
       const key = String(t).toLowerCase();
-      if (!byTag.has(key)) byTag.set(key, []);
-      byTag.get(key).push(p);
+      const tagged = byTag.get(key) ?? [];
+      tagged.push(p);
+      byTag.set(key, tagged);
     }
-    const arch = p.fm.archetype || "unknown";
-    if (!byArchetype.has(arch)) byArchetype.set(arch, []);
-    byArchetype.get(arch).push(p);
+    const arch = typeof p.fm.archetype === 'string' ? p.fm.archetype : "unknown";
+    const archetyped = byArchetype.get(arch) ?? [];
+    archetyped.push(p);
+    byArchetype.set(arch, archetyped);
   }
   const tagLines = [`# Brick tag index`, ""];
   for (const [tag, list] of [...byTag.entries()].sort()) {

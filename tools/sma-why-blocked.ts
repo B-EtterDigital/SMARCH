@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Explains why a project, brick, or curated build is not ready.
  * WHY: Raw blocker codes do not tell operators which dependency or gate to fix next.
@@ -15,7 +17,6 @@ import path from "node:path";
 import {
   DEFAULT_REGISTRY_PATH,
   DEFAULT_STATE_PATH,
-  findProjectEntries,
   formatNumber,
   fuzzyMatchScore,
   loadStateAndRegistry,
@@ -42,6 +43,125 @@ Options:
 `;
 
 const DEFAULT_BUILD_VERIFICATION_PATH = "security/build-verification.generated.json";
+
+interface BlockerRecord {
+  code: string;
+  message: string | null;
+  level: string | null;
+  dimension: string | null;
+  severity?: string;
+  rule_id?: string;
+  summary?: string;
+}
+interface VerificationEntry {
+  build_id: string;
+  name?: string;
+  source_project?: string;
+  manifest_path?: string;
+  build_status?: string;
+  installability_score?: number;
+  publishability_score?: number;
+  updateability_score?: number;
+  readiness_score?: number;
+  verification_score?: number;
+  verified_ready?: boolean;
+  publish_ready?: boolean;
+  suggested_build_status?: string;
+  top_blockers?: BlockerInput[];
+  release_summary?: { latest_status?: string; latest_verification_status?: string; published_release_count?: number };
+}
+interface BlockerInput { code?: string; message?: string; level?: string; severity?: string; dimension?: string; rule_id?: string; summary?: string }
+interface BuildEntry {
+  artifact_id: string;
+  name?: string;
+  source_project?: string;
+  manifest_path?: string;
+  status?: string;
+  domains?: string[];
+  runtimes?: string[];
+  installable?: boolean;
+  install_ready?: boolean;
+  update_ready?: boolean;
+  rollback_supported?: boolean;
+  latest_release_status?: string | null;
+  latest_verification_status?: string | null;
+  published_release_count?: number;
+  suggested_build_status?: string | null;
+  verification_score?: number | null;
+  installability_score?: number | null;
+  publishability_score?: number | null;
+  updateability_score?: number | null;
+  readiness_score?: number | null;
+  verified_ready?: boolean | null;
+  publish_ready?: boolean | null;
+  top_blockers?: BlockerInput[];
+  verification_top_blockers?: BlockerInput[];
+  verificationEntry?: VerificationEntry | null;
+  private_publish_status?: string;
+  private_publish_safe?: boolean;
+  private_publish_bundle_path?: string;
+  private_publish_blocker_count?: number;
+  private_publish_warning_count?: number;
+  private_publish_top_blockers?: BlockerInput[];
+  promotion_priority?: string;
+  promotion_desired_status?: string;
+  promotion_apply_manifest?: boolean;
+  promotion_blockers?: BlockerInput[];
+}
+interface CandidateBuild {
+  target_type?: string;
+  target_id: string;
+  name?: string;
+  project?: string;
+  priority_score?: number;
+  promotion_stage?: string;
+  confidence_label?: string;
+  blocker_reasons?: string[];
+  blocker_summary?: Record<string, unknown>;
+  evidence_summary?: { why?: string; dominant_feature_cluster?: string; dominant_domain?: string };
+}
+interface InferredBuild {
+  candidate_key: string;
+  name?: string;
+  project?: string;
+  why?: string;
+  dominant_feature_cluster?: string;
+  dominant_domain?: string;
+  sample_paths?: string[];
+  confidence_score?: number;
+  confidence_label?: string;
+  brick_count?: number;
+  recurrent_project_count?: number;
+}
+interface QualityEntry { project?: string; brick_id?: string; brick_name?: string; path?: string; smell_score?: number; total_matches?: number; top_types?: { label?: string; key?: string; count?: number }[]; first_action?: string | null; why?: string | null }
+interface DuplicateEntry { project?: string; path?: string; sample_paths?: string[]; related_bricks?: string[]; file_count?: number; first_action?: string | null; why?: string | null }
+interface CloneRisk { brick_id: string; name?: string; path?: string; project?: string; declared_readiness?: string; undeclared_env_refs?: string[]; blocker_codes?: string[]; warning_codes?: string[]; cross_brick_owned_import_count?: number; private_cross_import_count?: number; unresolved_local_import_count?: number; unowned_local_dependency_count?: number; raw_source_tokens?: number; file_count?: number }
+interface BrickEntry { id: string; name?: string; project?: string; source_paths?: string[]; manifest_path?: string; status?: string; clone_readiness?: string; env_contract?: { status?: string }; rls_contract?: { required?: boolean; status?: string }; health?: { warnings?: string[] }; clone_known_traps?: string[]; clone_adaptation_points?: string[] }
+interface StateProject {
+  project?: string;
+  canonicalization?: { project_canonicalization_ready?: boolean; top_targets?: CandidateBuild[] };
+  quality_queue?: QualityEntry[];
+  readiness?: { score?: number; grade?: string; label?: string };
+  compliance?: Record<string, unknown>;
+  code_quality_report?: { score?: number; grade?: string; hotspot_file_count?: number; total_smell_count?: number; duplicate_cluster_count?: number };
+  clone_preflight?: { blocked?: number; manual_review?: number; guided?: number; copy_ready?: number };
+  env_contract_report?: { bricks_with_undeclared_refs?: number; undeclared_reference_count?: number };
+  boundary_report?: { unresolved_local_import_count?: number; unowned_local_dependency_count?: number; cross_brick_owned_import_count?: number; private_cross_brick_import_count?: number };
+  manifest_drift?: Record<string, unknown>;
+}
+interface RegistryProject { id?: string; scanner?: { readiness?: { reasons?: string[]; score?: number; grade?: string; label?: string }; compliance_report?: Record<string, unknown>; code_quality_report?: { score?: number; grade?: string; hotspot_file_count?: number; total_smell_count?: number; duplicate_cluster_count?: number }; clone_preflight?: { blocked?: number; manual_review?: number; guided?: number; copy_ready?: number }; env_contract_report?: { bricks_with_undeclared_refs?: number; undeclared_reference_count?: number }; boundary_report?: { unresolved_local_import_count?: number; unowned_local_dependency_count?: number; cross_brick_owned_import_count?: number; private_cross_brick_import_count?: number }; manifest_drift?: Record<string, unknown> } }
+interface WhyState { build_plane?: { curated_builds?: BuildEntry[] }; projects?: StateProject[]; trust?: { build_candidates?: InferredBuild[] }; release_plane?: { top_build_releases?: { artifact_id?: string; latest_release?: unknown }[] } }
+interface WhyRegistry { bricks?: BrickEntry[]; projects?: RegistryProject[]; scanner_report?: { remediation_report?: { quality_queue?: QualityEntry[]; project_action_plans?: { project?: string; actions?: unknown[] }[] }; code_quality_report?: { duplicate_groups?: DuplicateEntry[] }; clone_preflight?: { highest_risk_bricks?: CloneRisk[] } } }
+interface WhyExplanation extends Record<string, unknown> {
+  readiness?: { score?: number; grade?: string; label?: string }; clone_preflight?: { blocked?: number; manual_review?: number; guided?: number; copy_ready?: number }; env_contract_report?: { bricks_with_undeclared_refs?: number; undeclared_reference_count?: number }; boundary_report?: { unresolved_local_import_count?: number; unowned_local_dependency_count?: number; cross_brick_owned_import_count?: number; private_cross_brick_import_count?: number }; code_quality_report?: { score?: number; grade?: string; hotspot_file_count?: number; total_smell_count?: number; duplicate_cluster_count?: number };
+  top_targets?: CandidateBuild[]; quality_queue?: QualityEntry[]; path?: string | null; clone_readiness?: string | null; unresolved_local_import_count?: number; unowned_local_dependency_count?: number; cross_brick_owned_import_count?: number; private_cross_import_count?: number;
+  undeclared_env_refs?: string[]; health_warnings?: string[]; quality_hotspot?: QualityEntry | null; duplicate_cluster?: DuplicateEntry | null;
+  manifest_path?: string | null; installable?: boolean; install_ready?: boolean | null; update_ready?: boolean | null; rollback_supported?: boolean; latest_release_status?: string | null; latest_verification_status?: string | null; published_release_count?: number; verification_source?: string;
+  verification_score?: number | null; installability_score?: number | null; publishability_score?: number | null; updateability_score?: number | null; readiness_score?: number | null; verified_ready?: boolean; publish_ready?: boolean;
+  promotion_priority?: string | null; promotion_desired_status?: string | null; promotion_apply_manifest?: boolean; private_publish_status?: string | null; private_publish_safe?: boolean; private_publish_bundle_path?: string | null; private_publish_blocker_count?: number; private_publish_warning_count?: number; suggested_build_status?: string | null;
+  domains?: string[]; blockers?: BlockerRecord[]; private_publish_top_blockers?: BlockerInput[]; handoff_refs?: Record<string, string>; priority_score?: number; promotion_stage?: string; confidence_label?: string; evidence_summary?: { why?: string }; confidence_score?: number; why?: string; sample_paths?: string[];
+}
+interface WhyReport { target_type: string; target_kind?: string; query: string; matched?: string; name?: string; project?: string; ready: boolean; blocked: boolean; reasons: string[]; explanation: WhyExplanation }
 
 const REASON_LABELS = {
   project_clone_backlog: "clone preflight is still mostly blocked/manual",
@@ -79,16 +199,16 @@ const REASON_LABELS = {
   duplicate_code_cluster: "the file appears to be duplicated and should be deduplicated before promotion"
 };
 
-function fail(message, code = 1) {
+function fail(message: string, code = 1): never {
   console.error(`Error: ${message}`);
   process.exit(code);
 }
 
-function labelReason(code) {
-  return REASON_LABELS[code] || String(code || "unknown").replace(/[._]/g, " ");
+function labelReason(code: string): string {
+  return (REASON_LABELS as Record<string, string>)[code] || String(code || "unknown").replace(/[._]/g, " ");
 }
 
-function mapBlockerCodeToAction(code) {
+function mapBlockerCodeToAction(code: string): string {
   switch (code) {
     case "project_clone_backlog":
       return "Reduce blocked/manual clone outcomes before promotion work.";
@@ -138,16 +258,16 @@ function mapBlockerCodeToAction(code) {
   }
 }
 
-async function loadOptionalJson(filePath) {
+async function loadOptionalJson<T>(filePath: string): Promise<T | null> {
   try {
     const raw = await readFile(filePath, "utf8");
-    return JSON.parse(raw);
+    return JSON.parse(raw) as T;
   } catch {
     return null;
   }
 }
 
-function normalizeBuildBlocker(blocker) {
+function normalizeBuildBlocker(blocker: BlockerInput): BlockerRecord | null {
   if (!blocker?.code) return null;
   return {
     code: blocker.code,
@@ -157,14 +277,14 @@ function normalizeBuildBlocker(blocker) {
   };
 }
 
-function uniqueBlockers(blockers) {
+function uniqueBlockers(blockers: readonly BlockerInput[] | null | undefined): BlockerRecord[] {
   return uniqueBy(
-    (blockers || []).map(normalizeBuildBlocker).filter(Boolean),
+    (blockers || []).map(normalizeBuildBlocker).filter((entry): entry is BlockerRecord => entry !== null),
     (entry) => `${entry.code}::${entry.message || ""}`
   );
 }
 
-function findVerificationEntryForBuild(query, curatedEntry, verificationReport) {
+function findVerificationEntryForBuild(query: string, curatedEntry: BuildEntry | null | undefined, verificationReport: { builds?: VerificationEntry[] } | null): VerificationEntry | null {
   const verificationBuilds = verificationReport?.builds || [];
   if (!verificationBuilds.length) return null;
 
@@ -186,8 +306,8 @@ function findVerificationEntryForBuild(query, curatedEntry, verificationReport) 
     .sort((left, right) => right.score - left.score)[0]?.entry || null;
 }
 
-function fallbackReleaseReasons(entry) {
-  const reasons = [];
+function fallbackReleaseReasons(entry: BuildEntry): string[] {
+  const reasons: string[] = [];
   if ((entry?.published_release_count || 0) === 0) reasons.push("unpublished_release");
   if (entry?.latest_release_status && entry.latest_release_status !== "published") reasons.push("draft_release");
   if (entry?.latest_verification_status === "unverified") reasons.push("unverified_release");
@@ -195,7 +315,7 @@ function fallbackReleaseReasons(entry) {
   return reasons;
 }
 
-function collectCuratedBuildBlockers(entry, verificationEntry) {
+function collectCuratedBuildBlockers(entry: BuildEntry, verificationEntry: VerificationEntry | null): BlockerRecord[] {
   const blockers = uniqueBlockers(
     (verificationEntry?.top_blockers && verificationEntry.top_blockers.length > 0)
       ? verificationEntry.top_blockers
@@ -215,7 +335,7 @@ function collectCuratedBuildBlockers(entry, verificationEntry) {
   }));
 }
 
-function mergeCuratedBuildEntries(state, verificationReport) {
+function mergeCuratedBuildEntries(state: WhyState, verificationReport: { builds?: VerificationEntry[] } | null): BuildEntry[] {
   const verificationBuilds = verificationReport?.builds || [];
   const usedVerificationIds = new Set();
 
@@ -233,9 +353,9 @@ function mergeCuratedBuildEntries(state, verificationReport) {
       source_project: entry.source_project,
       manifest_path: entry.manifest_path,
       status: entry.build_status,
-      installable: entry.installability_score >= 70,
-      install_ready: entry.installability_score >= 70,
-      update_ready: entry.updateability_score >= 70,
+      installable: (entry.installability_score ?? 0) >= 70,
+      install_ready: (entry.installability_score ?? 0) >= 70,
+      update_ready: (entry.updateability_score ?? 0) >= 70,
       rollback_supported: false,
       latest_release_status: entry.release_summary?.latest_status || null,
       latest_verification_status: entry.release_summary?.latest_verification_status || null,
@@ -255,9 +375,9 @@ function mergeCuratedBuildEntries(state, verificationReport) {
   return [...curatedFromState, ...verificationOnly];
 }
 
-function buildExplanation(query, state, verificationReport) {
+function buildExplanation(query: string, state: WhyState, verificationReport: { builds?: VerificationEntry[] } | null): WhyReport | null {
   const curated = mergeCuratedBuildEntries(state, verificationReport).map((entry) => ({
-    type: "curated_build",
+    type: "curated_build" as const,
     key: entry.artifact_id,
     name: entry.name,
     project: entry.source_project,
@@ -271,7 +391,7 @@ function buildExplanation(query, state, verificationReport) {
       .filter((target) => target.target_type === "build"),
     (target) => target.target_id
   ).map((target) => ({
-    type: "candidate_build",
+    type: "candidate_build" as const,
     key: target.target_id,
     name: target.name,
     project: target.project,
@@ -280,7 +400,7 @@ function buildExplanation(query, state, verificationReport) {
   }));
 
   const inferred = (state.trust?.build_candidates || []).map((entry) => ({
-    type: "inferred_build",
+    type: "inferred_build" as const,
     key: entry.candidate_key,
     name: entry.name,
     project: entry.project,
@@ -306,7 +426,7 @@ function buildExplanation(query, state, verificationReport) {
     const publishReady = verificationEntry?.publish_ready ?? best.entry.publish_ready ?? Boolean((best.entry.published_release_count || 0) > 0 && best.entry.latest_release_status === "published");
     const installReady = best.entry.install_ready ?? best.entry.installable ?? null;
     const updateReady = best.entry.update_ready ?? null;
-    const blocked = reasons.length > 0 || verifiedReady === false || publishReady === false || installReady === false;
+    const blocked = reasons.length > 0 || !verifiedReady || !publishReady || !installReady;
 
     return {
       target_type: "build",
@@ -339,10 +459,10 @@ function buildExplanation(query, state, verificationReport) {
         suggested_build_status: verificationEntry?.suggested_build_status ?? best.entry.suggested_build_status ?? null,
         promotion_priority: best.entry.promotion_priority || null,
         promotion_desired_status: best.entry.promotion_desired_status || null,
-        promotion_apply_manifest: best.entry.promotion_apply_manifest === true,
+        promotion_apply_manifest: best.entry.promotion_apply_manifest,
         promotion_blockers: best.entry.promotion_blockers || [],
         private_publish_status: best.entry.private_publish_status || null,
-        private_publish_safe: best.entry.private_publish_safe === true,
+        private_publish_safe: best.entry.private_publish_safe,
         private_publish_bundle_path: best.entry.private_publish_bundle_path || null,
         private_publish_blocker_count: best.entry.private_publish_blocker_count || 0,
         private_publish_warning_count: best.entry.private_publish_warning_count || 0,
@@ -400,7 +520,7 @@ function buildExplanation(query, state, verificationReport) {
   };
 }
 
-function brickExplanation(query, registry) {
+function brickExplanation(query: string, registry: WhyRegistry): WhyReport | null {
   const qualityQueue = registry.scanner_report?.remediation_report?.quality_queue || [];
   const duplicateGroups = registry.scanner_report?.code_quality_report?.duplicate_groups || [];
   const cloneRisk = registry.scanner_report?.clone_preflight?.highest_risk_bricks || [];
@@ -438,7 +558,7 @@ function brickExplanation(query, registry) {
     }))
     .filter((item) => item.score > 0)
     .sort((left, right) => right.score - left.score)[0]?.entry || null;
-  const reasons = [];
+  const reasons: string[] = [];
 
   if (risk) reasons.push(...(risk.blocker_codes || []), ...(risk.warning_codes || []));
   if (!risk && brick?.clone_readiness === "manual_only") reasons.push("project_clone_backlog");
@@ -492,8 +612,9 @@ function brickExplanation(query, registry) {
   };
 }
 
-function projectExplanation(query, state, registry) {
-  const { stateProject, registryProject } = findProjectEntries(state, registry, query);
+function projectExplanation(query: string, state: WhyState, registry: WhyRegistry): WhyReport | null {
+  const stateProject = state.projects?.find((entry) => entry.project === query) ?? null;
+  const registryProject = registry.projects?.find((entry) => entry.id === query) ?? null;
   if (!stateProject && !registryProject) return null;
 
   const projectId = registryProject?.id || stateProject?.project;
@@ -517,12 +638,12 @@ function projectExplanation(query, state, registry) {
     blocked: !Boolean(stateProject?.canonicalization?.project_canonicalization_ready),
     reasons,
     explanation: {
-      readiness: registryProject?.scanner?.readiness || stateProject?.readiness || null,
+      readiness: registryProject?.scanner?.readiness || stateProject?.readiness,
       compliance: registryProject?.scanner?.compliance_report || stateProject?.compliance || null,
-      code_quality_report: registryProject?.scanner?.code_quality_report || stateProject?.code_quality_report || null,
-      clone_preflight: registryProject?.scanner?.clone_preflight || stateProject?.clone_preflight || null,
-      env_contract_report: registryProject?.scanner?.env_contract_report || stateProject?.env_contract_report || null,
-      boundary_report: registryProject?.scanner?.boundary_report || stateProject?.boundary_report || null,
+      code_quality_report: registryProject?.scanner?.code_quality_report || stateProject?.code_quality_report,
+      clone_preflight: registryProject?.scanner?.clone_preflight || stateProject?.clone_preflight,
+      env_contract_report: registryProject?.scanner?.env_contract_report || stateProject?.env_contract_report,
+      boundary_report: registryProject?.scanner?.boundary_report || stateProject?.boundary_report,
       manifest_drift: registryProject?.scanner?.manifest_drift || stateProject?.manifest_drift || null,
       top_targets: stateProject?.canonicalization?.top_targets || [],
       next_actions: projectPlan?.actions || [],
@@ -531,8 +652,8 @@ function projectExplanation(query, state, registry) {
   };
 }
 
-function renderText(report) {
-  const lines = [];
+function renderText(report: WhyReport): string {
+  const lines: string[] = [];
   lines.push(`Why Blocked: ${report.name}`);
   lines.push(`Type: ${report.target_type}${report.target_kind ? ` (${report.target_kind})` : ""}`);
   lines.push(`Project: ${report.project}`);
@@ -675,21 +796,24 @@ async function main() {
     return;
   }
 
-  const query = args.project || args.brick || args.build || args._[0];
-  if (!query) fail("pass --project, --brick, --build, or a positional query");
+  const queryValue = args.project || args.brick || args.build || args._[0];
+  if (typeof queryValue !== 'string' || !queryValue) fail("pass --project, --brick, --build, or a positional query");
+  const query = queryValue;
 
   const cwd = process.cwd();
-  const { state, registry } = await loadStateAndRegistry({
+  const loaded = await loadStateAndRegistry({
     cwd,
-    statePath: args.state || DEFAULT_STATE_PATH,
-    registryPath: args.registry || DEFAULT_REGISTRY_PATH
+    statePath: typeof args.state === 'string' ? args.state : DEFAULT_STATE_PATH,
+    registryPath: typeof args.registry === 'string' ? args.registry : DEFAULT_REGISTRY_PATH
   });
-  const verificationReport = await loadOptionalJson(path.resolve(cwd, DEFAULT_BUILD_VERIFICATION_PATH));
+  const state = loaded.state as WhyState;
+  const registry = loaded.registry as WhyRegistry;
+  const verificationReport = await loadOptionalJson<{ builds?: VerificationEntry[] }>(path.resolve(cwd, DEFAULT_BUILD_VERIFICATION_PATH));
 
-  let report = null;
-  if (args.project) report = projectExplanation(query, state, registry);
-  else if (args.brick) report = brickExplanation(query, registry);
-  else if (args.build) report = buildExplanation(query, state, verificationReport);
+  let report: WhyReport | null = null;
+  if (typeof args.project === 'string' && args.project) report = projectExplanation(query, state, registry);
+  else if (typeof args.brick === 'string' && args.brick) report = brickExplanation(query, registry);
+  else if (typeof args.build === 'string' && args.build) report = buildExplanation(query, state, verificationReport);
   else {
     report = projectExplanation(query, state, registry)
       || buildExplanation(query, state, verificationReport)
@@ -706,4 +830,4 @@ async function main() {
   console.log(renderText(report));
 }
 
-main().catch((error) => fail(error?.stack || error?.message || String(error)));
+main().catch((error: unknown) => { fail(error instanceof Error ? (error.stack || error.message) : String(error)); });

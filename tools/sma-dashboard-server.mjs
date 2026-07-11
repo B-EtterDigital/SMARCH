@@ -24,6 +24,14 @@ import {
 const toolPath = fileURLToPath(import.meta.url);
 const defaultRoot = process.env.SMA_ROOT ? path.resolve(process.env.SMA_ROOT) : path.resolve(path.dirname(toolPath), "..");
 
+/** @typedef {{ root: string, host: string, port: number, selftest: boolean, unsafeMutations: boolean, telemetry?: (event: Record<string, unknown>) => void, authTokens?: Array<{subject: string, token: string, scopes: string[]}>, heartbeatMs?: number }} DashboardOptions */
+
+/** @param {unknown} error @returns {string | undefined} */
+function dashboardErrorCode(error) {
+  return error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : undefined;
+}
+
+/** @param {string[]} argv @returns {DashboardOptions} */
 export function parseArgs(argv) {
   const options = { root: defaultRoot, host: "127.0.0.1", port: 4777, selftest: false, unsafeMutations: false };
   for (let index = 0; index < argv.length; index += 1) {
@@ -38,25 +46,30 @@ export function parseArgs(argv) {
   return options;
 }
 
+/** @param {http.ServerResponse} res @param {number} status @param {string | Buffer} body @param {string} [type] @param {string} [method] @param {http.OutgoingHttpHeaders} [headers] */
 function send(res, status, body, type = "text/plain; charset=utf-8", method = "GET", headers = {}) {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", ...headers });
   res.end(method === "HEAD" ? undefined : body);
 }
 
+/** @param {http.ServerResponse} res @param {number} status @param {unknown} value @param {string} [method] @param {http.OutgoingHttpHeaders} [headers] */
 function sendJson(res, status, value, method, headers) {
   send(res, status, JSON.stringify(value), "application/json; charset=utf-8", method, headers);
 }
 
+/** @param {string} filePath @returns {string} */
 function contentType(filePath) {
   const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".map": "application/json; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
-  return types[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+  return types[/** @type {keyof typeof types} */ (path.extname(filePath).toLowerCase())] || "application/octet-stream";
 }
 
+/** @param {string} parent @param {string} child @returns {boolean} */
 function inside(parent, child) {
   const relative = path.relative(parent, child);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
+/** @param {unknown} address @returns {boolean} */
 function isLoopbackAddress(address) {
   const normalized = String(address || "").toLowerCase();
   if (normalized === "::1") return true;
@@ -64,28 +77,34 @@ function isLoopbackAddress(address) {
   return ipv4.split(".")[0] === "127";
 }
 
+/** @param {http.IncomingMessage} req @param {number} [limit] @returns {Promise<unknown>} */
 async function readBody(req, limit = 64 * 1024) {
+  /** @type {Buffer[]} */
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
-    size += chunk.length;
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
     if (size > limit) throw new Error("request body exceeds 64 KiB");
-    chunks.push(chunk);
+    chunks.push(buffer);
   }
   return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
 }
 
+/** @param {unknown} value */
 function structuredClientError(value) {
-  const stackHead = String(value.stack || "").split("\n").slice(0, 2).join(" | ");
+  const record = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const stackHead = String("stack" in record ? record.stack || "" : "").split("\n").slice(0, 2).join(" | ");
   return {
     event: "dashboard_client_error",
-    area: String(value.area || "dashboard.client").slice(0, 120),
-    severity: value.severity === "fatal" ? "fatal" : "error",
-    message: String(value.message || "Unknown client error").slice(0, 1_000),
+    area: String("area" in record ? record.area || "dashboard.client" : "dashboard.client").slice(0, 120),
+    severity: "severity" in record && record.severity === "fatal" ? "fatal" : "error",
+    message: String("message" in record ? record.message || "Unknown client error" : "Unknown client error").slice(0, 1_000),
     stack_head: stackHead.slice(0, 1_000)
   };
 }
 
+/** @param {http.ServerResponse} res @param {string} root @param {URL} requestUrl @param {string} method */
 async function serveSpa(res, root, requestUrl, method) {
   const dist = path.join(root, "web", "dist");
   let requested = decodeURIComponent(requestUrl.pathname);
@@ -104,6 +123,7 @@ async function serveSpa(res, root, requestUrl, method) {
   }
 }
 
+/** @param {Partial<DashboardOptions>} options */
 export function createDashboardServer(options) {
   const root = path.resolve(options.root || defaultRoot);
   const telemetry = createTelemetrySink(options.telemetry);
@@ -124,10 +144,11 @@ export function createDashboardServer(options) {
       if (requestUrl.pathname.startsWith("/api/") && !loopback && credentials.length === 0) {
         authenticateRequest(req.headers, credentials);
       }
-      if (handlers.has(requestUrl.pathname)) {
+      const handler = handlers.get(requestUrl.pathname);
+      if (handler) {
         if (req.method !== "GET") throw new DashboardApiError("DASH_API_METHOD_NOT_ALLOWED");
         const principal = authenticateReadRequest(req.headers, credentials, { loopback });
-        const result = await handlers.get(requestUrl.pathname)({ root, principal, query: requestUrl.searchParams, requestId, telemetry });
+        const result = await handler({ root, principal, query: requestUrl.searchParams, requestId, telemetry });
         return sendJson(res, 200, result.data, undefined, { "X-Request-ID": result.requestId });
       }
       if (requestUrl.pathname === "/api/events") {
@@ -150,6 +171,7 @@ export function createDashboardServer(options) {
     } catch (error) {
       const typed = error instanceof DashboardApiError ? error : new DashboardApiError("DASH_API_INTERNAL", { cause: error });
       emitTelemetry(telemetry, { event: "dashboard_api_transport_failed", area: "dashboard.api.transport", severity: "error", request_id: requestId, code: typed.code });
+      /** @type {http.OutgoingHttpHeaders} */
       const headers = { "X-Request-ID": requestId };
       if (typed.status === 401) headers["WWW-Authenticate"] = "Bearer";
       sendJson(res, typed.status, errorBody(typed, requestId), undefined, headers);
@@ -159,6 +181,7 @@ export function createDashboardServer(options) {
   return server;
 }
 
+/** @param {string} root */
 async function writeFixture(root) {
   await fsp.mkdir(path.join(root, "registry"), { recursive: true });
   await fsp.mkdir(path.join(root, ".smarch", "agent-context"), { recursive: true });
@@ -175,6 +198,7 @@ async function writeFixture(root) {
   );
 }
 
+/** @param {string} base @param {Record<string, string>} headers */
 async function assertServedSpaAndLiveData(base, headers) {
   const spa = await fetch(`${base}/`);
   if (!spa.ok || !/SMARCH Blueprint Ledger/.test(await spa.text())) {
@@ -199,6 +223,7 @@ async function assertServedSpaAndLiveData(base, headers) {
 async function runSelftest() {
   const root = await fsp.mkdtemp(path.join(os.tmpdir(), "sma-dashboard-"));
   await writeFixture(root);
+  /** @type {Record<string, unknown>[]} */
   const telemetry = [];
   const readerToken = "fixture-reader-token";
   const limitedToken = "fixture-limited-token";
@@ -208,18 +233,18 @@ async function runSelftest() {
     { subject: "fixture-limited", token: limitedToken, scopes: ["dashboard:leases:read"] }
   ];
   const loopbackOpenServer = createDashboardServer({ root, telemetry: () => {}, authTokens: [] });
-  await new Promise((resolve) => loopbackOpenServer.listen(0, "127.0.0.1", () => resolve()));
+  await new Promise((resolve) => loopbackOpenServer.listen(0, "127.0.0.1", () => resolve(undefined)));
   const loopbackOpenAddress = loopbackOpenServer.address();
   if (!loopbackOpenAddress || typeof loopbackOpenAddress === "string") throw new Error("selftest: loopback-open server did not bind a TCP address");
   try {
     const response = await fetch(`http://127.0.0.1:${loopbackOpenAddress.port}/api/leases`);
     if (response.status !== 200 || !Array.isArray((await response.json()).leases)) throw new Error("selftest: loopback read without auth configuration was not open");
   } finally {
-    await new Promise((resolve) => loopbackOpenServer.close(resolve));
+    await new Promise((resolve) => loopbackOpenServer.close(() => resolve(undefined)));
   }
 
   const authenticatedRemoteServer = createDashboardServer({ root, telemetry: () => {}, authTokens });
-  await new Promise((resolve) => authenticatedRemoteServer.listen(0, "0.0.0.0", () => resolve()));
+  await new Promise((resolve) => authenticatedRemoteServer.listen(0, "0.0.0.0", () => resolve(undefined)));
   const authenticatedRemoteAddress = authenticatedRemoteServer.address();
   if (!authenticatedRemoteAddress || typeof authenticatedRemoteAddress === "string") throw new Error("selftest: authenticated non-loopback server did not bind a TCP address");
   const authenticatedRemoteBase = `http://127.0.0.1:${authenticatedRemoteAddress.port}`;
@@ -231,11 +256,11 @@ async function runSelftest() {
     const authenticated = await fetch(`${authenticatedRemoteBase}/api/leases`, { headers: readerHeaders });
     if (!authenticated.ok) throw new Error("selftest: authenticated non-loopback read was rejected");
   } finally {
-    await new Promise((resolve) => authenticatedRemoteServer.close(resolve));
+    await new Promise((resolve) => authenticatedRemoteServer.close(() => resolve(undefined)));
   }
 
   const unavailableRemoteServer = createDashboardServer({ root, telemetry: () => {}, authTokens: [] });
-  await new Promise((resolve) => unavailableRemoteServer.listen(0, "0.0.0.0", () => resolve()));
+  await new Promise((resolve) => unavailableRemoteServer.listen(0, "0.0.0.0", () => resolve(undefined)));
   const unavailableRemoteAddress = unavailableRemoteServer.address();
   if (!unavailableRemoteAddress || typeof unavailableRemoteAddress === "string") throw new Error("selftest: unauthenticated non-loopback server did not bind a TCP address");
   const unavailableRemoteBase = `http://127.0.0.1:${unavailableRemoteAddress.port}`;
@@ -248,7 +273,7 @@ async function runSelftest() {
       if (response.status !== 503 || (await response.json()).error?.code !== "DASH_API_AUTH_UNAVAILABLE") throw new Error("selftest: missing auth configuration on a non-loopback API route did not fail closed");
     }
   } finally {
-    await new Promise((resolve) => unavailableRemoteServer.close(resolve));
+    await new Promise((resolve) => unavailableRemoteServer.close(() => resolve(undefined)));
   }
 
   const server = createDashboardServer({
@@ -257,14 +282,14 @@ async function runSelftest() {
     telemetry: (event) => telemetry.push(event),
     authTokens
   });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(undefined)));
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("selftest: server did not bind a TCP address");
   const base = `http://127.0.0.1:${address.port}`;
   try {
     await assertServedSpaAndLiveData(base, readerHeaders);
     let unavailableCode = "";
-    try { authenticateRequest({}, []); } catch (error) { unavailableCode = error?.code; }
+    try { authenticateRequest({}, []); } catch (error) { unavailableCode = dashboardErrorCode(error) || ""; }
     if (unavailableCode !== "DASH_API_AUTH_UNAVAILABLE") throw new Error("selftest: missing authentication configuration did not fail closed");
     const unauthenticated = await fetch(`${base}/api/leases`);
     if (!unauthenticated.ok || !Array.isArray((await unauthenticated.json()).leases)) throw new Error("selftest: configured loopback read was not open");
@@ -294,7 +319,7 @@ async function runSelftest() {
       });
     });
     await fsp.appendFile(path.join(root, "registry", "active-leases.generated.json"), " ");
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(() => resolve(undefined), 150));
     await new Promise((resolve, reject) => {
       const request = http.get(`${base}/api/events`, { headers: { ...readerHeaders, "Last-Event-ID": String(initialEventId) } }, (response) => {
         response.setEncoding("utf8");
@@ -316,14 +341,14 @@ async function runSelftest() {
     const principal = { subject: "unit-reader", scopes: ["dashboard:registry:read", "dashboard:leases:read"] };
     let timeoutCode = "";
     try {
-      await handleRegistry({ root, principal, query: new URLSearchParams(), timeoutMs: 5, telemetry: (event) => telemetry.push(event), load: () => new Promise((resolve) => setTimeout(resolve, 50)) });
+      await handleRegistry({ root, principal, query: new URLSearchParams(), timeoutMs: 5, telemetry: (event) => telemetry.push(event), load: () => new Promise((resolve) => setTimeout(() => resolve(undefined), 50)) });
     } catch (error) {
-      timeoutCode = error?.code;
+      timeoutCode = dashboardErrorCode(error) || "";
     }
     if (timeoutCode !== "DASH_API_TIMEOUT") throw new Error("selftest: timeout did not produce a typed error");
     for (const query of [null, {}, [], "", 7]) {
       let code = "";
-      try { await handleLeases({ root, principal, query, telemetry: () => {} }); } catch (error) { code = error?.code; }
+      try { await handleLeases({ root, principal, query, telemetry: () => {} }); } catch (error) { code = dashboardErrorCode(error) || ""; }
       if (code !== "DASH_API_VALIDATION") throw new Error("selftest: fuzzed query shape escaped validation");
     }
 
@@ -349,7 +374,7 @@ async function runSelftest() {
     if (!telemetry.some((event) => event.event === "dashboard_api_authorized")) throw new Error("selftest: privileged API use was not audit logged");
     console.log("sma-dashboard-server selftest passed");
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => server.close(() => resolve(undefined)));
     await fsp.rm(root, { recursive: true, force: true });
   }
 }

@@ -34,20 +34,29 @@ const TOOLS_DIR = dirname(__filename);
 
 // Command → (script-relative-to-tools-dir, optional sub-arg-injection)
 // First entry under each key wins; aliases follow it.
-type CommandEntry = {
-  script?: string;
+interface ScriptCommandEntry {
+  script: string;
   desc?: string;
   args?: string[];
-  router?: "gen3";
-};
+  router?: never;
+}
 
-type RoutedCommandEntry = {
+interface RouterCommandEntry {
+  router: "gen3";
+  script?: never;
+  desc?: string;
+  args?: never;
+}
+
+type CommandEntry = ScriptCommandEntry | RouterCommandEntry;
+
+interface RoutedCommandEntry {
   script: string;
   desc: string;
   args?: string[];
-};
+}
 
-const COMMANDS: Record<string, CommandEntry> = {
+const COMMANDS: Record<string, CommandEntry | undefined> = {
   // multi-agent layer
   lease:           { script: 'sma-lease.ts',          desc: 'Soft locks on bricks/regen targets' },
   context:         { script: 'sma-context.ts',        desc: 'Append-only agent-context log' },
@@ -134,7 +143,7 @@ if (!entry) {
   process.exit(2);
 }
 
-if (entry.router === 'gen3') {
+if (isRouterCommand(entry)) {
   const sub = rest[0];
   const subEntry = sub ? GEN3_SUBCOMMANDS[sub] : null;
   if (!sub || sub === 'help' || sub === '--help') {
@@ -146,9 +155,9 @@ if (entry.router === 'gen3') {
     printGen3Usage();
     process.exit(2);
   }
-  dispatch(subEntry.script, [...(subEntry.args || []), ...rest.slice(1)]);
+  dispatch(subEntry.script, [...(subEntry.args ?? []), ...rest.slice(1)]);
 } else {
-  dispatch(entry.script!, rest);
+  dispatch(entry.script, rest);
 }
 
 function dispatch(script: string, argv: string[]) {
@@ -166,6 +175,10 @@ function dispatch(script: string, argv: string[]) {
     console.error(`sma: spawn failed: ${e.message}`);
     process.exit(1);
   });
+}
+
+function isRouterCommand(entry: CommandEntry): entry is RouterCommandEntry {
+  return 'router' in entry;
 }
 
 function printUsage() {
@@ -221,9 +234,9 @@ See docs/MULTI_AGENT_OPERATIONS.md.
 }
 
 function printList() {
-  const rows = [];
+  const rows: [name: string, description: string | undefined, script: string | undefined][] = [];
   for (const [name, entry] of Object.entries(COMMANDS)) {
-    if (entry.router === 'gen3') continue;
+    if (!entry || isRouterCommand(entry)) continue;
     rows.push([name, entry.desc, entry.script]);
   }
   for (const [name, entry] of Object.entries(GEN3_SUBCOMMANDS)) {
@@ -232,7 +245,7 @@ function printList() {
   rows.sort((a, b) => a[0].localeCompare(b[0]));
   const w = Math.max(...rows.map((r) => r[0].length));
   for (const [name, desc, script] of rows) {
-    console.log(`${name.padEnd(w)}  ${desc}  (${script})`);
+    console.log(`${name.padEnd(w)}  ${String(desc)}  (${String(script)})`);
   }
 }
 

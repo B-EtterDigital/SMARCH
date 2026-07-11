@@ -36,8 +36,8 @@ Behavior:
   - If neither --out nor --stdout is provided, writes to <root>/release-index.generated.json.
 `;
 
-main().catch((error) => {
-  console.error(error?.stack || String(error));
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
 
@@ -100,8 +100,11 @@ async function main() {
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+interface ReleaseIndexOptions { root: string; out: string | null; stdout: boolean; dryRun: boolean; help: boolean }
+type CountMap = Record<string, number>;
+
+function parseArgs(argv: string[]): ReleaseIndexOptions {
+  const options: ReleaseIndexOptions = {
     root: "releases",
     out: null,
     stdout: false,
@@ -138,7 +141,7 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function requireValue(argv, index, flag) {
+function requireValue(argv: string[], index: number, flag: string) {
   const value = argv[index];
   if (!value || value.startsWith("--")) {
     throw new Error(`Missing value for ${flag}`);
@@ -146,19 +149,19 @@ function requireValue(argv, index, flag) {
   return value;
 }
 
-async function collectJsonFiles(root) {
+async function collectJsonFiles(root: string) {
   const stat = await fs.stat(root).catch(() => null);
-  if (!stat || !stat.isDirectory()) {
+  if (!stat?.isDirectory()) {
     throw new Error(`Release root not found or not a directory: ${root}`);
   }
 
-  const files = [];
+  const files: string[] = [];
   await walkDirectory(root, files);
   files.sort(compareStrings);
   return files;
 }
 
-async function walkDirectory(directory, files) {
+async function walkDirectory(directory: string, files: string[]) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   entries.sort((left, right) => compareStrings(left.name, right.name));
   for (const entry of entries) {
@@ -173,30 +176,32 @@ async function walkDirectory(directory, files) {
   }
 }
 
-async function readJsonFile(filePath) {
+async function readJsonFile(filePath: string) {
   try {
     const text = await fs.readFile(filePath, "utf8");
-    return { ok: true, value: JSON.parse(text) };
+    const value: unknown = JSON.parse(text);
+    return { ok: true, value };
   } catch (error) {
-    return { ok: false, error: error?.message || String(error) };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
-function summarizeReleaseArtifact(document, filePath, root) {
+function summarizeReleaseArtifact(document: unknown, filePath: string, root: string) {
   if (!isObject(document)) {
-    return { ok: false, reason: "not_object" };
+    return { ok: false as const, reason: "not_object" };
   }
 
   const release = document.release;
   if (!isObject(release)) {
-    return { ok: false, reason: "missing_release_block" };
+    return { ok: false as const, reason: "missing_release_block" };
   }
 
   if (release.artifact_type !== "brick" && release.artifact_type !== "build") {
-    return { ok: false, reason: "unknown_artifact_type" };
+    return { ok: false as const, reason: "unknown_artifact_type" };
   }
+  const artifactType: "brick" | "build" = release.artifact_type;
   if (typeof release.artifact_id !== "string" || typeof release.version !== "string") {
-    return { ok: false, reason: "missing_artifact_identity" };
+    return { ok: false as const, reason: "missing_artifact_identity" };
   }
 
   const verification = isObject(document.verification) ? document.verification : {};
@@ -217,53 +222,60 @@ function summarizeReleaseArtifact(document, filePath, root) {
   const dependencyRefs = Array.isArray(contracts.dependency_refs) ? contracts.dependency_refs : [];
 
   return {
-    ok: true,
+    ok: true as const,
     value: {
-      artifact_type: release.artifact_type,
+      artifact_type: artifactType,
       artifact_id: release.artifact_id,
-      release_id: typeof release.release_id === "string"
-        ? release.release_id
-        : `${release.artifact_id}@${release.version}`,
+      release_id: optionalString(release, "release_id") ?? `${release.artifact_id}@${release.version}`,
       version: release.version,
-      channel: typeof release.channel === "string" ? release.channel : "unknown",
-      status: typeof release.status === "string" ? release.status : "unknown",
-      source_project: typeof release.source_project === "string" ? release.source_project : null,
-      created_at: typeof release.created_at === "string" ? release.created_at : null,
-      published_at: typeof release.published_at === "string" ? release.published_at : null,
-      source_commit: typeof release.source_commit === "string" ? release.source_commit : null,
-      registry_snapshot_sha: typeof release.registry_snapshot_sha === "string" ? release.registry_snapshot_sha : null,
-      content_hash: typeof release.content_hash === "string" ? release.content_hash : null,
+      channel: optionalString(release, "channel") ?? "unknown",
+      status: optionalString(release, "status") ?? "unknown",
+      source_project: optionalString(release, "source_project"),
+      created_at: optionalString(release, "created_at"),
+      published_at: optionalString(release, "published_at"),
+      source_commit: optionalString(release, "source_commit"),
+      registry_snapshot_sha: optionalString(release, "registry_snapshot_sha"),
+      content_hash: optionalString(release, "content_hash"),
       path: relativePath,
-      content_summary: {
-        included_path_count: arrayCount(content.included_paths),
-        portable_doc_count: arrayCount(content.portable_docs),
-        entrypoint_count: arrayCount(content.entrypoints),
-        artifact_count: Array.isArray(content.artifacts) ? content.artifacts.length : 0,
-      },
-      contract_summary: {
-        runtime_count: arrayCount(contracts.runtimes),
-        required_env_count: arrayCount(contracts.required_env),
-        optional_env_count: arrayCount(contracts.optional_env),
-        forbidden_env_count: arrayCount(contracts.forbidden_env),
-        dependency_count: dependencyRefs.length,
-        required_dependency_count: dependencyRefs.filter((entry) => entry && entry.required !== false).length,
-        optional_dependency_count: dependencyRefs.filter((entry) => entry && entry.required === false).length,
-        public_interface_count: arrayCount(contracts.public_interfaces),
-        data_class_count: arrayCount(contracts.data_classes),
-        external_package_count: arrayCount(contracts.external_packages),
-      },
-      trust_summary: {
-        verification_status: typeof verification.status === "string" ? verification.status : "unknown",
-        trust_level: trustSummary.trust_level,
-        rollback_supported: verification.rollback_supported === true,
-        breaking: release.breaking === true,
-        check_counts: checkCounts,
-      },
+      content_summary: summarizeContent(content),
+      contract_summary: summarizeContracts(contracts, dependencyRefs),
+      trust_summary: summarizeReleaseTrust(verification, release, checkCounts, trustSummary.trust_level),
     },
   };
 }
 
-function summarizeChecks(checks) {
+function optionalString(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" ? value : null;
+}
+
+function summarizeContent(content: Record<string, unknown>) {
+  return {
+    included_path_count: arrayCount(content.included_paths), portable_doc_count: arrayCount(content.portable_docs),
+    entrypoint_count: arrayCount(content.entrypoints), artifact_count: arrayCount(content.artifacts),
+  };
+}
+
+function summarizeContracts(contracts: Record<string, unknown>, dependencyRefs: unknown[]) {
+  return {
+    runtime_count: arrayCount(contracts.runtimes), required_env_count: arrayCount(contracts.required_env),
+    optional_env_count: arrayCount(contracts.optional_env), forbidden_env_count: arrayCount(contracts.forbidden_env),
+    dependency_count: dependencyRefs.length,
+    required_dependency_count: dependencyRefs.filter((entry) => !isObject(entry) || entry.required !== false).length,
+    optional_dependency_count: dependencyRefs.filter((entry) => isObject(entry) && entry.required === false).length,
+    public_interface_count: arrayCount(contracts.public_interfaces), data_class_count: arrayCount(contracts.data_classes),
+    external_package_count: arrayCount(contracts.external_packages),
+  };
+}
+
+function summarizeReleaseTrust(verification: Record<string, unknown>, release: Record<string, unknown>, checkCounts: ReturnType<typeof summarizeChecks>, trustLevel: string) {
+  return {
+    verification_status: optionalString(verification, "status") ?? "unknown", trust_level: trustLevel,
+    rollback_supported: verification.rollback_supported === true, breaking: release.breaking === true, check_counts: checkCounts,
+  };
+}
+
+function summarizeChecks(checks: unknown[]) {
   const counts = { passed: 0, failed: 0, skipped: 0, total: 0 };
   for (const check of checks) {
     if (!isObject(check)) {
@@ -278,18 +290,17 @@ function summarizeChecks(checks) {
   return counts;
 }
 
-function summarizeTrust({ channel, status, verificationStatus, rollbackSupported, hasFailedChecks, breaking }) {
+type ReleaseSummary = Extract<ReturnType<typeof summarizeReleaseArtifact>, { ok: true }>['value'];
+
+function summarizeTrust({ channel, status, verificationStatus, rollbackSupported, hasFailedChecks, breaking }: {
+  channel: unknown; status: unknown; verificationStatus: unknown; rollbackSupported: boolean; hasFailedChecks: boolean; breaking: boolean;
+}) {
   const verificationRank = verificationStatusRank(verificationStatus);
   let trustLevel = "low";
 
-  if (status === "yanked" || verificationStatus === "failed") {
+  if (isBlockedTrust(status, verificationStatus)) {
     trustLevel = "blocked";
-  } else if (
-    (verificationStatus === "canonical" || verificationStatus === "verified") &&
-    status === "published" &&
-    !hasFailedChecks &&
-    rollbackSupported
-  ) {
+  } else if (isStrongTrust(status, verificationStatus, rollbackSupported, hasFailedChecks)) {
     trustLevel = verificationStatus === "canonical" ? "high" : "strong";
   } else if (verificationRank >= verificationStatusRank("candidate") && status !== "draft" && !hasFailedChecks) {
     trustLevel = "medium";
@@ -307,10 +318,19 @@ function summarizeTrust({ channel, status, verificationStatus, rollbackSupported
   return { trust_level: trustLevel };
 }
 
-function buildIndex({ root, outputPath, releases, skipped }) {
+function isBlockedTrust(status: unknown, verificationStatus: unknown) {
+  return status === "yanked" || verificationStatus === "failed";
+}
+
+function isStrongTrust(status: unknown, verificationStatus: unknown, rollbackSupported: boolean, hasFailedChecks: boolean) {
+  const verified = verificationStatus === "canonical" || verificationStatus === "verified";
+  return verified && status === "published" && !hasFailedChecks && rollbackSupported;
+}
+
+function buildIndex({ root, outputPath, releases, skipped }: { root: string; outputPath: string | null; releases: ReleaseSummary[]; skipped: unknown[] }) {
   const artifactsByType = {
-    brick: new Map(),
-    build: new Map(),
+    brick: new Map<string, ReleaseSummary[]>(),
+    build: new Map<string, ReleaseSummary[]>(),
   };
 
   const globalCounts = {
@@ -322,10 +342,9 @@ function buildIndex({ root, outputPath, releases, skipped }) {
 
   for (const release of releases) {
     const groupMap = artifactsByType[release.artifact_type];
-    if (!groupMap.has(release.artifact_id)) {
-      groupMap.set(release.artifact_id, []);
-    }
-    groupMap.get(release.artifact_id).push(release);
+    const artifactReleases = groupMap.get(release.artifact_id) ?? [];
+    if (!groupMap.has(release.artifact_id)) groupMap.set(release.artifact_id, artifactReleases);
+    artifactReleases.push(release);
 
     incrementCount(globalCounts.channels, release.channel);
     incrementCount(globalCounts.statuses, release.status);
@@ -333,17 +352,19 @@ function buildIndex({ root, outputPath, releases, skipped }) {
     incrementCount(globalCounts.trust_levels, release.trust_summary.trust_level);
   }
 
-  const typeEntries = {};
-  const typeSummaries = {};
+  const typeEntries: Record<string, Record<string, ReturnType<typeof summarizeArtifactGroup>>> = {};
+  const typeSummaries: Record<string, ReturnType<typeof summarizeType>> = {};
   let artifactCount = 0;
 
-  for (const artifactType of ["brick", "build"]) {
+  for (const artifactType of ["brick", "build"] as const) {
     const artifactMap = artifactsByType[artifactType];
-    const artifactEntries = [];
-    const artifactObject = {};
+    const artifactEntries: ReturnType<typeof summarizeArtifactGroup>[] = [];
+    const artifactObject: Record<string, ReturnType<typeof summarizeArtifactGroup>> = {};
 
     for (const artifactId of [...artifactMap.keys()].sort(compareStrings)) {
-      const groupedReleases = artifactMap.get(artifactId).slice().sort(compareReleaseForArtifact);
+      const grouped = artifactMap.get(artifactId);
+      if (!grouped) continue;
+      const groupedReleases = grouped.slice().sort(compareReleaseForArtifact);
       const entry = summarizeArtifactGroup(artifactType, artifactId, groupedReleases);
       artifactEntries.push(entry);
       artifactObject[artifactId] = entry;
@@ -374,19 +395,15 @@ function buildIndex({ root, outputPath, releases, skipped }) {
   };
 }
 
-function summarizeArtifactGroup(artifactType, artifactId, releases) {
-  const latestRelease = releases[0] || null;
-  const latestByChannel = {};
-  const channelCounts = countTemplate(CHANNEL_ORDER);
-  const statusCounts = countTemplate(STATUS_ORDER);
-  const verificationCounts = countTemplate(VERIFICATION_ORDER);
-  const trustCounts = countTemplate(TRUST_LEVEL_ORDER);
-  const sourceProjects = new Set();
+function summarizeArtifactGroup(artifactType: 'brick' | 'build', artifactId: string, releases: ReleaseSummary[]) {
+  const [latestRelease = null] = releases;
+  const latestByChannel: Partial<Record<string, ReturnType<typeof releaseSummaryRef>>> = {};
+  const channelCounts = countTemplate(CHANNEL_ORDER), statusCounts = countTemplate(STATUS_ORDER);
+  const verificationCounts = countTemplate(VERIFICATION_ORDER), trustCounts = countTemplate(TRUST_LEVEL_ORDER);
+  const sourceProjects = new Set<string>();
 
-  let publishedReleaseCount = 0;
-  let rollbackSupportedReleaseCount = 0;
-  let breakingReleaseCount = 0;
-  let failingReleaseCount = 0;
+  let publishedReleaseCount = 0, rollbackSupportedReleaseCount = 0;
+  let breakingReleaseCount = 0, failingReleaseCount = 0;
   let latestPublished = null;
   let bestVerificationStatus = "failed";
 
@@ -396,14 +413,10 @@ function summarizeArtifactGroup(artifactType, artifactId, releases) {
     incrementCount(verificationCounts, release.trust_summary.verification_status);
     incrementCount(trustCounts, release.trust_summary.trust_level);
 
-    if (release.source_project) {
-      sourceProjects.add(release.source_project);
-    }
+    addSourceProject(sourceProjects, release.source_project);
     if (release.status === "published") {
       publishedReleaseCount += 1;
-      if (!latestPublished) {
-        latestPublished = releaseSummaryRef(release);
-      }
+      latestPublished ??= releaseSummaryRef(release);
     }
     if (release.trust_summary.rollback_supported) {
       rollbackSupportedReleaseCount += 1;
@@ -411,12 +424,10 @@ function summarizeArtifactGroup(artifactType, artifactId, releases) {
     if (release.trust_summary.breaking) {
       breakingReleaseCount += 1;
     }
-    if (release.trust_summary.check_counts.failed > 0 || release.trust_summary.verification_status === "failed") {
+    if (isFailingRelease(release)) {
       failingReleaseCount += 1;
     }
-    if (!latestByChannel[release.channel]) {
-      latestByChannel[release.channel] = releaseSummaryRef(release);
-    }
+    latestByChannel[release.channel] ??= releaseSummaryRef(release);
     if (verificationStatusRank(release.trust_summary.verification_status) > verificationStatusRank(bestVerificationStatus)) {
       bestVerificationStatus = release.trust_summary.verification_status;
     }
@@ -435,9 +446,9 @@ function summarizeArtifactGroup(artifactType, artifactId, releases) {
     statuses: finalizeCounts(statusCounts, STATUS_ORDER),
     verification_statuses: finalizeCounts(verificationCounts, VERIFICATION_ORDER),
     trust_summary: {
-      latest_verification_status: latestRelease?.trust_summary?.verification_status || "unknown",
+      latest_verification_status: latestRelease?.trust_summary.verification_status ?? "unknown",
       best_verification_status: bestVerificationStatus,
-      latest_trust_level: latestRelease?.trust_summary?.trust_level || "unknown",
+      latest_trust_level: latestRelease?.trust_summary.trust_level ?? "unknown",
       published_release_count: publishedReleaseCount,
       rollback_supported_release_count: rollbackSupportedReleaseCount,
       breaking_release_count: breakingReleaseCount,
@@ -447,7 +458,15 @@ function summarizeArtifactGroup(artifactType, artifactId, releases) {
   };
 }
 
-function summarizeType(entries) {
+function addSourceProject(projects: Set<string>, project: string | null) {
+  if (project) projects.add(project);
+}
+
+function isFailingRelease(release: ReleaseSummary) {
+  return release.trust_summary.check_counts.failed > 0 || release.trust_summary.verification_status === "failed";
+}
+
+function summarizeType(entries: ReturnType<typeof summarizeArtifactGroup>[]) {
   const channelCounts = countTemplate(CHANNEL_ORDER);
   const statusCounts = countTemplate(STATUS_ORDER);
   const verificationCounts = countTemplate(VERIFICATION_ORDER);
@@ -484,7 +503,7 @@ function summarizeType(entries) {
   };
 }
 
-function releaseSummaryRef(release) {
+function releaseSummaryRef(release: ReleaseSummary) {
   return {
     release_id: release.release_id,
     version: release.version,
@@ -500,7 +519,7 @@ function releaseSummaryRef(release) {
   };
 }
 
-function compareReleaseSummaries(left, right) {
+function compareReleaseSummaries(left: ReleaseSummary, right: ReleaseSummary) {
   return (
     compareStrings(left.artifact_type, right.artifact_type) ||
     compareStrings(left.artifact_id, right.artifact_id) ||
@@ -508,15 +527,15 @@ function compareReleaseSummaries(left, right) {
   );
 }
 
-function compareReleaseForArtifact(left, right) {
+function compareReleaseForArtifact(left: ReleaseSummary, right: ReleaseSummary) {
   return (
     compareSemver(right.version, left.version) ||
-    compareStrings(right.created_at || "", left.created_at || "") ||
+    compareStrings(right.created_at ?? "", left.created_at ?? "") ||
     compareStrings(left.release_id, right.release_id)
   );
 }
 
-function compareSemver(left, right) {
+function compareSemver(left: string, right: string) {
   const a = parseSemver(left);
   const b = parseSemver(right);
   if (!a || !b) {
@@ -534,7 +553,7 @@ function compareSemver(left, right) {
   return comparePrerelease(a.prerelease, b.prerelease);
 }
 
-function parseSemver(value) {
+function parseSemver(value: string) {
   const match = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(value || "");
   if (!match) {
     return null;
@@ -547,7 +566,7 @@ function parseSemver(value) {
   };
 }
 
-function comparePrerelease(left, right) {
+function comparePrerelease(left: string[], right: string[]) {
   if (left.length === 0 && right.length === 0) {
     return 0;
   }
@@ -559,30 +578,15 @@ function comparePrerelease(left, right) {
   }
   const length = Math.max(left.length, right.length);
   for (let index = 0; index < length; index += 1) {
-    const a = left[index];
-    const b = right[index];
+    const a = left.at(index);
+    const b = right.at(index);
     if (a === undefined) {
       return -1;
     }
     if (b === undefined) {
       return 1;
     }
-    const aNumeric = /^\d+$/.test(a);
-    const bNumeric = /^\d+$/.test(b);
-    if (aNumeric && bNumeric) {
-      const diff = Number.parseInt(a, 10) - Number.parseInt(b, 10);
-      if (diff !== 0) {
-        return diff;
-      }
-      continue;
-    }
-    if (aNumeric && !bNumeric) {
-      return -1;
-    }
-    if (!aNumeric && bNumeric) {
-      return 1;
-    }
-    const diff = compareStrings(a, b);
+    const diff = comparePrereleasePart(a, b);
     if (diff !== 0) {
       return diff;
     }
@@ -590,54 +594,63 @@ function comparePrerelease(left, right) {
   return 0;
 }
 
-function verificationStatusRank(value) {
-  const index = VERIFICATION_ORDER.indexOf(value);
+function comparePrereleasePart(left: string, right: string) {
+  const leftNumeric = /^\d+$/.test(left);
+  const rightNumeric = /^\d+$/.test(right);
+  if (leftNumeric && rightNumeric) return Number.parseInt(left, 10) - Number.parseInt(right, 10);
+  if (leftNumeric) return -1;
+  if (rightNumeric) return 1;
+  return compareStrings(left, right);
+}
+
+function verificationStatusRank(value: unknown) {
+  const index = VERIFICATION_ORDER.indexOf(String(value));
   return index === -1 ? -1 : index;
 }
 
-function countTemplate(keys) {
-  const counts = {};
+function countTemplate(keys: readonly string[]): CountMap {
+  const counts: CountMap = {};
   for (const key of keys) {
     counts[key] = 0;
   }
   return counts;
 }
 
-function incrementCount(counts, key) {
+function incrementCount(counts: CountMap, key: string) {
   if (!Object.prototype.hasOwnProperty.call(counts, key)) {
     counts[key] = 0;
   }
   counts[key] += 1;
 }
 
-function mergeCounts(target, source) {
-  for (const [key, value] of Object.entries(source || {})) {
+function mergeCounts(target: CountMap, source: CountMap) {
+  for (const [key, value] of Object.entries(source)) {
     if (!Object.prototype.hasOwnProperty.call(target, key)) {
       target[key] = 0;
     }
-    target[key] += Number(value) || 0;
+    target[key] += value;
   }
 }
 
-function finalizeCounts(counts, preferredOrder = []) {
+function finalizeCounts(counts: CountMap, preferredOrder: readonly string[] = []) {
   const orderMap = new Map(preferredOrder.map((key, index) => [key, index]));
   const knownKeys = Object.keys(counts).sort((left, right) => {
-    const leftIndex = orderMap.has(left) ? orderMap.get(left) : Number.POSITIVE_INFINITY;
-    const rightIndex = orderMap.has(right) ? orderMap.get(right) : Number.POSITIVE_INFINITY;
+    const leftIndex = orderMap.get(left) ?? Number.POSITIVE_INFINITY;
+    const rightIndex = orderMap.get(right) ?? Number.POSITIVE_INFINITY;
     if (leftIndex !== rightIndex) {
       return leftIndex - rightIndex;
     }
     return compareStrings(left, right);
   });
-  const ordered = {};
+  const ordered: CountMap = {};
   for (const key of knownKeys) {
     ordered[key] = counts[key];
   }
   return ordered;
 }
 
-function orderObjectByKnownKeys(object, keys) {
-  const ordered = {};
+function orderObjectByKnownKeys<T>(object: Record<string, T>, keys: readonly string[]) {
+  const ordered: Record<string, T> = {};
   for (const key of keys) {
     if (Object.prototype.hasOwnProperty.call(object, key)) {
       ordered[key] = object[key];
@@ -651,15 +664,15 @@ function orderObjectByKnownKeys(object, keys) {
   return ordered;
 }
 
-function arrayCount(value) {
+function arrayCount(value: unknown) {
   return Array.isArray(value) ? value.length : 0;
 }
 
-function normalizePath(value) {
+function normalizePath(value: string) {
   return value.split(path.sep).join("/");
 }
 
-function compareStrings(left, right) {
+function compareStrings(left: string, right: string) {
   if (left < right) {
     return -1;
   }
@@ -669,6 +682,6 @@ function compareStrings(left, right) {
   return 0;
 }
 
-function isObject(value) {
+function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }

@@ -20,6 +20,15 @@ const defaults = {
   out: path.resolve(repoRoot, "security/build-promotion.generated.json")
 };
 
+interface PromoteArgs { root: string; verification: string; releases: string; out: string; builds: string[]; write: boolean; stdout: boolean; dryRun: boolean; help: boolean }
+interface Blocker { code?: string; level?: string | null; severity?: string; message?: string | null; summary?: string }
+interface Verification { build_id: string; verified_ready: boolean; publish_ready: boolean; readiness_score: number; publishability_score: number; updateability_score: number; suggested_build_status: string; top_blockers: Blocker[]; release_summary: { latest_status?: string | null; published_release_count: number } }
+interface BuildManifest { build?: { id?: string; name?: string; status?: string; trust_tier?: string; visibility?: string }; publishing?: { publishable?: boolean }; source?: { project?: string } }
+interface ReleaseArtifact { latest_release?: { status?: string } | null }
+interface JsonDocument extends BuildManifest { builds?: unknown[]; artifacts?: { build?: Record<string, ReleaseArtifact> } }
+interface Reason { dimension: string; severity: string; code?: string; message?: string | null }
+interface PromotionPlan { build_id: string; priority: string; readiness_score: number; verification_ready: boolean; publish_ready: boolean; apply_manifest_promotion: boolean; current: { build_status: string; [key: string]: unknown }; desired: { build_status: string; trust_tier: string }; blockers: Reason[]; [key: string]: unknown }
+
 const HELP_TEXT = `SMARCH curated build promotion planner
 
 Usage:
@@ -58,16 +67,16 @@ async function main() {
   const manifests = await collectBuildManifests(options.root);
   const verificationReport = await maybeReadJson(options.verification);
   const releaseIndex = await maybeReadJson(options.releases);
-  const verificationLookup = new Map(
+  const verificationLookup = new Map<string, Verification>(
     toArray(verificationReport?.builds)
       .map((entry) => normalizeVerificationEntry(entry))
-      .filter(Boolean)
+      .filter((entry): entry is Verification => Boolean(entry))
       .map((entry) => [entry.build_id, entry])
   );
   const releaseLookup = new Map(Object.entries(releaseIndex?.artifacts?.build || {}));
 
   const filteredBuildIds = new Set(options.builds);
-  const plans = [];
+  const plans: PromotionPlan[] = [];
   let appliedCount = 0;
 
   for (const manifestPath of manifests) {
@@ -111,8 +120,8 @@ async function main() {
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+function parseArgs(argv: string[]): PromoteArgs {
+  const options: PromoteArgs = {
     ...defaults,
     builds: [],
     write: false,
@@ -166,17 +175,17 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function requireValue(argv, index, flag) {
+function requireValue(argv: string[], index: number, flag: string): string {
   const value = argv[index];
   if (!value || value.startsWith("--")) throw new Error(`Missing value for ${flag}`);
   return value;
 }
 
-function toArray(value) {
+function toArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-async function maybeReadJson(filePath) {
+async function maybeReadJson(filePath: string): Promise<JsonDocument | null> {
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
   } catch {
@@ -184,39 +193,50 @@ async function maybeReadJson(filePath) {
   }
 }
 
-function normalizeVerificationEntry(entry) {
-  if (!entry?.build_id) return null;
+function normalizeVerificationEntry(entry: unknown): Verification | null {
+  if (!entry || typeof entry !== 'object' || typeof Reflect.get(entry, 'build_id') !== 'string') return null;
+  const value = entry as Record<string, unknown>;
+  const verification = value.verification && typeof value.verification === 'object' ? value.verification as Record<string, unknown> : {};
+  const booleans = value.booleans && typeof value.booleans === 'object' ? value.booleans as Record<string, unknown> : {};
+  const signals = value.signals && typeof value.signals === 'object' ? value.signals as Record<string, unknown> : {};
+  const readiness = signals.readiness && typeof signals.readiness === 'object' ? signals.readiness as Record<string, unknown> : {};
+  const publishability = signals.publishability && typeof signals.publishability === 'object' ? signals.publishability as Record<string, unknown> : {};
+  const updateability = signals.updateability && typeof signals.updateability === 'object' ? signals.updateability as Record<string, unknown> : {};
+  const release = value.release && typeof value.release === 'object' ? value.release as Record<string, unknown> : {};
+  const releaseSummary = value.release_summary && typeof value.release_summary === 'object' ? value.release_summary as Record<string, unknown> : {};
   const suggestedStatus = String(
-    entry?.verification?.suggested_status
-    || entry?.suggested_build_status
+    verification.suggested_status
+    || value.suggested_build_status
     || ""
   ).trim().toLowerCase();
 
   return {
-    build_id: entry.build_id,
-    verified_ready: entry?.booleans?.ready_for_adoption === true || ["verified", "canonical"].includes(suggestedStatus),
-    publish_ready: entry?.booleans?.publishable === true,
-    readiness_score: Number(entry?.signals?.readiness?.score || entry?.readiness_score || 0),
-    publishability_score: Number(entry?.signals?.publishability?.score || entry?.publishability_score || 0),
-    updateability_score: Number(entry?.signals?.updateability?.score || entry?.updateability_score || 0),
+    build_id: String(value.build_id),
+    verified_ready: booleans.ready_for_adoption === true || ["verified", "canonical"].includes(suggestedStatus),
+    publish_ready: booleans.publishable === true,
+    readiness_score: Number(readiness.score || value.readiness_score || 0),
+    publishability_score: Number(publishability.score || value.publishability_score || 0),
+    updateability_score: Number(updateability.score || value.updateability_score || 0),
     suggested_build_status: suggestedStatus === "unverified" ? "candidate" : (suggestedStatus || "candidate"),
-    top_blockers: toArray(entry?.top_blockers).map((blocker) => ({
-      code: blocker?.code,
-      level: blocker?.level || blocker?.severity || null,
-      message: blocker?.message || blocker?.summary || null
-    })),
+    top_blockers: toArray(value.top_blockers).map((item) => {
+      const blocker = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+      return {
+      code: typeof blocker.code === 'string' ? blocker.code : undefined,
+      level: typeof (blocker.level || blocker.severity) === 'string' ? String(blocker.level || blocker.severity) : null,
+      message: typeof (blocker.message || blocker.summary) === 'string' ? String(blocker.message || blocker.summary) : null
+    }; }),
     release_summary: {
-      latest_status: entry?.release?.latest_status || entry?.release_summary?.latest_status || null,
-      published_release_count: Number(entry?.release?.published_release_count || entry?.release_summary?.published_release_count || 0)
+      latest_status: typeof (release.latest_status || releaseSummary.latest_status) === 'string' ? String(release.latest_status || releaseSummary.latest_status) : null,
+      published_release_count: Number(release.published_release_count || releaseSummary.published_release_count || 0)
     }
   };
 }
 
-async function collectBuildManifests(root) {
+async function collectBuildManifests(root: string): Promise<string[]> {
   const stat = await fs.stat(root).catch(() => null);
   if (!stat || !stat.isDirectory()) return [];
-  const files = [];
-  async function walk(currentPath) {
+  const files: string[] = [];
+  async function walk(currentPath: string): Promise<void> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
     entries.sort((left, right) => left.name.localeCompare(right.name));
     for (const entry of entries) {
@@ -232,11 +252,11 @@ async function collectBuildManifests(root) {
   return files.sort((left, right) => left.localeCompare(right));
 }
 
-function relativeFromRepo(targetPath) {
+function relativeFromRepo(targetPath: string): string {
   return String(path.relative(repoRoot, targetPath)).split(path.sep).join("/");
 }
 
-function priorityRank(value) {
+function priorityRank(value: string): number {
   switch (value) {
     case "critical": return 4;
     case "high": return 3;
@@ -245,12 +265,12 @@ function priorityRank(value) {
   }
 }
 
-function normalizeStatus(value, fallback = "candidate") {
+function normalizeStatus(value: unknown, fallback = "candidate"): string {
   const status = String(value || "").trim().toLowerCase();
   return status || fallback;
 }
 
-function statusRank(value) {
+function statusRank(value: unknown): number {
   switch (normalizeStatus(value)) {
     case "unsafe": return -1;
     case "deprecated": return 0;
@@ -261,7 +281,7 @@ function statusRank(value) {
   }
 }
 
-function trustTierForStatus(status, currentTrustTier = "experimental") {
+function trustTierForStatus(status: string, currentTrustTier = "experimental"): string {
   const normalized = normalizeStatus(status);
   if (normalized === "canonical") return "canonical";
   if (normalized === "verified") return "verified";
@@ -273,7 +293,7 @@ function trustTierForStatus(status, currentTrustTier = "experimental") {
   return currentTrustTier || "experimental";
 }
 
-function planPromotion({ manifest, manifestPath, verification, releaseArtifact }) {
+function planPromotion({ manifest, manifestPath, verification, releaseArtifact }: { manifest: BuildManifest; manifestPath: string; verification: Verification | null; releaseArtifact: ReleaseArtifact | null }): PromotionPlan {
   const build = manifest.build || {};
   const publishing = manifest.publishing || {};
   const buildId = String(build.id || "").trim();
@@ -284,8 +304,8 @@ function planPromotion({ manifest, manifestPath, verification, releaseArtifact }
   const readiness = Number(verification?.readiness_score || 0);
   const publishability = Number(verification?.publishability_score || 0);
   const updateability = Number(verification?.updateability_score || 0);
-  const reasons = [];
-  const actions = [];
+  const reasons: Reason[] = [];
+  const actions: Array<Record<string, string | boolean>> = [];
 
   if (desiredStatus !== currentStatus) {
     actions.push({
@@ -321,7 +341,7 @@ function planPromotion({ manifest, manifestPath, verification, releaseArtifact }
     });
   }
 
-  for (const blocker of toArray(verification?.top_blockers)) {
+  for (const blocker of verification?.top_blockers ?? []) {
     reasons.push({
       dimension: inferDimension(blocker.code),
       severity: blocker.level === "fail" ? "blocker" : "warning",
@@ -390,7 +410,7 @@ function planPromotion({ manifest, manifestPath, verification, releaseArtifact }
   };
 }
 
-function uniqueReasons(reasons) {
+function uniqueReasons(reasons: Reason[]): Reason[] {
   const seen = new Set();
   const out = [];
   for (const reason of reasons) {
@@ -402,7 +422,7 @@ function uniqueReasons(reasons) {
   return out;
 }
 
-function inferDimension(code) {
+function inferDimension(code: unknown): string {
   if (String(code).startsWith("publishing.")) return "publishability";
   if (String(code).startsWith("release.")) return "release";
   if (String(code).startsWith("verification.")) return "verification";
@@ -411,7 +431,7 @@ function inferDimension(code) {
   return "general";
 }
 
-function determineDesiredStatus({ currentStatus, verification, latestRelease, publishing }) {
+function determineDesiredStatus({ currentStatus, verification, latestRelease, publishing }: { currentStatus: string; verification: Verification | null; latestRelease: ReleaseArtifact['latest_release']; publishing: NonNullable<BuildManifest['publishing']> }): string {
   if (["deprecated", "unsafe"].includes(currentStatus)) return currentStatus;
   const suggestedStatus = normalizeStatus(verification?.suggested_build_status, currentStatus);
   if (
@@ -434,7 +454,7 @@ function determineDesiredStatus({ currentStatus, verification, latestRelease, pu
   return "candidate";
 }
 
-function determinePriority({ desiredStatus, currentStatus, verification, reasons }) {
+function determinePriority({ desiredStatus, currentStatus, verification, reasons }: { desiredStatus: string; currentStatus: string; verification: Verification | null; reasons: Reason[] }): string {
   const blockerCount = reasons.filter((reason) => reason.severity === "blocker").length;
   if (statusRank(desiredStatus) > statusRank(currentStatus) && blockerCount === 0) return "critical";
   if (verification?.verified_ready === true) return "high";
@@ -442,7 +462,7 @@ function determinePriority({ desiredStatus, currentStatus, verification, reasons
   return "low";
 }
 
-async function applyManifestPromotion(manifestPath, manifest, plan) {
+async function applyManifestPromotion(manifestPath: string, manifest: BuildManifest, plan: PromotionPlan): Promise<boolean> {
   const nextStatus = plan.desired.build_status;
   const nextTrustTier = plan.desired.trust_tier;
   const currentStatus = normalizeStatus(manifest.build?.status);
@@ -465,8 +485,8 @@ async function applyManifestPromotion(manifestPath, manifest, plan) {
   return true;
 }
 
-function summarizePlans(plans, appliedCount) {
-  const summary: Record<string, any> = {
+function summarizePlans(plans: PromotionPlan[], appliedCount: number) {
+  const summary: { build_count: number; applied_manifest_promotions: number; by_current_status: Record<string, number>; by_desired_status: Record<string, number>; verification_ready_count: number; publish_ready_count: number; auto_promotable_count: number; priority_counts: Record<string, number>; top_blockers: Array<Reason & { count: number }> } = {
     build_count: plans.length,
     applied_manifest_promotions: appliedCount,
     by_current_status: {},
@@ -478,7 +498,7 @@ function summarizePlans(plans, appliedCount) {
     top_blockers: []
   };
 
-  const blockerCounts = new Map();
+  const blockerCounts = new Map<string, Reason & { count: number }>();
   for (const plan of plans) {
     summary.by_current_status[plan.current.build_status] = (summary.by_current_status[plan.current.build_status] || 0) + 1;
     summary.by_desired_status[plan.desired.build_status] = (summary.by_desired_status[plan.desired.build_status] || 0) + 1;
@@ -495,7 +515,7 @@ function summarizePlans(plans, appliedCount) {
   }
 
   summary.top_blockers = [...blockerCounts.values()]
-    .sort((left, right) => right.count - left.count || left.code.localeCompare(right.code))
+    .sort((left, right) => right.count - left.count || String(left.code || '').localeCompare(String(right.code || '')))
     .slice(0, 10);
 
   return summary;

@@ -16,7 +16,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WIKI_ROOT = path.resolve(__dirname, "../wiki/bricks-detailed");
 
-type LooseRecord = Record<string, any>;
+type LooseRecord = Record<string, string | string[]>;
+type Crumb = { label: string; href?: string };
 
 function parseArgs(argv: string[]): { root: string } {
   const o = { root: WIKI_ROOT };
@@ -42,7 +43,7 @@ function parseFrontMatter(text: string): { fm: LooseRecord; body: string } {
     const idx = line.indexOf(":");
     if (idx < 0) continue;
     const key = line.slice(0, idx).trim();
-    let v = line.slice(idx + 1).trim();
+    let v: string | string[] = line.slice(idx + 1).trim();
     if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
     if (v.startsWith("[") && v.endsWith("]")) {
       try { v = JSON.parse(v); }
@@ -54,11 +55,11 @@ function parseFrontMatter(text: string): { fm: LooseRecord; body: string } {
 }
 
 // Simple inline formatter: code spans, bold, italics, links. Order matters.
-function renderInline(text) {
+function renderInline(text: string): string {
   // Protect existing HTML entities
   let out = escapeHtml(text);
   // Code spans
-  out = out.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
+  out = out.replace(/`([^`]+)`/g, (_match: string, content: string) => `<code>${content}</code>`);
   // Bold
   out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   // Italics (avoid clashing with bold's asterisks)
@@ -69,11 +70,11 @@ function renderInline(text) {
 }
 
 // Quick table row parser — assumes pipes aren't inside code
-function parseTableRow(line) {
-  return line.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+function parseTableRow(line: string): string[] {
+  return line.replace(/^\||\|$/g, "").split("|").map((cell: string) => cell.trim());
 }
 
-function renderMarkdown(body) {
+function renderMarkdown(body: string): string {
   const lines = body.split(/\r?\n/);
   const out = [];
   let i = 0;
@@ -132,8 +133,8 @@ function renderMarkdown(body) {
         rows.push(parseTableRow(lines[i]));
         i += 1;
       }
-      const thead = header.map((c) => `<th>${renderInline(c)}</th>`).join("");
-      const tbody = rows.map((r) => `<tr>${r.map((c) => `<td>${renderInline(c)}</td>`).join("")}</tr>`).join("");
+      const thead = header.map((cell: string) => `<th>${renderInline(cell)}</th>`).join("");
+      const tbody = rows.map((row: string[]) => `<tr>${row.map((cell: string) => `<td>${renderInline(cell)}</td>`).join("")}</tr>`).join("");
       out.push(`<div class="tbl-wrap"><table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`);
       continue;
     }
@@ -645,7 +646,7 @@ footer a { color: rgba(244,241,232,0.86); }
 `;
 }
 
-function heroSvg(fm) {
+function heroSvg(fm: LooseRecord): string {
   // Simple 2x2 brick in the status color.
   const status = String(fm.status || "project_bound");
   const palette = {
@@ -654,7 +655,7 @@ function heroSvg(fm) {
     project_bound: { top: "#c6ccd6", front: "#9aa3b2", side: "#5e6776", edge: "#353c48" }
   }[status] || { top: "#c6ccd6", front: "#9aa3b2", side: "#5e6776", edge: "#353c48" };
   const w = 96, h = 48, d = 18;
-  const stud = (cx, cy) => `<ellipse cx="${cx}" cy="${cy}" rx="10" ry="7" fill="${palette.top}" stroke="${palette.edge}" stroke-width="1"/><ellipse cx="${cx-1.5}" cy="${cy-2}" rx="6" ry="3" fill="rgba(255,255,255,0.3)"/>`;
+  const stud = (cx: number, cy: number): string => `<ellipse cx="${cx}" cy="${cy}" rx="10" ry="7" fill="${palette.top}" stroke="${palette.edge}" stroke-width="1"/><ellipse cx="${cx-1.5}" cy="${cy-2}" rx="6" ry="3" fill="rgba(255,255,255,0.3)"/>`;
   return `<svg class="hero-svg" viewBox="0 -14 ${w + d + 8} ${h + d + 8}">
     <polygon points="${w},0 ${w+d},${-d/2} ${w+d},${h-d/2} ${w},${h}" fill="${palette.side}" stroke="${palette.edge}" stroke-width="1"/>
     <rect x="0" y="0" width="${w}" height="${h}" fill="${palette.front}" stroke="${palette.edge}" stroke-width="1"/>
@@ -668,7 +669,7 @@ function heroSvg(fm) {
   </svg>`;
 }
 
-function buildChrome(crumbs, depth = 2) {
+function buildChrome(crumbs: string, depth = 2): string {
   const prefix = depth === 1 ? "../" : "../../";
   return `<div class="chrome"><div class="chrome-inner">
     <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">BRICKWORKS</span></div>
@@ -680,8 +681,8 @@ function buildChrome(crumbs, depth = 2) {
   </div></div>`;
 }
 
-function crumbsFor(parts) {
-  const spans = [];
+function crumbsFor(parts: Crumb[]): string {
+  const spans: string[] = [];
   for (let i = 0; i < parts.length; i += 1) {
     const p = parts[i];
     if (p.href) spans.push(`<a href="${escapeHtml(p.href)}">${escapeHtml(p.label)}</a>`);
@@ -691,7 +692,7 @@ function crumbsFor(parts) {
   return spans.join("");
 }
 
-function tocFromBody(bodyHtml) {
+function tocFromBody(bodyHtml: string): string {
   const re = /<h2 id="([^"]+)">([^<]+)<\/h2>/g;
   const items = [];
   let m;
@@ -700,12 +701,12 @@ function tocFromBody(bodyHtml) {
   return `<aside class="toc"><h5>On this page</h5><ul>${items.map((it) => `<li><a href="#${it.id}">${escapeHtml(it.text)}</a></li>`).join("")}</ul></aside>`;
 }
 
-async function renderBrickPage(mdPath, project) {
+async function renderBrickPage(mdPath: string, project: string): Promise<string> {
   const raw = await fs.readFile(mdPath, "utf8");
   const { fm, body } = parseFrontMatter(raw);
   const bodyHtml = renderMarkdown(body);
   const toc = tocFromBody(bodyHtml);
-  const title = fm.title || path.basename(mdPath).replace(/\.md$/, "");
+  const title = String(fm.title || path.basename(mdPath).replace(/\.md$/, ""));
   const status = fm.status || "project_bound";
   const kind = fm.kind || "—";
   const tags = Array.isArray(fm.tags) ? fm.tags : (typeof fm.tags === "string" ? [fm.tags] : []);
@@ -760,24 +761,24 @@ ${buildChrome(crumbsFor([
 </html>`;
 }
 
-async function listProjects(root) {
+async function listProjects(root: string): Promise<string[]> {
   const entries = await fs.readdir(root, { withFileTypes: true });
   return entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
 }
 
-async function renderProjectIndex(root, project) {
+async function renderProjectIndex(root: string, project: string): Promise<string> {
   const dir = path.join(root, project);
   const entries = await fs.readdir(dir);
-  const pages = [];
+  const pages: Array<{ file: string; title: string; status: string; kind: string; archetype: string }> = [];
   for (const e of entries) {
     if (!e.endsWith(".md") || e.endsWith(".portable.md") || e === "INDEX.md") continue;
     const { fm } = parseFrontMatter(await fs.readFile(path.join(dir, e), "utf8"));
     pages.push({
       file: e.replace(/\.md$/, ".html"),
-      title: fm.title || e.replace(/\.md$/, ""),
-      status: fm.status || "project_bound",
-      kind: fm.kind || "—",
-      archetype: fm.archetype || ""
+      title: String(fm.title || e.replace(/\.md$/, "")),
+      status: String(fm.status || "project_bound"),
+      kind: String(fm.kind || "—"),
+      archetype: String(fm.archetype || "")
     });
   }
   pages.sort((a, b) => a.title.localeCompare(b.title));
@@ -806,7 +807,7 @@ ${buildChrome(crumbsFor([{ label: "index", href: "../index.html" }, { label: pro
 </body></html>`;
 }
 
-async function renderMasterIndex(root) {
+async function renderMasterIndex(root: string): Promise<string> {
   const projects = await listProjects(root);
   const proj = [];
   let totalPages = 0;

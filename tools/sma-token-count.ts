@@ -34,13 +34,58 @@ const MULTIPLIER = Number(args.multiplier ?? 3.8);
 const COUNT_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.sql', '.md']);
 const SKIP_DIR = new Set(['node_modules', '.next', 'dist', 'build', '.git', '.expo', 'ios', 'android', 'coverage']);
 
-const charsPerToken = (file) => {
+interface TokenCountArgs {
+  help?: boolean;
+  root?: string;
+  path?: string;
+  write?: boolean;
+  json?: boolean;
+  method?: string;
+  multiplier?: string;
+}
+
+interface FileEstimate {
+  tokens: number;
+  chars: number;
+  lines: number;
+  method: string;
+}
+
+interface PathEstimate {
+  files: number;
+  chars: number;
+  lines: number;
+  static_tokens: number;
+  direct_generate_tokens: number;
+  realistic_regenerate_tokens: number;
+  multiplier: number;
+  method: string;
+  per_file: Array<FileEstimate & { path: string }>;
+}
+
+interface BrickEstimate {
+  path: string;
+  files: number;
+  lines: number;
+  static_tokens: number;
+  direct_generate_tokens: number;
+  realistic_regenerate_tokens: number;
+}
+
+interface Totals {
+  files: number;
+  lines: number;
+  static_tokens: number;
+  realistic_regenerate_tokens: number;
+}
+
+const charsPerToken = (file: string): number => {
   const ext = extname(file).toLowerCase();
   if (ext === '.json' || ext === '.md' || ext === '.sql') return 3.5;
   return 3.7; // TypeScript-ish
 };
 
-function countTokensInFile(file) {
+function countTokensInFile(file: string): FileEstimate {
   const buf = readFileSync(file, 'utf8');
   if (METHOD === 'tiktoken') {
     // Optional path; falls back to heuristic if unavailable.
@@ -62,7 +107,7 @@ function countTokensInFile(file) {
   };
 }
 
-function* walk(dir) {
+function* walk(dir: string): Generator<string, void, unknown> {
   for (const ent of readdirSync(dir, { withFileTypes: true })) {
     if (ent.name.startsWith('.') && ent.name !== '.smarch') continue;
     if (SKIP_DIR.has(ent.name)) continue;
@@ -72,8 +117,8 @@ function* walk(dir) {
   }
 }
 
-function findBrickRoots(root) {
-  const out = [];
+function findBrickRoots(root: string): Array<{ id: string; path: string }> {
+  const out: Array<{ id: string; path: string }> = [];
   for (const subdir of ['packages', 'apps', 'web/src/modules', 'src/renderer/modules', 'apps/web/src/modules']) {
     const base = resolve(root, subdir);
     if (!existsSync(base)) continue;
@@ -88,11 +133,11 @@ function findBrickRoots(root) {
   return out;
 }
 
-function estimateForPath(p) {
+function estimateForPath(p: string): PathEstimate {
   const st = statSync(p);
   const files = st.isFile() ? [p] : [...walk(p)];
   let tokens = 0, chars = 0, lines = 0, fileCount = 0;
-  const perFile = [];
+  const perFile: Array<FileEstimate & { path: string }> = [];
   for (const f of files) {
     const r = countTokensInFile(f);
     tokens += r.tokens; chars += r.chars; lines += r.lines; fileCount++;
@@ -118,6 +163,7 @@ function main() {
     else printSummary({ '<single>': r });
     return;
   }
+  if (!args.root) return;
 
   const root = resolve(args.root);
   const bricks = findBrickRoots(root);
@@ -125,7 +171,15 @@ function main() {
     console.error(`no bricks found under ${root}/{packages,apps,...}`);
     exit(1);
   }
-  const result: Record<string, any> = {
+  const result: {
+    schema_version: string;
+    generated_at: string;
+    project_root: string;
+    method: string;
+    multiplier: number;
+    bricks: Record<string, BrickEstimate>;
+    totals: Totals;
+  } = {
     schema_version: '1.0.0',
     generated_at: new Date().toISOString(),
     project_root: root,
@@ -161,9 +215,9 @@ function main() {
   else printSummary(result.bricks, result.totals);
 }
 
-function printSummary(bricks: Record<string, any>, totals: Record<string, any> | undefined = undefined) {
+function printSummary(bricks: Record<string, BrickEstimate | PathEstimate>, totals: Totals | undefined = undefined): void {
   const rows = Object.entries(bricks).sort((a, b) => b[1].static_tokens - a[1].static_tokens);
-  const w = (s, n) => String(s).padEnd(n);
+  const w = (s: string | number, n: number): string => String(s).padEnd(n);
   console.log(`${w('brick', 50)} ${w('files', 6)} ${w('lines', 8)} ${w('static_tok', 12)} ${w('regen_tok', 12)}`);
   console.log('-'.repeat(94));
   for (const [id, e] of rows) {
@@ -175,8 +229,8 @@ function printSummary(bricks: Record<string, any>, totals: Record<string, any> |
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(argv: string[]): TokenCountArgs {
+  const out: TokenCountArgs = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') out.help = true;

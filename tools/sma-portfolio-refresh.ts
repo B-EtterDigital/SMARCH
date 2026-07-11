@@ -47,6 +47,21 @@ const DEFAULTS = {
   pollSeconds: 5,
 };
 
+interface PortfolioRefreshArgs {
+  projects: string[]; changedFiles: string[]; root: string; registry: string; portfolioRegistry: string;
+  state: string; dashboard: string; leases: string; scanFreshSeconds: number | string;
+  projectScanFreshSeconds: number | string; stateFreshSeconds: number | string; dashboardFreshSeconds: number | string;
+  waitSeconds: number | string; pollSeconds: number | string; provenanceFreshSeconds?: number | string;
+  anchorFreshSeconds?: number | string; help?: boolean; force?: boolean; json?: boolean; noScan?: boolean;
+  noState?: boolean; noDashboard?: boolean; noProvenance?: boolean;
+}
+interface ChangedImpact { ignoredFileCount: number; requiresScan: boolean; requiresState: boolean; scanFileCount: number; scanFiles: string[]; stateOnlyFileCount: number; stateOnlyFiles: string[] }
+interface RefreshPhase { artifactPath: string; command: string[]; force?: boolean; freshSeconds: number; intent: string; name: string; renewEvery?: number; resource: string; resourceKind: string; ttl: number }
+interface PhaseResult { age_seconds?: number; artifact: string; changed_file_count?: number; freshness_seconds?: number; holder_agent?: string; holder_intent?: string; phase: string; status: string; waited_for_lease?: string }
+interface RefreshSummary { changed_files: string[]; force: boolean; generated_at: string; impact: ChangedImpact; phases: PhaseResult[]; projects: string[]; scope: string }
+interface ActiveLease { agent_id?: string; expires_at: string; intent?: string; lease_id: string; resource_id: string; resource_kind: string }
+interface Freshness { age_seconds: number; exists: boolean }
+
 /**
  * @typedef {object} PortfolioRefreshArgs
  * @property {string[]} projects
@@ -84,9 +99,9 @@ try {
   const summary = await refreshPortfolio();
   if (args.json) console.log(JSON.stringify(summary, null, 2));
   else printSummary(summary);
-} catch (err) {
-  console.error(`sma-portfolio-refresh: ${err.message}`);
-  exit(/** @type {Error & {code?: number}} */ (err).code || 1);
+} catch (err: unknown) {
+  console.error(`sma-portfolio-refresh: ${err instanceof Error ? err.message : String(err)}`);
+  exit(err instanceof Error && 'code' in err && typeof err.code === 'number' ? err.code : 1);
 }
 
 function usage() {
@@ -110,7 +125,7 @@ Default behavior:
 Project-scoped refresh:
   - --project <id> scans only the named portfolio project(s),
   - writes scans/<id>/latest.registry.json and merges scans/all-projects/latest.registry.json,
-  - bare --project calls reuse a fresh project registry for ${DEFAULTS.projectScanFreshSeconds}s,
+  - bare --project calls reuse a fresh project registry for ${String(DEFAULTS.projectScanFreshSeconds)}s,
   - refreshes state/dashboard after a project scan or known state-impact change.
 
 Changed-file refresh:
@@ -122,12 +137,12 @@ Use --force when a controller explicitly needs a fresh full portfolio scan.
 `);
 }
 
-async function refreshPortfolio() {
+async function refreshPortfolio(): Promise<RefreshSummary> {
   const projectIds = uniqueStrings(args.projects || []);
   const changedFiles = uniqueStrings(args.changedFiles || []);
   const impact = classifyChangedFiles(changedFiles);
   const noScan = Boolean(args.noScan) || (changedFiles.length > 0 && !impact.requiresScan);
-  const summary: Record<string, any> = {
+  const summary: RefreshSummary = {
     generated_at: new Date().toISOString(),
     force: Boolean(args.force),
     scope: projectIds.length ? 'project' : 'global',
@@ -137,7 +152,7 @@ async function refreshPortfolio() {
     phases: [],
   };
 
-  let scanPhase = null;
+  let scanPhase: PhaseResult | null = null;
   if (!noScan) {
     scanPhase = await maybeRefresh(scanPhaseConfig(projectIds, impact, changedFiles));
     summary.phases.push(scanPhase);
@@ -151,7 +166,7 @@ async function refreshPortfolio() {
   }
 
   const scanUpdated = scanPhase && ['refreshed', 'refreshed-after-wait', 'coalesced-fresh'].includes(scanPhase.status);
-  const stateNeeded = Boolean(impact.requiresState && changedFiles.length > 0);
+  const stateNeeded = (impact.requiresState && changedFiles.length > 0);
 
   // Provenance/license/seal ledgers ride along with every registry refresh so
   // new bricks are ledgered automatically — no retro-backfill. Incremental:
@@ -162,7 +177,7 @@ async function refreshPortfolio() {
       name: 'provenance',
       artifactPath: resolve(repoRoot, 'registry/provenance-ledger.generated.json'),
       freshSeconds: numberArg(args.provenanceFreshSeconds, DEFAULTS.scanFreshSeconds),
-      force: scanUpdated,
+      force: Boolean(scanUpdated),
       resourceKind: 'registry-regen',
       resource: 'provenance-ledger',
       intent: 'queued provenance ledger refresh (incremental)',
@@ -181,7 +196,7 @@ async function refreshPortfolio() {
       name: 'anchor',
       artifactPath: resolve(repoRoot, 'registry/anchor.generated.json'),
       freshSeconds: numberArg(args.anchorFreshSeconds, DEFAULTS.scanFreshSeconds),
-      force: scanUpdated || provenanceUpdated,
+      force: (scanUpdated ?? provenanceUpdated),
       resourceKind: 'registry-regen',
       resource: 'provenance-anchor',
       intent: 'queued provenance anchor refresh',
@@ -198,7 +213,7 @@ async function refreshPortfolio() {
       name: 'state',
       artifactPath: args.state,
       freshSeconds: numberArg(args.stateFreshSeconds, DEFAULTS.stateFreshSeconds),
-      force: scanUpdated || stateNeeded,
+      force: scanUpdated ?? stateNeeded,
       resourceKind: 'state-regen',
       resource: 'global',
       intent: 'queued portfolio state refresh',
@@ -215,7 +230,7 @@ async function refreshPortfolio() {
       name: 'dashboard',
       artifactPath: args.dashboard,
       freshSeconds: numberArg(args.dashboardFreshSeconds, DEFAULTS.dashboardFreshSeconds),
-      force: scanUpdated || stateNeeded,
+      force: scanUpdated ?? stateNeeded,
       resourceKind: 'wiki-regen',
       resource: 'gen3-dashboard',
       intent: 'queued gen3 dashboard refresh',
@@ -231,7 +246,7 @@ async function refreshPortfolio() {
   return summary;
 }
 
-function scanPhaseConfig(projectIds, impact, changedFiles) {
+function scanPhaseConfig(projectIds: string[], impact: ChangedImpact, changedFiles: string[]): RefreshPhase {
   if (projectIds.length > 0) {
     const knownScanImpact = changedFiles.length > 0 && impact.requiresScan;
     return {
@@ -272,14 +287,14 @@ function scanPhaseConfig(projectIds, impact, changedFiles) {
   };
 }
 
-function projectScanArtifact(projectIds) {
+function projectScanArtifact(projectIds: string[]): string {
   if (projectIds.length === 1) {
     return resolve(repoRoot, 'scans', projectIds[0], 'latest.registry.json');
   }
   return args.portfolioRegistry;
 }
 
-async function maybeRefresh(phase) {
+async function maybeRefresh(phase: RefreshPhase): Promise<PhaseResult> {
   const fresh = artifactFreshness(phase.artifactPath);
   if (!args.force && !phase.force && fresh.exists && fresh.age_seconds <= phase.freshSeconds) {
     return {
@@ -331,7 +346,7 @@ async function maybeRefresh(phase) {
   };
 }
 
-async function waitForLeaseClear(phase, active) {
+async function waitForLeaseClear(phase: RefreshPhase, active: ActiveLease): Promise<void> {
   const waitSeconds = numberArg(args.waitSeconds, DEFAULTS.waitSeconds);
   const pollSeconds = Math.max(1, numberArg(args.pollSeconds, DEFAULTS.pollSeconds));
   const started = Date.now();
@@ -350,7 +365,7 @@ async function waitForLeaseClear(phase, active) {
   throw err;
 }
 
-function runLeasedPhase(phase) {
+function runLeasedPhase(phase: RefreshPhase): void {
   const leaseArgs = [
     resolve(toolsDir, 'sma-lease.ts'),
     'run',
@@ -373,37 +388,37 @@ function runLeasedPhase(phase) {
   if (res.status !== 0) {
     if (res.stdout) process.stdout.write(res.stdout);
     if (res.stderr) process.stderr.write(res.stderr);
-    const err = new Error(`${phase.name} refresh failed with exit ${res.status}`) as Error & { code?: number };
-    err.code = res.status || 1;
+    const err = new Error(`${phase.name} refresh failed with exit ${String(res.status)}`) as Error & { code?: number };
+    err.code = res.status ?? 1;
     throw err;
   }
 }
 
-function findActiveLease(resourceKind, resource) {
+function findActiveLease(resourceKind: string, resource: string): ActiveLease | null {
   const leases = readActiveLeases();
   return leases.find((lease) => (
     lease.resource_kind === resourceKind
     && lease.resource_id === resource
-  )) || null;
+  )) ?? null;
 }
 
-function readActiveLeases() {
+function readActiveLeases(): ActiveLease[] {
   if (!existsSync(args.leases)) return [];
   try {
-    const parsed = JSON.parse(readFileSync(args.leases, 'utf8'));
+    const parsed = JSON.parse(readFileSync(args.leases, 'utf8')) as { leases?: ActiveLease[] };
     const now = Date.now();
-    return (parsed.leases || []).filter((lease) => Date.parse(lease.expires_at) > now);
+    return (parsed.leases ?? []).filter((lease: { expires_at: string; }) => Date.parse(lease.expires_at) > now);
   } catch {
     return [];
   }
 }
 
-function artifactFreshness(artifactPath) {
+function artifactFreshness(artifactPath: string): Freshness {
   if (!existsSync(artifactPath)) return { exists: false, age_seconds: Infinity };
   let timestamp = null;
   try {
-    const parsed = JSON.parse(readFileSync(artifactPath, 'utf8'));
-    timestamp = parsed.generated_at || parsed.generatedAt || null;
+    const parsed = JSON.parse(readFileSync(artifactPath, 'utf8')) as { generated_at?: string; generatedAt?: string };
+    timestamp = (parsed.generated_at ?? parsed.generatedAt) ?? null;
   } catch {
     // HTML dashboard and other non-JSON artifacts fall back to mtime.
   }
@@ -416,7 +431,7 @@ function artifactFreshness(artifactPath) {
   };
 }
 
-function printSummary(summary) {
+function printSummary(summary: RefreshSummary): void {
   console.log('SMA portfolio refresh');
   console.log(`generated: ${summary.generated_at}`);
   for (const phase of summary.phases) {
@@ -424,7 +439,7 @@ function printSummary(summary) {
       phase.phase,
       phase.status,
       phase.artifact,
-      phase.age_seconds !== undefined ? `age=${phase.age_seconds}s` : null,
+      phase.age_seconds !== undefined ? `age=${String(phase.age_seconds)}s` : null,
       phase.waited_for_lease ? `coalesced=${phase.waited_for_lease}` : null,
     ].filter(Boolean);
     console.log(`  - ${bits.join(' ')}`);
@@ -432,9 +447,9 @@ function printSummary(summary) {
 }
 
 /** @returns {PortfolioRefreshArgs} */
-function parseArgs(list): Record<string, any> {
+function parseArgs(list: string[]): PortfolioRefreshArgs {
   /** @type {PortfolioRefreshArgs} */
-  const out: Record<string, any> = { ...DEFAULTS, projects: [], changedFiles: [] };
+  const out: PortfolioRefreshArgs = { ...DEFAULTS, projects: [], changedFiles: [] };
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     const next = list[i + 1];
@@ -455,38 +470,37 @@ function parseArgs(list): Record<string, any> {
       continue;
     }
     if (!arg.startsWith('--') || next === undefined || next.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    if (Object.prototype.hasOwnProperty.call(out, key)) {
-      out[key] = next;
+    const key = arg.slice(2).replace(/-([a-z])/g, (_, character: string) => character.toUpperCase());
+    if (setValueOption(out, key, next)) {
       i += 1;
     }
   }
-  out.registry = resolve(repoRoot, String(out.registry));
-  out.portfolioRegistry = resolve(repoRoot, String(out.portfolioRegistry));
-  out.state = resolve(repoRoot, String(out.state));
-  out.dashboard = resolve(repoRoot, String(out.dashboard));
-  out.leases = resolve(repoRoot, String(out.leases));
+  out.registry = resolve(repoRoot, out.registry);
+  out.portfolioRegistry = resolve(repoRoot, out.portfolioRegistry);
+  out.state = resolve(repoRoot, out.state);
+  out.dashboard = resolve(repoRoot, out.dashboard);
+  out.leases = resolve(repoRoot, out.leases);
   return out;
 }
 
-function numberArg(value, fallback) {
+function numberArg(value: number | string | undefined, fallback: number): number {
   const parsed = Number.parseInt(String(value), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function sleep(ms) {
+function sleep(ms: number|undefined) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 }
 
-function relative(targetPath) {
+function relative(targetPath: string) {
   return targetPath.startsWith(repoRoot) ? targetPath.slice(repoRoot.length + 1) : targetPath;
 }
 
-function uniqueStrings(values) {
-  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => (value || '').trim()).filter(Boolean))];
 }
 
-function classifyChangedFiles(files) {
+function classifyChangedFiles(files: string[]): ChangedImpact {
   if (!files.length) {
     return {
       requiresScan: true,
@@ -499,9 +513,9 @@ function classifyChangedFiles(files) {
     };
   }
 
-  const scanFiles = [];
-  const stateOnlyFiles = [];
-  const ignoredFiles = [];
+  const scanFiles: string[] = [];
+  const stateOnlyFiles: string[] = [];
+  const ignoredFiles: string[] = [];
 
   for (const file of files.map(normalizePath)) {
     if (isStateOnlyPath(file)) {
@@ -524,14 +538,14 @@ function classifyChangedFiles(files) {
   };
 }
 
-function isStateOnlyPath(file) {
+function isStateOnlyPath(file: string) {
   return file.startsWith('.smarch/agent-context/')
     || file.startsWith('.smarch/conflicts/')
     || file.startsWith('.smarch/leases/')
     || file === '.smarch/context.ndjson';
 }
 
-function isScanImpactPath(file) {
+function isScanImpactPath(file: string) {
   return file === 'sma.gen3.json'
     || file === 'AGENTS.md'
     || file === 'CLAUDE.md'
@@ -552,10 +566,19 @@ function isScanImpactPath(file) {
     || file.startsWith('supabase/functions/');
 }
 
-function normalizePath(value) {
-  return String(value || '')
+function normalizePath(value: string): string {
+  return (value || '')
     .replace(/\\/g, '/')
     .replace(/^\.\//, '')
     .replace(/^\/+/, '')
     .trim();
+}
+
+function setValueOption(out: PortfolioRefreshArgs, key: string, value: string): boolean {
+  switch (key) {
+    case 'root': case 'registry': case 'portfolioRegistry': case 'state': case 'dashboard': case 'leases': out[key] = value; return true;
+    case 'scanFreshSeconds': case 'projectScanFreshSeconds': case 'stateFreshSeconds': case 'dashboardFreshSeconds':
+    case 'waitSeconds': case 'pollSeconds': case 'provenanceFreshSeconds': case 'anchorFreshSeconds': out[key] = value; return true;
+    default: return false;
+  }
 }

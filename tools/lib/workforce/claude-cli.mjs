@@ -5,10 +5,12 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_TIMEOUT_MS = 600_000;
 
+/** @param {unknown} packet */
 function packetPrompt(packet) {
   return typeof packet === "string" ? packet : JSON.stringify(packet, null, 2);
 }
 
+/** @param {string} schema */
 function schemaJson(schema) {
   if (typeof schema !== "string" || !schema.trim()) throw new Error("schema must be a JSON string or filesystem path");
   const source = schema.trim().startsWith("{") ? schema : readFileSync(schema, "utf8");
@@ -27,6 +29,23 @@ export function buildClaudeArgs({ model, effort, schema, readOnly = false } = {}
   return args;
 }
 
+/**
+ * @typedef {{
+ *   code: number | null,
+ *   stdout: string,
+ *   stderr: string,
+ *   timedOut: boolean,
+ *   closeSignal?: NodeJS.Signals | null,
+ *   error?: Error & { code?: string }
+ * }} ProcessResult
+ */
+
+/**
+ * @param {string[]} args
+ * @param {string} input
+ * @param {{ timeoutMs: number, signal?: AbortSignal, cwd?: string }} options
+ * @returns {Promise<ProcessResult>}
+ */
 function runProcess(args, input, { timeoutMs, signal, cwd }) {
   return new Promise((resolve) => {
     const child = spawn("claude", args, { env: process.env, cwd });
@@ -35,6 +54,7 @@ function runProcess(args, input, { timeoutMs, signal, cwd }) {
     let settled = false;
     let timedOut = false;
 
+    /** @param {ProcessResult} result */
     const finish = (result) => {
       if (settled) return;
       settled = true;

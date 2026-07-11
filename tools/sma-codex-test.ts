@@ -23,6 +23,14 @@ import path from "node:path";
 import { codexBatch } from "./lib/codex-runner.ts";
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
+interface CandidateBrick {
+  id: string; kind?: string; manifest_path: string; name?: string; project: string;
+  score?: number; source_paths?: string[];
+}
+type CandidateOptions = ReturnType<typeof parseArgs>
+interface BrickSemantics { public_api?: string[]; purpose?: string }
+interface GeneratedTest { skipped: boolean; test_filename: string; test_source: string }
+
 function parseArgs(argv: string[]) {
   const opts = {
     candidates: smaPath("security/reuse_candidates.json"),
@@ -65,9 +73,9 @@ const SCHEMA = {
   }
 };
 
-async function readJson(p: string): Promise<any> { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson<T>(p: string): Promise<T> { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
 
-async function hasSiblingTest(absDir) {
+async function hasSiblingTest(absDir: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(absDir, { withFileTypes: true });
     for (const e of entries) {
@@ -78,12 +86,12 @@ async function hasSiblingTest(absDir) {
   return false;
 }
 
-async function gatherSource(brick) {
+async function gatherSource(brick: CandidateBrick): Promise<string> {
   const rootDir = path.dirname(brick.manifest_path);
   const wanted = new Set<string>();
-  const isFileBrick = (brick.source_paths || []).some((p) => /\.(t|j)sx?$/i.test(p));
+  const isFileBrick = (brick.source_paths ?? []).some((p) => /\.(t|j)sx?$/i.test(p));
   if (isFileBrick) {
-    wanted.add(path.resolve(PROJECTS_ROOT, brick.project || "", brick.source_paths[0]));
+    wanted.add(path.resolve(PROJECTS_ROOT, brick.project || "", brick.source_paths?.[0] ?? ''));
   }
   for (const name of ["index.ts", "index.tsx", "index.js", `${path.basename(rootDir)}.ts`, `${path.basename(rootDir)}.tsx`]) {
     wanted.add(path.join(rootDir, name));
@@ -117,15 +125,15 @@ async function gatherSource(brick) {
   return pieces.join("\n\n");
 }
 
-function buildPrompt(brick, sem, src) {
+function buildPrompt(brick: CandidateBrick, sem: BrickSemantics, src: string): string {
   return `You write a single starter test file for a software brick. The test will live next to the brick's source so an automated promotion gate can detect it. Keep it small and runnable.
 
 ## Brick
 id: ${brick.id}
 project: ${brick.project}
-kind: ${brick.kind}
-public_api: ${(sem.public_api || []).join(", ")}
-purpose: ${sem.purpose || "(unknown)"}
+kind: ${String(brick.kind)}
+public_api: ${(sem.public_api ?? []).join(", ")}
+purpose: ${sem.purpose ?? "(unknown)"}
 
 ## Source (truncated)
 
@@ -147,17 +155,17 @@ Return JSON matching the schema:
 Return only JSON.`;
 }
 
-async function loadCandidates(opts) {
-  const c = await readJson(opts.candidates);
-  let bricks = c.bricks || [];
-  if (opts.minScore > 0) bricks = bricks.filter((b) => (b.score || 0) >= opts.minScore);
+async function loadCandidates(opts: CandidateOptions): Promise<CandidateBrick[]> {
+  const c = await readJson<{ bricks?: CandidateBrick[] }>(opts.candidates);
+  let bricks = c.bricks ?? [];
+  if (opts.minScore > 0) bricks = bricks.filter((b) => (b.score ?? 0) >= opts.minScore);
   if (opts.project) bricks = bricks.filter((b) => b.project === opts.project);
   if (opts.filter) {
     const f = opts.filter;
     bricks = bricks.filter((b) =>
       (b.id || "").toLowerCase().includes(f) ||
-      (b.name || "").toLowerCase().includes(f) ||
-      (b.source_paths || []).some((p) => p.toLowerCase().includes(f))
+      (b.name ?? "").toLowerCase().includes(f) ||
+      (b.source_paths ?? []).some((p) => p.toLowerCase().includes(f))
     );
   }
   return bricks;
@@ -166,30 +174,30 @@ async function loadCandidates(opts) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const candidates = await loadCandidates(opts);
-  const items = [];
-  const meta = new Map();
+  const items: { id: string; prompt: string; schema: typeof SCHEMA }[] = [];
+  const meta = new Map<string, { brick: CandidateBrick; dir: string }>();
 
   for (const b of candidates) {
     const rootDir = path.dirname(b.manifest_path);
-    const isFileBrick = (b.source_paths || []).some((p) => /\.(t|j)sx?$/i.test(p));
+    const isFileBrick = (b.source_paths ?? []).some((p) => /\.(t|j)sx?$/i.test(p));
     const dir = isFileBrick
-      ? path.dirname(path.resolve(PROJECTS_ROOT, b.project, b.source_paths[0]))
+      ? path.dirname(path.resolve(PROJECTS_ROOT, b.project, b.source_paths?.[0] ?? ''))
       : rootDir;
     if (!opts.overwrite && await hasSiblingTest(dir)) continue;
-    let mf;
-    try { mf = JSON.parse(await fs.readFile(b.manifest_path, "utf8")); }
+    let mf: { semantics?: BrickSemantics };
+    try { mf = JSON.parse(await fs.readFile(b.manifest_path, "utf8")) as { semantics?: BrickSemantics }; }
     catch { continue; }
     const src = await gatherSource(b);
     items.push({
       id: b.id,
-      prompt: buildPrompt(b, mf.semantics || {}, src),
+      prompt: buildPrompt(b, mf.semantics ?? {}, src),
       schema: SCHEMA
     });
     meta.set(b.id, { brick: b, dir });
     if (opts.limit > 0 && items.length >= opts.limit) break;
   }
 
-  console.error(`writing tests for ${items.length} candidate brick(s) (concurrency=${opts.concurrency})`);
+  console.error(`writing tests for ${String(items.length)} candidate brick(s) (concurrency=${String(opts.concurrency)})`);
 
   let processed = 0, cacheHits = 0, failed = 0, skipped = 0, written = 0;
 
@@ -197,32 +205,40 @@ async function main() {
     concurrency: opts.concurrency,
     model: opts.model,
     timeoutMs: opts.timeoutMs,
-    onResult: async (wrapped) => {
+    onResult: (wrapped) => { void (async () => {
       processed += 1;
       const r = wrapped.result;
       if (!r.ok) { failed += 1; console.error(`  ${wrapped.id}: ${r.error}`); return; }
       if (r.fromCache) cacheHits += 1;
       const m = meta.get(wrapped.id);
       if (!m) return;
+      if (!isGeneratedTest(r.data)) { failed += 1; console.error(`  ${wrapped.id}: invalid structured test result`); return; }
       if (r.data.skipped) { skipped += 1; return; }
       // Defensive: codex sometimes returns a full relative path. Force just the basename.
-      const safeName = path.basename(String(r.data.test_filename || "").trim() || `${m.brick.name || "brick"}.test.ts`);
+      const safeName = path.basename((r.data.test_filename || "").trim() || `${m.brick.name ?? "brick"}.test.ts`);
       const target = path.join(m.dir, safeName);
       if (!opts.dryRun) {
         try {
           await fs.writeFile(target, r.data.test_source);
           written += 1;
-        } catch (err) {
-          failed += 1; console.error(`  write ${target}: ${err.message}`);
+        } catch (err: unknown) {
+          failed += 1; console.error(`  write ${target}: ${err instanceof Error ? err.message : String(err)}`);
         }
       } else {
         written += 1;
       }
-      if (processed % 5 === 0) console.error(`  ${processed}/${items.length} (${written} written, ${skipped} skipped${r.fromCache ? ", cache hit" : ""})`);
-    }
+      if (processed % 5 === 0) console.error(`  ${String(processed)}/${String(items.length)} (${String(written)} written, ${String(skipped)} skipped${r.fromCache ? ", cache hit" : ""})`);
+    })(); }
   });
 
   console.log(JSON.stringify({ scanned: candidates.length, queued: items.length, processed, cache_hits: cacheHits, written, skipped, failed, dry_run: opts.dryRun }, null, 2));
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch((err: unknown) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+
+function isGeneratedTest(value: unknown): value is GeneratedTest {
+  return typeof value === 'object' && value !== null
+    && 'skipped' in value && typeof value.skipped === 'boolean'
+    && 'test_filename' in value && typeof value.test_filename === 'string'
+    && 'test_source' in value && typeof value.test_source === 'string';
+}

@@ -71,8 +71,18 @@ const genericWords = [
   "workos", "clerk", "supabase", "google", "gcp", "openai", "anthropic"
 ];
 
-function parseArgs(argv): Record<string, any> {
-  const opts = {
+interface FilterOptions { allOut: string; out: string; registry: string; threshold: number }
+interface RegistryBrick {
+  candidate_type?: string; data_classes?: string[]; domain?: string[];
+  feature_cluster?: { id?: string }; hierarchy?: { level?: string }; id?: string;
+  kind?: string; manifest_path?: string; name?: string; project?: string;
+  source_paths?: string[]; status?: string;
+}
+interface BrickIndices { byCluster: Map<string, RegistryBrick[]>; byDomain: Map<string, RegistryBrick[]> }
+interface ScoredBrick extends RegistryBrick { reasons: string[]; score: number }
+
+function parseArgs(argv: string[]): FilterOptions {
+  const opts: FilterOptions = {
     registry: smaPath("scans/all-projects/latest.registry.json"),
     out: smaPath("security/reuse_candidates.json"),
     allOut: smaPath("security/reuse_all_scored.json"),
@@ -89,11 +99,11 @@ function parseArgs(argv): Record<string, any> {
   return opts;
 }
 
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+async function readJson<T>(filePath: string): Promise<T> {
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
 }
 
-async function countFiles(dir) {
+async function countFiles(dir: string): Promise<number> {
   let count = 0;
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -110,7 +120,7 @@ async function countFiles(dir) {
   return count;
 }
 
-async function hasSibling(dir, patterns) {
+async function hasSibling(dir: string, patterns: RegExp[]): Promise<boolean> {
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const e of entries) {
@@ -122,31 +132,31 @@ async function hasSibling(dir, patterns) {
   return false;
 }
 
-function normalizeName(s) {
-  return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+function normalizeName(s: unknown): string {
+  return String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-function bestCrossProjectMatch(brick, byCluster, byDomain) {
+function bestCrossProjectMatch(brick: RegistryBrick, byCluster: BrickIndices['byCluster'], byDomain: BrickIndices['byDomain']): boolean {
   const clusterId = brick.feature_cluster?.id;
   if (clusterId && byCluster.get(clusterId)) {
-    const otherProjects = byCluster.get(clusterId).filter((b) => b.project !== brick.project);
+    const otherProjects = (byCluster.get(clusterId) ?? []).filter((b) => b.project !== brick.project);
     if (otherProjects.length > 0) return true;
   }
-  const domain = (brick.domain || [])[0];
+  const domain = (brick.domain ?? [])[0];
   if (domain && byDomain.get(domain)) {
-    const otherProjects = byDomain.get(domain).filter((b) => b.project !== brick.project);
+    const otherProjects = (byDomain.get(domain) ?? []).filter((b) => b.project !== brick.project);
     if (otherProjects.length > 0) return true;
   }
   return false;
 }
 
-async function scoreBrick(brick, context) {
+async function scoreBrick(brick: RegistryBrick, context: BrickIndices): Promise<{ reasons: string[]; score: number }> {
   let score = 0;
-  const reasons = [];
+  const reasons: string[] = [];
 
   // Kind signal
-  const kind = brick.kind || brick.candidate_type || "";
-  const manifestKind = brick.hierarchy?.level === "brick" ? (brick.domain?.[0] || kind) : kind;
+  const kind = (brick.kind ?? brick.candidate_type) ?? "";
+  const manifestKind = brick.hierarchy?.level === "brick" ? (brick.domain?.[0] ?? kind) : kind;
   if (reusableKinds.has(kind) || reusableKinds.has(manifestKind)) {
     score += 20; reasons.push("+20 reusable-kind");
   }
@@ -157,28 +167,28 @@ async function scoreBrick(brick, context) {
   }
 
   // Generic word in name/path
-  const haystack = normalizeName(`${brick.name || ""} ${(brick.source_paths || []).join(" ")} ${(brick.domain || []).join(" ")}`);
+  const haystack = normalizeName(`${brick.name ?? ""} ${(brick.source_paths ?? []).join(" ")} ${(brick.domain ?? []).join(" ")}`);
   if (genericWords.some((w) => haystack.includes(`-${w}-`) || haystack.startsWith(`${w}-`) || haystack.endsWith(`-${w}`) || haystack.includes(w))) {
     score += 10; reasons.push("+10 generic-word");
   }
 
   // Project-specific name penalty
-  const projectLower = (brick.project || "").toLowerCase();
+  const projectLower = (brick.project ?? "").toLowerCase();
   const projectPrefixes = [projectLower, "acme-desktop-", "modchat", "modcap", "moddic", "modtrack", "modwflow", "media-", "acme-skills-", "studio-", "factory-", "acme-factory-"];
   if (projectPrefixes.filter(Boolean).some((p) => haystack.includes(p))) {
     score -= 20; reasons.push("-20 project-specific-name");
   }
 
   // Size signal — read the dir if possible
-  const sourcePath = (brick.source_paths || [])[0];
+  const sourcePath = (brick.source_paths ?? [])[0];
   if (sourcePath) {
-    const abs = path.resolve(PROJECTS_ROOT, brick.project || "", sourcePath);
+    const abs = path.resolve(PROJECTS_ROOT, brick.project ?? "", sourcePath);
     try {
       const st = await fs.stat(abs);
       if (st.isDirectory()) {
         const n = await countFiles(abs);
-        if (n >= 3 && n <= 20) { score += 15; reasons.push(`+15 sweet-spot-size(${n})`); }
-        else if (n > 40) { score -= 20; reasons.push(`-20 huge-size(${n})`); }
+        if (n >= 3 && n <= 20) { score += 15; reasons.push(`+15 sweet-spot-size(${String(n)})`); }
+        else if (n > 40) { score -= 20; reasons.push(`-20 huge-size(${String(n)})`); }
       } else {
         // File-level brick — always small; give modest bonus if matches reusable-kind
         if (reusableKinds.has(kind)) { score += 5; reasons.push("+5 file-brick"); }
@@ -198,7 +208,7 @@ async function scoreBrick(brick, context) {
   }
 
   // Data classification safety
-  const classes = (brick.data_classes || []);
+  const classes = (brick.data_classes ?? []);
   if (classes.includes("public") || classes.includes("user_private")) {
     if (!classes.includes("credential") && !classes.includes("admin_only") && !classes.includes("payment")) {
       score += 10; reasons.push("+10 data-safe");
@@ -208,19 +218,19 @@ async function scoreBrick(brick, context) {
   return { score, reasons };
 }
 
-function buildIndices(bricks) {
-  const byCluster = new Map();
-  const byDomain = new Map();
+function buildIndices(bricks: RegistryBrick[]): BrickIndices {
+  const byCluster = new Map<string, RegistryBrick[]>();
+  const byDomain = new Map<string, RegistryBrick[]>();
   for (const b of bricks) {
     const c = b.feature_cluster?.id;
     if (c) {
       if (!byCluster.has(c)) byCluster.set(c, []);
-      byCluster.get(c).push(b);
+      byCluster.get(c)?.push(b);
     }
-    const d = (b.domain || [])[0];
+    const d = (b.domain ?? [])[0];
     if (d) {
       if (!byDomain.has(d)) byDomain.set(d, []);
-      byDomain.get(d).push(b);
+      byDomain.get(d)?.push(b);
     }
   }
   return { byCluster, byDomain };
@@ -228,11 +238,11 @@ function buildIndices(bricks) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const registry = await readJson(opts.registry);
-  const bricks = registry.bricks || [];
+  const registry = await readJson<{ bricks?: RegistryBrick[] }>(opts.registry);
+  const bricks = registry.bricks ?? [];
   const indices = buildIndices(bricks);
 
-  const scored = [];
+  const scored: ScoredBrick[] = [];
   for (const b of bricks) {
     const { score, reasons } = await scoreBrick(b, indices);
     scored.push({
@@ -276,7 +286,7 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err instanceof Error ? err.stack : err);
   process.exit(1);
 });

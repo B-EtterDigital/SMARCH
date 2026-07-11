@@ -2,6 +2,9 @@ import { spawn, spawnSync } from "node:child_process";
 
 const DEFAULT_TIMEOUT_MS = 600_000;
 
+/** @typedef {{ code: number | null, stdout: string, stderr: string, error?: NodeJS.ErrnoException, closeSignal?: NodeJS.Signals | null, timedOut: boolean }} ProcessResult */
+
+/** @param {unknown} packet @returns {string} */
 function packetPrompt(packet) {
   return typeof packet === "string" ? packet : JSON.stringify(packet, null, 2);
 }
@@ -11,6 +14,7 @@ export function isAvailable(command = process.env.SMA_OPENCODE_BIN || "opencode"
   return !probe.error && probe.status === 0;
 }
 
+/** @param {unknown} stdout */
 export function parseJsonEvents(stdout) {
   const events = String(stdout || "").split(/\r?\n/).filter(Boolean).flatMap((line) => {
     try { return [JSON.parse(line)]; } catch { return []; }
@@ -31,6 +35,12 @@ export function parseJsonEvents(stdout) {
   return { events, output: text.at(-1) || "", tokensIn, tokensOut, sessionId };
 }
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {{ timeoutMs: number, signal?: AbortSignal, cwd: string }} options
+ * @returns {Promise<ProcessResult>}
+ */
 function runProcess(command, args, { timeoutMs, signal, cwd }) {
   return new Promise((resolve) => {
     const child = spawn(command, args, { env: process.env, cwd });
@@ -38,6 +48,7 @@ function runProcess(command, args, { timeoutMs, signal, cwd }) {
     let stderr = "";
     let settled = false;
     let timedOut = false;
+    /** @param {ProcessResult} result */
     const finish = (result) => {
       if (settled) return;
       settled = true;
@@ -48,8 +59,8 @@ function runProcess(command, args, { timeoutMs, signal, cwd }) {
     const abort = () => { timedOut = true; child.kill("SIGKILL"); };
     const timer = setTimeout(abort, timeoutMs);
     signal?.addEventListener("abort", abort, { once: true });
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stdout.on("data", (/** @type {Buffer | string} */ chunk) => { stdout += chunk; });
+    child.stderr.on("data", (/** @type {Buffer | string} */ chunk) => { stderr += chunk; });
     child.on("error", (error) => finish({ code: null, stdout, stderr, error, timedOut }));
     child.on("close", (code, closeSignal) => finish({ code, stdout, stderr, closeSignal, timedOut }));
   });

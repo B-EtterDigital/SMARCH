@@ -1,4 +1,13 @@
+/**
+ * @typedef {object} CliErrorOptions
+ * @property {unknown} [cause]
+ * @property {number} [exitCode]
+ * @property {string} [nextCommand]
+ * @property {Record<string, unknown>} [context]
+ */
+
 export class CliError extends Error {
+  /** @param {string} code @param {string} message @param {CliErrorOptions} [options] */
   constructor(code, message, options = {}) {
     super(message, options.cause ? { cause: options.cause } : undefined);
     this.name = "CliError";
@@ -9,10 +18,12 @@ export class CliError extends Error {
   }
 }
 
+/** @param {unknown} error @returns {string} */
 export function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** @param {unknown} error @param {CliErrorOptions & { code?: string }} [fallback] @returns {CliError} */
 export function asCliError(error, fallback = {}) {
   if (error instanceof CliError) return error;
   return new CliError(fallback.code || "UNEXPECTED_ERROR", errorMessage(error), {
@@ -23,6 +34,7 @@ export function asCliError(error, fallback = {}) {
   });
 }
 
+/** @param {string} tool @param {unknown} error @param {Record<string, unknown>} [extraContext] @returns {number} */
 export function emitFailure(tool, error, extraContext = {}) {
   const failure = asCliError(error);
   process.stderr.write(`${JSON.stringify({
@@ -37,6 +49,7 @@ export function emitFailure(tool, error, extraContext = {}) {
   return failure.exitCode;
 }
 
+/** @param {readonly string[]} argv @param {number} index @param {string} flag @param {string} nextCommand @returns {string} */
 export function requireValue(argv, index, flag, nextCommand) {
   const value = argv[index + 1];
   if (!value || value.startsWith("--")) {

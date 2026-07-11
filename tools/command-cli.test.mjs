@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const tools = path.dirname(fileURLToPath(import.meta.url));
 
+/** @param {string} script @param {string[]} args */
 function invoke(script, args) {
   return spawnSync(process.execPath, [path.join(tools, script), ...args], { encoding: "utf8", timeout: 120_000 });
 }

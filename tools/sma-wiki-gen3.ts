@@ -22,7 +22,17 @@ import { resolve } from 'node:path';
 import { argv, exit } from 'node:process';
 import { renderBrickDiffPage, renderBrickTreePage } from './lib/gen3-renderers.ts';
 
-type LooseRecord = Record<string, any>;
+interface CliArgs {
+  brick?: string;
+  clean?: boolean;
+  out?: string;
+}
+
+interface ReleaseRecord {
+  content?: {
+    included_paths?: string[];
+  };
+}
 
 const RELEASES_DIR = resolve(SMA_ROOT, 'releases');
 const DEFAULT_OUT = resolve(SMA_ROOT, 'wiki/gen3');
@@ -50,8 +60,8 @@ try {
       usage();
       exit(2);
   }
-} catch (err: any) {
-  console.error(`sma-wiki-gen3: ${err.message}`);
+} catch (err: unknown) {
+  console.error(`sma-wiki-gen3: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -108,14 +118,14 @@ function runBuild() {
 
     // tree page from the latest release
     const latest = versions[versions.length - 1];
-    const release = JSON.parse(readFileSync(latest.path, 'utf8'));
-    const paths = release?.content?.included_paths ?? [];
+    const release = JSON.parse(readFileSync(latest.path, 'utf8')) as ReleaseRecord;
+    const paths = release.content?.included_paths ?? [];
     const treeHtml = renderBrickTreePage({ brickId: id, paths });
     writeFileSync(resolve(brickOut, 'tree.html'), treeHtml);
     total += 1;
   }
 
-  console.log(`wrote ${total} page(s) under ${outDir}`);
+  console.log(`wrote ${String(total)} page(s) under ${outDir}`);
 }
 
 function runList() {
@@ -124,7 +134,7 @@ function runList() {
     console.log(`(no output yet at ${outDir}; run \`sma-wiki-gen3.mjs build\`)`);
     return;
   }
-  const walk = (dir, prefix = '') => {
+  const walk = (dir: string, prefix = ''): void => {
     for (const ent of readdirSync(dir, { withFileTypes: true })) {
       const sub = `${prefix}${ent.name}`;
       if (ent.isDirectory()) walk(resolve(dir, ent.name), sub + '/');
@@ -134,9 +144,9 @@ function runList() {
   walk(outDir);
 }
 
-function semverCompare(a, b) {
-  const pa = String(a).split(/[.+-]/).map((p) => Number.isNaN(Number(p)) ? p : Number(p));
-  const pb = String(b).split(/[.+-]/).map((p) => Number.isNaN(Number(p)) ? p : Number(p));
+function semverCompare(a: string, b: string): number {
+  const pa = a.split(/[.+-]/).map((p) => Number.isNaN(Number(p)) ? p : Number(p));
+  const pb = b.split(/[.+-]/).map((p) => Number.isNaN(Number(p)) ? p : Number(p));
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const x = pa[i] ?? 0;
     const y = pb[i] ?? 0;
@@ -147,20 +157,20 @@ function semverCompare(a, b) {
   return 0;
 }
 
-function parseArgs(list: string[]): LooseRecord {
-  const out: LooseRecord = {};
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
-      out[camel] = true;
+      if (camel === 'clean') out.clean = true;
       continue;
     }
-    out[camel] = next;
+    if (camel === 'out' || camel === 'brick') out[camel] = next;
     i += 1;
   }
   return out;

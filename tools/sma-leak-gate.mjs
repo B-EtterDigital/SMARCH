@@ -33,6 +33,13 @@ const PATTERNS_REPO_PATH = 'registry/leak-patterns.json';
 const SELF_EXCLUDE = new Set(['tools/sma-leak-gate.mjs', PATTERNS_REPO_PATH]);
 const root = resolve(process.cwd());
 
+/** @typedef {{ allow?: string, json?: boolean, selftest?: boolean }} LeakOptions */
+/** @typedef {{ category: string, pattern: string, normalized: string }} LeakPattern */
+/** @typedef {{ path: string, pattern: string }} LeakException */
+/** @typedef {{ check: "content" | "pathname", path: string, line: number, column: number, pattern: string, category: string }} LeakHit */
+/** @typedef {{ status: "failed" | "passed", root: string, tracked_file_count: number, tracked_text_file_count: number, hit_count: number, allowed_count: number, hits: LeakHit[] }} LeakResult */
+
+/** @type {LeakOptions} */
 let args = {};
 try {
   args = parseArgs(process.argv.slice(2));
@@ -48,16 +55,18 @@ try {
     if (result.hit_count > 0) process.exitCode = 1;
   }
 } catch (error) {
-  printError(error.code || 'UNEXPECTED_ERROR', error.message);
+  printError(errorCode(error), errorMessage(error));
   process.exitCode = 2;
 }
 
+/** @param {LeakOptions} options @param {string} repoRoot @returns {LeakResult} */
 function scanLeaks(options, repoRoot) {
   const patterns = readPatterns(PATTERNS_PATH);
   const exceptions = options.allow ? readExceptions(resolve(options.allow)) : [];
   const files = trackedFiles(repoRoot);
   const patternRegistryPath = pathWithin(repoRoot, PATTERNS_PATH);
   const allowPath = options.allow ? pathWithin(repoRoot, resolve(options.allow)) : null;
+  /** @type {LeakHit[]} */
   const hits = [];
   let textFileCount = 0;
   let allowedCount = 0;
@@ -65,6 +74,7 @@ function scanLeaks(options, repoRoot) {
   for (const file of files) {
     for (const entry of patterns) {
       for (const matchIndex of findMatchIndexes(file.toLowerCase(), entry.normalized)) {
+        /** @type {LeakHit} */
         const hit = {
           check: 'pathname',
           path: file,
@@ -93,6 +103,7 @@ function scanLeaks(options, repoRoot) {
       for (const entry of patterns) {
         for (const matchIndex of findMatchIndexes(line.toLowerCase(), entry.normalized)) {
           if (isSafePlaceholder(line, matchIndex, entry.pattern)) continue;
+          /** @type {LeakHit} */
           const hit = {
             check: 'content',
             path: file,
@@ -111,6 +122,7 @@ function scanLeaks(options, repoRoot) {
     }
   }
 
+  /** @type {LeakResult} */
   const result = {
     status: hits.length ? 'failed' : 'passed',
     root: repoRoot,
@@ -123,18 +135,20 @@ function scanLeaks(options, repoRoot) {
   return result;
 }
 
+/** @param {string} filePath @returns {LeakPattern[]} */
 function readPatterns(filePath) {
   if (!existsSync(filePath)) throw codedError('PATTERNS_NOT_FOUND', `pattern registry not found: ${filePath}`);
   let payload;
   try {
     payload = JSON.parse(readFileSync(filePath, 'utf8'));
   } catch (error) {
-    throw codedError('PATTERNS_INVALID', `cannot parse pattern registry: ${error.message}`);
+    throw codedError('PATTERNS_INVALID', `cannot parse pattern registry: ${errorMessage(error)}`);
   }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw codedError('PATTERNS_INVALID', 'pattern registry must be a JSON object');
   }
 
+  /** @type {LeakPattern[]} */
   const entries = [];
   for (const [category, values] of Object.entries(payload)) {
     if (category.startsWith('$')) continue;
@@ -146,43 +160,50 @@ function readPatterns(filePath) {
   return entries;
 }
 
+/** @param {string} filePath @returns {LeakException[]} */
 function readExceptions(filePath) {
   if (!existsSync(filePath)) throw codedError('ALLOW_NOT_FOUND', `allow file not found: ${filePath}`);
   let payload;
   try {
     payload = JSON.parse(readFileSync(filePath, 'utf8'));
   } catch (error) {
-    throw codedError('ALLOW_INVALID', `cannot parse allow file: ${error.message}`);
+    throw codedError('ALLOW_INVALID', `cannot parse allow file: ${errorMessage(error)}`);
   }
-  const entries = Array.isArray(payload) ? payload : payload?.exceptions;
+  const entries = Array.isArray(payload) ? payload : payload && typeof payload === 'object' && 'exceptions' in payload ? payload.exceptions : undefined;
   if (!Array.isArray(entries)) {
     throw codedError('ALLOW_INVALID', 'allow file must be an array or an object with an exceptions array');
   }
   return entries.map((entry, index) => {
-    if (!entry || typeof entry.path !== 'string' || typeof entry.pattern !== 'string' || !entry.path || !entry.pattern) {
+    if (!entry || typeof entry !== 'object' || !('path' in entry) || !('pattern' in entry) || typeof entry.path !== 'string' || typeof entry.pattern !== 'string' || !entry.path || !entry.pattern) {
       throw codedError('ALLOW_INVALID', `exception ${index + 1} must contain non-empty path and pattern strings`);
     }
     return { path: normalizePath(entry.path), pattern: entry.pattern.toLowerCase() };
   });
 }
 
+/** @param {string} repoRoot @returns {string[]} */
 function trackedFiles(repoRoot) {
+  /** @type {Buffer} */
   let output;
   try {
     output = execFileSync('git', ['-C', repoRoot, 'ls-files', '-z'], { encoding: 'buffer', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (error) {
-    const detail = error.stderr?.toString('utf8').trim() || error.message;
+    const detail = error && typeof error === 'object' && 'stderr' in error && Buffer.isBuffer(error.stderr)
+      ? error.stderr.toString('utf8').trim()
+      : errorMessage(error);
     throw codedError('GIT_LS_FILES_FAILED', detail);
   }
   return output.toString('utf8').split('\0').filter(Boolean).map(normalizePath).sort();
 }
 
+/** @param {string} filePath @returns {string | null} */
 function readTextFile(filePath) {
+  /** @type {Buffer} */
   let buffer;
   try {
     buffer = readFileSync(filePath);
   } catch (error) {
-    throw codedError('FILE_READ_FAILED', `${filePath}: ${error.message}`);
+    throw codedError('FILE_READ_FAILED', `${filePath}: ${errorMessage(error)}`);
   }
   if (buffer.includes(0)) return null;
   try {
@@ -192,12 +213,15 @@ function readTextFile(filePath) {
   }
 }
 
+/** @param {LeakHit} hit @param {LeakException[]} exceptions */
 function isAllowed(hit, exceptions) {
   const pattern = hit.pattern.toLowerCase();
   return exceptions.some((entry) => entry.path === hit.path && entry.pattern === pattern);
 }
 
+/** @param {string} text @param {string} pattern @returns {number[]} */
 function findMatchIndexes(text, pattern) {
+  /** @type {number[]} */
   const indexes = [];
   let offset = 0;
   while ((offset = text.indexOf(pattern, offset)) !== -1) {
@@ -207,6 +231,11 @@ function findMatchIndexes(text, pattern) {
   return indexes;
 }
 
+/**
+* @param {string} line
+* @param {number} matchIndex
+* @param {string} pattern
+*/
 function isSafePlaceholder(line, matchIndex, pattern) {
   if (pattern.startsWith('/')) {
     const suffix = line.slice(matchIndex + pattern.length);
@@ -247,8 +276,8 @@ function runSelftest() {
     assert(failed.status === 1, `leak hits must exit 1, received ${failed.status}`);
     const failedResult = JSON.parse(failed.stdout);
     assert(failedResult.hit_count === 3, `expected one pathname and two content hits, received ${failedResult.hit_count}`);
-    assert(failedResult.hits.filter((hit) => hit.check === 'pathname').length === 1, 'private identifier in a tracked pathname must produce a pathname hit');
-    assert(failedResult.hits.every((hit) => hit.column > 1), 'per-match hits must include their columns');
+    assert(failedResult.hits.filter((/** @type {{ check: string; }} */ hit) => hit.check === 'pathname').length === 1, 'private identifier in a tracked pathname must produce a pathname hit');
+    assert(failedResult.hits.every((/** @type {{ column: number; }} */ hit) => hit.column > 1), 'per-match hits must include their columns');
 
     rmSync(resolve(fixtureRoot, 'docs'), { recursive: true, force: true });
     writeFileSync(
@@ -265,16 +294,22 @@ function runSelftest() {
   }
 }
 
+/** @param {string} cwd */
 function spawnTool(cwd) {
   const result = spawnSync(process.execPath, [TOOL_PATH, '--json'], { cwd, encoding: 'utf8' });
   if (result.error) throw result.error;
   return result;
 }
 
+/**
+* @param {boolean} condition
+* @param {string} message
+*/
 function assert(condition, message) {
   if (!condition) throw codedError('SELFTEST_FAILED', message);
 }
 
+/** @param {LeakResult} result */
 function printResult(result) {
   console.log(`SMA leak gate: ${result.status}`);
   console.log(`tracked text files: ${result.tracked_text_file_count} | hits: ${result.hit_count} | allowed: ${result.allowed_count}`);
@@ -284,27 +319,38 @@ function printResult(result) {
   }
 }
 
+/** @param {string} code @param {string} message */
 function printError(code, message) {
   console.error(JSON.stringify({ tool: 'sma-leak-gate', code, message }));
 }
 
+/**
+* @param {string | undefined} code
+* @param {string | undefined} message
+*/
 function codedError(code, message) {
   const error = /** @type {Error & {code?: string}} */ (new Error(message));
   error.code = code;
   return error;
 }
 
+/** @param {string} rootPath @param {string} filePath @returns {string | null} */
 function pathWithin(rootPath, filePath) {
   const rel = relative(rootPath, filePath);
   if (rel.startsWith('..') || resolve(rootPath, rel) !== resolve(filePath)) return null;
   return normalizePath(rel);
 }
 
+/**
+* @param {string} value
+*/
 function normalizePath(value) {
   return value.split(sep).join('/').replace(/^\.\//, '');
 }
 
+/** @param {string[]} list @returns {LeakOptions} */
 function parseArgs(list) {
+  /** @type {LeakOptions} */
   const out = {};
   for (let index = 0; index < list.length; index += 1) {
     const arg = list[index];
@@ -326,4 +372,12 @@ function parseArgs(list) {
     throw codedError('ARGUMENT_INVALID', `unknown argument: ${arg}`);
   }
   return out;
+}
+
+/** @param {unknown} error */
+function errorMessage(error) { return error instanceof Error ? error.message : String(error); }
+
+/** @param {unknown} error */
+function errorCode(error) {
+  return error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? error.code : 'UNEXPECTED_ERROR';
 }

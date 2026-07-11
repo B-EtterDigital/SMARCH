@@ -105,11 +105,39 @@ const ACTOR_KINDS = new Set(['human', 'ai_model', 'agent', 'automation', 'tool']
 
 const DEFAULT_TTL_SECONDS = 600;
 
+interface LeaseArgs {
+  resourceKind: string; resource: string; agent: string; intent: string; ttl: string;
+  project: string; brick: string; session: string; task: string; model: string;
+  actorKind: string; rationale: string; reason: string; lease: string; renewEvery: string;
+  linkedBacklog: string[]; json: boolean; includeExpired: boolean; autoContext: boolean;
+}
+
+interface Lease {
+  lease_id: string; resource_kind: string; resource_id: string; agent_id: string;
+  acquired_at: string; expires_at: string; renewals: number; intent: string;
+  project?: string; actor_kind?: string; session_id?: string; task_id?: string;
+  model?: string; rationale?: string; linked_backlog?: string[]; renewed_at?: string;
+  force_acquired_from?: string; force_acquired_reason?: string;
+}
+
+interface LeaseRegistry { schema_version: string; generated_at: string; leases: Lease[] }
+interface LockOwner { token: string; pid: number; acquired_at: string }
+interface ChildResult { code: number; stdout: string; stderr: string }
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function errorCode(error: unknown): string | number | undefined {
+  return error && typeof error === 'object' && 'code' in error
+    && (typeof error.code === 'string' || typeof error.code === 'number') ? error.code : undefined;
+}
+
 const cmd = argv[2];
 const rawArgs = argv.slice(3);
 
 // `run` uses `--` as the separator between lease flags and the child command.
-let runChildArgs = null;
+let runChildArgs: string[] | null = null;
 let leaseFlagArgs = rawArgs;
 if (cmd === 'run') {
   const dashDashIdx = rawArgs.indexOf('--');
@@ -165,8 +193,9 @@ try {
       exit(2);
   }
 } catch (err) {
-  console.error(`sma-lease: ${err.message}`);
-  exit(typeof err.code === 'number' ? err.code : 1);
+  console.error(`sma-lease: ${errorMessage(err)}`);
+  const code = errorCode(err);
+  exit(typeof code === 'number' ? code : 1);
 }
 
 function usage() {
@@ -194,7 +223,7 @@ Agent default: $SMA_AGENT or $USER
 
 // ── load / save ─────────────────────────────────────────────────────────────
 
-function loadRegistry() {
+function loadRegistry(): LeaseRegistry {
   if (!existsSync(REGISTRY_PATH)) {
     return { schema_version: SCHEMA_VERSION, generated_at: nowIso(), leases: [] };
   }
@@ -202,21 +231,21 @@ function loadRegistry() {
   try {
     raw = readFileSync(REGISTRY_PATH, 'utf8');
   } catch (e) {
-    throw new Error(`could not read ${REGISTRY_PATH}: ${e.message}`);
+    throw new Error(`could not read ${REGISTRY_PATH}: ${errorMessage(e)}`);
   }
   if (!raw.trim()) {
     return { schema_version: SCHEMA_VERSION, generated_at: nowIso(), leases: [] };
   }
   try {
-    const parsed = JSON.parse(raw);
+    const parsed: LeaseRegistry = JSON.parse(raw);
     if (!Array.isArray(parsed.leases)) parsed.leases = [];
     return parsed;
   } catch (e) {
-    throw new Error(`registry is corrupt JSON: ${e.message}`);
+    throw new Error(`registry is corrupt JSON: ${errorMessage(e)}`);
   }
 }
 
-function saveRegistry(reg) {
+function saveRegistry(reg: LeaseRegistry): void {
   reg.schema_version = SCHEMA_VERSION;
   reg.generated_at = nowIso();
   const dir = dirname(REGISTRY_PATH);
@@ -226,7 +255,7 @@ function saveRegistry(reg) {
   renameSync(tmp, REGISTRY_PATH);
 }
 
-function mutateRegistry(mutator) {
+function mutateRegistry<T>(mutator: (registry: LeaseRegistry) => T): T {
   return withRegistryLock(() => {
     const reg = loadRegistry();
     if (env.SMA_LEASE_TEST_MUTATION_DELAY_MS) {
@@ -238,7 +267,7 @@ function mutateRegistry(mutator) {
   });
 }
 
-function withRegistryLock(fn) {
+function withRegistryLock<T>(fn: () => T): T {
   const token = acquireRegistryLock();
   try {
     return fn();
@@ -247,7 +276,7 @@ function withRegistryLock(fn) {
   }
 }
 
-function acquireRegistryLock() {
+function acquireRegistryLock(): string {
   const dir = dirname(LOCK_SENTINEL);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const token = `${process.pid}-${Date.now()}-${randomBytes(8).toString('hex')}`;
@@ -262,7 +291,7 @@ function acquireRegistryLock() {
     try {
       mkdirSync(LOCK_SENTINEL);
     } catch (error) {
-      if (error?.code !== 'EEXIST') throw error;
+      if (errorCode(error) !== 'EEXIST') throw error;
       if (recoverStaleRegistryLock()) continue;
       const elapsedMs = Number(hrtime.bigint() - startNs) / 1e6;
       if (elapsedMs > LOCK_MAX_WAIT_MS) {
@@ -286,12 +315,12 @@ function acquireRegistryLock() {
   }
 }
 
-function recoverStaleRegistryLock() {
+function recoverStaleRegistryLock(): boolean {
   let ageMs;
   try {
     ageMs = Date.now() - statSync(LOCK_SENTINEL).mtimeMs;
   } catch (error) {
-    if (error?.code === 'ENOENT') return true;
+    if (errorCode(error) === 'ENOENT') return true;
     throw error;
   }
   const staleMs = positiveNumber(env.SMA_LEASE_LOCK_STALE_MS, LOCK_STALE_MS);
@@ -303,44 +332,44 @@ function recoverStaleRegistryLock() {
   try {
     renameSync(LOCK_SENTINEL, stalePath);
   } catch (error) {
-    if (error?.code === 'ENOENT' || error?.code === 'EEXIST') return true;
+    if (errorCode(error) === 'ENOENT' || errorCode(error) === 'EEXIST') return true;
     throw error;
   }
   rmSync(stalePath, { recursive: true, force: true });
   return true;
 }
 
-function releaseRegistryLock(token) {
+function releaseRegistryLock(token: string): void {
   const owner = readRegistryLockOwner();
   if (owner?.token !== token) return;
   rmSync(LOCK_SENTINEL, { recursive: true, force: true });
 }
 
-function readRegistryLockOwner() {
+function readRegistryLockOwner(): LockOwner | null {
   try {
     return JSON.parse(readFileSync(resolve(LOCK_SENTINEL, 'owner.json'), 'utf8'));
   } catch (error) {
-    if (error?.code === 'ENOENT' || error?.code === 'ENOTDIR' || error instanceof SyntaxError) return null;
+    if (errorCode(error) === 'ENOENT' || errorCode(error) === 'ENOTDIR' || error instanceof SyntaxError) return null;
     throw error;
   }
 }
 
-function isProcessAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
+function isProcessAlive(pid: number | undefined): boolean {
+  if (pid === undefined || !Number.isInteger(pid) || pid <= 0) return false;
   try {
     process.kill(pid, 0);
     return true;
   } catch (error) {
-    return error?.code === 'EPERM';
+    return errorCode(error) === 'EPERM';
   }
 }
 
-function positiveNumber(raw, fallback) {
+function positiveNumber(raw: string | undefined, fallback: number): number {
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function sleepSync(ms) {
+function sleepSync(ms: number): void {
   if (!Number.isFinite(ms) || ms <= 0) return;
   const sleeper = new Int32Array(new SharedArrayBuffer(4));
   Atomics.wait(sleeper, 0, 0, ms);
@@ -348,7 +377,7 @@ function sleepSync(ms) {
 
 // ── core ops ────────────────────────────────────────────────────────────────
 
-function runAcquire(force) {
+function runAcquire(force: boolean): void {
   requireArg('resourceKind', '--resource-kind');
   requireArg('resource', '--resource');
   requireArg('intent', '--intent');
@@ -369,7 +398,7 @@ function runAcquire(force) {
  * Acquire returns the lease object on success. Throws on conflict (with err.code = 10).
  * Does not write to stdout.
  */
-function doAcquire({ force }) {
+function doAcquire({ force }: { force: boolean }): Lease {
   if (!RESOURCE_KINDS.has(args.resourceKind)) {
     throw new Error(`bad --resource-kind: ${args.resourceKind} (allowed: ${[...RESOURCE_KINDS].join(',')})`);
   }
@@ -402,10 +431,10 @@ function doAcquire({ force }) {
   });
 }
 
-function buildLease(displaced, agent, ttl, sessionId) {
+function buildLease(displaced: Lease | null | undefined, agent: string, ttl: number, sessionId: string | null): Lease {
   const acquiredAt = nowIso();
   const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
-  const lease: Record<string, any> = {
+  const lease: Lease = {
     lease_id: newLeaseId(),
     resource_kind: args.resourceKind,
     resource_id: args.resource,
@@ -438,7 +467,7 @@ function runRenew() {
   maybeStampContext('lease_renewed', result, `renewed lease ${result.lease_id}`);
 }
 
-function doRenew(leaseId, ttl) {
+function doRenew(leaseId: string, ttl: number): Lease {
   return mutateRegistry((reg) => {
     pruneExpired(reg);
     const lease = reg.leases.find((l) => l.lease_id === leaseId);
@@ -463,7 +492,7 @@ function runRelease() {
   maybeStampContext('lease_released', released, args.reason ?? `released lease ${released.lease_id}`);
 }
 
-function doRelease(leaseId, owner) {
+function doRelease(leaseId: string, owner: string | null): Lease {
   return mutateRegistry((reg) => {
     const idx = reg.leases.findIndex((l) => l.lease_id === leaseId);
     if (idx < 0) {
@@ -569,14 +598,14 @@ async function runWrapped() {
           const renewed = doRenew(lease.lease_id, parseTtl(args.ttl));
           console.error(`[sma-lease] renewed ${lease.lease_id} → ${renewed.expires_at}`);
         } catch (e) {
-          console.error(`[sma-lease] renew failed: ${e.message}`);
+          console.error(`[sma-lease] renew failed: ${errorMessage(e)}`);
         }
       }, everyMs);
     }
   }
 
   let releasedAlready = false;
-  const releaseSafely = (label) => {
+  const releaseSafely = (label: string): void => {
     if (releasedAlready) return;
     releasedAlready = true;
     if (renewInterval) clearInterval(renewInterval);
@@ -585,7 +614,7 @@ async function runWrapped() {
       console.log(`[sma-lease] released ${lease.lease_id} (${label})`);
       maybeStampContext('lease_released', lease, `${label}: released ${lease.lease_id}`);
     } catch (e) {
-      console.error(`[sma-lease] release failed: ${e.message}`);
+      console.error(`[sma-lease] release failed: ${errorMessage(e)}`);
     }
   };
 
@@ -601,7 +630,7 @@ async function runWrapped() {
     },
   });
 
-  const onSig = (sig) => {
+  const onSig = (sig: NodeJS.Signals): void => {
     console.error(`[sma-lease] received ${sig}, releasing lease then forwarding`);
     releaseSafely(`signal:${sig}`);
     try { child.kill(sig); } catch { /* ignore */ }
@@ -631,7 +660,7 @@ async function runWrapped() {
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
-function maybeStampContext(kind, lease, intent) {
+function maybeStampContext(kind: string, lease: Lease, intent: string): void {
   const auto = args.autoContext || env.SMA_AUTO_CONTEXT === '1';
   if (!auto) return;
   const project = lease.project ?? args.project;
@@ -652,15 +681,15 @@ function maybeStampContext(kind, lease, intent) {
       linkedBacklog: lease.linked_backlog,
     });
   } catch (e) {
-    console.error(`[sma-lease] auto-context append failed: ${e.message}`);
+    console.error(`[sma-lease] auto-context append failed: ${errorMessage(e)}`);
   }
 }
 
-function resolveAgent(sessionId) {
+function resolveAgent(sessionId: string | null): string {
   return resolveActorId(args.agent, sessionId);
 }
 
-function pruneExpired(reg) {
+function pruneExpired(reg: LeaseRegistry): void {
   const now = Date.now();
   reg.leases = reg.leases.filter((l) => Date.parse(l.expires_at) > now);
 }
@@ -673,40 +702,44 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function parseTtl(raw) {
+function parseTtl(raw: string): number {
   if (raw === undefined || raw === null || raw === '') return DEFAULT_TTL_SECONDS;
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) throw new Error(`bad --ttl: ${raw}`);
   return Math.floor(n);
 }
 
-function requireArg(key, flag) {
+function requireArg(key: keyof LeaseArgs, flag: string): void {
   if (args[key] === undefined || args[key] === null || args[key] === '') {
     throw new Error(`missing ${flag}`);
   }
 }
 
-function pad(s, n) {
+function pad(s: unknown, n: number): string {
   return String(s ?? '').slice(0, n).padEnd(n);
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): LeaseArgs {
+  const out: LeaseArgs = {
+    resourceKind: '', resource: '', agent: '', intent: '', ttl: '', project: '', brick: '',
+    session: '', task: '', model: '', actorKind: '', rationale: '', reason: '', lease: '',
+    renewEvery: '', linkedBacklog: [], json: false, includeExpired: false, autoContext: false,
+  };
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
     if (isBool) {
-      out[camel] = true;
+      Object.assign(out, { [camel]: true });
       continue;
     }
     if (camel === 'linkedBacklog') {
-      out[camel] = out[camel] ? [...out[camel], next] : [next];
+      out.linkedBacklog.push(next);
     } else {
-      out[camel] = next;
+      Object.assign(out, { [camel]: next });
     }
     i += 1;
   }
@@ -756,7 +789,7 @@ async function runSelftest() {
       '--intent', `atomicity selftest ${spec.resource}`,
       '--ttl', '120',
       '--json',
-    ], childEnv).then((result): Record<string, any> => ({ ...result, ...spec }))));
+    ], childEnv).then((result) => ({ ...result, ...spec }))));
     clearInterval(parseMonitor);
 
     assertSelftest(!parseErrorMessage, `registry became unparsable: ${parseErrorMessage}`);
@@ -776,7 +809,7 @@ async function runSelftest() {
       `three contested acquires must report held; exits=${contestedResults.map((result) => result.code).join(',')}`,
     );
 
-    const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
+    const registry: LeaseRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
     assertSelftest(Array.isArray(registry.leases), 'registry leases must be an array');
     assertSelftest(registry.leases.length === 9, `no lease may be lost; found ${registry.leases.length}, expected 9`);
     for (let index = 0; index < 8; index += 1) {
@@ -791,6 +824,8 @@ async function runSelftest() {
     );
 
     const contestedLease = registry.leases.find((lease) => lease.resource_id === 'contested');
+    assertSelftest(contestedLease, 'contested lease must exist after successful acquire');
+    if (!contestedLease) throw new Error('selftest invariant failed: contested lease missing');
     const wrongOwnerRelease = await runLeaseChild([
       'release',
       '--lease', contestedLease.lease_id,
@@ -801,7 +836,7 @@ async function runSelftest() {
       wrongOwnerRelease.code === 13,
       `wrong-owner release must be rejected with exit 13; exit=${wrongOwnerRelease.code}`,
     );
-    const afterRejectedRelease = JSON.parse(readFileSync(registryPath, 'utf8'));
+    const afterRejectedRelease: LeaseRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
     assertSelftest(
       afterRejectedRelease.leases.some((lease) => lease.lease_id === contestedLease.lease_id),
       'wrong-owner release must leave the lease intact',
@@ -838,7 +873,7 @@ async function runSelftest() {
     });
     assertSelftest(staleRecovery.code === 0, `stale lock must be recovered; exit=${staleRecovery.code}`);
 
-    const finalRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
+    const finalRegistry: LeaseRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
     assertSelftest(
       finalRegistry.leases.some((lease) => lease.resource_id === 'stale-recovery'),
       'stale-lock recovery acquire must persist',
@@ -852,8 +887,8 @@ async function runSelftest() {
   }
 }
 
-function runLeaseChild(childArgs, childEnv) {
-  return new Promise<Record<string, any>>((resolveResult) => {
+function runLeaseChild(childArgs: string[], childEnv: NodeJS.ProcessEnv): Promise<ChildResult> {
+  return new Promise<ChildResult>((resolveResult) => {
     const child = spawn(process.execPath, [argv[1], ...childArgs], {
       env: childEnv,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -867,6 +902,6 @@ function runLeaseChild(childArgs, childEnv) {
   });
 }
 
-function assertSelftest(condition, message) {
+function assertSelftest(condition: unknown, message: string): void {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }

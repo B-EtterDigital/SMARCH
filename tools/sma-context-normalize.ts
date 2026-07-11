@@ -23,6 +23,11 @@ import { KINDS, projectRoot } from './lib/context-log.ts';
 
 const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
 
+interface CliArgs { brick?: string; dryRun?: boolean; help?: boolean; json?: boolean; project?: string }
+interface NormalizeResult { changed_files: string[]; converted_lines: number; dry_run?: boolean; files_checked: number; malformed_lines?: number; ok: boolean; project: string }
+interface Verification { command?: string; notes?: string; status?: string }
+interface ContextRecord extends Record<string, unknown> { verification?: Verification }
+
 const args = parseArgs(process.argv.slice(2));
 
 try {
@@ -34,8 +39,8 @@ try {
   if (args.json) console.log(JSON.stringify(result, null, 2));
   else printResult(result);
   exit(result.ok ? 0 : 1);
-} catch (err) {
-  console.error(`sma-context-normalize: ${err.message}`);
+} catch (err: unknown) {
+  console.error(`sma-context-normalize: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -47,7 +52,7 @@ Converts legacy proof records in .smarch/agent-context/*.ndjson into valid
 Gen3 note events. Valid Gen3 events are left untouched.`);
 }
 
-function normalizeProject(projectId) {
+function normalizeProject(projectId: string): NormalizeResult {
   const root = projectRoot(projectId);
   const dir = resolve(root, '.smarch/agent-context');
   if (!existsSync(dir)) {
@@ -59,7 +64,7 @@ function normalizeProject(projectId) {
     .filter((name) => !args.brick || name.replace(/\.ndjson$/, '') === safeBrick(args.brick))
     .sort();
 
-  const changedFiles = [];
+  const changedFiles: string[] = [];
   let convertedLines = 0;
   let malformedLines = 0;
 
@@ -68,7 +73,7 @@ function normalizeProject(projectId) {
     const raw = readFileSync(filePath, 'utf8');
     const hasTrailingNewline = raw.endsWith('\n');
     const lines = raw.split('\n');
-    const out = [];
+    const out: string[] = [];
     let changed = false;
 
     for (const line of lines) {
@@ -77,7 +82,7 @@ function normalizeProject(projectId) {
         continue;
       }
 
-      let parsed;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(line);
       } catch {
@@ -114,8 +119,8 @@ function normalizeProject(projectId) {
   };
 }
 
-function normalizeLegacyProof(record, rawLine, projectId) {
-  if (!record || typeof record !== 'object') return null;
+function normalizeLegacyProof(record: unknown, rawLine: string, projectId: string): ContextRecord | null {
+  if (!isRecord(record)) return null;
   const modernProof = normalizeModernProofRecord(record);
   if (modernProof) return modernProof;
   if (record.schema_version === '1.0.0' && record.event_id && record.brick_id) return null;
@@ -130,13 +135,13 @@ function normalizeLegacyProof(record, rawLine, projectId) {
   const status = String(record.status || '').replace(/_/g, ' ');
   const hash = createHash('sha1').update(rawLine).digest('hex').slice(0, 8);
 
-  const event: Record<string, any> = {
+  const event: ContextRecord = {
     schema_version: '1.0.0',
-    event_id: `ctx-${Date.parse(timestamp) || Date.now()}-${hash}`,
+    event_id: `ctx-${String(Date.parse(timestamp) || Date.now())}-${hash}`,
     brick_id: brick,
-    project: String(record.project || projectId),
+    project: String(record.project ?? projectId),
     actor_kind: 'agent',
-    actor_id: env.SMA_AGENT || env.USER || 'unknown',
+    actor_id: (env.SMA_AGENT ?? env.USER) ?? 'unknown',
     kind: 'note',
     intent: `Record ${brick} ${status || 'proof'}${gain}.`.replace(/\s+/g, ' ').trim(),
     timestamp,
@@ -153,18 +158,18 @@ function normalizeLegacyProof(record, rawLine, projectId) {
       command: proof.join(' && '),
       status: verificationStatus(record.status),
     };
-    if (proof.length > 1) event.verification.notes = `${proof.length} proof commands preserved from legacy record.`;
+    if (proof.length > 1) event.verification.notes = `${String(proof.length)} proof commands preserved from legacy record.`;
   }
 
   return event;
 }
 
-function normalizeModernProofRecord(record) {
-  if (!record || typeof record !== 'object') return null;
+function normalizeModernProofRecord(record: unknown): ContextRecord | null {
+  if (!isRecord(record)) return null;
   if (record.schema_version !== '1.0.0' || !record.event_id || !record.brick_id) return null;
 
   const proof = Array.isArray(record.proof) ? record.proof.filter(Boolean).map(String) : [];
-  const invalidKind = record.kind && !KINDS.has(record.kind);
+  const invalidKind = typeof record.kind === 'string' && !KINDS.has(record.kind);
   const invalidGain = record.gain_percent !== undefined && typeof record.gain_percent !== 'number';
   const proofish = record.kind === 'verification'
     || proof.length > 0
@@ -172,7 +177,7 @@ function normalizeModernProofRecord(record) {
     || Boolean(record.proof_boundary);
   if (!proofish || (!invalidKind && !invalidGain)) return null;
 
-  const event = { ...record };
+  const event: ContextRecord = { ...record };
   if (invalidKind) {
     event.kind = proof.length ? 'proof_recorded' : 'note';
   }
@@ -187,24 +192,24 @@ function normalizeModernProofRecord(record) {
   } else {
     event.gain_percent = gain;
     if (typeof record.gain_percent === 'object') {
-      rationale.push(`Legacy gain range ${JSON.stringify(record.gain_percent)} normalized to ${gain}.`);
+      rationale.push(`Legacy gain range ${JSON.stringify(record.gain_percent)} normalized to ${String(gain)}.`);
     }
   }
   if (record.proof_boundary) rationale.push(String(record.proof_boundary));
   if (record.summary) rationale.push(String(record.summary));
 
   if (proof.length) {
-    const existingVerification = event.verification && typeof event.verification === 'object'
+    const existingVerification: Verification = isRecord(event.verification)
       ? event.verification
       : {};
     event.verification = {
       ...existingVerification,
-      command: existingVerification.command || proof.join(' && '),
-      status: verificationStatus(existingVerification.status || record.status || 'pass'),
+      command: existingVerification.command ?? proof.join(' && '),
+      status: verificationStatus((existingVerification.status ?? record.status) ?? 'pass'),
     };
     const notes = [
       existingVerification.notes,
-      proof.length > 1 ? `${proof.length} proof commands preserved from malformed proof event.` : '',
+      proof.length > 1 ? `${String(proof.length)} proof commands preserved from malformed proof event.` : '',
       rationale.join(' '),
     ].filter(Boolean).join(' ');
     if (notes) event.verification.notes = notes;
@@ -215,14 +220,14 @@ function normalizeModernProofRecord(record) {
   return event;
 }
 
-function normalizeGainPercent(value) {
+function normalizeGainPercent(value: unknown): number | null {
   if (value === undefined) return null;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   }
-  if (value && typeof value === 'object') {
+  if (isRecord(value)) {
     const direct = Number(value.value ?? value.percent ?? value.gain_percent);
     if (Number.isFinite(direct)) return direct;
     const from = Number(value.from);
@@ -234,37 +239,37 @@ function normalizeGainPercent(value) {
   return null;
 }
 
-function verificationStatus(value) {
-  const normalized = String(value || '').toLowerCase();
+function verificationStatus(value: unknown): 'blocked' | 'fail' | 'pass' | 'skipped' {
+  const normalized = String(value ?? '').toLowerCase();
   if (normalized.includes('fail')) return 'fail';
   if (normalized.includes('block')) return 'blocked';
   if (normalized.includes('skip')) return 'skipped';
   return 'pass';
 }
 
-function safeBrick(value) {
-  return String(value || '').replace(/[^a-z0-9._-]/gi, '_');
+function safeBrick(value: unknown): string {
+  return String(value ?? '').replace(/[^a-z0-9._-]/gi, '_');
 }
 
-function isDateTime(value) {
+function isDateTime(value: unknown): value is string {
   return typeof value === 'string' && DATETIME_RE.test(value);
 }
 
-function unique(values) {
+function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function printResult(result) {
+function printResult(result: NormalizeResult): void {
   console.log(`context normalize: ${result.project}`);
-  console.log(`files checked: ${result.files_checked}`);
-  console.log(`converted lines: ${result.converted_lines}`);
-  if (result.malformed_lines) console.log(`malformed lines left: ${result.malformed_lines}`);
+  console.log(`files checked: ${String(result.files_checked)}`);
+  console.log(`converted lines: ${String(result.converted_lines)}`);
+  if (result.malformed_lines) console.log(`malformed lines left: ${String(result.malformed_lines)}`);
   for (const file of result.changed_files) console.log(`changed: ${file}`);
   if (result.dry_run) console.log('dry-run: no files written');
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     const next = list[i + 1];
@@ -275,4 +280,8 @@ function parseArgs(list) {
     if (arg === '--brick' && next) { out.brick = next; i += 1; continue; }
   }
   return out;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }

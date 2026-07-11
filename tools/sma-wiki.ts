@@ -15,7 +15,7 @@ import { attachFeatureCluster } from "./lib/feature-clusters.ts";
 import { smaPath } from "./lib/sma-paths.ts";
 import { brickMarkdown, brickWallHtml, catalogMarkdown, featureClustersHtml, maybeReadJson, readManifest } from "./lib/wiki-bricks.ts";
 import { dashboardHtml } from "./lib/wiki-dashboard-page.ts";
-import { projectMetadata } from "./lib/wiki-dashboard-helpers.ts";
+import { projectMetadata, type StateSnapshot } from "./lib/wiki-dashboard-helpers.ts";
 import { courseHtml, projectHealthMarkdown, projectPage } from "./lib/wiki-project-pages.ts";
 import { buildRegistryHtml, canonicalizationHtml, capabilitiesHtml, proofSurfaceHtml } from "./lib/wiki-surface-pages.ts";
 import { slugify } from "./lib/wiki-utils.ts";
@@ -28,6 +28,16 @@ const defaults = {
   state: smaPath("wiki/SMA_STATE.generated.json"),
   out: smaPath("wiki")
 };
+type WikiBrick = Parameters<typeof catalogMarkdown>[0][number] & Parameters<typeof attachFeatureCluster>[0];
+type WikiProject = Parameters<typeof projectHealthMarkdown>[0][number];
+type UnmanifestedBrick = Parameters<typeof projectPage>[2][number];
+type CandidateGroup = Parameters<typeof projectPage>[3][number];
+type WikiRegistry = Parameters<typeof brickWallHtml>[0]
+  & Parameters<typeof dashboardHtml>[0]
+  & Parameters<typeof proofSurfaceHtml>[0]
+  & {
+    bricks: WikiBrick[]; projects: WikiProject[]; unmanifested_bricks: UnmanifestedBrick[]; candidate_groups: CandidateGroup[];
+  };
 
 function parseArgs(argv: string[]): typeof defaults {
   const options = { ...defaults };
@@ -60,11 +70,12 @@ Usage:
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const registry = JSON.parse(await fs.readFile(options.registry, "utf8"));
-  const bricks = registry.bricks || [];
-  const metadata = await projectMetadata(registry.projects || []);
+  const parsed: unknown = JSON.parse(await fs.readFile(options.registry, "utf8"));
+  const registry = wikiRegistryValue(parsed);
+  const bricks = registry.bricks;
+  const metadata = await projectMetadata(registry.projects);
   const stateSnapshotPath = path.resolve(repoRoot, "wiki/SMA_STATE.generated.json");
-  const stateSnapshot = await maybeReadJson(stateSnapshotPath);
+  const stateSnapshot = stateSnapshotValue(await maybeReadJson(stateSnapshotPath));
 
   await fs.rm(path.join(options.out, "bricks"), { recursive: true, force: true });
   await fs.rm(path.join(options.out, "projects"), { recursive: true, force: true });
@@ -80,7 +91,7 @@ async function main() {
   }
 
   await fs.writeFile(path.join(options.out, "BRICK_CATALOG.generated.md"), catalogMarkdown(bricks));
-  await fs.writeFile(path.join(options.out, "PROJECT_HEALTH.generated.md"), projectHealthMarkdown(registry.projects || [], bricks));
+  await fs.writeFile(path.join(options.out, "PROJECT_HEALTH.generated.md"), projectHealthMarkdown(registry.projects, bricks));
   await fs.writeFile(path.join(options.out, "BRICK_WALL.generated.html"), brickWallHtml(registry, bricks));
   await fs.writeFile(path.join(options.out, "FEATURE_CLUSTERS.generated.html"), featureClustersHtml(registry, bricks));
   await fs.writeFile(path.join(options.out, "DASHBOARD.generated.html"), dashboardHtml(registry, bricks, metadata, stateSnapshot));
@@ -92,16 +103,47 @@ async function main() {
     await fs.writeFile(path.join(options.out, "SMA_STATE.generated.json"), `${JSON.stringify(stateSnapshot, null, 2)}\n`);
   }
 
-  for (const project of registry.projects || []) {
-    await fs.writeFile(path.join(options.out, "projects", `${slugify(project.id)}.md`), projectPage(project, bricks, registry.unmanifested_bricks || [], registry.candidate_groups || []));
+  for (const project of registry.projects) {
+    await fs.writeFile(path.join(options.out, "projects", `${slugify(project.id)}.md`), projectPage(project, bricks, registry.unmanifested_bricks, registry.candidate_groups));
   }
 
   await fs.writeFile(path.join(options.out, "courses", "sma-brick-course.generated.html"), courseHtml(bricks));
 
-  console.log(`Generated ${bricks.length} brick page(s) and ${(registry.projects || []).length} project page(s) in ${options.out}`);
+  console.log(`Generated ${String(bricks.length)} brick page(s) and ${String(registry.projects.length)} project page(s) in ${options.out}`);
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 });
+
+function stateSnapshotValue(value: unknown): StateSnapshot | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value
+    : null;
+}
+
+function wikiRegistryValue(value: unknown): WikiRegistry {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("wiki registry must be a JSON object");
+  const record = value as Record<string, unknown>;
+  if (!Array.isArray(record.bricks) || !Array.isArray(record.projects)) throw new Error("wiki registry must contain bricks and projects arrays");
+  const brickValues: unknown[] = record.bricks;
+  const projectValues: unknown[] = record.projects;
+  const unmanifestedValues: unknown[] = Array.isArray(record.unmanifested_bricks) ? record.unmanifested_bricks : [];
+  const candidateValues: unknown[] = Array.isArray(record.candidate_groups) ? record.candidate_groups : [];
+  return { ...record, bricks: brickValues.filter(isRecord) as WikiBrick[], projects: projectValues.filter(isRecord) as WikiProject[],
+    unmanifested_bricks: unmanifestedValues.filter(isUnmanifestedBrick), candidate_groups: candidateValues.filter(isCandidateGroup) } as WikiRegistry;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUnmanifestedBrick(value: unknown): value is UnmanifestedBrick {
+  return isRecord(value) && typeof value.candidate_type === "string" && typeof value.path === "string"
+    && typeof value.project === "string" && typeof value.reason === "string" && value.status === "unmanifested";
+}
+
+function isCandidateGroup(value: unknown): value is CandidateGroup {
+  return isRecord(value) && typeof value.candidate_count === "number";
+}

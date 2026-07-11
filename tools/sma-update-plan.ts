@@ -12,6 +12,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import type { ImportLock, PlacementMap, Release } from "./lib/schema-types/index.js";
 
 const PLAN_SCHEMA = "smarch.update-plan.v0";
 const SCHEMA_VERSION = "1.0.0";
@@ -55,13 +56,23 @@ Examples:
   node tools/sma-update-plan.ts --target /path/to/project --artifact-id foo.bar.baz --stdout
 `;
 
-function fail(message, code = 1) {
+type JsonRecord = Record<string, unknown>;
+type PlanIssue = { severity: string; code: string; message: string; [key: string]: unknown };
+type Placement = PlacementMap["placements"][number];
+type LockEntry = ImportLock["selected_builds"][number] | ImportLock["resolved_bricks"][number];
+type ImportRecord = JsonRecord & { import_id: string; artifact_type?: string; artifact_id?: string; artifact_name?: string; source_project?: string; contracts?: JsonRecord };
+type ImportsDocument = { imports?: ImportRecord[] };
+type JournalRecord = JsonRecord & { import_id?: string; created_at?: string; timestamp?: string; event_id?: string };
+type EnvBinding = { name: string; surface: string; required: boolean; bound_to: unknown; source: string };
+interface UpdatePlanArgs { target: string; smarchRoot: string; release: string; out: string; stdout: boolean; dryRun: boolean; compact: boolean; importIds: string[]; artifactId: string; artifactType: string; maxPlacements: number; maxChecks: number; maxJournal: number; help?: boolean }
+
+function fail(message: string, code = 1): never {
   console.error(`Error: ${message}`);
   process.exit(code);
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+function parseArgs(argv: string[]): UpdatePlanArgs {
+  const options: UpdatePlanArgs = {
     target: process.cwd(),
     smarchRoot: "",
     release: "",
@@ -147,41 +158,43 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function parsePositiveInt(value, label) {
+function parsePositiveInt(value: unknown, label: string): number {
   const parsed = Number.parseInt(String(value), 10);
   if (!Number.isFinite(parsed) || parsed < 0) fail(`${label} must be a non-negative integer`);
   return parsed;
 }
 
-function isObject(value) {
+function isObject(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function isNonEmptyString(value) {
+function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function safeArray(value) {
-  return Array.isArray(value) ? value : [];
+function safeArray<T>(value: readonly T[] | null | undefined): T[];
+function safeArray(value: unknown): unknown[];
+function safeArray<T>(value: readonly T[] | unknown): T[] | unknown[] {
+  return Array.isArray(value) ? [...value] : [];
 }
 
-function uniq(values) {
+function uniq<T>(values: T[]): T[] {
   return [...new Set(values.filter((value) => value !== undefined && value !== null && value !== ""))];
 }
 
-function uniqStrings(values): string[] {
+function uniqStrings(values: unknown): string[] {
   return uniq(
     safeArray(values)
       .map((value) => (typeof value === "string" ? value.trim() : String(value || "").trim()))
       .filter(Boolean)
-  ) as string[];
+  );
 }
 
-function incrementCounter(map, key) {
+function incrementCounter(map: Record<string, number>, key: string): void {
   map[key] = (map[key] || 0) + 1;
 }
 
-function artifactIdAliases(value) {
+function artifactIdAliases(value: unknown): string[] {
   const raw = String(value || "").trim();
   if (!raw) return [];
   const aliases = new Set([raw]);
@@ -192,25 +205,27 @@ function artifactIdAliases(value) {
   return [...aliases];
 }
 
-function artifactIdsMatch(left, right) {
+function artifactIdsMatch(left: unknown, right: unknown): boolean {
   const leftAliases = new Set(artifactIdAliases(left));
   const rightAliases = artifactIdAliases(right);
   return rightAliases.some((alias) => leftAliases.has(alias));
 }
 
-function normalizePath(value) {
+function normalizePath(value: unknown): string {
   return String(value || "").split(path.sep).join("/");
 }
 
-function sortByDateDesc(values, key = "created_at") {
+function sortByDateDesc<T extends JsonRecord>(values: T[], key = "created_at"): T[] {
   return [...values].sort((left, right) => {
-    const l = Date.parse(left?.[key] || left?.record?.[key] || 0);
-    const r = Date.parse(right?.[key] || right?.record?.[key] || 0);
+    const leftRecord = isObject(left.record) ? left.record : {};
+    const rightRecord = isObject(right.record) ? right.record : {};
+    const l = Date.parse(String(left[key] || leftRecord[key] || 0));
+    const r = Date.parse(String(right[key] || rightRecord[key] || 0));
     return r - l;
   });
 }
 
-async function pathExists(filePath) {
+async function pathExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
     return true;
@@ -219,12 +234,12 @@ async function pathExists(filePath) {
   }
 }
 
-async function readJsonFile(filePath) {
+async function readJsonFile<T>(filePath: string): Promise<T> {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-async function readJsonLines(filePath) {
-  const records = [];
+async function readJsonLines(filePath: string): Promise<Array<{ line_number: number; record: JournalRecord }>> {
+  const records: Array<{ line_number: number; record: JournalRecord }> = [];
   const lines = (await fs.readFile(filePath, "utf8")).split(/\r?\n/);
   for (let index = 0; index < lines.length; index += 1) {
     const trimmed = lines[index].trim();
@@ -237,27 +252,27 @@ async function readJsonLines(filePath) {
   return records;
 }
 
-function relativeTo(root, targetPath) {
+function relativeTo(root: string, targetPath: string): string {
   return normalizePath(path.relative(root, targetPath));
 }
 
-function sha256(value) {
+function sha256(value: string | Buffer): string {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-async function sha256File(filePath) {
+async function sha256File(filePath: string): Promise<string> {
   return sha256(await fs.readFile(filePath));
 }
 
-function verificationRank(value) {
+function verificationRank(value: unknown): number {
   return VERIFICATION_RANK[String(value || "").toLowerCase()] ?? -1;
 }
 
-function compareVerification(left, right) {
+function compareVerification(left: unknown, right: unknown): number {
   return verificationRank(left) - verificationRank(right);
 }
 
-function parseSemver(value) {
+function parseSemver(value: unknown) {
   const trimmed = String(value || "").trim();
   if (!SEMVER_RE.test(trimmed)) return null;
   const [core, pre = ""] = trimmed.split("-", 2);
@@ -265,7 +280,7 @@ function parseSemver(value) {
   return { raw: trimmed, major, minor, patch, prerelease: pre };
 }
 
-function compareSemver(left, right) {
+function compareSemver(left: unknown, right: unknown): number {
   const a = parseSemver(left);
   const b = parseSemver(right);
   if (!a || !b) return 0;
@@ -278,7 +293,7 @@ function compareSemver(left, right) {
   return a.prerelease.localeCompare(b.prerelease);
 }
 
-function summarizeVersionDelta(currentVersion, nextVersion) {
+function summarizeVersionDelta(currentVersion: unknown, nextVersion: unknown) {
   const current = parseSemver(currentVersion);
   const next = parseSemver(nextVersion);
   if (!current || !next) {
@@ -305,8 +320,8 @@ function summarizeVersionDelta(currentVersion, nextVersion) {
   };
 }
 
-function dedupeBy(values, keyFn) {
-  const map = new Map();
+function dedupeBy<T>(values: T[], keyFn: (value: T) => string): T[] {
+  const map = new Map<string, T>();
   for (const value of values) {
     const key = keyFn(value);
     if (!key || map.has(key)) continue;
@@ -315,7 +330,7 @@ function dedupeBy(values, keyFn) {
   return [...map.values()];
 }
 
-function makeIssue(severity, code, message, extra = {}) {
+function makeIssue(severity: string, code: string, message: string, extra: JsonRecord = {}): PlanIssue {
   return {
     severity,
     code,
@@ -324,18 +339,18 @@ function makeIssue(severity, code, message, extra = {}) {
   };
 }
 
-function pushIssue(issues, severity, code, message, extra = {}) {
+function pushIssue(issues: PlanIssue[], severity: string, code: string, message: string, extra: JsonRecord = {}): void {
   issues.push(makeIssue(severity, code, message, extra));
 }
 
-function resolveRelativeToTarget(targetRoot, value, fallback) {
+function resolveRelativeToTarget(targetRoot: string, value: unknown, fallback: string): string {
   const candidate = String(value || "").trim();
   if (!candidate) return fallback;
   return path.isAbsolute(candidate) ? path.resolve(candidate) : path.resolve(targetRoot, candidate);
 }
 
-function toRecordMap(values, keyField) {
-  const map = new Map();
+function toRecordMap<T extends JsonRecord>(values: T[], keyField: string): Map<string, T> {
+  const map = new Map<string, T>();
   for (const value of safeArray(values)) {
     const key = value?.[keyField];
     if (!isNonEmptyString(key)) continue;
@@ -344,18 +359,19 @@ function toRecordMap(values, keyField) {
   return map;
 }
 
-function groupBy(values, keyField) {
-  const map = new Map();
+function groupBy<T extends JsonRecord>(values: T[], keyField: string): Map<string, T[]> {
+  const map = new Map<string, T[]>();
   for (const value of safeArray(values)) {
     const key = value?.[keyField];
     if (!isNonEmptyString(key)) continue;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(value);
+    const group = map.get(key);
+    if (group) group.push(value);
+    else map.set(key, [value]);
   }
   return map;
 }
 
-function clampItems(values, maxItems) {
+function clampItems<T>(values: T[], maxItems: number): { items: T[]; truncated: number } {
   if (maxItems < 0) return { items: values, truncated: 0 };
   if (values.length <= maxItems) return { items: values, truncated: 0 };
   return {
@@ -364,9 +380,10 @@ function clampItems(values, maxItems) {
   };
 }
 
-function gatherCurrentEnvBindings(importRecord, placementsForImport) {
-  const results = [];
-  const importEnv = isObject(importRecord?.contracts?.env) ? importRecord.contracts.env : {};
+function gatherCurrentEnvBindings(importRecord: ImportRecord, placementsForImport: Placement[]): EnvBinding[] {
+  const results: EnvBinding[] = [];
+  const contracts = isObject(importRecord.contracts) ? importRecord.contracts : {};
+  const importEnv = isObject(contracts.env) ? contracts.env : {};
   const requiredSet = new Set(uniqStrings(importEnv.required));
 
   for (const variable of safeArray(importEnv.variables)) {
@@ -402,7 +419,7 @@ function gatherCurrentEnvBindings(importRecord, placementsForImport) {
     }
   }
 
-  for (const name of uniqStrings(importRecord?.contracts?.env_bindings)) {
+  for (const name of uniqStrings(contracts.env_bindings)) {
     if (!results.find((binding) => binding.name === name)) {
       results.push({
         name,
@@ -427,7 +444,7 @@ function gatherCurrentEnvBindings(importRecord, placementsForImport) {
     }
   }
 
-  const merged = new Map();
+  const merged = new Map<string, EnvBinding>();
   for (const binding of results) {
     const key = `${binding.name}::${binding.surface}`;
     if (!merged.has(key)) {
@@ -442,7 +459,7 @@ function gatherCurrentEnvBindings(importRecord, placementsForImport) {
   return [...merged.values()].sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function summarizeReleaseCandidate(releaseArtifact) {
+function summarizeReleaseCandidate(releaseArtifact: Release) {
   if (!isObject(releaseArtifact) || !isObject(releaseArtifact.release)) return null;
   const release = releaseArtifact.release;
   return {
@@ -1230,7 +1247,7 @@ async function main() {
   const buildLockPath = path.resolve(smarchRoot, "build-lock.json");
   if (!(await pathExists(buildLockPath))) fail(`missing build-lock.json at ${buildLockPath}`);
 
-  const buildLock = await readJsonFile(buildLockPath);
+  const buildLock = await readJsonFile<ImportLock>(buildLockPath);
   const importsPath = resolveRelativeToTarget(
     targetRoot,
     buildLock?.lock?.imports_path,
@@ -1250,11 +1267,11 @@ async function main() {
   if (!(await pathExists(importsPath))) fail(`missing imports.json at ${importsPath}`);
   if (!(await pathExists(placementsPath))) fail(`missing placements.json at ${placementsPath}`);
 
-  const importsDoc = await readJsonFile(importsPath);
-  const placementsDoc = await readJsonFile(placementsPath);
+  const importsDoc = await readJsonFile<ImportsDocument>(importsPath);
+  const placementsDoc = await readJsonFile<PlacementMap>(placementsPath);
   const journalRecords = await (await pathExists(updateJournalPath) ? readJsonLines(updateJournalPath) : Promise.resolve([]));
 
-  const releaseArtifact = options.release ? await readJsonFile(options.release) : null;
+  const releaseArtifact = options.release ? await readJsonFile<Release>(options.release) : null;
   const releaseSummary = releaseArtifact ? {
     ...summarizeReleaseCandidate(releaseArtifact),
     raw_contract_hashes: isObject(releaseArtifact?.contracts?.hashes) ? releaseArtifact.contracts.hashes : null

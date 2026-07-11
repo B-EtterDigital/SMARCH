@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Renders the [brick](../docs/GLOSSARY.md#brick) registry as a self-contained interactive web catalog.
  * WHY: Operators need a visual way to compare brick size, status, ownership, and connections without reading raw registry records.
@@ -30,15 +32,41 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, "..");
 
-type LooseRecord = Record<string, any>;
-type BrickWallOptions = {
+interface BrickWallOptions {
   registry: string;
   scores: string;
   connections: string;
   wikiBase: string;
   out: string;
   topProjects: number;
-};
+}
+interface RegistryBrick {
+  id: string;
+  name?: string;
+  project?: string;
+  status?: string;
+  archetype?: string;
+  kind?: string;
+  line_total?: number;
+  score?: number;
+  manifest_path: string;
+}
+interface BrickConnection { from?: string; kind?: string; [key: string]: unknown }
+interface EnrichedBrick extends RegistryBrick {
+  reuse_score: number;
+  purpose: string;
+  tags: unknown[];
+  archetype: string;
+  wiki_page: string | null;
+  connections: BrickConnection[];
+}
+interface RegistryDocument { bricks: RegistryBrick[]; [key: string]: unknown }
+interface ScoreDocument { scored?: { id: string; score: number }[] }
+interface ConnectionDocument { edges?: BrickConnection[] }
+interface BrickManifest { semantics?: { purpose?: string; tags?: unknown[]; reuse_archetype?: string; wiki_page?: string } }
+interface BrickShape { cols: number; rows: number }
+interface BrickPalette { top: string; front: string; side: string; edge: string; name: string; accent: string | null }
+interface EnrichedData { registry: RegistryDocument; bricks: EnrichedBrick[] }
 
 function parseArgs(argv: string[]): BrickWallOptions {
   const o = {
@@ -61,8 +89,8 @@ function parseArgs(argv: string[]): BrickWallOptions {
   return o;
 }
 
-const readJson = async (p: string): Promise<any | null> => {
-  try { return JSON.parse(await fs.readFile(p, "utf8")); }
+const readJson = async <T>(p: string): Promise<T | null> => {
+  try { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
   catch { return null; } // Missing optional inputs are represented as null.
 };
 
@@ -76,7 +104,7 @@ function escapeHtml(s: unknown): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-function partNumber(brick: LooseRecord): string {
+function partNumber(brick: EnrichedBrick): string {
   // 4-digit project code + 3-digit brick hash → like 4601-B07
   const h = crypto.createHash("sha1").update(brick.id).digest("hex");
   const tail = h.slice(0, 3).toUpperCase();
@@ -88,7 +116,7 @@ function partNumber(brick: LooseRecord): string {
 // Color families used by the UI. Each family has a top (studs/light), front
 // (body), side (shadow), and outline. All chosen to evoke interlocking bricks
 // without being anyone's trademarked palette.
-const PALETTES = {
+const PALETTES: Record<string, Omit<BrickPalette, 'accent'>> = {
   // status palettes
   canonical:  { top: "#ffd859", front: "#f5b800", side: "#b98600", edge: "#7a5a00", name: "Sovereign Amber" },
   candidate:  { top: "#6c9bff", front: "#3475ff", side: "#1f4cc0", edge: "#14306b", name: "Pilot Blue" },
@@ -97,7 +125,7 @@ const PALETTES = {
 };
 
 // Archetype accent tint that softly overlays the front face.
-const ACCENT = {
+const ACCENT: Record<string, string> = {
   primitive: "#1f7a8c",
   adapter: "#a23b72",
   service: "#38a169",
@@ -110,18 +138,20 @@ const ACCENT = {
   experiment: "#ff66c4"
 };
 
-function brickPalette(brick) {
-  const base = PALETTES[brick.status] || PALETTES.project_bound;
+function brickPalette(brick: EnrichedBrick): BrickPalette {
+  const base = (brick.status ? PALETTES[brick.status] : undefined) ?? PALETTES.project_bound;
+  if (!base) throw new Error('project_bound palette is missing');
   const accent = ACCENT[String(brick.archetype || "").toLowerCase()] || null;
   return { ...base, accent };
 }
 
 // Stud grid size. cols: 1-6, rows: 1-3. Biased toward wide shapes typical of
 // interlocking construction bricks.
-function brickShape(brick) {
+function brickShape(brick: EnrichedBrick): BrickShape {
   const lines = brick.line_total || 0;
   const size = lines > 0 ? lines : 100;
-  let cols, rows;
+  let cols: number;
+  let rows: number;
   if (size > 8000)      { cols = 6; rows = 3; }
   else if (size > 3500) { cols = 6; rows = 2; }
   else if (size > 1800) { cols = 4; rows = 2; }
@@ -134,8 +164,8 @@ function brickShape(brick) {
   if (/provider_file|handler_file|adapter_file|script_file|utility_file/.test(k)) { cols = Math.max(cols, 2); rows = 1; }
   if (/page_module|frontend_feature|module/.test(k)) { rows = Math.max(rows, 2); }
   if (/supabase_function|netlify/.test(k)) { cols = Math.max(cols, 3); rows = 1; }
-  if (/agent_skill/.test(k)) { cols = 2; rows = 2; }
-  if (/sidecar/.test(k)) { cols = 3; rows = 2; }
+  if (k.includes('agent_skill')) { cols = 2; rows = 2; }
+  if (k.includes('sidecar')) { cols = 3; rows = 2; }
   return { cols: Math.min(cols, 6), rows: Math.min(rows, 3) };
 }
 
@@ -144,13 +174,13 @@ function brickShape(brick) {
 const STUD = 24;
 const DEPTH = 18;   // how "thick" the brick looks in the front/side faces
 
-function brickSvg(brick, shape, palette) {
+function brickSvg(_brick: EnrichedBrick, shape: BrickShape, palette: BrickPalette): string {
   const w = shape.cols * STUD;
   const h = shape.rows * STUD;
   const topY = 0;
 
   // top-face studs
-  const studs = [];
+  const studs: string[] = [];
   for (let r = 0; r < shape.rows; r += 1) {
     for (let c = 0; c < shape.cols; c += 1) {
       const cx = c * STUD + STUD / 2;
@@ -184,27 +214,29 @@ function brickSvg(brick, shape, palette) {
   </svg>`;
 }
 
-async function loadManifest(p: string): Promise<any | null> {
-  try { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function loadManifest(p: string): Promise<BrickManifest | null> {
+  try { return JSON.parse(await fs.readFile(p, "utf8")) as BrickManifest; }
   catch { return null; } // A brick without a readable manifest remains renderable.
 }
 
-async function loadEnrichedBricks(opts) {
-  const reg = await readJson(opts.registry);
+async function loadEnrichedBricks(opts: BrickWallOptions): Promise<EnrichedData> {
+  const reg = await readJson<RegistryDocument>(opts.registry);
   if (!reg?.bricks) throw new Error(`no registry at ${opts.registry}`);
-  const scores = await readJson(opts.scores);
-  const scoreIdx = new Map();
+  const scores = await readJson<ScoreDocument>(opts.scores);
+  const scoreIdx = new Map<string, number>();
   if (scores?.scored) for (const s of scores.scored) scoreIdx.set(s.id, s.score);
-  const conn = await readJson(opts.connections);
-  const edgesByFrom = new Map();
+  const conn = await readJson<ConnectionDocument>(opts.connections);
+  const edgesByFrom = new Map<string, BrickConnection[]>();
   if (conn?.edges) {
     for (const e of conn.edges) {
-      if (!edgesByFrom.has(e.from)) edgesByFrom.set(e.from, []);
-      edgesByFrom.get(e.from).push(e);
+      if (typeof e.from !== 'string') continue;
+      const edges = edgesByFrom.get(e.from) ?? [];
+      edges.push(e);
+      edgesByFrom.set(e.from, edges);
     }
   }
 
-  const out = [];
+  const out: EnrichedBrick[] = [];
   for (const b of reg.bricks) {
     const m = await loadManifest(b.manifest_path);
     const sem = m?.semantics || {};
@@ -221,7 +253,7 @@ async function loadEnrichedBricks(opts) {
   return { registry: reg, bricks: out };
 }
 
-function brickCard(brick, opts) {
+function brickCard(brick: EnrichedBrick, opts: BrickWallOptions): string {
   const palette = brickPalette(brick);
   const shape = brickShape(brick);
   const svg = brickSvg(brick, shape, palette);
@@ -286,12 +318,14 @@ function brickCard(brick, opts) {
   </a>`;
 }
 
-function buildHtml({ registry, bricks }, opts) {
-  const groups = new Map();
+function buildHtml({ bricks }: EnrichedData, opts: BrickWallOptions): string {
+  const groups = new Map<string, EnrichedBrick[]>();
   for (const b of bricks) {
     const p = b.project || "unknown";
     if (!groups.has(p)) groups.set(p, []);
-    groups.get(p).push(b);
+    const group = groups.get(p) ?? [];
+    group.push(b);
+    groups.set(p, group);
   }
   for (const [, list] of groups) list.sort((a, b) => (b.reuse_score || 0) - (a.reuse_score || 0));
 

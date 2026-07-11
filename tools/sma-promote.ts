@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * What: Recomputes each enriched brick's lifecycle status from current evidence.
  * Why: Reuse maturity must reflect semantics, tests, warnings, and context rather than aspiration.
@@ -39,14 +41,43 @@
  *   --no-context-gate       explicitly off (the default).
  */
 import fs from "node:fs/promises";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { readActiveLeases, readProjectContextCoverage } from "./lib/gen3-state.ts";
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
-function parseArgs(argv): Record<string, any> {
-  const opts = {
+interface PromoteOptions {
+  candidates: string;
+  dryRun: boolean;
+  contextGate: boolean;
+  strictContextGate: boolean;
+  contextWindowMinutes: number;
+}
+
+interface CandidateBrick {
+  id: string;
+  score?: number;
+  manifest_path: string;
+  source_paths?: string[];
+  project?: string;
+  kind?: string;
+}
+
+interface PromotionManifest {
+  semantics?: { purpose?: string; tags?: unknown[]; public_api?: unknown[]; clone_steps?: unknown[] };
+  tier?: string;
+  brick?: { id?: string; tier?: string; kind?: string; status?: string; last_promotion_check?: string; last_promotion_reason?: string };
+  classification?: { data_classes?: unknown[] };
+  sweetspot?: { ssa_v2?: { evidence?: unknown[] }; srls?: { status?: string } };
+  clone?: { readiness?: string };
+}
+
+type PromotionStatus = 'canonical' | 'candidate' | 'project_bound';
+interface PromotionDecision { status: PromotionStatus; reason: string }
+
+function parseArgs(argv: string[]): PromoteOptions {
+  const opts: PromoteOptions = {
     candidates: smaPath("security/reuse_candidates.json"),
     dryRun: false,
     contextGate: false,
@@ -65,9 +96,9 @@ function parseArgs(argv): Record<string, any> {
   return opts;
 }
 
-async function readJson(p) { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson<T>(p: string): Promise<T> { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
 
-async function hasSiblingTest(dir) {
+async function hasSiblingTest(dir: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const e of entries) {
@@ -86,27 +117,27 @@ const structuralKinds = new Set([
   "script_file", "script_module"
 ]);
 
-function isSensitive(dataClasses) {
+function isSensitive(dataClasses: readonly unknown[] | undefined): boolean {
   const s = new Set(dataClasses || []);
   return s.has("user_private") || s.has("pii") || s.has("payment") || s.has("credential") || s.has("admin_only");
 }
 
-async function hasPassingCapsuleFixture(brick) {
+async function hasPassingCapsuleFixture(brick: CandidateBrick): Promise<boolean> {
   const capsuleRoot = path.dirname(path.resolve(brick.manifest_path));
-  return new Promise((resolve) => {
+  return new Promise<boolean>((resolve) => {
     execFile(
       process.execPath,
       [smaPath("tools/sma-brick-run.mjs"), capsuleRoot, "--json", "--quiet"],
       { cwd: capsuleRoot, timeout: 30_000, maxBuffer: 1024 * 1024 },
-      (error) => resolve(error === null),
+      (error) => { resolve(error === null); },
     );
   });
 }
 
-async function decideStatus(brick, manifest) {
+async function decideStatus(brick: CandidateBrick, manifest: PromotionManifest): Promise<PromotionDecision> {
   const sem = manifest.semantics || {};
   const hasAllSemantics = Boolean(
-    sem.purpose && sem.tags && sem.tags.length && sem.public_api && sem.public_api.length && sem.clone_steps && sem.clone_steps.length
+    sem.purpose && sem.tags?.length && sem.public_api?.length && sem.clone_steps?.length
   );
 
   if (!hasAllSemantics) return { status: "project_bound", reason: "missing-semantics" };
@@ -142,7 +173,6 @@ async function decideStatus(brick, manifest) {
   const kind = brick.kind || manifest.brick?.kind || "";
 
   const sensitive = isSensitive(manifest.classification?.data_classes);
-  const warnings = manifest.sweetspot?.ssa_v2?.evidence || [];
   const rlsBlocked = sensitive && (
     manifest.sweetspot?.srls?.status === "unknown" || manifest.sweetspot?.srls?.status === "missing"
   );
@@ -156,7 +186,7 @@ async function decideStatus(brick, manifest) {
 // ── context gate ────────────────────────────────────────────────────────────
 
 
-function findProjectRoot(brick) {
+function findProjectRoot(brick: CandidateBrick): string | null {
   const candidate = brick.project ? path.resolve(PROJECTS_ROOT, brick.project) : null;
   if (candidate && existsSync(candidate)) return candidate;
   if (brick.project) {
@@ -173,13 +203,21 @@ function findProjectRoot(brick) {
   return null;
 }
 
-let cachedLeases = null;
-function getLeasesOnce() {
-  if (cachedLeases === null) cachedLeases = readActiveLeases();
+interface PromotionLease { resource_kind?: string; resource_id?: string; agent_id?: string; lease_id?: string }
+interface PromotionLeaseState { leases: PromotionLease[] }
+let cachedLeases: PromotionLeaseState | null = null;
+function getLeasesOnce(): PromotionLeaseState {
+  if (cachedLeases === null) {
+    const value: unknown = readActiveLeases();
+    const leases = typeof value === 'object' && value !== null && 'leases' in value && Array.isArray(value.leases)
+      ? value.leases.filter((lease): lease is PromotionLease => typeof lease === 'object' && lease !== null)
+      : [];
+    cachedLeases = { leases };
+  }
   return cachedLeases;
 }
 
-function checkContextGate(brick, manifest, opts) {
+function checkContextGate(brick: CandidateBrick, manifest: PromotionManifest, opts: PromoteOptions): { ok: boolean; reason: string } {
   const brickId = manifest.brick?.id || brick.id;
   const agent = process.env.SMA_AGENT || process.env.USER || "unknown";
 
@@ -207,15 +245,15 @@ function checkContextGate(brick, manifest, opts) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const cands = await readJson(opts.candidates);
+  const cands = await readJson<{ bricks: CandidateBrick[] }>(opts.candidates);
 
-  const counts = { canonical: 0, candidate: 0, project_bound: 0, errors: 0 };
-  const reasons = {};
-  const contextWarnings = [];
+  const counts: Record<PromotionStatus | 'errors', number> = { canonical: 0, candidate: 0, project_bound: 0, errors: 0 };
+  const reasons: Record<string, number> = {};
+  const contextWarnings: { brick_id: string; project?: string; attempted_status: PromotionStatus; reason: string }[] = [];
 
   for (const brick of cands.bricks) {
     try {
-      const mf = JSON.parse(await fs.readFile(brick.manifest_path, "utf8"));
+      const mf = JSON.parse(await fs.readFile(brick.manifest_path, "utf8")) as PromotionManifest;
       let decision = await decideStatus(brick, mf);
 
       // Apply context gate AFTER the structural decision so we can downgrade
@@ -254,7 +292,7 @@ async function main() {
       if (!opts.dryRun) {
         await fs.writeFile(brick.manifest_path, `${JSON.stringify(mf, null, 2)}\n`);
       }
-    } catch (err) {
+    } catch {
       counts.errors += 1;
     }
   }
@@ -270,4 +308,4 @@ async function main() {
   }, null, 2));
 }
 
-main();
+await main();

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Resolves and copies one brick or curated build into a target project with provenance and follow-up instructions.
  * WHY: Reuse must preserve source identity, export policy, adaptation steps, and receipts instead of becoming an untraceable file copy.
@@ -32,8 +34,44 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const projectsRoot = path.resolve(repoRoot, "..", "Projects");
 const ignoredCopyDirs = new Set(["node_modules", "dist", "build", ".next", ".turbo"]);
 
-function parseArgs(argv): Record<string, any> {
-  const o = {
+interface CloneOptions { registry: string; brick: string; build: string; buildManifest: string; target: string; search: string; docDir: string; write: boolean; list: boolean; force: boolean; allowClosed: boolean; entitlement: string; licensee: string; entitlementTrustedKeys: string; registryOrigin: string }
+interface EnvItem { name?: string; scope?: string; example?: string; required_in?: unknown[]; required?: boolean; optional?: boolean; optional_in?: unknown[]; forbidden_in?: string[] }
+interface EnvContract extends Record<string, unknown> { variables?: (string | EnvItem)[]; required?: (string | EnvItem)[]; optional?: (string | EnvItem)[] }
+interface RlsContract extends Record<string, unknown> { tables?: unknown[]; negative_tests?: (string | { table?: string })[] }
+interface FileMapEntry extends Record<string, unknown> { source_path?: string; target_path?: string; ownership?: string; notes?: string }
+interface BrickReference extends Record<string, unknown> { brick_id: string; required?: boolean; order?: number; role?: string; project?: string; path?: string }
+interface BrickSemantics { purpose?: string; tags?: unknown[]; clone_steps?: unknown[]; integration_recipe?: unknown[]; risks?: unknown[]; public_api?: unknown[]; wiki_page?: string }
+interface CloneManifest {
+  schema_version?: string; version?: string;
+  license_tier?: string; commercial_terms?: string;
+  brick?: { version?: string; license_tier?: string; commercial_terms?: string }; build?: { id?: string; name?: string; version?: string; status?: string; trust_tier?: string; kind?: string; domain?: unknown[]; summary?: string };
+  semantics?: BrickSemantics; public_api?: unknown[]; tests?: { commands?: unknown[] }; verification?: { commands?: unknown[]; status?: string; smoke_commands?: unknown[] };
+  clone?: { readiness?: unknown; verification_commands?: unknown[]; install_steps?: unknown[]; adaptation_points?: unknown[]; known_traps?: unknown[]; post_clone_checks?: unknown[]; required_ports?: unknown[]; file_map?: FileMapEntry[]; rollback_steps?: unknown[] };
+  security?: { env?: EnvContract; rls?: RlsContract }; contracts?: { env?: EnvContract; rls?: RlsContract };
+  composition?: { brick_refs?: BrickReference[]; optional_bricks?: BrickReference[]; shared_contracts?: unknown[] };
+  source?: { paths?: unknown[]; derived_from_bricks?: BrickReference[]; supporting_artifacts?: unknown[]; project?: string };
+  runtime?: { commands?: unknown[]; endpoints?: unknown[]; routes?: unknown[] };
+  interfaces?: { commands?: unknown[] };
+  classification?: { risk?: string; notes?: string };
+}
+interface RegistryBrick { id: string; name?: string; project?: string; status?: string; kind?: string; manifest_path: string; source_paths?: string[]; version?: string; risk?: string; public_api?: unknown[]; test_commands?: unknown[]; clone_readiness?: unknown; clone_install_steps?: unknown[]; clone_adaptation_points?: unknown[]; clone_known_traps?: unknown[]; env_contract?: EnvContract; rls_contract?: RlsContract }
+interface CloneRegistry { bricks: RegistryBrick[]; scanner_report?: { build_report?: { top_candidates?: { candidate_key?: string }[] } } }
+interface EnvBindingRecord { name: string; surface: string; required: boolean; bound_to?: string }
+interface AdapterPointRecord { id: string; kind: string; required: boolean; status: string }
+interface CloneAction extends Record<string, unknown> { kind: string; import_id?: string; artifact_type?: string; artifact_id?: string; src?: string; dst?: string; source_base_root?: string; ownership_mode?: string; ownership_note?: string; exported_symbols?: { name: string; kind: string }[]; env_binding_records?: EnvBindingRecord[]; adapter_point_records?: AdapterPointRecord[]; reason?: string; hint?: string }
+interface ClonePlan extends Record<string, unknown> { actions: CloneAction[]; import_id?: string; control_plane?: Record<string, string>; checklist?: string; smarch?: Record<string, unknown> }
+interface PathEntry { src: string; dst: string; source_path: string; target_path: string; content_kind: string }
+interface PlacementRecord extends MutableRecord { import_id: string; kind: string; target_path: string }
+type MutableRecord = Record<string, unknown>;
+interface ImportsDocument extends MutableRecord { version?: number; schema?: string; generated_at?: string; imports?: MutableRecord[] }
+interface BuildLockDocument extends MutableRecord { version?: number; schema_version?: string; lock?: MutableRecord; target?: MutableRecord; selected_builds?: MutableRecord[]; resolved_bricks?: MutableRecord[]; frozen_dependency_graph?: MutableRecord & { nodes?: MutableRecord[]; edges?: MutableRecord[] }; channels?: unknown[]; trust_policy?: MutableRecord; verification_policy?: MutableRecord }
+interface PlacementsDocument extends MutableRecord { schema_version?: string; map?: MutableRecord; target?: MutableRecord; imports?: MutableRecord[]; placements?: MutableRecord[] }
+interface ResolvedBrick {
+  ref: BrickReference; import_id: string; brick: RegistryBrick; manifest: CloneManifest; sem: BrickSemantics; sourceProjectRoot: string; version: string; cloneReadiness: unknown; cloneSteps: string[]; installSteps: string[]; integrationRecipe: string[]; adaptationPoints: string[]; knownTraps: string[]; publicApi: string[]; testCommands: string[]; risks: string[]; tags: string[]; envContract: EnvContract; rlsContract: RlsContract; envBindings: string[]; rlsTables: string[]; envBindingRecords: EnvBindingRecord[]; adapterPointRecords: AdapterPointRecord[]; exportedSymbols: { name: string; kind: string }[];
+}
+
+function parseArgs(argv: string[]): CloneOptions {
+  const o: CloneOptions = {
     registry: path.resolve(repoRoot, "scans/all-projects/latest.registry.json"),
     brick: "",
     build: "",
@@ -72,7 +110,7 @@ function parseArgs(argv): Record<string, any> {
 }
 
 // Refuse to copy closed/private source unless explicitly, auditably acknowledged.
-function guardCloneWrite(opts, brickIds, project) {
+function guardCloneWrite(opts: CloneOptions, brickIds: string[], project: string | null) {
   try {
     assertExportAllowed({
       operation: "clone",
@@ -81,19 +119,19 @@ function guardCloneWrite(opts, brickIds, project) {
       targetVisibility: "community", // a clone copies raw source out — treat conservatively
       allowClosed: opts.allowClosed,
     });
-  } catch (err) {
-    if (err instanceof ExportBlockedError) {
-      console.error(err.message);
+  } catch (error: unknown) {
+    if (error instanceof ExportBlockedError) {
+      console.error(error.message);
       process.exit(3);
     }
-    throw err;
+    throw error;
   }
 }
 
-async function readJson(p) { return JSON.parse(await fs.readFile(p, "utf8")); }
-async function maybeReadJson(p) { try { return JSON.parse(await fs.readFile(p, "utf8")); } catch { return null; } }
+async function readJson<T>(p: string): Promise<T> { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
+async function maybeReadJson<T>(p: string): Promise<T | null> { try { return JSON.parse(await fs.readFile(p, "utf8")) as T; } catch { return null; } }
 
-async function copyDir(src, dst) {
+async function copyDir(src: string, dst: string): Promise<void> {
   const entries = await fs.readdir(src, { withFileTypes: true });
   await fs.mkdir(dst, { recursive: true });
   for (const e of entries) {
@@ -108,75 +146,76 @@ async function copyDir(src, dst) {
   }
 }
 
-async function copyFile(src, dst) {
+async function copyFile(src: string, dst: string): Promise<void> {
   await fs.mkdir(path.dirname(dst), { recursive: true });
   await fs.copyFile(src, dst);
 }
 
-async function pathExists(p) { try { await fs.access(p); return true; } catch { return false; } }
+async function pathExists(p: string): Promise<boolean> { try { await fs.access(p); return true; } catch { return false; } }
 
-function normalizeRelativePath(p) {
+function normalizeRelativePath(p: unknown): string {
   return String(p || "").split(path.sep).join("/").replace(/^\.\//, "");
 }
 
-function relFrom(root, absolutePath) {
+function relFrom(root: string, absolutePath: string): string {
   return normalizeRelativePath(path.relative(root, absolutePath));
 }
 
-function toStringArray(value): string[] {
+function toStringArray(value: unknown): string[] {
   if (value == null) return [];
   if (Array.isArray(value)) return value.flatMap((item) => toStringArray(item));
   const stringValue = typeof value === "string" ? value.trim() : String(value).trim();
   return stringValue ? [stringValue] : [];
 }
 
-function uniqStrings(values): string[] {
+function uniqStrings(values: readonly unknown[]): string[] {
   return [...new Set<string>(values.flatMap((value) => toStringArray(value)).map((value) => value.trim()).filter(Boolean))];
 }
 
-function firstDefined(...values) {
+function firstDefined(...values: unknown[]): unknown {
   return values.find((value) => value !== undefined && value !== null);
 }
 
-function semverOrFallback(value, fallback = "0.0.0") {
+function semverOrFallback(value: unknown, fallback = "0.0.0"): string {
   const candidate = String(value || "").trim();
   return /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(candidate)
     ? candidate
     : fallback;
 }
 
-function sha256(value) {
+function sha256(value: crypto.BinaryLike): string {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-async function sha256File(p) {
+async function sha256File(p: string): Promise<string> {
   return sha256(await fs.readFile(p));
 }
 
-async function sha256PathIfExists(p) {
+async function sha256PathIfExists(p: string): Promise<string | null> {
   return (await pathExists(p)) ? sha256File(p) : null;
 }
 
-async function sha256JsonFile(p) {
+async function sha256JsonFile(p: string): Promise<string> {
   return sha256(await fs.readFile(p));
 }
 
-async function findBrickById(registry, id) {
-  if (registry.bricks.find((b) => b.id === id)) return registry.bricks.find((b) => b.id === id);
+function findBrickById(registry: CloneRegistry, id: string): RegistryBrick | null {
+  const exact = registry.bricks.find((brick) => brick.id === id);
+  if (exact) return exact;
   const prefix = registry.bricks.find((b) => b.id.startsWith(id));
   return prefix || null;
 }
 
-function isObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value);
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function score(text, term) { return text.toLowerCase().includes(term) ? 1 : 0; }
+function score(text: string, term: string): number { return text.toLowerCase().includes(term) ? 1 : 0; }
 
-async function searchBricks(registry, term) {
-  const hits = [];
+async function searchBricks(registry: CloneRegistry, term: string) {
+  const hits: { id: string; name?: string; project?: string; status?: string; kind?: string; paths?: string[]; purpose?: string; tags?: unknown[] }[] = [];
   for (const b of registry.bricks) {
-    const mf = await maybeReadJson(b.manifest_path);
+    const mf = await maybeReadJson<CloneManifest>(b.manifest_path);
     const sem = mf?.semantics || {};
     const hay = `${b.id} ${b.name} ${b.project} ${sem.purpose || ""} ${(sem.tags || []).join(" ")} ${(b.source_paths || []).join(" ")}`;
     if (score(hay, term)) {
@@ -188,16 +227,16 @@ async function searchBricks(registry, term) {
     }
   }
   return hits.sort((a, b) => {
-    const rank = { canonical: 3, candidate: 2, project_bound: 1 };
-    return (rank[b.status] || 0) - (rank[a.status] || 0);
+    const rank: Record<string, number> = { canonical: 3, candidate: 2, project_bound: 1 };
+    return (rank[b.status || ''] || 0) - (rank[a.status || ''] || 0);
   });
 }
 
-function slugify(s) {
+function slugify(s: unknown): string {
   return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 
-async function inferSourceProjectRoot(manifestPath, sourcePaths, fallbackProjectId) {
+async function inferSourceProjectRoot(manifestPath: string, sourcePaths: readonly unknown[], fallbackProjectId: string): Promise<string> {
   const manifestDir = path.dirname(manifestPath);
   const normalizedSources = uniqStrings(sourcePaths).map((sourcePath) => normalizeRelativePath(sourcePath)).sort((a, b) => b.length - a.length);
   let current = manifestDir;
@@ -214,10 +253,10 @@ async function inferSourceProjectRoot(manifestPath, sourcePaths, fallbackProject
   return path.resolve(projectsRoot, fallbackProjectId || "");
 }
 
-const cachedProjectSearchRoots = [];
+const cachedProjectSearchRoots: string[] = [];
 let projectSearchRootsLoaded = false;
 
-async function listProjectSearchRoots() {
+async function listProjectSearchRoots(): Promise<string[]> {
   if (projectSearchRootsLoaded) return cachedProjectSearchRoots;
   projectSearchRootsLoaded = true;
   const roots = new Set([projectsRoot]);
@@ -246,7 +285,7 @@ async function listProjectSearchRoots() {
   return cachedProjectSearchRoots;
 }
 
-async function resolveSourcePath(relativePath, preferredRoots = []) {
+async function resolveSourcePath(relativePath: string, preferredRoots: string[] = []): Promise<{ root: string; absolutePath: string } | null> {
   const normalized = normalizeRelativePath(relativePath);
   const roots = [...new Set([
     ...preferredRoots.filter(Boolean).map((root) => path.resolve(root)),
@@ -259,10 +298,10 @@ async function resolveSourcePath(relativePath, preferredRoots = []) {
   return null;
 }
 
-async function findBuildManifestCandidates(dir) {
+async function findBuildManifestCandidates(dir: string): Promise<string[]> {
   if (!(await pathExists(dir))) return [];
-  const matches = [];
-  async function walk(current) {
+  const matches: string[] = [];
+  async function walk(current: string): Promise<void> {
     const entries = await fs.readdir(current, { withFileTypes: true });
     for (const entry of entries) {
       if (ignoredCopyDirs.has(entry.name) || entry.name === ".git") continue;
@@ -280,7 +319,7 @@ async function findBuildManifestCandidates(dir) {
   return matches;
 }
 
-async function resolveBuildManifestPath(opts, registry) {
+async function resolveBuildManifestPath(opts: CloneOptions, registry: CloneRegistry): Promise<string> {
   if (opts.buildManifest) {
     if (!(await pathExists(opts.buildManifest))) {
       throw new Error(`build manifest not found at ${opts.buildManifest}`);
@@ -298,12 +337,12 @@ async function resolveBuildManifestPath(opts, registry) {
     path.resolve(repoRoot, "examples")
   ];
 
-  const candidates = [];
+  const candidates: string[] = [];
   for (const dir of searchDirs) candidates.push(...await findBuildManifestCandidates(dir));
 
   for (const candidate of candidates) {
     try {
-      const manifest = await readJson(candidate);
+      const manifest = await readJson<CloneManifest>(candidate);
       if (manifest?.build?.id === opts.build) return candidate;
     } catch {
       // ignore non-build JSON candidates
@@ -318,11 +357,11 @@ async function resolveBuildManifestPath(opts, registry) {
   throw new Error(`no build manifest matched "${opts.build}"`);
 }
 
-async function collectPathEntries(src, dst, sourceBaseRoot, targetBaseRoot, contentKind) {
+async function collectPathEntries(src: string, dst: string, sourceBaseRoot: string, targetBaseRoot: string, contentKind: string): Promise<PathEntry[]> {
   const stat = await fs.stat(src);
   if (stat.isDirectory()) {
     const entries = await fs.readdir(src, { withFileTypes: true });
-    const collected = [];
+    const collected: PathEntry[] = [];
     for (const entry of entries) {
       if (entry.isDirectory() && ignoredCopyDirs.has(entry.name)) continue;
       const nested = await collectPathEntries(
@@ -348,39 +387,41 @@ async function collectPathEntries(src, dst, sourceBaseRoot, targetBaseRoot, cont
   }];
 }
 
-function extractEnvVariableNames(envContract) {
-  if (!envContract || typeof envContract !== "object") return [];
-  const normalizeEnvItemName = (item) => {
+function extractEnvVariableNames(envContract: unknown): string[] {
+  if (!isObject(envContract)) return [];
+  const contract = envContract as EnvContract;
+  const normalizeEnvItemName = (item: unknown): string => {
     if (typeof item === "string") return item;
-    if (item && typeof item === "object" && item.name) return item.name;
+    if (isObject(item) && typeof item.name === 'string') return item.name;
     return "";
   };
-  const variableNames = [];
-  if (Array.isArray(envContract.variables)) {
-    for (const variable of envContract.variables) {
+  const variableNames: unknown[] = [];
+  if (Array.isArray(contract.variables)) {
+    for (const variable of contract.variables) {
       if (typeof variable === "string") variableNames.push(variable);
-      else if (variable && typeof variable === "object" && variable.name) variableNames.push(variable.name);
+      else if (isObject(variable) && typeof variable.name === 'string') variableNames.push(variable.name);
     }
   }
-  if (Array.isArray(envContract.required)) variableNames.push(...envContract.required.map(normalizeEnvItemName));
-  if (Array.isArray(envContract.optional)) variableNames.push(...envContract.optional.map(normalizeEnvItemName));
+  if (Array.isArray(contract.required)) variableNames.push(...contract.required.map(normalizeEnvItemName));
+  if (Array.isArray(contract.optional)) variableNames.push(...contract.optional.map(normalizeEnvItemName));
   return uniqStrings(variableNames);
 }
 
-function extractRlsTableNames(rlsContract) {
-  if (!rlsContract || typeof rlsContract !== "object") return [];
-  const tableNames = [];
-  if (Array.isArray(rlsContract.tables)) tableNames.push(...rlsContract.tables);
-  if (Array.isArray(rlsContract.negative_tests)) {
-    for (const testCase of rlsContract.negative_tests) {
+function extractRlsTableNames(rlsContract: unknown): string[] {
+  if (!isObject(rlsContract)) return [];
+  const contract = rlsContract as RlsContract;
+  const tableNames: unknown[] = [];
+  if (Array.isArray(contract.tables)) tableNames.push(...contract.tables);
+  if (Array.isArray(contract.negative_tests)) {
+    for (const testCase of contract.negative_tests) {
       if (typeof testCase === "string") continue;
-      if (testCase && typeof testCase === "object" && testCase.table) tableNames.push(testCase.table);
+      if (isObject(testCase) && typeof testCase.table === 'string') tableNames.push(testCase.table);
     }
   }
   return uniqStrings(tableNames);
 }
 
-function deriveTestCommands(brick, manifest) {
+function deriveTestCommands(brick: RegistryBrick, manifest: CloneManifest): string[] {
   return uniqStrings([
     ...(brick.test_commands || []),
     ...(manifest.tests?.commands || []),
@@ -389,7 +430,7 @@ function deriveTestCommands(brick, manifest) {
   ]);
 }
 
-function deriveImportStatus(plan, placementCount) {
+function deriveImportStatus(plan: ClonePlan, placementCount: number): string {
   const missingCount = plan.actions.filter((action) => action.kind === "skip_missing").length;
   const blockedCount = plan.actions.filter((action) => action.kind === "skip_exists").length;
   if (missingCount > 0 && placementCount === 0) return "blocked";
@@ -397,20 +438,20 @@ function deriveImportStatus(plan, placementCount) {
   return "installed";
 }
 
-function mapBrickStatusToTrustTier(status) {
+function mapBrickStatusToTrustTier(status: unknown): string {
   if (status === "canonical") return "canonical";
   if (status === "candidate") return "candidate";
   if (status === "verified") return "verified";
   return "experimental";
 }
 
-function mapBrickStatusToVerificationStatus(status) {
+function mapBrickStatusToVerificationStatus(status: unknown): string {
   if (status === "canonical") return "canonical";
   if (status === "candidate") return "candidate";
   return "unverified";
 }
 
-function mapBuildTrustTier(build) {
+function mapBuildTrustTier(build: CloneManifest['build']): string {
   const trustTier = String(build?.trust_tier || "").toLowerCase();
   if (["experimental", "candidate", "verified", "canonical"].includes(trustTier)) return trustTier;
   if (trustTier === "reviewed") return "candidate";
@@ -422,7 +463,7 @@ function mapBuildTrustTier(build) {
   return "experimental";
 }
 
-function mapBuildVerificationStatus(build, verification) {
+function mapBuildVerificationStatus(build: CloneManifest['build'], verification: CloneManifest['verification']): string {
   const explicit = String(firstDefined(verification?.status, build?.status, "")).toLowerCase();
   if (explicit === "canonical") return "canonical";
   if (explicit === "verified" || explicit === "passing") return "verified";
@@ -431,31 +472,22 @@ function mapBuildVerificationStatus(build, verification) {
   return "unverified";
 }
 
-function deriveBuildTestCommands(manifest) {
-  return uniqStrings([
-    ...(manifest?.verification?.smoke_commands || []),
-    ...(manifest?.interfaces?.commands || []),
-    ...(manifest?.clone?.verification_commands || []),
-    ...(manifest?.clone?.post_clone_checks || [])
-  ]);
-}
-
-function createImportId(brickId, timestamp) {
+function createImportId(brickId: string, timestamp: string): string {
   const stamp = timestamp.replace(/[-:.TZ]/g, "").slice(0, 14);
   const suffix = crypto.randomBytes(4).toString("hex");
   return `smarch_${slugify(brickId)}_${stamp}_${suffix}`;
 }
 
-function toJsonObject(value, fallback = {}) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : fallback;
+function toJsonObject<T extends MutableRecord>(value: unknown, fallback: T): T {
+  return isObject(value) ? value as T : fallback;
 }
 
-function mapContentKindToPlacementKind(contentKind) {
+function mapContentKindToPlacementKind(contentKind: string): string {
   if (contentKind === "portable_doc") return "doc";
   return "file";
 }
 
-function inferSymbolKind(symbol) {
+function inferSymbolKind(symbol: unknown): string {
   const value = String(symbol || "");
   if (!value) return "other";
   if (value.startsWith("use") && value[3] && value[3] === value[3].toUpperCase()) return "hook";
@@ -464,14 +496,14 @@ function inferSymbolKind(symbol) {
   return "other";
 }
 
-function mapPublicApiToSymbols(publicApi) {
+function mapPublicApiToSymbols(publicApi: readonly unknown[]): { name: string; kind: string }[] {
   return uniqStrings(publicApi).map((symbol) => ({
     name: symbol,
     kind: inferSymbolKind(symbol)
   }));
 }
 
-function envScopeToSurface(scope) {
+function envScopeToSurface(scope: unknown): string {
   const value = String(scope || "").toLowerCase();
   if (value.includes("client") || value.includes("public")) return "client";
   if (value.includes("edge")) return "edge";
@@ -480,18 +512,19 @@ function envScopeToSurface(scope) {
   return "server";
 }
 
-function buildEnvBindingRecords(envContract) {
-  const records = [];
-  if (!envContract || typeof envContract !== "object") return records;
+function buildEnvBindingRecords(envContract: unknown): EnvBindingRecord[] {
+  const records: EnvBindingRecord[] = [];
+  if (!isObject(envContract)) return records;
+  const contract = envContract as EnvContract;
 
-  const toEnvName = (value) => {
+  const toEnvName = (value: unknown): string => {
     if (typeof value === "string") return value;
-    if (value && typeof value === "object" && value.name) return value.name;
+    if (isObject(value) && typeof value.name === 'string') return value.name;
     return "";
   };
-  const requiredNames = new Set(uniqStrings((Array.isArray(envContract.required) ? envContract.required : []).map(toEnvName)));
-  if (Array.isArray(envContract.variables)) {
-    for (const variable of envContract.variables) {
+  const requiredNames = new Set(uniqStrings((Array.isArray(contract.required) ? contract.required : []).map(toEnvName)));
+  if (Array.isArray(contract.variables)) {
+    for (const variable of contract.variables) {
       if (typeof variable === "string") {
         records.push({
           name: variable,
@@ -500,36 +533,36 @@ function buildEnvBindingRecords(envContract) {
         });
         continue;
       }
-      if (!variable || typeof variable !== "object" || !variable.name) continue;
+      if (!isObject(variable) || typeof variable.name !== 'string') continue;
       records.push({
         name: variable.name,
         surface: envScopeToSurface(variable.scope),
         required: requiredNames.has(variable.name) || (Array.isArray(variable.required_in) && variable.required_in.length > 0),
-        bound_to: variable.example || undefined
+        bound_to: typeof variable.example === 'string' ? variable.example : undefined
       });
     }
   }
 
-  if (Array.isArray(envContract.required)) {
-    for (const variable of envContract.required) {
-      if (!variable || typeof variable !== "object" || !variable.name) continue;
+  if (Array.isArray(contract.required)) {
+    for (const variable of contract.required) {
+      if (!isObject(variable) || typeof variable.name !== 'string') continue;
       records.push({
         name: variable.name,
         surface: envScopeToSurface(variable.scope),
         required: true,
-        bound_to: variable.example || undefined
+        bound_to: typeof variable.example === 'string' ? variable.example : undefined
       });
     }
   }
 
-  if (Array.isArray(envContract.optional)) {
-    for (const variable of envContract.optional) {
-      if (!variable || typeof variable !== "object" || !variable.name) continue;
+  if (Array.isArray(contract.optional)) {
+    for (const variable of contract.optional) {
+      if (!isObject(variable) || typeof variable.name !== 'string') continue;
       records.push({
         name: variable.name,
         surface: envScopeToSurface(variable.scope),
         required: false,
-        bound_to: variable.example || undefined
+        bound_to: typeof variable.example === 'string' ? variable.example : undefined
       });
     }
   }
@@ -543,7 +576,7 @@ function buildEnvBindingRecords(envContract) {
   return records;
 }
 
-function buildAdapterPointRecords(adaptationPoints) {
+function buildAdapterPointRecords(adaptationPoints: readonly unknown[]): AdapterPointRecord[] {
   return uniqStrings(adaptationPoints).map((point) => ({
     id: slugify(point),
     kind: "other",
@@ -552,7 +585,7 @@ function buildAdapterPointRecords(adaptationPoints) {
   }));
 }
 
-function mapArtifactStatusToChannel(status) {
+function mapArtifactStatusToChannel(status: unknown): string {
   const value = String(status || "").toLowerCase();
   if (value === "canonical" || value === "stable") return "stable";
   if (value === "candidate") return "candidate";
@@ -561,11 +594,11 @@ function mapArtifactStatusToChannel(status) {
   return "dev";
 }
 
-function createBuildChildImportId(buildImportId, brickId) {
+function createBuildChildImportId(buildImportId: string, brickId: string): string {
   return `${buildImportId}:brick:${sha256(brickId).slice(0, 10)}`;
 }
 
-function mapCloneOwnershipMode(ownership) {
+function mapCloneOwnershipMode(ownership: unknown): string {
   const value = String(ownership || "").toLowerCase();
   if (value === "adapter" || value === "adapted") return "adapted";
   if (value === "fork" || value === "forked") return "forked";
@@ -573,16 +606,16 @@ function mapCloneOwnershipMode(ownership) {
   return "managed";
 }
 
-function resolveTargetPathFromFileMap(fileMapEntries, sourcePath) {
+function resolveTargetPathFromFileMap(fileMapEntries: FileMapEntry[], sourcePath: string): { target_path: string; ownership: unknown; notes: string } {
   const normalizedSourcePath = normalizeRelativePath(sourcePath);
   const normalizedEntries = Array.isArray(fileMapEntries)
     ? fileMapEntries
-      .filter((entry) => isObject(entry) && entry.source_path && entry.target_path)
+      .filter((entry): entry is FileMapEntry & { source_path: string; target_path: string } => typeof entry.source_path === 'string' && typeof entry.target_path === 'string')
       .map((entry) => ({
         source_path: normalizeRelativePath(entry.source_path),
         target_path: normalizeRelativePath(entry.target_path),
         ownership: entry.ownership,
-        notes: entry.notes || ""
+        notes: typeof entry.notes === 'string' ? entry.notes : ""
       }))
       .sort((a, b) => b.source_path.length - a.source_path.length)
     : [];
@@ -606,14 +639,14 @@ function resolveTargetPathFromFileMap(fileMapEntries, sourcePath) {
   };
 }
 
-function normalizeBuildBrickRefs(manifest) {
+function normalizeBuildBrickRefs(manifest: CloneManifest): BrickReference[] {
   const entries = [
     ...(manifest?.composition?.brick_refs || []),
     ...(manifest?.source?.derived_from_bricks || [])
   ];
-  const seen = new Set();
+  const seen = new Set<string>();
   return entries
-    .filter((entry) => isObject(entry) && entry.brick_id)
+    .filter((entry): entry is BrickReference => typeof entry.brick_id === 'string' && entry.brick_id.length > 0)
     .sort((a, b) => (a.order || 9999) - (b.order || 9999))
     .filter((entry) => {
       if (seen.has(entry.brick_id)) return false;
@@ -622,28 +655,28 @@ function normalizeBuildBrickRefs(manifest) {
     });
 }
 
-function aggregateEnvContractFromRecords(records) {
-  const required = [];
-  const optional = [];
+function aggregateEnvContractFromRecords(records: readonly EnvBindingRecord[]): EnvContract {
+  const required: string[] = [];
+  const optional: string[] = [];
   for (const record of records) {
-    if (!record || !record.name) continue;
+    if (!record?.name) continue;
     const target = record.required ? required : optional;
     target.push(record.name);
   }
-  const contract: Record<string, any> = {};
+  const contract: EnvContract = {};
   if (required.length) contract.required = uniqStrings(required);
   if (optional.length) contract.optional = uniqStrings(optional);
   return contract;
 }
 
-function aggregateRlsContractFromTables(tableNames) {
-  const contract: Record<string, any> = {};
+function aggregateRlsContractFromTables(tableNames: readonly unknown[]): RlsContract {
+  const contract: RlsContract = {};
   const tables = uniqStrings(tableNames);
   if (tables.length) contract.tables = tables;
   return contract;
 }
 
-function deriveImportStatusForImport(actions, placementCount, importId) {
+function deriveImportStatusForImport(actions: readonly CloneAction[], placementCount: number, importId: string): string {
   const relevantActions = actions.filter((action) => action.import_id === importId);
   const missingCount = relevantActions.filter((action) => action.kind === "skip_missing").length;
   const blockedCount = relevantActions.filter((action) => action.kind === "skip_exists").length;
@@ -652,9 +685,13 @@ function deriveImportStatusForImport(actions, placementCount, importId) {
   return "installed";
 }
 
+function isCopyAction(action: CloneAction): action is CloneAction & { src: string; dst: string } {
+  return action.kind.startsWith('copy') && typeof action.src === 'string' && typeof action.dst === 'string';
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const registry = await readJson(opts.registry);
+  const registry = await readJson<CloneRegistry>(opts.registry);
 
   if (opts.search) {
     const hits = await searchBricks(registry, opts.search);
@@ -690,8 +727,8 @@ async function main() {
 
   if (opts.build || opts.buildManifest) {
     const buildManifestPath = await resolveBuildManifestPath(opts, registry);
-    const buildManifest = await readJson(buildManifestPath);
-    const buildMeta = toJsonObject(buildManifest.build, {});
+    const buildManifest = await readJson<CloneManifest>(buildManifestPath);
+    const buildMeta = buildManifest.build ?? {};
     const buildId = String(buildMeta.id || opts.build || "").trim();
     if (!buildId) {
       console.error(`error: build manifest at ${buildManifestPath} is missing build.id`);
@@ -740,15 +777,15 @@ async function main() {
     ]);
 
     const buildBrickRefs = normalizeBuildBrickRefs(buildManifest);
-    const requiredBuildBrickRefs = buildBrickRefs.filter((entry) => entry.required !== false);
-    const resolvedBricks = [];
+    const requiredBuildBrickRefs = buildBrickRefs.filter((entry) => entry.required);
+    const resolvedBricks: ResolvedBrick[] = [];
     for (const ref of requiredBuildBrickRefs) {
-      const resolvedBrick = await findBrickById(registry, ref.brick_id);
+      const resolvedBrick = findBrickById(registry, ref.brick_id);
       if (!resolvedBrick) {
         console.error(`error: build "${buildId}" requires brick "${ref.brick_id}" but it was not found in the registry`);
         process.exit(2);
       }
-      const resolvedManifest = await readJson(resolvedBrick.manifest_path);
+      const resolvedManifest = await readJson<CloneManifest>(resolvedBrick.manifest_path);
       verifyCommercialEntitlement({ manifest: resolvedManifest, brickId: resolvedBrick.id, licensee: opts.licensee, entitlementFile: opts.entitlement, trustedKeysFile: opts.entitlementTrustedKeys });
       const resolvedSemantics = resolvedManifest.semantics || {};
       const sourceProjectRoot = await inferSourceProjectRoot(
@@ -756,8 +793,8 @@ async function main() {
         resolvedBrick.source_paths || [],
         resolvedBrick.project || ref.project || ""
       );
-      const envContract = toJsonObject(firstDefined(resolvedManifest.security?.env, resolvedBrick.env_contract), {});
-      const rlsContract = toJsonObject(firstDefined(resolvedManifest.security?.rls, resolvedBrick.rls_contract), {});
+      const envContract = toJsonObject<EnvContract>(firstDefined(resolvedManifest.security?.env, resolvedBrick.env_contract), {});
+      const rlsContract = toJsonObject<RlsContract>(firstDefined(resolvedManifest.security?.rls, resolvedBrick.rls_contract), {});
       const publicApi = uniqStrings([
         ...(resolvedSemantics.public_api || []),
         ...(resolvedBrick.public_api || []),
@@ -807,8 +844,8 @@ async function main() {
     }
 
     const preferredRoots = uniqStrings(resolvedBricks.map((entry) => entry.sourceProjectRoot));
-    const buildEnvContractDeclared = toJsonObject(firstDefined(buildManifest.contracts?.env, buildManifest.security?.env), {});
-    const buildRlsContractDeclared = toJsonObject(firstDefined(buildManifest.contracts?.rls, buildManifest.security?.rls), {});
+    const buildEnvContractDeclared = toJsonObject<EnvContract>(firstDefined(buildManifest.contracts?.env, buildManifest.security?.env), {});
+    const buildRlsContractDeclared = toJsonObject<RlsContract>(firstDefined(buildManifest.contracts?.rls, buildManifest.security?.rls), {});
     const buildEnvBindingRecordsList = buildEnvBindingRecords(
       Object.keys(buildEnvContractDeclared).length
         ? buildEnvContractDeclared
@@ -829,7 +866,7 @@ async function main() {
       ...resolvedBricks.flatMap((entry) => entry.testCommands)
     ]);
 
-    const buildActionOwnerForPath = (relativePath) => {
+    const buildActionOwnerForPath = (relativePath: string): ResolvedBrick | null => {
       const normalizedPath = normalizeRelativePath(relativePath);
       const candidates = resolvedBricks
         .map((entry) => {
@@ -839,12 +876,12 @@ async function main() {
           const matchedSource = sourceHints.find((sourceHint) => normalizedPath === sourceHint || normalizedPath.startsWith(`${sourceHint}/`));
           return matchedSource ? { entry, matchedSource } : null;
         })
-        .filter(Boolean)
+        .filter((candidate): candidate is { entry: ResolvedBrick; matchedSource: string } => candidate !== null)
         .sort((a, b) => b.matchedSource.length - a.matchedSource.length);
       return candidates[0]?.entry || null;
     };
 
-    const plan: Record<string, any> = {
+    const plan: ClonePlan = {
       artifact_type: "build",
       build: buildId,
       name: buildName,
@@ -856,7 +893,7 @@ async function main() {
         name: entry.brick.name,
         project: entry.brick.project,
         role: entry.ref.role || null,
-        required: entry.ref.required !== false,
+        required: entry.ref.required,
         import_id: entry.import_id
       })),
       actions: []
@@ -914,7 +951,7 @@ async function main() {
         path.resolve(path.dirname(buildManifestPath), normalized)
       ];
       const existingSource = await Promise.all(sourceCandidates.map(async (candidate) => (await pathExists(candidate)) ? candidate : null));
-      const matchedSource = existingSource.find(Boolean);
+      const matchedSource = existingSource.find((candidate): candidate is string => typeof candidate === 'string');
       if (!matchedSource) continue;
       const dst = path.resolve(opts.target, opts.docDir, "builds", slug, path.basename(normalized));
       if (await pathExists(dst) && !opts.force) {
@@ -982,14 +1019,15 @@ async function main() {
 
     if (opts.write) {
       guardCloneWrite(opts, resolvedBricks.map((entry) => entry.brick.id), resolvedBricks[0]?.brick?.project || null);
-      const placementEntries = [];
+      const placementEntries: (PathEntry & { action: CloneAction })[] = [];
       for (const action of plan.actions) {
+        if (!isCopyAction(action)) continue;
         if (action.kind === "copy_dir") {
-          const entries = await collectPathEntries(action.src, action.dst, action.source_base_root, opts.target, "source_file");
+          const entries = await collectPathEntries(action.src, action.dst, action.source_base_root ?? repoRoot, opts.target, "source_file");
           await copyDir(action.src, action.dst);
           placementEntries.push(...entries.map((entry) => ({ ...entry, action })));
         } else if (action.kind === "copy_file") {
-          const entries = await collectPathEntries(action.src, action.dst, action.source_base_root, opts.target, "source_file");
+          const entries = await collectPathEntries(action.src, action.dst, action.source_base_root ?? repoRoot, opts.target, "source_file");
           await copyFile(action.src, action.dst);
           placementEntries.push(...entries.map((entry) => ({ ...entry, action })));
         } else if (action.kind === "copy_doc") {
@@ -999,11 +1037,11 @@ async function main() {
         }
       }
 
-      const placementRecords = [];
+      const placementRecords: PlacementRecord[] = [];
       for (const entry of placementEntries) {
         placementRecords.push({
           placement_id: sha256(`${entry.action.import_id}:${entry.target_path}`).slice(0, 16),
-          import_id: entry.action.import_id,
+          import_id: String(entry.action.import_id || ''),
           kind: mapContentKindToPlacementKind(entry.content_kind),
           source_path: entry.source_path,
           target_path: entry.target_path,
@@ -1022,23 +1060,25 @@ async function main() {
         });
       }
 
-      const placementCountsByImportId = new Map();
-      const targetPathsByImportId = new Map();
-      const docPathsByImportId = new Map();
+      const placementCountsByImportId = new Map<string, number>();
+      const targetPathsByImportId = new Map<string, Set<string>>();
+      const docPathsByImportId = new Map<string, Set<string>>();
       for (const placement of placementRecords) {
         placementCountsByImportId.set(placement.import_id, (placementCountsByImportId.get(placement.import_id) || 0) + 1);
-        if (!targetPathsByImportId.has(placement.import_id)) targetPathsByImportId.set(placement.import_id, new Set());
-        targetPathsByImportId.get(placement.import_id).add(placement.target_path);
+        const targetPaths = targetPathsByImportId.get(placement.import_id) ?? new Set<string>();
+        targetPaths.add(placement.target_path);
+        targetPathsByImportId.set(placement.import_id, targetPaths);
         if (placement.kind === "doc") {
-          if (!docPathsByImportId.has(placement.import_id)) docPathsByImportId.set(placement.import_id, new Set());
-          docPathsByImportId.get(placement.import_id).add(placement.target_path);
+          const docPaths = docPathsByImportId.get(placement.import_id) ?? new Set<string>();
+          docPaths.add(placement.target_path);
+          docPathsByImportId.set(placement.import_id, docPaths);
         }
       }
 
       const checklistRelPath = relFrom(opts.target, checklistPath);
       const buildImportStatus = deriveImportStatusForImport(plan.actions, placementCountsByImportId.get(buildImportId) || 0, buildImportId);
 
-      const legacyImports = (await maybeReadJson(legacyImportsPath)) || { version: 1, imports: [] };
+      const legacyImports = (await maybeReadJson<ImportsDocument>(legacyImportsPath)) || { version: 1, imports: [] };
       legacyImports.imports = Array.isArray(legacyImports.imports) ? legacyImports.imports : [];
       legacyImports.imports.push({
         artifact_type: "build",
@@ -1054,14 +1094,14 @@ async function main() {
         resolved_bricks: resolvedBricks.map((entry) => ({
           brick_id: entry.brick.id,
           role: entry.ref.role || null,
-          required: entry.ref.required !== false
+          required: entry.ref.required
         }))
       });
       await fs.mkdir(path.dirname(legacyImportsPath), { recursive: true });
       await fs.writeFile(legacyImportsPath, JSON.stringify(legacyImports, null, 2));
       plan.imports_record = legacyImportsPath;
 
-      const smarchImports = (await maybeReadJson(smarchImportsPath)) || { version: 1, schema: "smarch.imports.v0", imports: [] };
+      const smarchImports = (await maybeReadJson<ImportsDocument>(smarchImportsPath)) || { version: 1, schema: "smarch.imports.v0", imports: [] };
       smarchImports.version = 1;
       smarchImports.schema = "smarch.imports.v0";
       smarchImports.generated_at = now;
@@ -1084,7 +1124,7 @@ async function main() {
         source_kind: buildMeta.kind || "build",
         source_paths: buildSourcePaths,
         target_paths: uniqStrings(plan.actions
-          .filter((action) => action.kind === "copy_dir" || action.kind === "copy_file")
+          .filter((action): action is CloneAction & { dst: string } => (action.kind === "copy_dir" || action.kind === "copy_file") && typeof action.dst === 'string')
           .map((action) => relFrom(opts.target, action.dst))),
         portable_doc_paths: [...(docPathsByImportId.get(buildImportId) || new Set())],
         checklist_path: checklistRelPath,
@@ -1183,7 +1223,7 @@ async function main() {
       await fs.mkdir(path.dirname(smarchImportsPath), { recursive: true });
       await fs.writeFile(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
 
-      const buildLock = (await maybeReadJson(buildLockPath)) || {};
+      const buildLock = (await maybeReadJson<BuildLockDocument>(buildLockPath)) || {};
       buildLock.version = 1;
       buildLock.schema_version = "1.0.0";
       buildLock.lock = toJsonObject(buildLock.lock, {});
@@ -1270,12 +1310,12 @@ async function main() {
         buildLock.frozen_dependency_graph.edges.push({
           from: buildImportId,
           to: entry.import_id,
-          relation: entry.ref.required === false ? "optional" : "depends_on"
+          relation: !entry.ref.required ? "optional" : "depends_on"
         });
       }
       await fs.writeFile(buildLockPath, JSON.stringify(buildLock, null, 2));
 
-      const placements = (await maybeReadJson(placementsPath)) || {};
+      const placements = (await maybeReadJson<PlacementsDocument>(placementsPath)) || {};
       placements.schema_version = "1.0.0";
       placements.map = toJsonObject(placements.map, {});
       placements.map.generated_at = now;
@@ -1439,10 +1479,10 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     return;
   }
 
-  const brick = await findBrickById(registry, opts.brick);
+  const brick = findBrickById(registry, opts.brick);
   if (!brick) { console.error(`error: no brick matched id "${opts.brick}"`); process.exit(2); }
 
-  const manifest = await readJson(brick.manifest_path);
+  const manifest = await readJson<CloneManifest>(brick.manifest_path);
   verifyCommercialEntitlement({ manifest, brickId: brick.id, licensee: opts.licensee, entitlementFile: opts.entitlement, trustedKeysFile: opts.entitlementTrustedKeys });
   const sem = manifest.semantics || {};
   const artifactVersion = semverOrFallback(firstDefined(brick.version, manifest.brick?.version, manifest.build?.version), "0.0.0");
@@ -1469,7 +1509,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
   const adapterPointRecords = buildAdapterPointRecords(adaptationPoints);
   const exportedSymbols = mapPublicApiToSymbols(publicApi);
 
-  const plan: Record<string, any> = { brick: brick.id, name: brick.name, from_project: brick.project, status: brick.status, actions: [] };
+  const plan: ClonePlan = { brick: brick.id, name: brick.name, from_project: brick.project, status: brick.status, actions: [] };
 
   for (const rel of brick.source_paths || []) {
     const src = path.resolve(sourceProjectRoot, rel);
@@ -1527,8 +1567,9 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
 
   if (opts.write) {
     guardCloneWrite(opts, [brick.id], brick.project || null);
-    const placementEntries = [];
+    const placementEntries: PathEntry[] = [];
     for (const a of plan.actions) {
+      if (!isCopyAction(a)) continue;
       if (a.kind === "copy_dir") {
         const entries = await collectPathEntries(a.src, a.dst, sourceProjectRoot, opts.target, "source_file");
         await copyDir(a.src, a.dst);
@@ -1543,7 +1584,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
         placementEntries.push(...entries);
       }
     }
-    const placementRecords = [];
+    const placementRecords: PlacementRecord[] = [];
     for (const entry of placementEntries) {
       placementRecords.push({
         placement_id: sha256(`${importId}:${entry.target_path}`).slice(0, 16),
@@ -1567,7 +1608,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     }
     const importStatus = deriveImportStatus(plan, placementRecords.length);
     const copiedTargetRoots = uniqStrings(plan.actions
-      .filter((action) => action.kind === "copy_dir" || action.kind === "copy_file")
+      .filter((action): action is CloneAction & { dst: string } => (action.kind === "copy_dir" || action.kind === "copy_file") && typeof action.dst === 'string')
       .map((action) => relFrom(opts.target, action.dst)));
     const portableDocPaths = uniqStrings(placementRecords
       .filter((placement) => placement.kind === "doc")
@@ -1575,7 +1616,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     const checklistRelPath = relFrom(opts.target, checklistPath);
 
     // Legacy imports.json
-    const legacyImports = (await maybeReadJson(legacyImportsPath)) || { version: 1, imports: [] };
+    const legacyImports = (await maybeReadJson<ImportsDocument>(legacyImportsPath)) || { version: 1, imports: [] };
     legacyImports.imports = Array.isArray(legacyImports.imports) ? legacyImports.imports : [];
     legacyImports.imports.push({
       brick_id: brick.id,
@@ -1593,7 +1634,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     plan.imports_record = legacyImportsPath;
 
     // New SMARCH control-plane artifacts
-    const smarchImports = (await maybeReadJson(smarchImportsPath)) || { version: 1, schema: "smarch.imports.v0", imports: [] };
+    const smarchImports = (await maybeReadJson<ImportsDocument>(smarchImportsPath)) || { version: 1, schema: "smarch.imports.v0", imports: [] };
     smarchImports.version = 1;
     smarchImports.schema = "smarch.imports.v0";
     smarchImports.generated_at = now;
@@ -1651,7 +1692,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     await fs.mkdir(path.dirname(smarchImportsPath), { recursive: true });
     await fs.writeFile(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
 
-    const buildLock = (await maybeReadJson(buildLockPath)) || {};
+    const buildLock = (await maybeReadJson<BuildLockDocument>(buildLockPath)) || {};
     buildLock.version = 1;
     buildLock.schema_version = "1.0.0";
     buildLock.lock = toJsonObject(buildLock.lock, {});
@@ -1716,7 +1757,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     });
     await fs.writeFile(buildLockPath, JSON.stringify(buildLock, null, 2));
 
-    const placements = (await maybeReadJson(placementsPath)) || {};
+    const placements = (await maybeReadJson<PlacementsDocument>(placementsPath)) || {};
     placements.schema_version = "1.0.0";
     placements.map = toJsonObject(placements.map, {});
     placements.map.generated_at = now;

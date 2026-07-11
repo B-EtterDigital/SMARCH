@@ -9,6 +9,21 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+type Severity = "critical" | "high" | "medium" | "low" | "info";
+interface ScanPattern { id: string; severity: Severity; regex?: RegExp; fileRegex?: RegExp }
+interface AssignmentPattern { id: string; severity: Severity; key: string }
+interface Finding { id: string; severity: Severity; path: string; line: number; message: string }
+interface SecurityOptions {
+  root: string;
+  json: boolean;
+  soft: boolean;
+  maxBytes: number;
+  includeArchives: boolean;
+  maxFiles: number;
+  baseline: string | null;
+}
+interface Baseline { file: string | null; accepted: Set<string> }
+
 const excludedDirs = new Set([
   ".git",
   "node_modules",
@@ -98,7 +113,7 @@ const includedNames = new Set([
   "SKILL.md"
 ]);
 
-const patterns = [
+const patterns: ScanPattern[] = [
   { id: "private_key", severity: "critical", regex: /-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/ },
   { id: "openai_key", severity: "high", regex: /\bsk-[A-Za-z0-9_-]{20,}\b/ },
   { id: "stripe_secret", severity: "high", regex: /\bsk_(live|test)_[A-Za-z0-9]{20,}\b/ },
@@ -106,13 +121,13 @@ const patterns = [
   { id: "env_file", severity: "medium", fileRegex: /(^|\/)\.env(\.|$)(?!example)/ }
 ];
 
-const assignmentPatterns = [
+const assignmentPatterns: AssignmentPattern[] = [
   { id: "supabase_service_role", severity: "critical", key: "SUPABASE_SERVICE_ROLE_KEY" },
   { id: "clerk_secret", severity: "high", key: "CLERK_SECRET_KEY" }
 ];
 
-function parseArgs(argv: string[]) {
-  const options = { root: process.cwd(), json: false, soft: false, maxBytes: 1_000_000, includeArchives: false, maxFiles: 20000, baseline: null };
+function parseArgs(argv: string[]): SecurityOptions {
+  const options: SecurityOptions = { root: process.cwd(), json: false, soft: false, maxBytes: 1_000_000, includeArchives: false, maxFiles: 20000, baseline: null };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -178,14 +193,14 @@ function shouldScanFile(name: string): boolean {
   return includedExtensions.has(ext) && !excludedExtensions.has(ext);
 }
 
-function assignmentValue(line, key) {
-  const match = line.match(new RegExp(`\\b${key}\\s*=\\s*([^\\s#;]+)`));
-  return match?.[1]?.trim() || "";
+function assignmentValue(line: string, key: string) {
+  const match = new RegExp(`\\b${key}\\s*=\\s*([^\\s#;]+)`).exec(line);
+  return match?.[1]?.trim() ?? "";
 }
 
 // True if the line is wholly inside a // or /* ... */ comment region (best-effort
 // per-line check) or a SQL '--' comment, or is whitespace.
-function isCommentOrIdentifierOnly(line) {
+function isCommentOrIdentifierOnly(line: string) {
   const trimmed = line.trim();
   if (!trimmed) return true;
   if (trimmed.startsWith("--")) return true;          // SQL line comment
@@ -202,7 +217,7 @@ function isCommentOrIdentifierOnly(line) {
 //   = process.env.X
 //   = Deno.env.get('X')
 //   = config.supabaseKey
-function isIdentifierOrEnvReadValue(value) {
+function isIdentifierOrEnvReadValue(value: string) {
   const v = value.trim().replace(/[;,]+$/, "");
   if (!v) return true;
   if (/^[_A-Za-z][_A-Za-z0-9]*$/.test(v)) return true;                    // bare identifier
@@ -214,7 +229,7 @@ function isIdentifierOrEnvReadValue(value) {
 
 // True if the line declares a regex literal that contains the secret-shaped
 // pattern (typically a /-----BEGIN PRIVATE KEY-----.../ pattern used to extract).
-function isRegexLiteralContainingPattern(line) {
+function isRegexLiteralContainingPattern(line: string) {
   // /-----BEGIN[^/]*-----.../  — a regex literal, not a string literal
   if (/\/-----BEGIN[^\/]*PRIVATE KEY-----.*-----END PRIVATE KEY-----.*?\/[gimsuy]*/.test(line)) return true;
   // multi-line regex split: opens with /-----BEGIN
@@ -222,7 +237,7 @@ function isRegexLiteralContainingPattern(line) {
   return false;
 }
 
-function placeholderValue(value) {
+function placeholderValue(value: string) {
   const normalized = value
     .replace(/^['"]|['"]$/g, "")
     .trim()
@@ -265,7 +280,7 @@ function placeholderValue(value) {
 
 // True for paths where any "secret-shaped" string is overwhelmingly likely to be
 // documentation, fixture, or test data — not a live credential at rest.
-function lowSignalPath(relativePath) {
+function lowSignalPath(relativePath: string) {
   const lowered = relativePath.toLowerCase();
   if (/(^|\/)(docs?|wiki|readme|changelog)(\/|$)/.test(lowered)) return true;
   if (/\.md$|\.mdx$|\.rst$|\.txt$/.test(lowered)) return true;
@@ -277,7 +292,7 @@ function lowSignalPath(relativePath) {
 // Heuristic: a "BEGIN ... PRIVATE KEY" line that is wrapped in quotes and
 // followed/preceded by code like .replace(...) or const pemHeader = '...';
 // is a parser literal, not actual key material.
-function isPemHeaderStringLiteral(line) {
+function isPemHeaderStringLiteral(line: string) {
   const trimmed = line.trim();
   // line is wholly a quoted string assignment with header text
   if (/^(const|let|var|export\s+const)\s+\w+\s*=\s*['"`]-----BEGIN[^'"`]*PRIVATE KEY-----['"`]\s*;?\s*$/.test(trimmed)) {
@@ -294,15 +309,15 @@ function isPemHeaderStringLiteral(line) {
   // Template placeholder embedded between BEGIN/END markers — e.g. JSON string or SQL/CFG with
   // a YOUR_*/PLACEHOLDER body and no actual base64 between the markers on this line.
   if (/-----BEGIN[^]*PRIVATE KEY-----[\s\S]*?-----END PRIVATE KEY-----/.test(line)) {
-    const innerMatch = line.match(/-----BEGIN[^]*?PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
-    const inner = (innerMatch?.[1] || "").toLowerCase();
+    const innerMatch = /-----BEGIN[^]*?PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/.exec(line);
+    const inner = (innerMatch?.[1] ?? "").toLowerCase();
     if (!/[a-z0-9+\/]{40,}/i.test(inner)) return true; // no real base64 body inside this line
     if (/your_|_here|placeholder|replace|example|<.+>/i.test(inner)) return true;
   }
   return false;
 }
 
-async function loadBaseline(rootDir) {
+async function loadBaseline(rootDir: string): Promise<Baseline> {
   // baseline file lives at <root>/security/baseline.json or <root>/.sweetspot/security-baseline.json
   const candidates = [
     path.join(rootDir, "security", "baseline.json"),
@@ -311,12 +326,7 @@ async function loadBaseline(rootDir) {
   for (const file of candidates) {
     try {
       const raw = await fs.readFile(file, "utf8");
-      const parsed = JSON.parse(raw);
-      const accepted = new Set(
-        (parsed.accepted || []).map((entry) =>
-          typeof entry === "string" ? entry : `${entry.id}:${entry.path}:${entry.line ?? ""}`
-        )
-      );
+      const accepted = acceptedBaselineEntries(JSON.parse(raw));
       return { file, accepted };
     } catch {
       // try next
@@ -325,8 +335,8 @@ async function loadBaseline(rootDir) {
   return { file: null, accepted: new Set() };
 }
 
-function findingKey(finding) {
-  return `${finding.id}:${finding.path}:${finding.line ?? ""}`;
+function findingKey(finding: Finding) {
+  return `${finding.id}:${finding.path}:${String(finding.line)}`;
 }
 
 async function walk(dir: string, files: string[] = [], includeArchives = false, maxFiles = 20000): Promise<string[]> {
@@ -360,14 +370,15 @@ async function walk(dir: string, files: string[] = [], includeArchives = false, 
   return files;
 }
 
-function downgrade(severity) {
+function downgrade(severity: Severity): Severity {
   if (severity === "critical") return "low";
   if (severity === "high") return "low";
   if (severity === "medium") return "info";
   return severity;
 }
 
-function extractRegexValue(line, pattern) {
+function extractRegexValue(line: string, pattern: ScanPattern) {
+  if (!pattern.regex) return "";
   const match = line.match(pattern.regex);
   return match ? match[0] : "";
 }
@@ -375,106 +386,64 @@ function extractRegexValue(line, pattern) {
 async function scanFile(root: string, filePath: string, maxBytes: number) {
   const relative = path.relative(root, filePath);
   const lowSignal = lowSignalPath(relative);
-  const findings = [];
+  const findings = sensitiveFileNameFindings(relative, filePath);
+  const content = await readScannableFile(filePath, maxBytes);
+  if (content === null) return findings;
 
-  for (const pattern of patterns) {
-    if (pattern.fileRegex?.test(relative)) {
-      findings.push({
-        id: pattern.id,
-        severity: pattern.severity,
-        path: filePath,
-        line: 1,
-        message: `Sensitive file pattern: ${relative}`
-      });
-    }
+  for (const [index, line] of content.split(/\r?\n/).entries()) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("#") || isCommentOrIdentifierOnly(line)) continue;
+    findings.push(...scanPatternLine(line, filePath, index + 1, lowSignal));
+    findings.push(...scanAssignmentLine(line, filePath, index + 1, lowSignal));
   }
+  return findings;
+}
 
-  let content = "";
+function sensitiveFileNameFindings(relative: string, filePath: string): Finding[] {
+  return patterns.filter((pattern) => pattern.fileRegex?.test(relative)).map((pattern) => ({
+    id: pattern.id, severity: pattern.severity, path: filePath, line: 1, message: `Sensitive file pattern: ${relative}`,
+  }));
+}
+
+async function readScannableFile(filePath: string, maxBytes: number): Promise<string | null> {
   try {
     const stat = await fs.stat(filePath);
-    if (stat.size > maxBytes) {
-      return findings;
-    }
-
-    content = await fs.readFile(filePath, "utf8");
+    return stat.size > maxBytes ? null : await fs.readFile(filePath, "utf8");
   } catch {
-    return findings;
+    return null;
   }
+}
 
-  const lines = content.split(/\r?\n/);
+function scanPatternLine(line: string, filePath: string, lineNumber: number, lowSignal: boolean): Finding[] {
+  return patterns.filter((pattern) => {
+    if (!pattern.regex?.test(line)) return false;
+    if (pattern.id === "private_key" && (isPemHeaderStringLiteral(line) || isRegexLiteralContainingPattern(line))) return false;
+    const matchedValue = extractRegexValue(line, pattern);
+    return !matchedValue || !placeholderValue(matchedValue);
+  }).map((pattern) => secretFinding(pattern, filePath, lineNumber, lowSignal));
+}
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const trimmed = line.trim();
+function scanAssignmentLine(line: string, filePath: string, lineNumber: number, lowSignal: boolean): Finding[] {
+  return assignmentPatterns.filter((pattern) => {
+    const value = assignmentValue(line, pattern.key);
+    return Boolean(value && !placeholderValue(value) && !isIdentifierOrEnvReadValue(value));
+  }).map((pattern) => secretFinding(pattern, filePath, lineNumber, lowSignal));
+}
 
-    if (trimmed.startsWith("#") || isCommentOrIdentifierOnly(line)) {
-      continue;
-    }
-
-    for (const pattern of patterns) {
-      if (!pattern.regex?.test(line)) continue;
-
-      // PEM header used as a string literal in code is not key material.
-      if (pattern.id === "private_key" && isPemHeaderStringLiteral(line)) {
-        continue;
-      }
-
-      // PEM header inside a regex literal is a parser, not key material.
-      if (pattern.id === "private_key" && isRegexLiteralContainingPattern(line)) {
-        continue;
-      }
-
-      // Apply placeholder filter to regex matches too — fixes "sk-your-...-here" in docs.
-      const matchedValue = extractRegexValue(line, pattern);
-      if (matchedValue && placeholderValue(matchedValue)) {
-        continue;
-      }
-
-      let severity = pattern.severity;
-      let note = `Potential secret or unsafe env exposure: ${pattern.id}`;
-      if (lowSignal) {
-        severity = downgrade(severity);
-        note += ` (low-signal path: docs/test/fixture)`;
-      }
-
-      findings.push({
-        id: pattern.id,
-        severity,
-        path: filePath,
-        line: index + 1,
-        message: note
-      });
-    }
-
-    for (const pattern of assignmentPatterns) {
-      const value = assignmentValue(line, pattern.key);
-
-      if (value && !placeholderValue(value) && !isIdentifierOrEnvReadValue(value)) {
-        let severity = pattern.severity;
-        let note = `Potential secret or unsafe env exposure: ${pattern.id}`;
-        if (lowSignal) {
-          severity = downgrade(severity);
-          note += ` (low-signal path: docs/test/fixture)`;
-        }
-
-        findings.push({
-          id: pattern.id,
-          severity,
-          path: filePath,
-          line: index + 1,
-          message: note
-        });
-      }
-    }
-  }
-
-  return findings;
+function secretFinding(pattern: { id: string; severity: Severity }, filePath: string, line: number, lowSignal: boolean): Finding {
+  return {
+    id: pattern.id,
+    severity: lowSignal ? downgrade(pattern.severity) : pattern.severity,
+    path: filePath,
+    line,
+    message: `Potential secret or unsafe env exposure: ${pattern.id}${lowSignal ? " (low-signal path: docs/test/fixture)" : ""}`,
+  };
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const files = await walk(options.root, [], options.includeArchives, options.maxFiles);
-  const rawFindings = [];
+  const rawFindings: Finding[] = [];
 
   for (const filePath of files) {
     const findings = await scanFile(options.root, filePath, options.maxBytes);
@@ -482,18 +451,13 @@ async function main() {
   }
 
   // Apply baseline (accepted findings file) — either from --baseline or auto-discovered.
-  let baseline;
+  let baseline: Baseline;
   if (options.baseline) {
     try {
       const raw = await fs.readFile(options.baseline, "utf8");
-      const parsed = JSON.parse(raw);
       baseline = {
         file: options.baseline,
-        accepted: new Set(
-          (parsed.accepted || []).map((entry) =>
-            typeof entry === "string" ? entry : `${entry.id}:${entry.path}:${entry.line ?? ""}`
-          )
-        )
+        accepted: acceptedBaselineEntries(JSON.parse(raw))
       };
     } catch {
       baseline = { file: null, accepted: new Set() };
@@ -502,8 +466,8 @@ async function main() {
     baseline = await loadBaseline(options.root);
   }
 
-  const accepted = [];
-  const allFindings = [];
+  const accepted: Finding[] = [];
+  const allFindings: Finding[] = [];
   for (const finding of rawFindings) {
     if (baseline.accepted.has(findingKey(finding))) {
       accepted.push(finding);
@@ -527,10 +491,10 @@ async function main() {
     }, null, 2));
   } else {
     for (const finding of allFindings) {
-      console.log(`${finding.severity.toUpperCase()} ${finding.id} ${finding.path}:${finding.line} ${finding.message}`);
+      console.log(`${finding.severity.toUpperCase()} ${finding.id} ${finding.path}:${String(finding.line)} ${finding.message}`);
     }
 
-    console.log(`SMA security gate complete: ${allFindings.length} finding(s), ${highOrCritical.length} high/critical, ${files.length} file(s) scanned${files.length >= options.maxFiles ? " (truncated)" : ""}${baseline.file ? `, baseline suppressed ${accepted.length}` : ""}`);
+    console.log(`SMA security gate complete: ${String(allFindings.length)} finding(s), ${String(highOrCritical.length)} high/critical, ${String(files.length)} file(s) scanned${files.length >= options.maxFiles ? " (truncated)" : ""}${baseline.file ? `, baseline suppressed ${String(accepted.length)}` : ""}`);
   }
 
   if (!options.soft && highOrCritical.length > 0) {
@@ -538,7 +502,27 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 });
+
+function acceptedBaselineEntries(value: unknown): Set<string> {
+  const record = objectRecord(value);
+  const entries = Array.isArray(record?.accepted) ? record.accepted : [];
+  return new Set(entries.map(baselineEntryKey).filter((entry): entry is string => entry !== null));
+}
+
+function baselineEntryKey(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  const entry = objectRecord(value);
+  if (!entry || typeof entry.id !== "string" || typeof entry.path !== "string") return null;
+  const line = typeof entry.line === "number" || typeof entry.line === "string" ? entry.line : "";
+  return `${entry.id}:${entry.path}:${String(line)}`;
+}
+
+function objectRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}

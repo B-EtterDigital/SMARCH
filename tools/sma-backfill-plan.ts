@@ -40,13 +40,16 @@ import { argv, exit } from 'node:process';
 import { execFileSync } from 'node:child_process';
 import { resolveBrickPath } from './lib/source-path-resolver.ts';
 import { resolveProjectRoot as canonicalProjectRoot } from './lib/project-paths.ts';
-import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.ts";
+import {  SMA_ROOT } from "./lib/sma-paths.ts";
+import type { GlobalRegistry } from './lib/schema-types/global.registry.schema.d.ts';
 
-function readdirSyncSafe(p) {
-  try { return readdirSync(p); } catch { return []; }
-}
-
-
+type RegistryBrick = GlobalRegistry['bricks'][number] & { test_commands?: string[] };
+interface CliArgs { json?: boolean; limit?: string; minCompositeScore?: string; out?: string; phase?: string; plan?: string; project?: string; registry?: string; status?: string; top?: string }
+interface Signal { name: string; weight: number }
+interface PlanBrick { composite_score: number; data_classes: string[]; id: string; kind?: string; manifest_path?: string; name?: string; phase?: number; project: string; score: number | null; signals: Signal[]; source_paths: string[]; status?: string }
+interface RecencyCache { entries: Record<string, Recency>; generated_at: string; schema_version: string }
+type Recency = 'lt90' | 'lt365' | 'old' | 'no-git' | 'unknown';
+interface ResolvedPath { gitRelativePath: string; source: string }
 
 const DEFAULT_REGISTRY = resolve(SMA_ROOT, 'scans/all-projects/latest.registry.json');
 const DEFAULT_DEPENDENTS = resolve(SMA_ROOT, 'registry/dependents.generated.json');
@@ -64,7 +67,7 @@ const TOP10_BY_BRICK_COUNT = new Set([
 
 // Lazy-loaded recency cache (declared up here to avoid TDZ when reached
 // from the top-level switch via scoreBrick → checkRecency).
-let recencyCache = null;
+let recencyCache: RecencyCache | null = null;
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
@@ -92,8 +95,8 @@ try {
       usage();
       exit(2);
   }
-} catch (err) {
-  console.error(`sma-backfill-plan: ${err.message}`);
+} catch (err: unknown) {
+  console.error(`sma-backfill-plan: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -110,9 +113,9 @@ function usage() {
 function runGenerate() {
   const registryPath = args.registry ? resolve(args.registry) : DEFAULT_REGISTRY;
   if (!existsSync(registryPath)) throw new Error(`registry not found: ${registryPath}`);
-  const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
-  const dependents = existsSync(DEFAULT_DEPENDENTS)
-    ? JSON.parse(readFileSync(DEFAULT_DEPENDENTS, 'utf8'))
+  const registry = JSON.parse(readFileSync(registryPath, 'utf8')) as GlobalRegistry;
+  const dependents: { dependents?: Record<string, unknown>; dependents_by_source_brick?: Record<string, unknown> } = existsSync(DEFAULT_DEPENDENTS)
+    ? JSON.parse(readFileSync(DEFAULT_DEPENDENTS, 'utf8')) as { dependents?: Record<string, unknown>; dependents_by_source_brick?: Record<string, unknown> }
     : { dependents_by_source_brick: {} };
 
   const dependentsByBrick = buildDependentsLookup(dependents);
@@ -135,7 +138,7 @@ function runGenerate() {
    * signals: any[],
    * phase?: number
    * }>} */
-  const ranked = [];
+  const ranked: PlanBrick[] = [];
   for (const brick of allBricks) {
     if (args.project && brick.project !== args.project) continue;
     if (args.status && brick.status !== args.status) continue;
@@ -147,7 +150,7 @@ function runGenerate() {
       name: brick.name,
       kind: brick.kind,
       status: brick.status,
-      project: brick.project,
+      project: brick.project ?? 'unknown',
       score: brick.score ?? null,
       manifest_path: brick.manifest_path,
       source_paths: brick.source_paths ?? [],
@@ -160,7 +163,7 @@ function runGenerate() {
   // Stable sort: composite_score desc, then id asc for determinism.
   ranked.sort((a, b) => {
     if (b.composite_score !== a.composite_score) return b.composite_score - a.composite_score;
-    return String(a.id).localeCompare(String(b.id));
+    return a.id.localeCompare(b.id);
   });
 
   const selected = ranked.slice(0, Number.isFinite(limit) && limit > 0 ? limit : ranked.length);
@@ -178,7 +181,7 @@ function runGenerate() {
     ? selected.filter((b) => String(b.phase) === String(args.phase))
     : selected;
 
-  const plan: Record<string, any> = {
+  const plan = {
     schema_version: '1.0.0',
     generated_at: new Date().toISOString(),
     registry: registryPath,
@@ -207,9 +210,9 @@ function runGenerate() {
     console.log(JSON.stringify(plan.selection, null, 2));
   } else {
     console.log(`wrote ${outPath}`);
-    console.log(`considered:       ${plan.selection.considered}`);
-    console.log(`after filters:    ${plan.selection.after_filters}`);
-    console.log(`selected:         ${plan.selection.selected}`);
+    console.log(`considered:       ${String(plan.selection.considered)}`);
+    console.log(`after filters:    ${String(plan.selection.after_filters)}`);
+    console.log(`selected:         ${String(plan.selection.selected)}`);
     console.log(`by phase:         ${JSON.stringify(plan.by_phase)}`);
     console.log(`by status:        ${JSON.stringify(plan.by_status)}`);
   }
@@ -217,26 +220,26 @@ function runGenerate() {
 
 function runShow() {
   requireArg('plan', '--plan');
-  const plan = JSON.parse(readFileSync(resolve(args.plan), 'utf8'));
+  const plan = JSON.parse(readFileSync(resolve(args.plan ?? ''), 'utf8')) as { bricks: PlanBrick[] };
   const top = Number(args.top ?? 20);
   const rows = plan.bricks.slice(0, Math.max(top, 0));
   if (args.json) {
     console.log(JSON.stringify(rows, null, 2));
     return;
   }
-  console.log(`top ${rows.length} of ${plan.bricks.length}:`);
+  console.log(`top ${String(rows.length)} of ${String(plan.bricks.length)}:`);
   console.log(`${pad('rank', 5)} ${pad('score', 6)} ${pad('phase', 6)} ${pad('status', 14)} ${pad('project', 22)} ${pad('id', 60)} signals`);
   console.log('-'.repeat(160));
   rows.forEach((b, i) => {
     console.log(
-      `${pad(String(i + 1), 5)} ${pad(String(b.composite_score), 6)} ${pad(String(b.phase), 6)} ${pad(b.status, 14)} ${pad(b.project, 22)} ${pad(b.id, 60)} ${b.signals.map((s) => `${s.name}+${s.weight}`).join(',')}`,
+      `${pad(String(i + 1), 5)} ${pad(String(b.composite_score), 6)} ${pad(String(b.phase), 6)} ${pad(b.status, 14)} ${pad(b.project, 22)} ${pad(b.id, 60)} ${b.signals.map((s) => `${s.name}+${String(s.weight)}`).join(',')}`,
     );
   });
 }
 
 function runStats() {
   requireArg('plan', '--plan');
-  const plan = JSON.parse(readFileSync(resolve(args.plan), 'utf8'));
+  const plan = JSON.parse(readFileSync(resolve(args.plan ?? ''), 'utf8')) as { bricks: PlanBrick[]; selection: unknown };
   const stats = {
     selection: plan.selection,
     by_phase: bucket(plan.bricks, 'phase'),
@@ -254,8 +257,8 @@ function runStats() {
 
 // ── scoring ──────────────────────────────────────────────────────────────────
 
-function scoreBrick(brick, dependentsByBrick) {
-  const signals = [];
+function scoreBrick(brick: RegistryBrick, dependentsByBrick: Map<string, number>): { composite_score: number; excluded: boolean; signals: Signal[] } {
+  const signals: Signal[] = [];
   let composite = 0;
   let excluded = false;
 
@@ -275,19 +278,19 @@ function scoreBrick(brick, dependentsByBrick) {
   }
 
   // Score band
-  const score = Number(brick.score ?? 0);
+  const score = (brick.score ?? 0);
   if (score >= 80) add('score:80+', 40);
   else if (score >= 60) add('score:60-79', 30);
   else if (score >= 40) add('score:40-59', 15);
   else if (score >= 20) add('score:20-39', 5);
 
   // Project priority
-  if (PRIORITY_TIER.has(brick.project)) add('project:priority-tier', 30);
-  else if (TOP10_BY_BRICK_COUNT.has(brick.project)) add('project:top10', 15);
+  if (brick.project && PRIORITY_TIER.has(brick.project)) add('project:priority-tier', 30);
+  else if (brick.project && TOP10_BY_BRICK_COUNT.has(brick.project)) add('project:top10', 15);
 
   // Dependents
   const dependents = dependentsByBrick.get(brick.id) ?? 0;
-  if (dependents > 0) add(`dependents:${dependents}`, 25);
+  if (dependents > 0) add(`dependents:${String(dependents)}`, 25);
 
   // Tests
   const testCommands = Array.isArray(brick.test_commands) ? brick.test_commands.length : 0;
@@ -334,7 +337,7 @@ function scoreBrick(brick, dependentsByBrick) {
 
   return { composite_score: composite, signals, excluded };
 
-  function add(name, weight) {
+  function add(name: string, weight: number) {
     signals.push({ name, weight });
     composite += weight;
   }
@@ -342,21 +345,21 @@ function scoreBrick(brick, dependentsByBrick) {
 
 // Single source of truth — delegates to lib/project-paths.ts which mirrors
 // the portfolio override map. Adding a new project: edit project-paths.ts.
-function resolveProjectRootSync(projectId) {
+function resolveProjectRootSync(projectId: string|null|undefined) {
   return canonicalProjectRoot(projectId);
 }
 
 // Cached recency lookup. Cache key: project|gitPath. Cache value: 'lt90' |
 // 'lt365' | 'old' | 'no-git' | 'unknown'. Persists to handoffs/backfill/
 // recency-cache.json so subsequent regenerates skip the per-brick git log.
-function loadRecencyCache() {
+function loadRecencyCache(): RecencyCache {
   if (recencyCache) return recencyCache;
   if (existsSync(RECENCY_CACHE_PATH)) {
     try {
-      const raw = JSON.parse(readFileSync(RECENCY_CACHE_PATH, 'utf8'));
+      const raw = JSON.parse(readFileSync(RECENCY_CACHE_PATH, 'utf8')) as RecencyCache;
       // Honor a TTL of 7 days — git history could acquire new commits that move
       // a brick from 'old' → 'lt90'. Recompute on stale cache.
-      const ageMs = Date.now() - Date.parse(raw.generated_at || 0);
+      const ageMs = Date.now() - Date.parse(raw.generated_at || '1970-01-01T00:00:00Z');
       if (Number.isFinite(ageMs) && ageMs < 7 * 86400000) {
         recencyCache = raw;
         return recencyCache;
@@ -366,24 +369,24 @@ function loadRecencyCache() {
   recencyCache = { schema_version: '1.0.0', generated_at: new Date().toISOString(), entries: {} };
   return recencyCache;
 }
-function saveRecencyCache() {
+function saveRecencyCache(): void {
   if (!recencyCache) return;
   recencyCache.generated_at = new Date().toISOString();
   if (!existsSync(dirname(RECENCY_CACHE_PATH))) mkdirSync(dirname(RECENCY_CACHE_PATH), { recursive: true });
   writeFileSync(RECENCY_CACHE_PATH, JSON.stringify(recencyCache, null, 2) + '\n');
 }
 
-function checkRecency(brick, resolvedPath) {
+function checkRecency(brick: RegistryBrick, resolvedPath: ResolvedPath): Recency {
   const projectAbs = resolveProjectRootSync(brick.project);
   if (!projectAbs) return 'unknown';
-  const gitPath = resolvedPath?.gitRelativePath;
+  const gitPath = resolvedPath.gitRelativePath;
   if (!gitPath) return 'unknown';
 
   const cache = loadRecencyCache();
-  const key = `${brick.project}|${gitPath}`;
+  const key = `${String(brick.project)}|${gitPath}`;
   if (cache.entries[key] !== undefined) return cache.entries[key];
 
-  let result = 'no-git';
+  let result: Recency = 'no-git';
   try {
     const lt90 = execFileSync('git',
       ['log', '--since=90.days.ago', '-n', '1', '--pretty=%H', '--', gitPath],
@@ -407,61 +410,66 @@ function checkRecency(brick, resolvedPath) {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function buildDependentsLookup(dependentsIndex) {
-  const out = new Map();
-  const entries = dependentsIndex?.dependents_by_source_brick
-    ?? dependentsIndex?.dependents
+function buildDependentsLookup(dependentsIndex: { dependents?: Record<string, unknown>; dependents_by_source_brick?: Record<string, unknown> }): Map<string, number> {
+  const out = new Map<string, number>();
+  const entries = dependentsIndex.dependents_by_source_brick
+    ?? dependentsIndex.dependents
     ?? {};
   for (const [brickId, deps] of Object.entries(entries)) {
-    const count = Array.isArray(deps) ? deps.length : Object.keys(deps || {}).length;
+    const count = Array.isArray(deps) ? deps.length : Object.keys(deps ?? {}).length;
     if (count) out.set(brickId, count);
   }
   return out;
 }
 
-function bucket(arr, key) {
-  return arr.reduce((m, e) => ((m[e[key] ?? 'unknown'] = (m[e[key] ?? 'unknown'] ?? 0) + 1), m), {});
+function bucket<T>(arr: T[], key: keyof T): Record<string, number> {
+  return arr.reduce<Record<string, number>>((counts, entry) => {
+    const label = String(entry[key] ?? 'unknown');
+    counts[label] = (counts[label] ?? 0) + 1;
+    return counts;
+  }, {});
 }
 
-function topBucket(arr, key, n) {
+function topBucket<T>(arr: T[], key: keyof T, n: number): Record<string, number> {
   const all: Record<string, number> = bucket(arr, key);
   return Object.fromEntries(Object.entries(all).sort((a, b) => b[1] - a[1]).slice(0, n));
 }
 
-function histogram(values, edges) {
-  const out: Record<string, any> = {};
+function histogram(values: number[], edges: number[]): Record<string, number> {
+  const out: Record<string, number> = {};
   for (const v of values) {
-    const band = edges.find((e) => v < e) ?? `>=${edges[edges.length - 1]}`;
-    const label = typeof band === 'number' ? `<${band}` : band;
+    const band = edges.find((e: number) => v < e) ?? `>=${String(edges[edges.length - 1])}`;
+    const label = typeof band === 'number' ? `<${String(band)}` : band;
     out[label] = (out[label] ?? 0) + 1;
   }
   return out;
 }
 
-function requireArg(key, flag) {
+function requireArg(key: keyof CliArgs, flag: string): void {
   if (args[key] === undefined || args[key] === null || args[key] === '') {
     throw new Error(`missing ${flag}`);
   }
 }
 
-function pad(s, n) {
-  return String(s ?? '').slice(0, n).padEnd(n);
+function pad(s: unknown, n: number|undefined) {
+  const width = n ?? 0;
+  return String(s ?? '').slice(0, width).padEnd(width);
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_, character: string) => character.toUpperCase()) as keyof CliArgs;
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
-      out[camel] = true;
+      if (camel === 'json') out.json = true;
       continue;
     }
-    out[camel] = next;
+    if (camel !== 'json') out[camel] = next;
     i += 1;
   }
   return out;

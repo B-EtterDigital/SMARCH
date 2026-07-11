@@ -10,24 +10,39 @@ const packagePath = path.join(root, "package.json");
 const pluginPath = path.join(root, ".claude-plugin", "plugin.json");
 const marketplacePath = path.join(root, ".claude-plugin", "marketplace.json");
 
+/** @typedef {{ name: string, reason: string, bundle: boolean, smokeTrigger?: string }} SkillInventoryEntry */
+/** @typedef {{ name: string, description: string, displayName?: string, [key: string]: unknown }} PluginInventory */
+/** @typedef {{ name: string, owner: { name: string, [key: string]: unknown }, source: string }} MarketplaceInventory */
+/** @typedef {{ schemaVersion: number, plugin: PluginInventory, marketplace: MarketplaceInventory, skills: SkillInventoryEntry[] }} SkillInventory */
+/** @typedef {{ name: string, description: string }} SkillMetadata */
+
+/** @param {unknown} error @returns {string} */
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** @param {string} message @returns {never} */
 function fail(message) {
   throw new Error(`[sma-plugin-sync] ${message}`);
 }
 
+/** @param {string} filePath @returns {Promise<unknown>} */
 async function readJson(filePath) {
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
   } catch (error) {
-    fail(`cannot read ${path.relative(root, filePath)}: ${error.message}`);
+    fail(`cannot read ${path.relative(root, filePath)}: ${errorMessage(error)}`);
   }
 }
 
+/** @param {unknown} value @param {string} label */
 function requireNonEmptyString(value, label) {
   if (typeof value !== "string" || value.trim() === "") {
     fail(`${label} must be a non-empty string`);
   }
 }
 
+/** @param {SkillInventory} inventory @returns {Promise<string[]>} */
 async function validateInventory(inventory) {
   if (inventory?.schemaVersion !== 1) {
     fail("skills/inventory.json schemaVersion must be 1");
@@ -87,6 +102,7 @@ async function validateInventory(inventory) {
   return bundled;
 }
 
+/** @param {string} skillsRoot @returns {Promise<string[]>} */
 async function diskSkillDirectories(skillsRoot) {
   const names = [];
   for (const entry of await fs.readdir(skillsRoot, { withFileTypes: true })) {
@@ -116,6 +132,7 @@ async function selftestInventoryFilter() {
   }
 }
 
+/** @param {string} markdown @param {string} relativePath @returns {SkillMetadata} */
 function parseSkillFrontmatter(markdown, relativePath) {
   const frontmatter = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
   if (!frontmatter) fail(`${relativePath} is missing YAML frontmatter`);
@@ -124,9 +141,13 @@ function parseSkillFrontmatter(markdown, relativePath) {
   const description = frontmatter[1].match(/^description:\s*(.+?)\s*$/m)?.[1];
   requireNonEmptyString(name, `${relativePath} frontmatter.name`);
   requireNonEmptyString(description, `${relativePath} frontmatter.description`);
-  return { name, description };
+  return {
+    name: /** @type {string} */ (name),
+    description: /** @type {string} */ (description),
+  };
 }
 
+/** @param {string} profileSkillsRoot @returns {Promise<SkillMetadata[]>} */
 async function installedSkillMetadata(profileSkillsRoot) {
   const entries = (await fs.readdir(profileSkillsRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
@@ -146,6 +167,7 @@ async function installedSkillMetadata(profileSkillsRoot) {
   return metadata;
 }
 
+/** @param {SkillMetadata[]} metadata @param {string} trigger @returns {string[]} */
 function resolveTrigger(metadata, trigger) {
   const normalized = trigger.trim().toLowerCase();
   return metadata
@@ -154,8 +176,9 @@ function resolveTrigger(metadata, trigger) {
     .sort();
 }
 
+/** @param {SkillMetadata[]} metadata @param {SkillInventoryEntry} entry */
 function assertTriggerResolves(metadata, entry) {
-  const matches = resolveTrigger(metadata, entry.smokeTrigger);
+  const matches = resolveTrigger(metadata, /** @type {string} */ (entry.smokeTrigger));
   if (matches.length !== 1 || matches[0] !== entry.name) {
     fail(
       `trigger smoke failed for ${entry.name}: ${JSON.stringify(entry.smokeTrigger)} resolved to ${matches.join(", ") || "none"}`
@@ -163,6 +186,7 @@ function assertTriggerResolves(metadata, entry) {
   }
 }
 
+/** @param {SkillInventory} inventory @param {string[]} bundled @param {boolean} selftest */
 async function smokeInstallBundledSkills(inventory, bundled, selftest) {
   const profileRoot = await fs.mkdtemp(path.join(os.tmpdir(), "smarch-plugin-profile-"));
   const profileSkillsRoot = path.join(profileRoot, ".claude", "skills");
@@ -196,7 +220,7 @@ async function smokeInstallBundledSkills(inventory, bundled, selftest) {
           smokeTrigger: "__smarch_missing_trigger_selftest__"
         });
       } catch (error) {
-        rejected = String(error?.message || error).includes("trigger smoke failed");
+        rejected = errorMessage(error).includes("trigger smoke failed");
       }
       if (!rejected) fail("trigger smoke negative selftest did not fail closed");
     }
@@ -207,6 +231,7 @@ async function smokeInstallBundledSkills(inventory, bundled, selftest) {
   }
 }
 
+/** @param {SkillInventory} inventory @param {string} version @param {string[]} bundled */
 function generatePlugin(inventory, version, bundled) {
   const { name, displayName, ...metadata } = inventory.plugin;
   return {
@@ -219,6 +244,7 @@ function generatePlugin(inventory, version, bundled) {
   };
 }
 
+/** @param {SkillInventory} inventory @param {string} version @param {string[]} bundled */
 function generateMarketplace(inventory, version, bundled) {
   return {
     name: inventory.marketplace.name,
@@ -236,10 +262,12 @@ function generateMarketplace(inventory, version, bundled) {
   };
 }
 
+/** @param {unknown} value @returns {string} */
 function serialize(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+/** @param {string} filePath @param {string} expected @param {boolean} check */
 async function syncFile(filePath, expected, check) {
   const relativePath = path.relative(root, filePath);
   if (check) {
@@ -247,7 +275,7 @@ async function syncFile(filePath, expected, check) {
     try {
       actual = await fs.readFile(filePath, "utf8");
     } catch (error) {
-      fail(`${relativePath} is missing: ${error.message}`);
+      fail(`${relativePath} is missing: ${errorMessage(error)}`);
     }
     if (actual !== expected) {
       fail(`${relativePath} is out of sync; run node tools/sma-plugin-sync.mjs`);
@@ -269,16 +297,19 @@ async function main() {
   const selftest = args.includes("--selftest");
   if (selftest && !check) fail("--selftest requires --check");
   if (selftest) await selftestInventoryFilter();
-  const [inventory, packageJson] = await Promise.all([
+  const [inventoryValue, packageJsonValue] = await Promise.all([
     readJson(inventoryPath),
     readJson(packagePath),
   ]);
+  const inventory = /** @type {SkillInventory} */ (inventoryValue);
+  const packageJson = /** @type {{ version?: string }} */ (packageJsonValue);
 
   requireNonEmptyString(packageJson?.version, "package.json version");
+  const version = /** @type {string} */ (packageJson.version);
   const bundled = await validateInventory(inventory);
   const outputs = [
-    [pluginPath, serialize(generatePlugin(inventory, packageJson.version, bundled))],
-    [marketplacePath, serialize(generateMarketplace(inventory, packageJson.version, bundled))],
+    [pluginPath, serialize(generatePlugin(inventory, version, bundled))],
+    [marketplacePath, serialize(generateMarketplace(inventory, version, bundled))],
   ];
 
   for (const [filePath, expected] of outputs) {
@@ -290,7 +321,7 @@ async function main() {
     : null;
 
   const action = check ? "verified" : "generated";
-  console.log(`[sma-plugin-sync] ${action} ${outputs.length} manifests at version ${packageJson.version}`);
+  console.log(`[sma-plugin-sync] ${action} ${outputs.length} manifests at version ${version}`);
   console.log(`[sma-plugin-sync] bundled skills (${bundled.length}): ${bundled.join(", ")}`);
   if (smoke) {
     console.log(`[sma-plugin-sync] clean-profile trigger smoke passed (${smoke.resolved}/${smoke.installed.length})`);

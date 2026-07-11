@@ -25,7 +25,17 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = resolve(ROOT, "security/provenance-summary.generated.json");
 
-function readJson(rel: string): any {
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function recordArray(value: unknown): JsonRecord[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function readJson(rel: string): unknown {
   const p = resolve(ROOT, rel);
   if (!existsSync(p)) return null;
   try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; }
@@ -40,15 +50,15 @@ function main() {
   const prov = readJson("registry/provenance-ledger.generated.json");
   const lic = readJson("registry/license-ledger.generated.json");
   const sim = readJson("security/similarity-scan.generated.json");
-  if (!prov) { console.error("provenance ledger missing; run npm run provenance:ledger first"); process.exit(1); }
+  if (!isRecord(prov)) { console.error("provenance ledger missing; run npm run provenance:ledger first"); process.exit(1); }
 
-  const rows = prov.provenance || [];
-  const hasLicense = Boolean(lic && Array.isArray(lic.licenses));
-  const licRows: any[] = hasLicense ? lic.licenses : [];
-  const licById = new Map<string, any>(licRows.map((l) => [l.brick_id, l]));
+  const rows = recordArray(prov.provenance);
+  const hasLicense = isRecord(lic) && Array.isArray(lic.licenses);
+  const licRows = hasLicense ? recordArray(lic.licenses) : [];
+  const licById = new Map<string, JsonRecord>(licRows.map((entry) => [String(entry.brick_id ?? ""), entry]));
 
-  const sealed = rows.filter((r) => r.seal).length;
-  const signed = rows.filter((r) => r.seal && r.seal.signature).length;
+  const sealed = rows.filter((row) => isRecord(row.seal)).length;
+  const signed = rows.filter((row) => isRecord(row.seal) && Boolean(row.seal.signature)).length;
   // license counts only exist when the ledger does — never fabricate 0/0
   const license = hasLicense ? {
     open: licRows.filter((l) => l.openness === "open").length,
@@ -58,26 +68,27 @@ function main() {
   } : null;
 
   // sample sealed bricks — one per project for diversity, public-safe fields only
-  const samples = [];
-  const seenProject = new Set();
+  const samples: Array<Record<string, string | number>> = [];
+  const seenProject = new Set<string>();
   for (const r of rows) {
-    if (!r.seal || !r.seal.anchor) continue;
-    if (seenProject.has(r.project)) continue;
-    const l = licById.get(r.brick_id) || {};
-    const leaf = String(r.brick_id).split(".").pop() || r.brick_id;
+    if (!isRecord(r.seal) || !r.seal.anchor) continue;
+    const project = String(r.project ?? "unknown");
+    if (seenProject.has(project)) continue;
+    const l = licById.get(String(r.brick_id ?? "")) ?? {};
+    const leaf = String(r.brick_id ?? "unknown").split(".").pop() || "unknown";
     samples.push({
       id: leaf.slice(0, 40),
-      project: r.project,
+      project,
       owner: handle(r.owner),
-      spdx: l.spdx || "unlicensed",
-      openness: l.openness || "closed",
+      spdx: typeof l.spdx === "string" ? l.spdx : "unlicensed",
+      openness: typeof l.openness === "string" ? l.openness : "closed",
       contributors: Array.isArray(r.contributors) ? r.contributors.length : 1,
-      commits: r.commit_count || 0,
+      commits: typeof r.commit_count === "number" ? r.commit_count : 0,
       anchor: String(r.seal.anchor).slice(0, 16),
       head: String(r.seal.head || "").slice(0, 12),
-      chain: r.seal.chain_length || 0,
+      chain: typeof r.seal.chain_length === "number" ? r.seal.chain_length : 0,
     });
-    seenProject.add(r.project);
+    seenProject.add(project);
     if (samples.length >= 5) break;
   }
 
@@ -87,13 +98,13 @@ function main() {
     total: rows.length,
     sealed,
     signed,
-    signing_key_id: prov.signing_key_id || null,
-    algo: (rows[0] && rows[0].seal && rows[0].seal.algo) || "sha256-chain-v2",
+    signing_key_id: typeof prov.signing_key_id === "string" ? prov.signing_key_id : null,
+    algo: isRecord(rows[0]?.seal) && typeof rows[0].seal.algo === "string" ? rows[0].seal.algo : "sha256-chain-v2",
     license,
-    similarity: sim ? {
-      scanned: sim.bricks_scanned || 0,
-      near_duplicate_pairs: sim.near_duplicate_pairs || 0,
-      cross_owner_theft: sim.theft_risk_pairs || 0,
+    similarity: isRecord(sim) ? {
+      scanned: typeof sim.bricks_scanned === "number" ? sim.bricks_scanned : 0,
+      near_duplicate_pairs: typeof sim.near_duplicate_pairs === "number" ? sim.near_duplicate_pairs : 0,
+      cross_owner_theft: typeof sim.theft_risk_pairs === "number" ? sim.theft_risk_pairs : 0,
     } : null,
     attestations: ["in-toto / SLSA", "SPDX 2.3", "CycloneDX 1.5"],
     samples,

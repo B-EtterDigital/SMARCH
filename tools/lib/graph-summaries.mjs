@@ -6,41 +6,67 @@ import { dispatch } from "./workforce/contract.mjs";
 const SUMMARY_KIND = "community_summary";
 const SUMMARY_RELATION = "rationale_for";
 
+/** @typedef {{ data?: GraphRecord } & Record<string, unknown>} GraphRecord */
+/** @typedef {GraphRecord & { nodes?: GraphRecord[], edges?: GraphRecord[], links?: GraphRecord[], elements?: { nodes?: GraphRecord[], edges?: GraphRecord[] }, metadata?: GraphRecord }} GraphDocument */
+/** @typedef {{ nodes: GraphRecord[], edges: GraphRecord[], setEdges: (edges: GraphRecord[]) => void }} GraphCollections */
+/** @typedef {{ id: string, label: string, type: string, source: string, snippet: string }} StableMember */
+/** @typedef {{ version?: number, hash: string, community?: string, member_ids: string[], summary: string, generated_at?: string }} CacheRecord */
+/** @typedef {{ community: string, hash: string, memberIds: string[], summary: string }} SummaryInput */
+/** @typedef {{ task: string, instructions: string[], community: string, members: StableMember[], internal_edges: Array<{source: string, target: string, relation: string}> }} SummaryPacket */
+
+/** @param {unknown} value @returns {value is GraphRecord} */
+function isGraphRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** @param {string} filePath @returns {GraphDocument} */
 function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, "utf8"));
 }
 
+/** @param {string} filePath @returns {CacheRecord} */
+function readCacheJson(filePath) {
+  return JSON.parse(readFileSync(filePath, "utf8"));
+}
+
+/** @param {GraphDocument} graph @returns {GraphCollections} */
 function graphCollections(graph) {
   if (Array.isArray(graph.nodes)) {
     return {
       nodes: graph.nodes,
       edges: Array.isArray(graph.edges) ? graph.edges : Array.isArray(graph.links) ? graph.links : [],
+      /** @param {GraphRecord[]} edges */
       setEdges(edges) {
         if (Array.isArray(graph.edges)) graph.edges = edges;
         else graph.links = edges;
       },
     };
   }
-  const elements = graph.elements && typeof graph.elements === "object" ? graph.elements : {};
+  const elements = graph.elements ?? {};
   return {
     nodes: Array.isArray(elements.nodes) ? elements.nodes : [],
     edges: Array.isArray(elements.edges) ? elements.edges : [],
+    /** @param {GraphRecord[]} edges */
     setEdges(edges) { elements.edges = edges; },
   };
 }
 
+/** @param {GraphRecord} node @returns {string} */
 function nodeId(node) {
   return String(node?.id ?? node?.data?.id ?? "").trim();
 }
 
+/** @param {GraphRecord | undefined} node @param {string} key @returns {unknown} */
 function nodeValue(node, key) {
   return node?.[key] ?? node?.data?.[key];
 }
 
+/** @param {GraphRecord} edge @param {string} key @returns {unknown} */
 function edgeValue(edge, key) {
   return edge?.[key] ?? edge?.data?.[key];
 }
 
+/** @param {GraphRecord} node @returns {string} */
 function communityId(node) {
   for (const key of ["community", "community_id", "cluster", "cluster_id"]) {
     const value = nodeValue(node, key);
@@ -49,24 +75,29 @@ function communityId(node) {
   return "";
 }
 
+/** @param {GraphRecord} node @returns {boolean} */
 function isSummaryNode(node) {
   return nodeValue(node, "kind") === SUMMARY_KIND
     || nodeValue(node, "type") === SUMMARY_KIND
     || nodeValue(node, "sma_generated") === SUMMARY_KIND;
 }
 
+/** @param {GraphRecord} edge @returns {string} */
 function edgeRelation(edge) {
   return String(edgeValue(edge, "relation") ?? edgeValue(edge, "type") ?? "");
 }
 
+/** @param {GraphRecord} edge @returns {string} */
 function edgeSource(edge) {
   return String(edgeValue(edge, "source") ?? "");
 }
 
+/** @param {GraphRecord} edge @returns {string} */
 function edgeTarget(edge) {
   return String(edgeValue(edge, "target") ?? "");
 }
 
+/** @param {GraphRecord} node @returns {StableMember} */
 function stableMember(node) {
   return {
     id: nodeId(node),
@@ -77,6 +108,7 @@ function stableMember(node) {
   };
 }
 
+/** @param {Set<string>} memberIds @param {GraphRecord[]} edges */
 function stableInternalEdges(memberIds, edges) {
   return edges
     .filter((edge) => memberIds.has(edgeSource(edge)) && memberIds.has(edgeTarget(edge)))
@@ -88,6 +120,7 @@ function stableInternalEdges(memberIds, edges) {
     .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
 }
 
+/** @param {GraphRecord[]} members @param {GraphRecord[]} [edges] @returns {string} */
 export function clusterContentHash(members, edges = []) {
   const stableMembers = members.map(stableMember).sort((left, right) => left.id.localeCompare(right.id));
   const memberIds = new Set(stableMembers.map((member) => member.id));
@@ -95,8 +128,9 @@ export function clusterContentHash(members, edges = []) {
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
 
+/** @param {unknown} output @returns {string} */
 function summaryText(output) {
-  if (output && typeof output === "object") return String(output.summary ?? output.output ?? "").trim();
+  if (isGraphRecord(output)) return String(output.summary ?? output.output ?? "").trim();
   const text = String(output ?? "").trim();
   if (!text) return "";
   const unfenced = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
@@ -108,6 +142,7 @@ function summaryText(output) {
   }
 }
 
+/** @param {string} community @param {GraphRecord[]} members @param {GraphRecord[]} edges @returns {SummaryPacket} */
 function summaryPacket(community, members, edges) {
   const stableMembers = members.map(stableMember).sort((left, right) => left.id.localeCompare(right.id));
   const memberIds = new Set(stableMembers.map((member) => member.id));
@@ -124,10 +159,11 @@ function summaryPacket(community, members, edges) {
   };
 }
 
+/** @param {string} cachePath @param {string} hash @param {string} community @param {string[]} memberIds @returns {CacheRecord | null} */
 function cacheRecord(cachePath, hash, community, memberIds) {
   if (!existsSync(cachePath)) return null;
   try {
-    const record = readJson(cachePath);
+    const record = readCacheJson(cachePath);
     if (record.hash !== hash || typeof record.summary !== "string" || !record.summary.trim()) return null;
     if (!Array.isArray(record.member_ids) || record.member_ids.join("\0") !== memberIds.join("\0")) return null;
     return record;
@@ -136,6 +172,7 @@ function cacheRecord(cachePath, hash, community, memberIds) {
   }
 }
 
+/** @param {GraphDocument} graph @param {GraphCollections} collections @param {SummaryInput} input @returns {string} */
 function addSummary(graph, collections, { community, hash, memberIds, summary }) {
   const summaryId = `community-summary:${hash.slice(0, 20)}`;
   collections.nodes.push({
@@ -194,12 +231,14 @@ export async function generateCommunitySummaries({
   collections.setEdges(baseEdges);
   collections.edges = baseEdges;
 
+  /** @type {Map<string, GraphRecord[]>} */
   const groups = new Map();
   for (const node of memberNodes) {
     const community = communityId(node);
     if (!community) continue;
-    if (!groups.has(community)) groups.set(community, []);
-    groups.get(community).push(node);
+    const members = groups.get(community);
+    if (members) members.push(node);
+    else groups.set(community, [node]);
   }
   if (!groups.size) {
     onWarning("community summaries skipped: semantic graph contains no clustered communities");
@@ -268,10 +307,12 @@ export async function generateCommunitySummaries({
   };
 }
 
+/** @param {string} question @returns {Set<string>} */
 function queryTerms(question) {
   return new Set(String(question || "").toLowerCase().match(/[a-z0-9_./:-]{3,}/g) || []);
 }
 
+/** @param {string} text @param {Set<string>} terms @returns {number} */
 function lexicalMatch(text, terms) {
   const haystack = String(text || "").toLowerCase();
   let matches = 0;
@@ -293,6 +334,7 @@ export function communitySummaryBlock({ graphPath, question = "", hits = [], tra
   const hitIds = new Set((hits || []).map((hit) => String(hit?.id ?? hit?.node_id ?? "")).filter(Boolean));
   const terms = queryTerms(question);
   const output = String(traversalOutput || "").toLowerCase();
+  /** @type {Array<{ community: string, summary: string, memberLabels: string[], score: number }>} */
   const selected = [];
 
   for (const summaryNode of summaries) {
@@ -300,7 +342,7 @@ export function communitySummaryBlock({ graphPath, question = "", hits = [], tra
     const memberIds = edges
       .filter((edge) => edgeSource(edge) === summaryId && edgeRelation(edge) === SUMMARY_RELATION)
       .map(edgeTarget);
-    const members = memberIds.map((id) => nodesById.get(id)).filter(Boolean);
+    const members = memberIds.map((id) => nodesById.get(id)).filter(isGraphRecord);
     const traversalMatched = memberIds.some((id) => {
       const member = nodesById.get(id);
       const label = String(nodeValue(member, "label") ?? "").toLowerCase();
@@ -334,6 +376,7 @@ export function communitySummaryBlock({ graphPath, question = "", hits = [], tra
 
 export const enrichGraphWithCommunitySummaries = generateCommunitySummaries;
 
+/** @param {{ fixtureRoot: string, assert: (condition: unknown, message: string) => void }} options */
 export async function selftestCommunitySummaries({ fixtureRoot, assert: assertResult }) {
   const summaryRoot = path.join(fixtureRoot, "summary-fixture", "graphify-out");
   const graphPath = path.join(summaryRoot, "graph.json");
@@ -348,6 +391,7 @@ export async function selftestCommunitySummaries({ fixtureRoot, assert: assertRe
   })}\n`);
   let dispatches = 0;
   const backend = {
+    /** @param {SummaryPacket} packet */
     async execute(packet) {
       dispatches += 1;
       return { ok: true, output: `Map context for community ${packet.community}.`, retryable: false };
@@ -361,8 +405,9 @@ export async function selftestCommunitySummaries({ fixtureRoot, assert: assertRe
   const first = await generateCommunitySummaries({ graphPath, semantic: true, backend });
   assertResult(first.generated === 2 && first.reused === 0 && dispatches === 2, "semantic refresh should generate one summary per community");
   const graph = readJson(graphPath);
-  assertResult(graph.nodes.filter((node) => node.type === SUMMARY_KIND).length === 2, "community summaries must be persisted as graph nodes");
-  assertResult(graph.edges.filter((edge) => edge.relation === SUMMARY_RELATION).length === 3, "summary nodes must connect to every member with rationale_for edges");
+  const graphParts = graphCollections(graph);
+  assertResult(graphParts.nodes.filter((node) => node.type === SUMMARY_KIND).length === 2, "community summaries must be persisted as graph nodes");
+  assertResult(graphParts.edges.filter((edge) => edge.relation === SUMMARY_RELATION).length === 3, "summary nodes must connect to every member with rationale_for edges");
   assertResult(readdirSync(path.join(summaryRoot, "summaries")).filter((file) => file.endsWith(".json")).length === 2, "community summaries must cache by cluster content hash");
 
   const second = await generateCommunitySummaries({ graphPath, semantic: true, backend });
@@ -384,12 +429,13 @@ export async function selftestCommunitySummaries({ fixtureRoot, assert: assertRe
     nodes: [{ id: "local-only", label: "Local only", community: 1 }],
     edges: [],
   })}\n`);
+  /** @type {string[]} */
   const warnings = [];
   const failed = await generateCommunitySummaries({
     graphPath: failedGraphPath,
     semantic: true,
     backend: { execute: async () => ({ ok: false, retryable: false, raw: { error: "no configured key" } }) },
-    onWarning: (warning) => warnings.push(warning),
+    onWarning: (warning) => { warnings.push(warning); },
   });
   assertResult(failed.summaryCount === 0 && warnings.length === 1, "unavailable/no-key workforce must skip with one warning");
 }

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "tools/*.ts",
+    "tools/*.mjs",
+    "web/src/main.tsx",
+    "tools/mcp/server.mjs",
+    "tools/evals/**"
+  ],
+  "project": ["tools/**", "web/src/**"],
+  "ignore": ["skills/**", "templates/**", "agent-skills/**"]
+}

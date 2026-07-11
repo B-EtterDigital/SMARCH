@@ -51,6 +51,6 @@ try {
   rmSync(dir, { recursive: true, force: true });
 }
 
-function assert(condition, message) {
+function assert(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }

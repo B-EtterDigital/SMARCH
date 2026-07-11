@@ -24,6 +24,24 @@ import path from "node:path";
 import { codexBatch } from "./lib/codex-runner.ts";
 import { smaPath } from "./lib/sma-paths.ts";
 
+interface ConnectOptions { registry: string; out: string; candidates: string; limit: number; concurrency: number; neighbours: number; minScore: number; project: string; filter: string; timeoutMs: number; model: string }
+interface Brick { id: string; project: string; name?: string; kind?: string; source_paths?: string[]; score?: number; manifest_path: string }
+interface Manifest { semantics?: { purpose?: string; tags?: unknown[]; public_api?: unknown[]; reuse_archetype?: string; connections?: ConnectionEdge[]; connections_source?: string; connections_at?: string } }
+interface BrickSummary { id: string; project: string; name?: string; kind?: string; paths: string[]; purpose: string; tags: unknown[]; public_api: unknown[]; archetype: string }
+interface ConnectionEdge { target: string; kind: string; confidence: string; reason: string }
+interface WrittenEdge { from: string; to: string; kind: string; confidence: string; reason: string }
+interface CandidateDocument { bricks?: Brick[] }
+
+function isEdgePayload(value: unknown): value is { edges: ConnectionEdge[] } {
+  if (!value || typeof value !== "object" || !("edges" in value)) return false;
+  const edges = Reflect.get(value, "edges");
+  return Array.isArray(edges) && edges.every((edge) => edge && typeof edge === "object"
+    && typeof Reflect.get(edge, "target") === "string"
+    && typeof Reflect.get(edge, "kind") === "string"
+    && typeof Reflect.get(edge, "confidence") === "string"
+    && typeof Reflect.get(edge, "reason") === "string");
+}
+
 function parseArgs(argv: string[]) {
   const opts = {
     registry: smaPath("scans/all-projects/latest.registry.json"),
@@ -77,13 +95,13 @@ const SCHEMA = {
   }
 };
 
-async function readJson(p: string): Promise<any> { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson(p: string): Promise<CandidateDocument> { return JSON.parse(await fs.readFile(p, "utf8")); }
 
-async function loadManifest(p: string): Promise<any | null> {
+async function loadManifest(p: string): Promise<Manifest | null> {
   try { return JSON.parse(await fs.readFile(p, "utf8")); } catch { return null; }
 }
 
-function brickSummary(brick, manifest) {
+function brickSummary(brick: Brick, manifest: Manifest): BrickSummary {
   const sem = manifest?.semantics || {};
   return {
     id: brick.id,
@@ -108,8 +126,8 @@ function jaccard(a: unknown[], b: unknown[]): number {
   return inter / union;
 }
 
-function pickNeighbours(anchorSummary, allSummaries, k) {
-  const scored = [];
+function pickNeighbours(anchorSummary: BrickSummary, allSummaries: BrickSummary[], k: number): BrickSummary[] {
+  const scored: Array<{ s: number; cand: BrickSummary }> = [];
   for (const cand of allSummaries) {
     if (cand.id === anchorSummary.id) continue;
     let s = jaccard(anchorSummary.tags, cand.tags) * 3;
@@ -121,9 +139,9 @@ function pickNeighbours(anchorSummary, allSummaries, k) {
   return scored.slice(0, k).map((x) => x.cand);
 }
 
-function buildPrompt(anchor, neighbours) {
+function buildPrompt(anchor: BrickSummary, neighbours: BrickSummary[]): string {
   const neighbourBlock = neighbours
-    .map((n, i) => `### N${i + 1}  id=${n.id}  project=${n.project}  kind=${n.kind}  archetype=${n.archetype}\nPurpose: ${n.purpose}\nTags: ${n.tags.join(", ")}\nPublic API: ${n.public_api.join(", ")}`)
+    .map((neighbour: BrickSummary, index: number) => `### N${index + 1}  id=${neighbour.id}  project=${neighbour.project}  kind=${neighbour.kind}  archetype=${neighbour.archetype}\nPurpose: ${neighbour.purpose}\nTags: ${neighbour.tags.join(", ")}\nPublic API: ${neighbour.public_api.join(", ")}`)
     .join("\n\n");
 
   return `You classify relationships between software bricks (reusable code modules) for a multi-project registry.
@@ -156,7 +174,7 @@ Be conservative: when unsure between two relationships, prefer \`shared_concept\
 Return only the JSON object matching the schema.`;
 }
 
-async function loadCandidates(opts) {
+async function loadCandidates(opts: ConnectOptions): Promise<Brick[]> {
   const c = await readJson(opts.candidates);
   let bricks = c.bricks || [];
   if (opts.minScore > 0) bricks = bricks.filter((b) => (b.score || 0) >= opts.minScore);
@@ -200,7 +218,7 @@ async function main() {
     };
   });
 
-  const allEdges = [];
+  const allEdges: WrittenEdge[] = [];
   let processed = 0;
   let cacheHits = 0;
   let failed = 0;
@@ -216,17 +234,18 @@ async function main() {
         if (r.fromCache) cacheHits += 1;
         const item = items.find((x) => x.id === wrapped.id);
         if (!item) return;
-        const knownIds = new Set(item._neighbours.map((n) => n.id));
-        for (const e of r.data.edges || []) {
+        const knownIds = new Set(item._neighbours.map((neighbour: BrickSummary) => neighbour.id));
+        if (!isEdgePayload(r.data)) return;
+        for (const e of r.data.edges) {
           if (!knownIds.has(e.target)) continue;
           allEdges.push({ from: wrapped.id, to: e.target, kind: e.kind, confidence: e.confidence, reason: e.reason });
         }
         // Write into manifest
         const mf = item._anchor.manifest;
         mf.semantics = mf.semantics || {};
-        mf.semantics.connections = (r.data.edges || [])
-          .filter((e) => knownIds.has(e.target) && e.kind !== "unrelated")
-          .map((e) => ({ target: e.target, kind: e.kind, confidence: e.confidence, reason: e.reason }))
+        mf.semantics.connections = r.data.edges
+          .filter((edge: ConnectionEdge) => knownIds.has(edge.target) && edge.kind !== "unrelated")
+          .map((edge: ConnectionEdge) => ({ target: edge.target, kind: edge.kind, confidence: edge.confidence, reason: edge.reason }))
           .slice(0, 20);
         mf.semantics.connections_source = "codex-gpt-5.4";
         mf.semantics.connections_at = new Date().toISOString();

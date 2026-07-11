@@ -18,10 +18,15 @@ import { fileURLToPath } from 'node:url';
 type TokenSum = { input: number; cacheWrite: number; cacheRead: number; output: number; calls: number };
 type CodexSum = { model: string; input: number; cached: number; output: number; id: string };
 type WorkforceSum = { backend: string; model: string; input: number; output: number; id: string; ts: number };
-type Price = Record<string, number> & { key?: string };
+type Price = { input: number; output: number; cacheWrite?: number; cacheRead?: number; cachedInput?: number; key?: string };
+type ClaudeMessage = { ts: number; model: string; input: number; cacheWrite: number; cacheRead: number; output: number };
+type PriceDocument = { asOf: string; perMTok: Record<string, Price> };
+type SummaryRow = { agent: string; model: string; calls: number; tokens: string; cost: number | null; fablePct: string; allPct: string };
+type ClaudeEvent = { requestId?: string; timestamp?: string; message?: { id?: string; model?: string; usage?: { input_tokens?: number; cache_creation_input_tokens?: number; cache_read_input_tokens?: number; output_tokens?: number } } };
+type WorkforceReceipt = { schema?: string; backend?: string; model?: string; tokens_in?: number; tokens_out?: number; session_id?: string; timestamp?: string };
 
 const args = process.argv.slice(2);
-const opt = (name: string, dflt: any): any => {
+const opt = <T extends string | null>(name: string, dflt: T): string | T => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : dflt;
 };
@@ -36,7 +41,7 @@ const WORKFORCE_LOG = opt('workforce-log', process.env.SMA_WORKFORCE_USAGE_LOG |
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRICES_PATH = path.join(HERE, '..', 'skills', 'sweetspot-moa', 'model-prices.json');
-const PRICES: any = JSON.parse(fs.readFileSync(PRICES_PATH, 'utf8'));
+const PRICES: PriceDocument = JSON.parse(fs.readFileSync(PRICES_PATH, 'utf8'));
 
 function priceFor(model: string): Price | null {
   if (!model) return null;
@@ -48,20 +53,20 @@ function priceFor(model: string): Price | null {
 // ---- Claude Code logs -------------------------------------------------
 // One line per event; assistant messages carry message.model + message.usage.
 // Multi-block messages repeat the same usage -> dedupe on requestId/message.id.
-async function scanClaudeFile(file: string, onMsg: (message: any) => void): Promise<void> {
+async function scanClaudeFile(file: string, onMsg: (message: ClaudeMessage) => void): Promise<void> {
   const rl = readline.createInterface({ input: fs.createReadStream(file), crlfDelay: Infinity });
   const seen = new Set();
   for await (const line of rl) {
     if (!line.includes('"usage"')) continue;
-    let obj; try { obj = JSON.parse(line); } catch { continue; }
+    let obj: ClaudeEvent; try { obj = JSON.parse(line); } catch { continue; }
     const u = obj?.message?.usage;
     if (!u || typeof u.output_tokens !== 'number') continue;
-    const key = obj.requestId || obj.message.id || `${file}:${obj.timestamp}`;
+    const key = obj.requestId || obj.message?.id || `${file}:${obj.timestamp}`;
     if (seen.has(key)) continue;
     seen.add(key);
     onMsg({
-      ts: Date.parse(obj.timestamp || 0),
-      model: obj.message.model || 'unknown',
+      ts: Date.parse(obj.timestamp || '0'),
+      model: obj.message?.model || 'unknown',
       input: u.input_tokens || 0,
       cacheWrite: u.cache_creation_input_tokens || 0,
       cacheRead: u.cache_read_input_tokens || 0,
@@ -75,7 +80,7 @@ function claudeCost(sum: TokenSum, p: Price): number {
     sum.cacheRead * (p.cacheRead ?? p.input * 0.1) + sum.output * p.output) / 1e6;
 }
 
-function addTo(bucket: TokenSum, m: any): void {
+function addTo(bucket: TokenSum, m: ClaudeMessage): void {
   bucket.input += m.input; bucket.cacheWrite += m.cacheWrite;
   bucket.cacheRead += m.cacheRead; bucket.output += m.output; bucket.calls += 1;
 }
@@ -128,7 +133,10 @@ function scanCodexFile(fp: string): CodexSum | null {
   const model = head.match(/"model":"([^"]+)"/)?.[1] || tail.match(/"model":"([^"]+)"/)?.[1] || 'gpt-5.5';
   const events = [...tail.matchAll(/"total_token_usage":\{[^}]*\}/g)];
   if (!events.length) return null;
-  let last; try { last = JSON.parse(`{${events.at(-1)[0]}}`).total_token_usage; } catch { return null; }
+  const lastEvent = events.at(-1);
+  if (!lastEvent) return null;
+  let last: { input_tokens?: number; cached_input_tokens?: number; output_tokens?: number };
+  try { last = JSON.parse(`{${lastEvent[0]}}`).total_token_usage; } catch { return null; }
   return {
     model,
     input: last.input_tokens || 0,
@@ -169,7 +177,7 @@ const workforceWeek: WorkforceSum[] = [];
 if (fs.existsSync(WORKFORCE_LOG)) {
   for (const line of fs.readFileSync(WORKFORCE_LOG, 'utf8').split(/\r?\n/)) {
     if (!line.trim()) continue;
-    let row: any; try { row = JSON.parse(line); } catch { continue; }
+    let row: WorkforceReceipt; try { row = JSON.parse(line); } catch { continue; }
     if (row?.schema !== 'smarch.workforce-usage.v1' || row.backend === 'codex') continue;
     const item = {
       backend: String(row.backend || 'unknown'),
@@ -177,7 +185,7 @@ if (fs.existsSync(WORKFORCE_LOG)) {
       input: Number(row.tokens_in || 0),
       output: Number(row.tokens_out || 0),
       id: String(row.session_id || row.timestamp || '').slice(-12),
-      ts: Date.parse(row.timestamp || 0),
+      ts: Date.parse(row.timestamp || '0'),
     };
     if (item.ts >= WINDOW_START) workforceWeek.push(item);
     if (item.ts >= CODEX_SINCE) workforceRun.push(item);
@@ -185,7 +193,7 @@ if (fs.existsSync(WORKFORCE_LOG)) {
 }
 
 // ---- assemble ----------------------------------------------------------
-const unpriced = new Set();
+const unpriced = new Set<string>();
 const usd = (model: string, fn: (price: Price) => number): number | null => {
   const p = priceFor(model);
   if (!p) { unpriced.add(model); return null; }
@@ -207,7 +215,7 @@ const pct = (cost: number | null, denom: number, label: string): string =>
   cost == null ? 'unavailable — model unpriced' :
   denom > 0 ? `${((cost / denom) * 100).toFixed(2)}%` : `unavailable — ${label} denominator is 0`;
 
-const rows: any[] = [];
+const rows: SummaryRow[] = [];
 for (const [model, s] of Object.entries(planner)) {
   const cost = usd(model, (p) => claudeCost(s, p));
   rows.push({
@@ -239,7 +247,7 @@ const actualCodex = codexRun.reduce((a, s) => a + (usd(s.model, (p) => codexCost
 const soloAt = (key: string): number | null => {
   const p = PRICES.perMTok[key];
   if (!p) return null;
-  return ((off.input - off.cached) * p.input + off.cached * p.cacheRead + off.output * p.output) / 1e6;
+  return ((off.input - off.cached) * p.input + off.cached * (p.cacheRead ?? p.input) + off.output * p.output) / 1e6;
 };
 const saveLine = (name: string, key: string): string => {
   const solo = soloAt(key);

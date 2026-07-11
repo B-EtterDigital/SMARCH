@@ -15,6 +15,25 @@ import { fileURLToPath } from "node:url";
 import { checkComposition } from "./lib/license-lattice.ts";
 import { buildLicenseIndex } from "./lib/ledger-resolve.ts";
 import { evaluateExport } from "./lib/export-guard.ts";
+import type { BrickManifest } from './lib/schema-types/brick.manifest.schema.d.ts';
+import type { BuildManifest } from './lib/schema-types/build.manifest.schema.d.ts';
+
+type DeepPartial<T> = T extends readonly unknown[] ? DeepPartial<T[number]>[] : T extends object ? { [Key in keyof T]?: DeepPartial<T[Key]> } : T;
+type PublishManifest = DeepPartial<BrickManifest> & DeepPartial<BuildManifest> & Record<string, unknown>;
+type ArtifactType = 'brick' | 'build';
+interface CliArgs { dryRun: boolean; help?: boolean; manifest?: string; out?: string; searchRoots: string[]; stdout: boolean; strict: boolean }
+interface FindingInput { category: string; evidence?: unknown; location?: string; recommendation?: string; rule_id: string; scope?: string; severity: string; summary: string }
+interface Finding { category: string; evidence: string; location: string; recommendation: string; rule_id: string; scope: string; severity: string; summary: string }
+interface ScanMeta { fileKind?: string; location: string; originalPath?: string; scope: string; text: string }
+interface InventoryEntry { absolutePath: string; alias: string; file_kind: string; relative_to_root: string; scope: string; size: number }
+interface ResolvedRoot { absolutePath: string; declaredPath: string; kind: string; scope: string }
+interface PathReplacement { alias: string; source: string }
+interface RootAliasInfo { pathReplacements: PathReplacement[]; rootEntries: { alias: string; kind: string; scope: string }[] }
+interface SanitizerContext { componentAliasById: Map<string, string>; pathReplacements: PathReplacement[]; stringReplacements: [string, string][] }
+interface Redaction { after: string; before: string; path: string }
+interface ScannedFile { alias: string; file_kind: string; finding_count: number; scope: string; sha256: string; size: number; text_scanned: boolean; truncated: boolean }
+type Sanitizer = (value: string, keyPath: string) => string | undefined;
+type LicenseIndex = ReturnType<typeof buildLicenseIndex>;
 
 const SMA_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const LICENSE_LEDGER_PATH = path.resolve(SMA_ROOT, "registry/license-ledger.generated.json");
@@ -66,26 +85,26 @@ Notes:
     fixed before a community release is honest and safe.
 `;
 
-function fail(message, code = 1) {
+function fail(message: string, code = 1): never {
   console.error(`Error: ${message}`);
   process.exit(code);
 }
 
-function sha256Text(value) {
+function sha256Text(value: string) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function sha256Buffer(value) {
+function sha256Buffer(value: Buffer) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function stableJson(value) {
+function stableJson(value: unknown): string {
   return JSON.stringify(sortJson(value));
 }
 
-function sortJson(value) {
+function sortJson(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortJson);
-  if (!value || typeof value !== "object") return value;
+  if (!isRecord(value)) return value;
   return Object.fromEntries(
     Object.keys(value)
       .sort()
@@ -93,16 +112,16 @@ function sortJson(value) {
   );
 }
 
-function cloneJson(value) {
-  return JSON.parse(JSON.stringify(value));
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function uniqStrings(values) {
-  return [...new Set((values || []).filter((value) => typeof value === "string" && value.trim()).map((value) => value.trim()))];
+function uniqStrings(values: unknown[]): string[] {
+  return [...new Set(values.filter((value): value is string => typeof value === "string" && Boolean(value.trim())).map((value) => value.trim()))];
 }
 
-function slugify(value, fallback = "artifact") {
-  const normalized = String(value || "")
+function slugify(value: unknown, fallback = "artifact"): string {
+  const normalized = String(value ?? "")
     .normalize("NFKD")
     .replace(/[^\w\s.-]/g, " ")
     .toLowerCase()
@@ -112,25 +131,25 @@ function slugify(value, fallback = "artifact") {
   return normalized || fallback;
 }
 
-function trimText(value, max = MAX_EVIDENCE_LENGTH) {
-  const compact = String(value || "").replace(/\s+/g, " ").trim();
+function trimText(value: string, max = MAX_EVIDENCE_LENGTH) {
+  const compact = (value || "").replace(/\s+/g, " ").trim();
   if (compact.length <= max) return compact;
   return `${compact.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
 }
 
-function firstDefined(...values) {
+function firstDefined(...values: (string | undefined)[]): string | undefined {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== "") return value;
   }
   return undefined;
 }
 
-function toPosix(value) {
+function toPosix(value: string) {
   return value.split(path.sep).join("/");
 }
 
-function sanitizePathFragment(value) {
-  return String(value || "")
+function sanitizePathFragment(value: unknown): string {
+  return String(value ?? "")
     .replace(/[^\w./-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/\/+/g, "/")
@@ -138,11 +157,11 @@ function sanitizePathFragment(value) {
     .replace(/\/$/, "");
 }
 
-function looksLikePlaceholder(value) {
-  return /(?:example|placeholder|changeme|dummy|sample|test[-_]?only|your[_-]?|xxx|todo|fake|mock|<[^>]+>)/i.test(String(value || ""));
+function looksLikePlaceholder(value: string) {
+  return /(?:example|placeholder|changeme|dummy|sample|test[-_]?only|your[_-]?|xxx|todo|fake|mock|<[^>]+>)/i.test((value || ""));
 }
 
-function isProbablyBinary(buffer) {
+function isProbablyBinary(buffer: Buffer): boolean {
   const limit = Math.min(buffer.length, 1024);
   for (let index = 0; index < limit; index += 1) {
     if (buffer[index] === 0) return true;
@@ -150,32 +169,32 @@ function isProbablyBinary(buffer) {
   return false;
 }
 
-function classifyArtifactType(manifest) {
-  if (manifest?.build?.id) return "build";
-  if (manifest?.brick?.id) return "brick";
+function classifyArtifactType(manifest: PublishManifest): ArtifactType {
+  if (manifest.build?.id) return "build";
+  if (manifest.brick?.id) return "brick";
   fail("manifest must contain either a top-level build or brick object");
 }
 
-function inferOriginalArtifactId(manifest, artifactType) {
+function inferOriginalArtifactId(manifest: PublishManifest, artifactType: ArtifactType): string {
   const id = artifactType === "build" ? manifest.build?.id : manifest.brick?.id;
   if (typeof id !== "string" || !id.trim()) fail(`could not infer ${artifactType} id from manifest`);
   return id.trim();
 }
 
-function inferVersion(manifest, artifactType) {
+function inferVersion(manifest: PublishManifest, artifactType: ArtifactType): string {
   const version = artifactType === "build" ? manifest.build?.version : manifest.brick?.version;
   if (typeof version === "string" && version.trim()) return version.trim();
   return "0.1.0";
 }
 
-function inferDisplayName(manifest, artifactType) {
+function inferDisplayName(manifest: PublishManifest, artifactType: ArtifactType): string {
   const name = artifactType === "build"
     ? firstDefined(manifest.build?.name, manifest.build?.slug, manifest.build?.id)
     : firstDefined(manifest.brick?.name, manifest.brick?.id);
-  return String(name || artifactType).trim();
+  return (name ?? artifactType).trim();
 }
 
-function inferCommunityArtifactId({ artifactType, manifest, originalArtifactId, manifestPath }) {
+function inferCommunityArtifactId({ artifactType, manifest, originalArtifactId, manifestPath }: { artifactType: ArtifactType; manifest: PublishManifest; originalArtifactId: string; manifestPath: string }): string {
   const slug = artifactType === "build"
     ? slugify(firstDefined(manifest.build?.slug, manifest.build?.name, originalArtifactId), artifactType)
     : slugify(firstDefined(manifest.brick?.name, originalArtifactId), artifactType);
@@ -183,14 +202,14 @@ function inferCommunityArtifactId({ artifactType, manifest, originalArtifactId, 
   return `community.${artifactType}.${slug}.${digest}`;
 }
 
-function parseArgs(argv): Record<string, any> {
-  const args: Record<string, any> = {
+function parseArgs(argv: string[]): CliArgs {
+  const args: CliArgs = {
     searchRoots: [],
     stdout: false,
     dryRun: false,
     strict: false
   };
-  const positionals = [];
+  const positionals: string[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -240,7 +259,7 @@ function parseArgs(argv): Record<string, any> {
   return args;
 }
 
-async function pathExists(targetPath) {
+async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -249,20 +268,20 @@ async function pathExists(targetPath) {
   }
 }
 
-function detectProjectsRoot(cwd) {
+function detectProjectsRoot(cwd: string): string {
   const direct = path.resolve(cwd, "..", "Projects");
   return direct;
 }
 
-async function listChildDirectories(rootPath) {
+async function listChildDirectories(rootPath: string): Promise<string[]> {
   if (!rootPath || !await pathExists(rootPath)) return [];
   const entries = await fs.readdir(rootPath, { withFileTypes: true });
   return entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(rootPath, entry.name));
 }
 
-async function collectSearchRoots({ manifestPath, cwd, extraRoots }) {
-  const roots = new Set();
-  const add = (candidate) => {
+async function collectSearchRoots({ manifestPath, cwd, extraRoots }: { manifestPath: string; cwd: string; extraRoots: string[] }): Promise<string[]> {
+  const roots = new Set<string>();
+  const add = (candidate: string | undefined) => {
     if (!candidate) return;
     roots.add(path.resolve(candidate));
   };
@@ -295,7 +314,7 @@ async function collectSearchRoots({ manifestPath, cwd, extraRoots }) {
   return [...roots];
 }
 
-async function resolveDeclaredPath(declaredPath, searchRoots) {
+async function resolveDeclaredPath(declaredPath: string, searchRoots: string[]): Promise<string | null> {
   if (path.isAbsolute(declaredPath) && await pathExists(declaredPath)) {
     return path.resolve(declaredPath);
   }
@@ -306,11 +325,11 @@ async function resolveDeclaredPath(declaredPath, searchRoots) {
   return null;
 }
 
-async function readJsonFile(filePath) {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+async function readJsonFile(filePath: string): Promise<PublishManifest> {
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as PublishManifest;
 }
 
-function classifyFileKind(filePath) {
+function classifyFileKind(filePath: string): string {
   const lower = toPosix(filePath).toLowerCase();
   if (/(^|\/)(docs?|wiki)\//.test(lower) || /\.(md|mdx|txt|html?)$/i.test(lower)) return "doc";
   if (/(^|\/)(__tests__|tests?|specs?|suites?)\//.test(lower) || /\.(test|spec)\.[A-Za-z0-9]+$/i.test(lower)) return "test";
@@ -320,10 +339,10 @@ function classifyFileKind(filePath) {
   return "source";
 }
 
-async function collectDirectoryFiles(rootPath) {
-  const output = [];
+async function collectDirectoryFiles(rootPath: string): Promise<string[]> {
+  const output: string[] = [];
 
-  async function walk(currentPath) {
+  async function walk(currentPath: string): Promise<void> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
     entries.sort((left, right) => left.name.localeCompare(right.name));
     for (const entry of entries) {
@@ -341,10 +360,10 @@ async function collectDirectoryFiles(rootPath) {
   return output;
 }
 
-async function fileInventoryForResolvedRoot(resolvedRoot, scope, rootIndex) {
+async function fileInventoryForResolvedRoot(resolvedRoot: string, scope: string, rootIndex: number): Promise<InventoryEntry[]> {
   const stat = await fs.stat(resolvedRoot);
   const files = stat.isDirectory() ? await collectDirectoryFiles(resolvedRoot) : [resolvedRoot];
-  const output = [];
+  const output: InventoryEntry[] = [];
   let fileIndex = 0;
 
   for (const filePath of files.sort((left, right) => left.localeCompare(right))) {
@@ -366,7 +385,7 @@ async function fileInventoryForResolvedRoot(resolvedRoot, scope, rootIndex) {
   return output;
 }
 
-async function loadTextForScan(filePath) {
+async function loadTextForScan(filePath: string) {
   const buffer = await fs.readFile(filePath);
   const binary = isProbablyBinary(buffer) || BINARY_FILE_RE.test(filePath);
   if (binary) {
@@ -389,8 +408,8 @@ async function loadTextForScan(filePath) {
   };
 }
 
-function sanitizeInlineSecrets(value) {
-  return String(value || "")
+function sanitizeInlineSecrets(value: string) {
+  return (value || "")
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, "[redacted-private-key]")
     .replace(/\bsk-(?:proj-)?[A-Za-z0-9_-]{12,}\b/g, "sk-[redacted]")
     .replace(/\b(?:sk|rk)_live_[A-Za-z0-9]{10,}\b/g, "[redacted-live-key]")
@@ -402,20 +421,20 @@ function sanitizeInlineSecrets(value) {
     .replace(/[A-Z]:\\Users\\[^\s"'`<>]+/g, "C:\\Users\\[redacted]");
 }
 
-function sanitizeEvidence(value) {
-  return trimText(sanitizeInlineSecrets(value));
+function sanitizeEvidence(value: unknown): string {
+  return trimText(sanitizeInlineSecrets(String(value ?? '')));
 }
 
-function addFinding(findings, seen, finding) {
+function addFinding(findings: Finding[], seen: Set<string>, finding: FindingInput): void {
   const normalized = {
     severity: finding.severity,
     rule_id: finding.rule_id,
     category: finding.category,
-    scope: finding.scope || "manifest",
-    location: finding.location || "manifest",
+    scope: finding.scope ?? "manifest",
+    location: finding.location ?? "manifest",
     summary: trimText(finding.summary, 220),
-    evidence: sanitizeEvidence(finding.evidence || ""),
-    recommendation: trimText(finding.recommendation || "", 220)
+    evidence: sanitizeEvidence(finding.evidence ?? ""),
+    recommendation: trimText(finding.recommendation ?? "", 220)
   };
   const key = stableJson(normalized);
   if (seen.has(key)) return;
@@ -423,7 +442,7 @@ function addFinding(findings, seen, finding) {
   findings.push(normalized);
 }
 
-function collectMatches(text, regex) {
+function collectMatches(text: string, regex: RegExp) {
   const output = [];
   const matcher = new RegExp(regex.source, regex.flags.includes("g") ? regex.flags : `${regex.flags}g`);
   let match;
@@ -434,7 +453,7 @@ function collectMatches(text, regex) {
   return output;
 }
 
-function scanSecrets({ text, scope, location }, findings, seen) {
+function scanSecrets({ text, scope, location }: ScanMeta, findings: Finding[], seen: Set<string>): void {
   const rules = [
     {
       rule_id: "secret-private-key",
@@ -496,7 +515,7 @@ function scanSecrets({ text, scope, location }, findings, seen) {
 
   for (const rule of rules) {
     for (const match of collectMatches(text, rule.regex)) {
-      const candidate = String(match[0] || "");
+      const candidate = (match[0] || "");
       if (looksLikePlaceholder(candidate)) continue;
       addFinding(findings, seen, {
         severity: rule.severity,
@@ -512,7 +531,7 @@ function scanSecrets({ text, scope, location }, findings, seen) {
   }
 }
 
-function scanInternalUrls({ text, scope, location }, findings, seen) {
+function scanInternalUrls({ text, scope, location }: ScanMeta, findings: Finding[], seen: Set<string>): void {
   const privateUrlRe = /https?:\/\/(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}|[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.(?:local|internal|lan|corp|home|test))(?:[/?#:][^\s"'`<>]*)?/gi;
   for (const match of collectMatches(text, privateUrlRe)) {
     addFinding(findings, seen, {
@@ -528,7 +547,7 @@ function scanInternalUrls({ text, scope, location }, findings, seen) {
   }
 }
 
-function scanAbsolutePaths({ text, scope, location }, findings, seen) {
+function scanAbsolutePaths({ text, scope, location }: ScanMeta, findings: Finding[], seen: Set<string>): void {
   const pathRe = /(?:\/home\/[A-Za-z0-9._-]+\/[^\s"'`<>]+|[A-Z]:\\Users\\[^\s"'`<>]+)/g;
   for (const match of collectMatches(text, pathRe)) {
     addFinding(findings, seen, {
@@ -544,8 +563,8 @@ function scanAbsolutePaths({ text, scope, location }, findings, seen) {
   }
 }
 
-function scanPrivatePrompts({ text, scope, location, originalPath }, findings, seen) {
-  const lowerPath = String(originalPath || "").toLowerCase();
+function scanPrivatePrompts({ text, scope, location, originalPath }: ScanMeta, findings: Finding[], seen: Set<string>): void {
+  const lowerPath = (originalPath ?? "").toLowerCase();
   const hasPromptPath = /(?:^|[\\/])(prompts?|instructions?|agents?|handover)(?:[\\/]|$)|\.prompt(?:\.[a-z0-9]+)?$/i.test(lowerPath);
   const promptRe = /\b(?:system prompt|developer prompt|assistant prompt|hidden instructions?|internal prompt|prompt library|do not reveal this prompt)\b/i;
   if (hasPromptPath || promptRe.test(text)) {
@@ -556,14 +575,14 @@ function scanPrivatePrompts({ text, scope, location, originalPath }, findings, s
       scope,
       location,
       summary: "Prompt or agent-instruction material appears to be included.",
-      evidence: hasPromptPath ? originalPath : text.match(promptRe)?.[0] || "",
+      evidence: hasPromptPath ? originalPath : (promptRe.exec(text))?.[0] ?? "",
       recommendation: "Keep private prompts and hidden agent instructions out of community bundles unless they are intentionally open."
     });
   }
 }
 
-function scanProjectPlanLeakage({ text, scope, location, originalPath, fileKind }, findings, seen) {
-  const lowerPath = String(originalPath || "").toLowerCase();
+function scanProjectPlanLeakage({ text, scope, location, originalPath, fileKind }: ScanMeta, findings: Finding[], seen: Set<string>): void {
+  const lowerPath = (originalPath ?? "").toLowerCase();
   const blockerRe = /\b(?:ceo strategy|investor update|go[- ]to[- ]market|launch plan|phase plan|private roadmap|confidential roadmap)\b/i;
   const warningRe = /\b(?:roadmap|handover|milestone plan|quarterly plan|backlog|strategy memo|internal strategy)\b/i;
 
@@ -575,7 +594,7 @@ function scanProjectPlanLeakage({ text, scope, location, originalPath, fileKind 
       scope,
       location,
       summary: "Project-plan or strategy material appears to be included.",
-      evidence: blockerRe.test(text) ? text.match(blockerRe)?.[0] || "" : originalPath,
+      evidence: blockerRe.test(text) ? (blockerRe.exec(text))?.[0] ?? "" : originalPath,
       recommendation: "Separate product strategy, handoff, and roadmap documents from any community export bundle."
     });
     return;
@@ -589,14 +608,14 @@ function scanProjectPlanLeakage({ text, scope, location, originalPath, fileKind 
       scope,
       location,
       summary: "Possible project-plan or internal roadmap language detected.",
-      evidence: warningRe.test(text) ? text.match(warningRe)?.[0] || "" : originalPath,
+      evidence: warningRe.test(text) ? (warningRe.exec(text))?.[0] ?? "" : originalPath,
       recommendation: "Review docs for strategic or private planning content before publishing."
     });
   }
 }
 
-function scanCustomerSpecific({ text, scope, location, originalPath }, findings, seen) {
-  const lowerPath = String(originalPath || "").toLowerCase();
+function scanCustomerSpecific({ text, scope, location, originalPath }: ScanMeta, findings: Finding[], seen: Set<string>): void {
+  const lowerPath = (originalPath ?? "").toLowerCase();
   const blockerRe = /(?:^|[\\/._-])(customer|tenant|client)(?:[\\/._-]|$)/i;
   const warningRe = /\b(?:customer-specific|tenant-specific|client-specific|for a specific customer|per-customer|whitelabel)\b/i;
   if (blockerRe.test(lowerPath)) {
@@ -620,13 +639,13 @@ function scanCustomerSpecific({ text, scope, location, originalPath }, findings,
       scope,
       location,
       summary: "Customer- or tenant-specific language detected.",
-      evidence: text.match(warningRe)?.[0] || "",
+      evidence: (warningRe.exec(text))?.[0] ?? "",
       recommendation: "Remove customer-specific assumptions or rename them to generic capability terms before publishing."
     });
   }
 }
 
-function scanTextBlob(meta, findings, seen) {
+function scanTextBlob(meta: ScanMeta, findings: Finding[], seen: Set<string>): void {
   if (!meta.text) return;
   scanSecrets(meta, findings, seen);
   scanInternalUrls(meta, findings, seen);
@@ -636,13 +655,13 @@ function scanTextBlob(meta, findings, seen) {
   scanCustomerSpecific(meta, findings, seen);
 }
 
-let _licenseLedgerCache;
+let _licenseLedgerCache: LicenseIndex | null | undefined;
 function loadLicenseLedgerSync() {
   if (_licenseLedgerCache !== undefined) return _licenseLedgerCache;
   try {
     if (!existsSync(LICENSE_LEDGER_PATH)) { _licenseLedgerCache = null; return null; }
-    const data = JSON.parse(readFileSync(LICENSE_LEDGER_PATH, "utf8"));
-    _licenseLedgerCache = buildLicenseIndex(data.licenses || []);
+    const data = JSON.parse(readFileSync(LICENSE_LEDGER_PATH, "utf8")) as { licenses?: Parameters<typeof buildLicenseIndex>[0] };
+    _licenseLedgerCache = buildLicenseIndex(data.licenses ?? []);
   } catch {
     _licenseLedgerCache = null;
   }
@@ -652,11 +671,11 @@ function loadLicenseLedgerSync() {
 // License-lattice guard: a publish bundle is a COMMUNITY artifact. It must not
 // be emitted if the build's component bricks do not permit community release.
 // "You cannot publish as open what was built from something closed."
-function analyzeCompositionLattice(manifest, findings, seen) {
+function analyzeCompositionLattice(manifest: PublishManifest, findings: Finding[], seen: Set<string>): void {
   const ids = uniqStrings([
-    ...(manifest.composition?.brick_refs || []).map((entry) => entry?.brick_id),
-    ...(manifest.composition?.optional_bricks || []).map((entry) => entry?.brick_id),
-    ...(manifest.source?.derived_from_bricks || []).map((entry) => entry?.brick_id)
+    ...(manifest.composition?.brick_refs ?? []).map((entry) => entry.brick_id),
+    ...(manifest.composition?.optional_bricks ?? []).map((entry) => entry.brick_id),
+    ...(manifest.source?.derived_from_bricks ?? []).map((entry) => entry.brick_id)
   ]);
   if (!ids.length) {
     // A build that declares no component bricks cannot prove its openness —
@@ -689,25 +708,30 @@ function analyzeCompositionLattice(manifest, findings, seen) {
     return;
   }
 
-  const projectHint = manifest.source?.project || null;
-  const components = ids.map((id) => {
-    const row = ledger.resolve(id, projectHint)?.row;
+  const projectHint = manifest.source?.project ?? null;
+  const components: Parameters<typeof checkComposition>[1] = ids.map((id) => {
+    const row = ledger.resolve(id, projectHint ?? undefined)?.row;
     // fail-safe: an unknown component is treated as closed/private.
     return row
-      ? { brick_id: id, spdx: row.spdx, openness: row.openness, visibility: row.visibility }
+      ? {
+          brick_id: id,
+          spdx: typeof row.spdx === 'string' ? row.spdx : null,
+          openness: row.openness === 'open' || row.openness === 'closed' || row.openness === 'source-available' ? row.openness : 'closed',
+          visibility: row.visibility === 'public' || row.visibility === 'community' || row.visibility === 'internal' || row.visibility === 'private' ? row.visibility : 'private',
+        }
       : { brick_id: id, spdx: null, openness: "closed", visibility: "private" };
   });
 
-  const publishing = manifest.publishing || {};
+  const publishing = manifest.publishing ?? {};
   const hasAttribution = /attribution|contributor|credits|authors|notice/.test(
-    (publishing.exposed_docs || []).join(" ").toLowerCase()
+    (publishing.exposed_docs ?? []).join(" ").toLowerCase()
   );
   // The publish tool always emits a community-visible artifact, so evaluate
   // against the community target regardless of the declared visibility.
   const check = checkComposition({
     visibility: "community",
-    license: publishing.license || null,
-    openness: publishing.openness || null,
+    license: publishing.license ?? null,
+    openness: publishing.openness ?? undefined,
     publishable: true,
     has_attribution: hasAttribution
   }, components);
@@ -727,10 +751,10 @@ function analyzeCompositionLattice(manifest, findings, seen) {
   }
 }
 
-function analyzePolicy(manifest, artifactType, findings, seen) {
+function analyzePolicy(manifest: PublishManifest, artifactType: ArtifactType, findings: Finding[], seen: Set<string>): void {
   if (artifactType === "build") {
-    const publishing = manifest.publishing || {};
-    if (publishing.publishable === false) {
+    const publishing = manifest.publishing ?? {};
+    if (!publishing.publishable) {
       addFinding(findings, seen, {
         severity: "blocker",
         rule_id: "publish-policy-disabled",
@@ -742,21 +766,21 @@ function analyzePolicy(manifest, artifactType, findings, seen) {
         recommendation: "Change the publishing policy only after the artifact is intentionally prepared for community release."
       });
     }
-    if (["private", "internal"].includes(String(publishing.visibility || "").toLowerCase())) {
+    if (["private", "internal"].includes((publishing.visibility ?? "").toLowerCase())) {
       addFinding(findings, seen, {
         severity: "warning",
         rule_id: "publish-visibility-private",
         category: "policy",
         scope: "manifest",
         location: "manifest",
-        summary: `Publishing visibility is ${publishing.visibility}.`,
-        evidence: `publishing.visibility = ${publishing.visibility}`,
+        summary: `Publishing visibility is ${String(publishing.visibility)}.`,
+        evidence: `publishing.visibility = ${String(publishing.visibility)}`,
         recommendation: "Treat this export as metadata-only until visibility is intentionally opened for community use."
       });
     }
     analyzeCompositionLattice(manifest, findings, seen);
   } else {
-    const brickStatus = String(manifest.brick?.status || "").toLowerCase();
+    const brickStatus = (manifest.brick?.status ?? "").toLowerCase();
     if (["project_bound", "manual_only"].includes(brickStatus)) {
       addFinding(findings, seen, {
         severity: "warning",
@@ -773,7 +797,7 @@ function analyzePolicy(manifest, artifactType, findings, seen) {
     // be published to community either. Check the brick's own openness.
     const brickId = manifest.brick?.id;
     if (brickId) {
-      const evalr = evaluateExport({ brickIds: [brickId], project: manifest.source?.project || null, targetVisibility: "community" });
+      const evalr = evaluateExport({ brickIds: [brickId], project: manifest.source?.project ?? null, targetVisibility: "community" });
       if (evalr.ledger_missing) {
         addFinding(findings, seen, {
           severity: "blocker",
@@ -816,15 +840,15 @@ function analyzePolicy(manifest, artifactType, findings, seen) {
   }
 }
 
-function shouldKeepFriendlyName(value) {
-  const lower = String(value || "").toLowerCase();
-  if (!SAFE_NAME_RE.test(String(value || ""))) return false;
+function shouldKeepFriendlyName(value: string) {
+  const lower = (value || "").toLowerCase();
+  if (!SAFE_NAME_RE.test((value || ""))) return false;
   if (/(customer|tenant|client|roadmap|strategy|handover|confidential|internal)/.test(lower)) return false;
   return true;
 }
 
-function sanitizeGenericString(value, context) {
-  let next = sanitizeInlineSecrets(String(value || ""));
+function sanitizeGenericString(value: unknown, context: SanitizerContext): string {
+  let next = sanitizeInlineSecrets(String(value ?? ""));
   for (const [source, replacement] of context.stringReplacements) {
     next = next.split(source).join(replacement);
   }
@@ -832,8 +856,8 @@ function sanitizeGenericString(value, context) {
   return next;
 }
 
-function maybeAliasPathString(value, context) {
-  const normalized = String(value || "");
+function maybeAliasPathString(value: unknown, context: SanitizerContext): string {
+  const normalized = String(value ?? "");
   if (!normalized) return normalized;
   const replacements = context.pathReplacements;
   for (const entry of replacements) {
@@ -846,11 +870,11 @@ function maybeAliasPathString(value, context) {
   return normalized;
 }
 
-function createStringSanitizer(context) {
-  return function sanitizeValue(value, keyPath) {
+function createStringSanitizer(context: SanitizerContext): Sanitizer {
+  return function sanitizeValue(value: string, keyPath: string) {
     if (typeof value !== "string") return value;
 
-    let next = maybeAliasPathString(value, context);
+    const next = maybeAliasPathString(value, context);
 
     if (["owner.primary", "owner.team"].includes(keyPath)) return "redacted";
     if (/^owner\.reviewers\.\d+$/.test(keyPath)) return "redacted";
@@ -863,7 +887,7 @@ function createStringSanitizer(context) {
     if (/^provenance\.source_chain\.\d+\.project$/.test(keyPath)) return "redacted";
 
     if (/^provenance\.source_chain\.\d+\.artifact_id$/.test(keyPath)) {
-      return context.componentAliasById.get(next) || "component-redacted";
+      return context.componentAliasById.get(next) ?? "component-redacted";
     }
 
     if (/^source\.(paths|supporting_artifacts)\.\d+$/.test(keyPath)) {
@@ -889,11 +913,11 @@ function createStringSanitizer(context) {
   };
 }
 
-function walkAndSanitize(value, sanitizer, keyPath = "", redactions = []) {
+function walkAndSanitize(value: unknown, sanitizer: Sanitizer, keyPath = "", redactions: Redaction[] = []): unknown {
   if (Array.isArray(value)) {
-    const next = [];
+    const next: unknown[] = [];
     value.forEach((entry, index) => {
-      const childPath = keyPath ? `${keyPath}.${index}` : String(index);
+      const childPath = keyPath ? `${keyPath}.${String(index)}` : String(index);
       const sanitized = walkAndSanitize(entry, sanitizer, childPath, redactions);
       if (sanitized !== undefined) next.push(sanitized);
     });
@@ -907,7 +931,7 @@ function walkAndSanitize(value, sanitizer, keyPath = "", redactions = []) {
         redactions.push({
           path: keyPath || "<root>",
           before: trimText(value, 60),
-          after: trimText(sanitized, 60)
+          after: trimText(sanitized ?? '', 60)
         });
       }
       return sanitized;
@@ -915,7 +939,7 @@ function walkAndSanitize(value, sanitizer, keyPath = "", redactions = []) {
     return value;
   }
 
-  const output = {};
+  const output: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(value)) {
     const childPath = keyPath ? `${keyPath}.${key}` : key;
     const sanitized = walkAndSanitize(entry, sanitizer, childPath, redactions);
@@ -924,9 +948,9 @@ function walkAndSanitize(value, sanitizer, keyPath = "", redactions = []) {
   return output;
 }
 
-function buildRootAliasMaps(resolvedRoots) {
-  const rootEntries = [];
-  const pathReplacements = [];
+function buildRootAliasMaps(resolvedRoots: ResolvedRoot[]): RootAliasInfo {
+  const rootEntries: RootAliasInfo['rootEntries'] = [];
+  const pathReplacements: PathReplacement[] = [];
 
   resolvedRoots.forEach((root, index) => {
     const alias = `artifact://${root.scope}-${String(index + 1).padStart(3, "0")}`;
@@ -946,14 +970,14 @@ function buildRootAliasMaps(resolvedRoots) {
   return { rootEntries, pathReplacements };
 }
 
-function buildComponentAliasMap(manifest, artifactType) {
-  const map = new Map();
+function buildComponentAliasMap(manifest: PublishManifest, artifactType: ArtifactType): Map<string, string> {
+  const map = new Map<string, string>();
   if (artifactType !== "build") return map;
 
   const refs = uniqStrings([
-    ...(manifest.composition?.brick_refs || []).map((entry) => entry?.brick_id),
-    ...(manifest.composition?.optional_bricks || []).map((entry) => entry?.brick_id),
-    ...(manifest.source?.derived_from_bricks || []).map((entry) => entry?.brick_id)
+    ...(manifest.composition?.brick_refs ?? []).map((entry) => entry.brick_id),
+    ...(manifest.composition?.optional_bricks ?? []).map((entry) => entry.brick_id),
+    ...(manifest.source?.derived_from_bricks ?? []).map((entry) => entry.brick_id)
   ]);
 
   refs.forEach((brickId, index) => {
@@ -962,51 +986,51 @@ function buildComponentAliasMap(manifest, artifactType) {
   return map;
 }
 
-function applyArtifactIdentityRedaction(redacted, artifactType, communityArtifactId, safeDisplayName) {
+function applyArtifactIdentityRedaction(redacted: PublishManifest, artifactType: ArtifactType, communityArtifactId: string, safeDisplayName: string): void {
   if (artifactType === "build") {
-    redacted.build.id = communityArtifactId;
-    redacted.build.visibility = "community";
-    if (!shouldKeepFriendlyName(redacted.build.name)) redacted.build.name = safeDisplayName;
-    if (!shouldKeepFriendlyName(redacted.build.slug)) redacted.build.slug = slugify(safeDisplayName, "community-build");
+    const build = redacted.build;
+    if (!build) fail('build manifest identity disappeared during redaction');
+    build.id = communityArtifactId;
+    build.visibility = "community";
+    if (!shouldKeepFriendlyName(build.name ?? '')) build.name = safeDisplayName;
+    if (!shouldKeepFriendlyName(build.slug ?? '')) build.slug = slugify(safeDisplayName, "community-build");
   } else {
-    redacted.brick.id = communityArtifactId;
-    if (!shouldKeepFriendlyName(redacted.brick.name)) redacted.brick.name = safeDisplayName;
+    const brick = redacted.brick;
+    if (!brick) fail('brick manifest identity disappeared during redaction');
+    brick.id = communityArtifactId;
+    if (!shouldKeepFriendlyName(brick.name ?? '')) brick.name = safeDisplayName;
   }
 }
 
-function applyBuildRefRedaction(redacted, componentAliasById) {
-  if (!redacted || !redacted.composition) return;
-  const replaceRef = (entry) => {
-    if (!entry || typeof entry !== "object") return entry;
-    if (entry.brick_id) entry.brick_id = componentAliasById.get(entry.brick_id) || "component-redacted";
+function applyBuildRefRedaction(redacted: PublishManifest, componentAliasById: Map<string, string>): void {
+  if (!redacted.composition) return;
+  const replaceRef = (entry: Record<string, unknown>) => {
+    if (typeof entry.brick_id === 'string') entry.brick_id = componentAliasById.get(entry.brick_id) ?? "component-redacted";
     if (entry.path) entry.path = "artifact://component";
     if (entry.project) entry.project = "redacted";
     return entry;
   };
 
-  for (const field of ["brick_refs", "optional_bricks"]) {
-    if (Array.isArray(redacted.composition[field])) {
-      redacted.composition[field] = redacted.composition[field].map((entry) => replaceRef(entry));
-    }
-  }
+  if (Array.isArray(redacted.composition.brick_refs)) redacted.composition.brick_refs = redacted.composition.brick_refs.map((entry) => replaceRef(entry));
+  if (Array.isArray(redacted.composition.optional_bricks)) redacted.composition.optional_bricks = redacted.composition.optional_bricks.map((entry) => replaceRef(entry));
 
   if (Array.isArray(redacted.source?.derived_from_bricks)) {
     redacted.source.derived_from_bricks = redacted.source.derived_from_bricks.map((entry) => replaceRef(entry));
   }
 
-  if (Array.isArray(redacted.composition?.alternatives)) {
+  if (Array.isArray(redacted.composition.alternatives)) {
     redacted.composition.alternatives = redacted.composition.alternatives.map((entry) => {
       if (!entry || typeof entry !== "object") return entry;
       return {
         ...entry,
         brick_ids: Array.isArray(entry.brick_ids)
-          ? entry.brick_ids.map((brickId) => componentAliasById.get(brickId) || "component-redacted")
+          ? entry.brick_ids.map((brickId) => componentAliasById.get(brickId) ?? "component-redacted")
           : []
       };
     });
   }
 
-  if (Array.isArray(redacted.composition?.flows)) {
+  if (Array.isArray(redacted.composition.flows)) {
     redacted.composition.flows = redacted.composition.flows.map((flow) => {
       if (!flow || typeof flow !== "object") return flow;
       return {
@@ -1015,7 +1039,7 @@ function applyBuildRefRedaction(redacted, componentAliasById) {
           ? flow.steps.map((step) => ({
             ...step,
             brick_refs: Array.isArray(step.brick_refs)
-              ? step.brick_refs.map((brickId) => componentAliasById.get(brickId) || "component-redacted")
+              ? step.brick_refs.map((brickId) => componentAliasById.get(brickId) ?? "component-redacted")
               : []
           }))
           : []
@@ -1031,13 +1055,13 @@ function buildRedactedManifest({
   safeDisplayName,
   rootAliasInfo,
   componentAliasById
-}) {
+}: { manifest: PublishManifest; artifactType: ArtifactType; communityArtifactId: string; safeDisplayName: string; rootAliasInfo: RootAliasInfo; componentAliasById: Map<string, string> }) {
   const redacted = cloneJson(manifest);
-  const redactions = [];
+  const redactions: Redaction[] = [];
   applyArtifactIdentityRedaction(redacted, artifactType, communityArtifactId, safeDisplayName);
   applyBuildRefRedaction(redacted, componentAliasById);
 
-  const sanitizerContext = {
+  const sanitizerContext: SanitizerContext = {
     pathReplacements: rootAliasInfo.pathReplacements,
     stringReplacements: [
       [inferOriginalArtifactId(manifest, artifactType), communityArtifactId],
@@ -1046,7 +1070,7 @@ function buildRedactedManifest({
     componentAliasById
   };
   const sanitizeValue = createStringSanitizer(sanitizerContext);
-  const sanitized = walkAndSanitize(redacted, sanitizeValue, "", redactions);
+  const sanitized = walkAndSanitize(redacted, sanitizeValue, "", redactions) as PublishManifest;
 
   if (sanitized.source) {
     sanitized.source.project = "";
@@ -1061,11 +1085,11 @@ function buildRedactedManifest({
   };
 }
 
-function summarizeFindings(findings, strictMode) {
+function summarizeFindings(findings: Finding[], strictMode: boolean) {
   const counts = {
-    blocker: findings.filter((entry) => entry.severity === "blocker").length,
-    warning: findings.filter((entry) => entry.severity === "warning").length,
-    info: findings.filter((entry) => entry.severity === "info").length
+    blocker: findings.filter((entry: { severity: string; }) => entry.severity === "blocker").length,
+    warning: findings.filter((entry: { severity: string; }) => entry.severity === "warning").length,
+    info: findings.filter((entry: { severity: string; }) => entry.severity === "info").length
   };
 
   let status = "exportable";
@@ -1079,7 +1103,7 @@ function summarizeFindings(findings, strictMode) {
   };
 }
 
-function buildScannedFileSummary(scanResults) {
+function buildScannedFileSummary(scanResults: ScannedFile[]) {
   return scanResults.map((entry) => ({
     alias: entry.alias,
     scope: entry.scope,
@@ -1092,7 +1116,7 @@ function buildScannedFileSummary(scanResults) {
   }));
 }
 
-async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode, outDirOverride }) {
+async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode, outDirOverride }: { manifestPath: string; searchRoots: string[]; cwd: string; strictMode: boolean; outDirOverride?: string }) {
   const manifest = await readJsonFile(manifestPath);
   const artifactType = classifyArtifactType(manifest);
   const originalArtifactId = inferOriginalArtifactId(manifest, artifactType);
@@ -1103,15 +1127,15 @@ async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode
     : `${artifactType === "build" ? "Community Build" : "Community Brick"} ${sha256Text(originalArtifactId).slice(0, 6)}`;
   const communityArtifactId = inferCommunityArtifactId({ artifactType, manifest, originalArtifactId, manifestPath });
 
-  const declaredSourcePaths = uniqStrings(manifest.source?.paths || []);
+  const declaredSourcePaths = uniqStrings(manifest.source?.paths ?? []);
   if (declaredSourcePaths.length === 0) fail("manifest.source.paths must contain at least one path");
 
   const declaredDocPaths = artifactType === "build"
-    ? uniqStrings([...(manifest.clone?.target_docs || []), ...(manifest.source?.supporting_artifacts || [])])
-    : uniqStrings(manifest.source?.supporting_artifacts || []);
+    ? uniqStrings([...(manifest.clone?.target_docs ?? []), ...(manifest.source?.supporting_artifacts ?? [])])
+    : uniqStrings(manifest.source?.supporting_artifacts ?? []);
 
-  const resolvedRoots = [];
-  const unresolved = [];
+  const resolvedRoots: ResolvedRoot[] = [];
+  const unresolved: Omit<ResolvedRoot, 'absolutePath'>[] = [];
 
   const sourceEntries = declaredSourcePaths.map((declaredPath) => ({ declaredPath, scope: "source", kind: "source_root" }));
   const docEntries = declaredDocPaths.map((declaredPath) => ({ declaredPath, scope: "doc", kind: "doc_root" }));
@@ -1128,8 +1152,8 @@ async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode
     });
   }
 
-  const findings = [];
-  const seenFindings = new Set();
+  const findings: Finding[] = [];
+  const seenFindings = new Set<string>();
   analyzePolicy(manifest, artifactType, findings, seenFindings);
 
   for (const entry of unresolved) {
@@ -1147,7 +1171,7 @@ async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode
 
   const rootAliasInfo = buildRootAliasMaps(resolvedRoots);
   const componentAliasById = buildComponentAliasMap(manifest, artifactType);
-  const scanResults = [];
+  const scanResults: ScannedFile[] = [];
 
   const manifestText = await fs.readFile(manifestPath, "utf8");
   scanTextBlob(
@@ -1212,9 +1236,9 @@ async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode
     communityArtifactId
   ), artifactType);
   const communityShortHash = sha256Text(communityArtifactId).slice(0, 8);
-  const bundleDir = path.resolve(outDirOverride || path.join(cwd, DEFAULT_OUTPUT_ROOT, artifactType, `${communitySlug}-${communityShortHash}`));
+  const bundleDir = path.resolve(outDirOverride ?? path.join(cwd, DEFAULT_OUTPUT_ROOT, artifactType, `${communitySlug}-${communityShortHash}`));
 
-  const report: Record<string, any> = {
+  const report = {
     schema_version: SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
     export_mode: "metadata_only",
@@ -1266,14 +1290,14 @@ async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode
   };
 }
 
-async function writeBundle(bundleDir, { bundle, report, redactedManifest }) {
+async function writeBundle(bundleDir: string, { bundle, report, redactedManifest }: { bundle: Record<string, unknown>; report: Record<string, unknown> & { decision?: { status?: string } }; redactedManifest: PublishManifest }): Promise<void> {
   await fs.mkdir(bundleDir, { recursive: true });
   // Always write the report so the operator can see what must be fixed.
   await fs.writeFile(path.join(bundleDir, "publish-report.json"), JSON.stringify(sortJson(report), null, 2));
   // A blocked result must NEVER emit a community-visible artifact (bundle or
   // redacted manifest). This is the hard stop that keeps closed-source-derived
   // or leak-flagged builds from being released as open.
-  if (report?.decision?.status === "blocked") return;
+  if (report.decision?.status === "blocked") return;
   await fs.writeFile(path.join(bundleDir, "bundle.json"), JSON.stringify(sortJson(bundle), null, 2));
   await fs.writeFile(path.join(bundleDir, "manifest.community.json"), JSON.stringify(sortJson(redactedManifest), null, 2));
 }
@@ -1285,9 +1309,10 @@ async function main() {
     return;
   }
   if (!args.manifest) fail("missing required --manifest <path>");
+  const manifestArg = args.manifest;
 
   const cwd = process.cwd();
-  const manifestPath = path.resolve(args.manifest);
+  const manifestPath = path.resolve(manifestArg);
   if (!await pathExists(manifestPath)) fail(`manifest not found: ${manifestPath}`);
 
   const searchRoots = await collectSearchRoots({
@@ -1300,7 +1325,7 @@ async function main() {
     manifestPath,
     searchRoots,
     cwd,
-    strictMode: Boolean(args.strict),
+    strictMode: args.strict,
     outDirOverride: args.out
   });
 
@@ -1324,4 +1349,8 @@ async function main() {
   }
 }
 
-main().catch((error) => fail(error?.stack || error?.message || String(error)));
+main().catch((error: unknown) => fail(error instanceof Error ? (error.stack ?? error.message) : String(error)));
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

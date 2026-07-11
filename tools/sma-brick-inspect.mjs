@@ -6,6 +6,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CliError, emitFailure, requireValue } from "./cli-contract.mjs";
 
+/** @typedef {{ capsule: string, json: boolean, quiet: boolean, verbose: boolean, help: boolean }} InspectOptions */
+/** @typedef {{ spawnSync?: typeof spawnSync }} InspectDependencies */
+/** @typedef {{ status?: string, error?: { code?: string, message?: string } }} FixtureResult */
+/** @typedef {{ brick?: { id?: string, name?: string, version?: string, kind?: string, status?: string }, quality?: { verification?: unknown[] } }} CapsuleManifest */
+
 const TOOL_PATH = fileURLToPath(import.meta.url);
 const RUNNER = path.resolve(path.dirname(TOOL_PATH), "sma-brick-run.mjs");
 
@@ -23,12 +28,15 @@ Exit codes: 0 passing; 2 usage; 3 missing/invalid manifest; 4 fixture runner fai
 Known limitation: inspection executes the capsule fixtures using brick-run's default sandbox mode.`;
 }
 
+/** @param {string[]} argv @returns {InspectOptions} */
 export function parseArgs(argv) {
   const options = { capsule: "", json: false, quiet: false, verbose: false, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--capsule") { options.capsule = requireValue(argv, index, arg, "Run `sma brick-inspect --help`."); index += 1; }
-    else if (["--json", "--quiet", "--verbose"].includes(arg)) options[arg.slice(2)] = true;
+    else if (arg === "--json") options.json = true;
+    else if (arg === "--quiet") options.quiet = true;
+    else if (arg === "--verbose") options.verbose = true;
     else if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg.startsWith("--")) throw new CliError("USAGE_ERROR", `Unknown option: ${arg}`, { exitCode: 2, nextCommand: "Run `sma brick-inspect --help`." });
     else if (options.capsule) throw new CliError("USAGE_ERROR", "Only one capsule directory may be supplied.", { exitCode: 2, nextCommand: "Run `sma brick-inspect --help`." });
@@ -38,16 +46,19 @@ export function parseArgs(argv) {
   return options;
 }
 
+/** @param {InspectOptions} options @param {InspectDependencies} [dependencies] */
 export function inspectBrick(options, dependencies = {}) {
   if (!options.capsule) throw new CliError("USAGE_ERROR", "A capsule directory is required.", { exitCode: 2, nextCommand: "Run `sma brick-inspect --help`." });
   const root = path.resolve(options.capsule);
   const manifestPath = path.join(root, "module.sweetspot.json");
   if (!existsSync(manifestPath)) throw new CliError("MANIFEST_NOT_FOUND", `Manifest not found: ${manifestPath}`, { exitCode: 3, nextCommand: "Run `sma brick-new --id <id> --directory <path>` or pass a capsule directory." });
+  /** @type {CapsuleManifest} */
   let manifest;
   try { manifest = JSON.parse(readFileSync(manifestPath, "utf8")); }
-  catch (error) { throw new CliError("MANIFEST_INVALID", `Manifest is not valid JSON: ${error.message}`, { exitCode: 3, nextCommand: `Fix ${manifestPath}, then retry.` }); }
+  catch (error) { throw new CliError("MANIFEST_INVALID", `Manifest is not valid JSON: ${error instanceof Error ? error.message : String(error)}`, { exitCode: 3, nextCommand: `Fix ${manifestPath}, then retry.` }); }
   const result = (dependencies.spawnSync || spawnSync)(process.execPath, [RUNNER, root], { encoding: "utf8", timeout: 60_000, maxBuffer: 16 * 1024 * 1024 });
   if (result.error) throw new CliError("FIXTURE_RUNNER_FAILED", result.error.message, { exitCode: 4, nextCommand: `Run \`node tools/sma-brick-run.mjs ${root}\` for details.` });
+  /** @type {FixtureResult[]} */
   const fixtures = String(result.stdout || "").trim().split(/\r?\n/).filter(Boolean).map((line) => {
     try { return JSON.parse(line); } catch { return { status: "FAIL", error: { code: "RUNNER_OUTPUT_INVALID", message: line } }; }
   });
@@ -56,6 +67,7 @@ export function inspectBrick(options, dependencies = {}) {
   return report;
 }
 
+/** @param {string[]} argv @param {InspectDependencies} [dependencies] */
 export function run(argv, dependencies = {}) {
   let options;
   try {
@@ -67,7 +79,8 @@ export function run(argv, dependencies = {}) {
     if (options.verbose) process.stderr.write(`brick-inspect: inspected ${report.directory}\n`);
     return 0;
   } catch (error) {
-    if (options?.json) process.stdout.write(`${JSON.stringify(error?.context?.report || { ok: false, error: { code: error?.code || "UNEXPECTED_ERROR", message: error instanceof Error ? error.message : String(error) } })}\n`);
+    const cliError = error instanceof CliError ? error : null;
+    if (options?.json) process.stdout.write(`${JSON.stringify(cliError?.context?.report || { ok: false, error: { code: cliError?.code || "UNEXPECTED_ERROR", message: error instanceof Error ? error.message : String(error) } })}\n`);
     return emitFailure("brick-inspect", error, { capsule: options?.capsule || null });
   }
 }

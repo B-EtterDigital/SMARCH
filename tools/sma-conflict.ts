@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Reports, resolves, summarizes, and audits multi-agent collisions as append-only context events.
  * WHY: Overlapping leases and dirty paths must become visible coordination state rather than silent races or overwritten work.
@@ -27,13 +29,62 @@ import { discoverPortfolioProjects } from './lib/portfolio-projects.ts';
 
 const LEASES_PATH = resolve(SMA_ROOT, 'registry/active-leases.generated.json');
 
+interface ConflictArgs extends Record<string, string | boolean | string[] | undefined> {
+  project?: string;
+  brick?: string;
+  intent?: string;
+  file: string[];
+  json?: boolean;
+  open?: boolean;
+  strict?: boolean;
+  all?: boolean;
+  holderLease?: string;
+  holderAgent?: string;
+  resourceKind?: string;
+  resource?: string;
+  blockedAgent?: string;
+  resolutionPlan?: string;
+  actorKind?: string;
+  actor?: string;
+  model?: string;
+  session?: string;
+  task?: string;
+  decision?: string;
+  warnMinutes?: string;
+  criticalMinutes?: string;
+  limit?: string;
+}
+interface ConflictEvent extends Record<string, unknown> {
+  project?: string;
+  brick_id?: string;
+  event_id?: string;
+  timestamp?: string;
+  kind?: string;
+  actor_id?: string;
+  session_id?: string;
+  task_id?: string;
+  lease_id?: string;
+  intent?: string;
+  decision_rationale?: string;
+  files_touched?: string[];
+}
+interface ProjectSummaryRef { id: string; root: string | null }
+interface LeaseRecord {
+  lease_id?: string;
+  agent_id?: string;
+  resource_kind?: string;
+  resource_id?: string;
+  expires_at?: string;
+  intent?: string;
+}
+
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
 try {
   await main();
-} catch (err) {
-  console.error(`sma-conflict: ${err.message}`);
+} catch (error: unknown) {
+  console.error(`sma-conflict: ${error instanceof Error ? error.message : String(error)}`);
   exit(1);
 }
 
@@ -94,15 +145,15 @@ from a shared hot path.
 }
 
 function runReport() {
-  requireArg('project', '--project');
-  requireArg('brick', '--brick');
-  requireArg('intent', '--intent');
+  const project = requireArg('project', '--project');
+  const brick = requireArg('brick', '--brick');
+  const intent = requireArg('intent', '--intent');
 
   const holder = findHolder();
   const holderLease = args.holderLease || holder?.lease_id;
   const holderAgent = args.holderAgent || holder?.agent_id;
   const resourceKind = args.resourceKind || holder?.resource_kind || 'brick';
-  const resource = args.resource || holder?.resource_id || args.brick;
+  const resource = args.resource || holder?.resource_id || brick;
   const blockedAgent = args.blockedAgent || env.SMA_AGENT || env.USER || 'unknown';
 
   const decision = [
@@ -116,10 +167,10 @@ function runReport() {
   ].filter(Boolean).join(' | ');
 
   const event = appendContextEvent({
-    project: args.project,
-    brick: args.brick,
+    project,
+    brick,
     kind: 'conflict_detected',
-    intent: args.intent,
+    intent,
     actorKind: args.actorKind || 'agent',
     actorId: blockedAgent,
     model: args.model,
@@ -134,22 +185,22 @@ function runReport() {
     console.log(JSON.stringify({ event, holder: holder || null }, null, 2));
     return;
   }
-  console.log(`[conflict] logged ${event.event_id} for ${args.project}/${args.brick}`);
+  console.log(`[conflict] logged ${String(event.event_id)} for ${project}/${brick}`);
   if (holderLease || holderAgent) {
     console.log(`[conflict] held by ${holderAgent || 'unknown'} ${holderLease ? `(${holderLease})` : ''}`);
   }
-  console.log(`[conflict] log ${logPath(args.project, args.brick)}`);
+  console.log(`[conflict] log ${logPath(project, brick)}`);
 }
 
 function runResolve() {
-  requireArg('project', '--project');
-  requireArg('brick', '--brick');
-  requireArg('intent', '--intent');
+  const project = requireArg('project', '--project');
+  const brick = requireArg('brick', '--brick');
+  const intent = requireArg('intent', '--intent');
   const event = appendContextEvent({
-    project: args.project,
-    brick: args.brick,
+    project,
+    brick,
     kind: 'conflict_resolved',
-    intent: args.intent,
+    intent,
     actorKind: args.actorKind || 'agent',
     actorId: args.actor || env.SMA_AGENT || env.USER || 'unknown',
     model: args.model,
@@ -160,13 +211,13 @@ function runResolve() {
   });
 
   if (args.json) console.log(JSON.stringify(event, null, 2));
-  else console.log(`[conflict] resolved ${event.event_id} for ${args.project}/${args.brick}`);
+  else console.log(`[conflict] resolved ${String(event.event_id)} for ${project}/${brick}`);
 }
 
 function runList() {
-  requireArg('project', '--project');
-  const rows = collectConflictRows(args.project, args.brick);
-  const open = collectOpenConflicts(args.project, args.brick);
+  const project = requireArg('project', '--project');
+  const rows = collectConflictRows(project, args.brick);
+  const open = collectOpenConflicts(project, args.brick);
   const visible = args.open ? open : rows;
   if (args.json) {
     console.log(JSON.stringify({ events: visible, open }, null, 2));
@@ -183,10 +234,10 @@ function runList() {
 }
 
 function runCheck() {
-  requireArg('project', '--project');
-  const open = collectOpenConflicts(args.project, args.brick);
+  const project = requireArg('project', '--project');
+  const open = collectOpenConflicts(project, args.brick);
   const result = {
-    project: args.project,
+    project,
     brick: args.brick || null,
     open_conflicts: open.length,
     status: open.length ? 'blocked' : 'clear',
@@ -195,7 +246,7 @@ function runCheck() {
   if (args.json) {
     console.log(JSON.stringify(result, null, 2));
   } else {
-    console.log(`project:        ${args.project}`);
+    console.log(`project:        ${project}`);
     if (args.brick) console.log(`brick:          ${args.brick}`);
     console.log(`open conflicts: ${open.length}`);
     console.log(`status:         ${result.status}`);
@@ -213,13 +264,13 @@ async function runSummary() {
   const criticalMinutes = numberArg(args.criticalMinutes, 60);
   const limit = numberArg(args.limit, 20);
   const now = Date.now();
-  const skippedProjects = [];
-  const openRows = [];
+  const skippedProjects: { project: string; error: string }[] = [];
+  const openRows: ConflictEvent[] = [];
   for (const project of projects) {
     try {
       openRows.push(...collectOpenConflictsForSummary(project));
-    } catch (err) {
-      skippedProjects.push({ project: project.id, error: err.message });
+    } catch (error: unknown) {
+      skippedProjects.push({ project: project.id, error: error instanceof Error ? error.message : String(error) });
     }
   }
   const conflicts = openRows
@@ -281,26 +332,26 @@ async function runSummary() {
   }
 }
 
-function collectConflictRows(project, brick = null) {
-  return targetBricks(project, brick).flatMap((brickId) => readContextLog(project, brickId)
+function collectConflictRows(project: string, brick: string | null | undefined = null): ConflictEvent[] {
+  return targetBricks(project, brick).flatMap((brickId) => (readContextLog(project, brickId) as ConflictEvent[])
     .filter((event) => event.kind === 'conflict_detected' || event.kind === 'conflict_resolved')
     .map((event) => ({ ...event, project: event.project || project, brick_id: event.brick_id || brickId })));
 }
 
-function collectOpenConflicts(project, brick = null) {
-  return targetBricks(project, brick).flatMap((brickId) => openConflicts(readContextLog(project, brickId)
+function collectOpenConflicts(project: string, brick: string | null | undefined = null): ConflictEvent[] {
+  return targetBricks(project, brick).flatMap((brickId) => openConflicts((readContextLog(project, brickId) as ConflictEvent[])
     .filter((event) => event.kind === 'conflict_detected' || event.kind === 'conflict_resolved'))
     .map((event) => ({ ...event, project: event.project || project, brick_id: event.brick_id || brickId })));
 }
 
-function targetBricks(project, brick = null) {
+function targetBricks(project: string, brick: string | null | undefined = null): string[] {
   if (brick) return [brick];
   return listBricksWithContext(project);
 }
 
-function openConflicts(events) {
+function openConflicts(events: readonly ConflictEvent[]): ConflictEvent[] {
   let openCount = 0;
-  const out = [];
+  const out: ConflictEvent[] = [];
   for (const event of events) {
     if (event.kind === 'conflict_detected') {
       openCount += 1;
@@ -313,11 +364,11 @@ function openConflicts(events) {
   return out.slice(-openCount);
 }
 
-async function summaryProjects() {
+async function summaryProjects(): Promise<ProjectSummaryRef[]> {
   if (args.project && !args.all) return [{ id: String(args.project), root: null }];
   if (!args.all && !args.project) return [{ id: 'sma', root: SMA_ROOT }];
   const discovered = await discoverPortfolioProjects();
-  const byId = new Map([['sma', { id: 'sma', root: SMA_ROOT }]]);
+  const byId = new Map<string, ProjectSummaryRef>([['sma', { id: 'sma', root: SMA_ROOT }]]);
   for (const project of discovered) {
     if (!project?.id) continue;
     byId.set(project.id, { id: project.id, root: project.absolute_root || null });
@@ -325,12 +376,12 @@ async function summaryProjects() {
   return [...byId.values()];
 }
 
-function collectOpenConflictsForSummary(project) {
+function collectOpenConflictsForSummary(project: ProjectSummaryRef): ConflictEvent[] {
   if (project.root) return collectOpenConflictsFromRoot(project.id, project.root);
   return collectOpenConflicts(project.id);
 }
 
-function collectOpenConflictsFromRoot(projectId, root) {
+function collectOpenConflictsFromRoot(projectId: string, root: string): ConflictEvent[] {
   const dir = resolve(root, '.smarch/agent-context');
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
@@ -343,13 +394,13 @@ function collectOpenConflictsFromRoot(projectId, root) {
     });
 }
 
-function readContextLogFromPath(path) {
-  const out = [];
+function readContextLogFromPath(path: string): ConflictEvent[] {
+  const out: ConflictEvent[] = [];
   for (const line of readFileSync(path, 'utf8').split('\n')) {
     const t = line.trim();
     if (!t) continue;
     try {
-      out.push(JSON.parse(t));
+      out.push(JSON.parse(t) as ConflictEvent);
     } catch {
       out.push({ _malformed: true, _raw: t });
     }
@@ -357,14 +408,14 @@ function readContextLogFromPath(path) {
   return out;
 }
 
-function decorateConflict(event, { now, warnMinutes, criticalMinutes }) {
+function decorateConflict(event: ConflictEvent, { now, warnMinutes, criticalMinutes }: { now: number; warnMinutes: number; criticalMinutes: number }) {
   const timestampMs = Date.parse(event.timestamp || '');
   const ageMinutes = Number.isFinite(timestampMs)
     ? Math.max(0, Math.floor((now - timestampMs) / 60000))
     : 0;
   return {
-    project: event.project,
-    brick_id: event.brick_id,
+    project: String(event.project || ''),
+    brick_id: String(event.brick_id || ''),
     event_id: event.event_id,
     timestamp: event.timestamp,
     age_minutes: ageMinutes,
@@ -383,48 +434,48 @@ function decorateConflict(event, { now, warnMinutes, criticalMinutes }) {
   };
 }
 
-function conflictSlaStatus(conflicts) {
+function conflictSlaStatus(conflicts: readonly ReturnType<typeof decorateConflict>[]): string {
   if (!conflicts.length) return 'clear';
   if (conflicts.some((event) => event.sla_status === 'critical')) return 'critical';
   if (conflicts.some((event) => event.sla_status === 'warning')) return 'warning';
   return 'open';
 }
 
-function conflictSlaStatusForAge(ageMinutes, warnMinutes, criticalMinutes) {
+function conflictSlaStatusForAge(ageMinutes: number, warnMinutes: number, criticalMinutes: number): string {
   if (ageMinutes >= criticalMinutes) return 'critical';
   if (ageMinutes >= warnMinutes) return 'warning';
   return 'open';
 }
 
-function ageBucket(ageMinutes, warnMinutes, criticalMinutes) {
+function ageBucket(ageMinutes: number, warnMinutes: number, criticalMinutes: number): string {
   if (ageMinutes >= criticalMinutes) return `${criticalMinutes}m+`;
   if (ageMinutes >= warnMinutes) return `${warnMinutes}-${criticalMinutes - 1}m`;
   return `<${warnMinutes}m`;
 }
 
-function ageLabel(ageMinutes) {
+function ageLabel(ageMinutes: number): string {
   if (ageMinutes < 60) return `${ageMinutes}m`;
   const hours = Math.floor(ageMinutes / 60);
   const minutes = ageMinutes % 60;
   return minutes ? `${hours}h${minutes}m` : `${hours}h`;
 }
 
-function numberArg(value, fallback) {
+function numberArg(value: unknown, fallback: number): number {
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 }
 
-function shellArg(value) {
+function shellArg(value: unknown): string {
   return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
 }
 
-function findHolder() {
+function findHolder(): LeaseRecord | null {
   const resourceKind = args.resourceKind || 'brick';
   const resource = args.resource || args.brick;
   if (!resource || !existsSync(LEASES_PATH)) return null;
-  let registry;
+  let registry: { leases?: LeaseRecord[] };
   try {
-    registry = JSON.parse(readFileSync(LEASES_PATH, 'utf8'));
+    registry = JSON.parse(readFileSync(LEASES_PATH, 'utf8')) as { leases?: LeaseRecord[] };
   } catch {
     return null;
   }
@@ -432,22 +483,24 @@ function findHolder() {
   return (registry.leases || []).find((lease) => (
     lease.resource_kind === resourceKind
     && lease.resource_id === resource
-    && Date.parse(lease.expires_at) > now
+    && Date.parse(lease.expires_at || '') > now
   )) || null;
 }
 
-function requireArg(key, flag) {
-  if (args[key] === undefined || args[key] === null || args[key] === '') {
+function requireArg(key: string, flag: string): string {
+  const value = args[key];
+  if (typeof value !== 'string' || value === '') {
     throw new Error(`missing ${flag}`);
   }
+  return value;
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = { file: [] };
+function parseArgs(list: string[]): ConflictArgs {
+  const out: ConflictArgs = { file: [] };
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match, character: string) => character.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {

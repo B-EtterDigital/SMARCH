@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Verifies one exported brick attestation bundle without reading repository ledgers.
  * WHY: Portable evidence is useful only if an independent recipient can detect mismatched content or proofs.
@@ -40,8 +42,37 @@ const STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
 const PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
 const BUILDER_ID = 'https://sma.local/brick-scanner';
 
-type CliArgs = Record<string, any>;
-type BundleCheck = { name: string; ok: boolean; detail: string };
+type CliArgs = Record<string, string | boolean>;
+type JsonObject = Record<string, unknown>;
+type SpdxDocument = JsonObject & {
+  spdxVersion?: unknown;
+  SPDXID?: unknown;
+  packages?: { name?: unknown; checksums?: { algorithm?: unknown; checksumValue?: unknown }[] }[];
+  creationInfo?: unknown;
+  documentNamespace?: unknown;
+};
+type CycloneDxDocument = JsonObject & {
+  bomFormat?: unknown;
+  specVersion?: unknown;
+  components?: { name?: unknown; hashes?: { alg?: unknown; content?: unknown }[] }[];
+};
+type InTotoDocument = JsonObject & {
+  _type?: unknown;
+  predicateType?: unknown;
+  subject?: { name?: unknown; digest?: { sha256?: unknown } }[];
+  predicate?: {
+    buildDefinition?: unknown;
+    runDetails?: { builder?: { id?: unknown }; metadata?: { invocationId?: unknown } };
+  };
+};
+type InclusionProofDocument = JsonObject & {
+  brick_id?: unknown;
+  seal_head?: unknown;
+  content_hash?: unknown;
+  proof?: { hash: string; side: 'left' | 'right' }[];
+  root?: unknown;
+};
+interface BundleCheck { name: string; ok: boolean; detail: string }
 
 /**
  * Verify a bundle directory. Returns { ok, dir, brick_id, checks:[{name,ok,detail}] }.
@@ -51,10 +82,10 @@ export function verifyBundle(dir: string) {
   const checks: BundleCheck[] = [];
   const add = (name: string, ok: unknown, detail = '') => checks.push({ name, ok: !!ok, detail });
 
-  const spdx = readBundleFile(dir, 'sbom.spdx.json');
-  const cdx = readBundleFile(dir, 'sbom.cdx.json');
-  const intoto = readBundleFile(dir, 'intoto.json');
-  const proof = readBundleFile(dir, 'inclusion-proof.json');
+  const spdx = readBundleFile(dir, 'sbom.spdx.json') as SpdxDocument;
+  const cdx = readBundleFile(dir, 'sbom.cdx.json') as CycloneDxDocument;
+  const intoto = readBundleFile(dir, 'intoto.json') as InTotoDocument;
+  const proof = readBundleFile(dir, 'inclusion-proof.json') as InclusionProofDocument;
 
   // (a) well-formedness -----------------------------------------------------
   const spdxOk = isObj(spdx)
@@ -89,12 +120,14 @@ export function verifyBundle(dir: string) {
   // extract cross-check values (guarded on well-formedness) ------------------
   const spdxHash = spdxOk ? spdxSha256(spdx) : null;
   const cdxHash = cdxOk ? cdxSha256(cdx) : null;
-  const intotoHash = intotoOk ? (intoto.subject[0]?.digest?.sha256 || null) : null;
-  const proofHash = proofOk ? (proof.content_hash ?? null) : null;
+  const intotoHash = intotoOk && typeof intoto.subject?.[0]?.digest?.sha256 === 'string'
+    ? intoto.subject[0].digest.sha256
+    : null;
+  const proofHash = proofOk && typeof proof.content_hash === 'string' ? proof.content_hash : null;
 
   // (b) content_hash consistency across all three + the proof ---------------
   const hashes = [spdxHash, cdxHash, intotoHash, proofHash];
-  const present = hashes.filter((h) => typeof h === 'string' && h.length > 0);
+  const present = hashes.filter((h): h is string => typeof h === 'string' && h.length > 0);
   const hashConsistent = present.length === 4 && new Set(present).size === 1;
   add('content sha256 consistent across SPDX / CycloneDX / in-toto / proof', hashConsistent,
     hashConsistent
@@ -103,23 +136,24 @@ export function verifyBundle(dir: string) {
 
   // brick_id consistency ----------------------------------------------------
   const ids = [
-    intotoOk ? intoto.subject[0]?.name : null,
-    spdxOk ? spdx.packages[0]?.name : null,
-    cdxOk ? cdx.components[0]?.name : null,
+    intotoOk ? intoto.subject?.[0]?.name : null,
+    spdxOk ? spdx.packages?.[0]?.name : null,
+    cdxOk ? cdx.components?.[0]?.name : null,
     proofOk ? proof.brick_id : null,
-  ].filter((x) => typeof x === 'string' && x.length > 0);
+  ].filter((x): x is string => typeof x === 'string' && x.length > 0);
   const idConsistent = ids.length === 4 && new Set(ids).size === 1;
   add('brick_id consistent across all documents', idConsistent, idConsistent ? ids[0] : ids.join(' | '));
 
   // seal head consistency (in-toto invocationId == proof seal_head) ---------
   const intotoHead = intotoOk ? (intoto.predicate?.runDetails?.metadata?.invocationId || null) : null;
-  const headConsistent = proofOk && !!intotoHead && intotoHead === proof.seal_head;
+  const headConsistent = proofOk && typeof intotoHead === 'string' && intotoHead === proof.seal_head;
   add('seal head consistent (in-toto invocationId == proof)', headConsistent, proofOk ? short(proof.seal_head) : '');
 
   // (c) Merkle inclusion: proof reproduces the committed root ---------------
   let inclusionOk = false;
-  if (proofOk) {
-    inclusionOk = verifyBrickInclusion(proof.brick_id, proof.seal_head, proof.proof, proof.root) === true;
+  if (proofOk && typeof proof.brick_id === 'string' && typeof proof.seal_head === 'string'
+    && Array.isArray(proof.proof) && typeof proof.root === 'string') {
+    inclusionOk = verifyBrickInclusion(proof.brick_id, proof.seal_head, proof.proof, proof.root);
   }
   add('Merkle inclusion proof reproduces committed root', inclusionOk, proofOk ? `root ${short(proof.root)}…` : '');
 
@@ -129,35 +163,35 @@ export function verifyBundle(dir: string) {
 
 // --- extraction helpers ----------------------------------------------------
 
-function spdxSha256(spdx: any): string | null {
-  const pkg = spdx.packages[0] || {};
+function spdxSha256(spdx: SpdxDocument): string | null {
+  const pkg = spdx.packages?.[0] || {};
   const ck = (pkg.checksums || []).find((c) => c && c.algorithm === 'SHA256');
-  return ck?.checksumValue || null;
+  return typeof ck?.checksumValue === 'string' ? ck.checksumValue : null;
 }
 
-function cdxSha256(cdx: any): string | null {
-  const comp = cdx.components[0] || {};
+function cdxSha256(cdx: CycloneDxDocument): string | null {
+  const comp = cdx.components?.[0] || {};
   const h = (comp.hashes || []).find((x) => x && x.alg === 'SHA-256');
-  return h?.content || null;
+  return typeof h?.content === 'string' ? h.content : null;
 }
 
-function readBundleFile(dir: string, name: string): any {
+function readBundleFile(dir: string, name: string): unknown {
   const p = resolve(dir, name);
   if (!existsSync(p)) return { __error: 'missing', __file: name };
   try {
     return JSON.parse(readFileSync(p, 'utf8'));
-  } catch (e) {
-    return { __error: `invalid JSON: ${e.message}`, __file: name };
+  } catch (error: unknown) {
+    return { __error: `invalid JSON: ${error instanceof Error ? error.message : String(error)}`, __file: name };
   }
 }
 
-function fileNote(v: any): string {
-  if (isObj(v) && v.__error) return `${v.__file}: ${v.__error}`;
+function fileNote(v: unknown): string {
+  if (isObj(v) && v.__error) return `${String(v.__file)}: ${String(v.__error)}`;
   return '';
 }
 
-function isObj(v: any): boolean {
-  return v && typeof v === 'object' && !Array.isArray(v) && !v.__error;
+function isObj(v: unknown): v is JsonObject {
+  return v !== null && typeof v === 'object' && !Array.isArray(v) && !('__error' in v);
 }
 
 function short(s: unknown): string {
@@ -192,7 +226,7 @@ function parseArgs(list: string[]): CliArgs {
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match, c: string) => c.toUpperCase());
     const next = list[i + 1];
     if (next === undefined || next.startsWith('--')) { out[key] = true; continue; }
     out[key] = next; i += 1;

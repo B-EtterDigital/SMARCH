@@ -29,7 +29,7 @@
  * Pure read-only across all projects. Re-run anytime, idempotent.
  */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
-import { resolve, join, relative } from 'node:path';
+import {  join, relative } from 'node:path';
 import { argv, exit } from 'node:process';
 import { createHash } from 'node:crypto';
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
@@ -37,6 +37,72 @@ import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const SMA_REGISTRY = smaPath('registry');
 const REGISTRY_SNAPSHOT = smaPath('registry/global-modules.generated.json');
+
+interface CliArgs {
+  help?: boolean;
+  json?: boolean;
+  sourceBrick?: string;
+  write?: boolean;
+}
+
+interface SourceMeta {
+  dependent_count: number;
+  latest_version?: string;
+  replication_policy?: string;
+  source_path?: string;
+  source_project?: string;
+}
+
+interface DependentLink {
+  evidence_kind: 'import-lock' | 'reuse-receipt' | 'provenance-source-chain';
+  evidence_path: string;
+  imported_at?: string;
+  source_commit_imported?: string;
+  target_brick_id?: string;
+  target_path?: string;
+  target_project?: string;
+  target_root: string;
+  upgrade_status: 'unknown';
+  version_imported?: string;
+}
+
+interface ResolvedBrick {
+  artifact_id?: string;
+  artifact_type?: string;
+  brick_id?: string;
+  id?: string;
+  path?: string;
+  release_version?: string;
+  source_brick_id?: string;
+  source_commit?: string;
+  source_project?: string;
+  target_brick_id?: string;
+  target_path?: string;
+  version?: string;
+}
+
+interface ImportLock {
+  lock?: { generated_at?: string };
+  resolved_bricks?: ResolvedBrick[];
+  target?: { id?: string; project?: string };
+}
+
+interface ImportsFile {
+  imports?: { imported_at?: string; target_project?: string }[];
+}
+
+interface ReuseReceipt {
+  generated_at?: string;
+  items?: { source_brick_id?: string; target_brick_id?: string; target_path?: string }[];
+  source?: { commit?: string; project?: string };
+  target?: { project?: string; root?: string };
+}
+
+interface BrickManifest {
+  brick?: { id?: string; replication?: { policy?: string }; version?: string };
+  provenance?: { source_chain?: { brick_id?: string; commit?: string; project?: string; timestamp?: string }[] };
+  source?: { project?: string };
+}
 
 const args = parseArgs(argv.slice(2));
 if (args.help) {
@@ -48,13 +114,13 @@ plus brick manifest provenance.source_chain entries, and emits an inverted index
   exit(0);
 }
 
-const sources: Record<string, any> = {};                // source_brick_id → metadata
-const dependents: Record<string, any[]> = {};             // source_brick_id → [link, ...]
+const sources: Record<string, SourceMeta> = {};                // source_brick_id → metadata
+const dependents: Record<string, DependentLink[]> = {};             // source_brick_id → [link, ...]
 let importLocksFound = 0;
 let reuseReceiptsFound = 0;
 let projectsScanned = 0;
 
-function pushDependent(srcId, link) {
+function pushDependent(srcId: string, link: DependentLink): void {
   if (args.sourceBrick && srcId !== args.sourceBrick) return;
   dependents[srcId] ??= [];
   dependents[srcId].push(link);
@@ -62,12 +128,12 @@ function pushDependent(srcId, link) {
   sources[srcId].dependent_count = (sources[srcId].dependent_count ?? 0) + 1;
 }
 
-function ensureSourceMeta(srcId, srcProject) {
+function ensureSourceMeta(srcId: string, srcProject?: string): void {
   sources[srcId] ??= { dependent_count: 0 };
   if (srcProject && !sources[srcId].source_project) sources[srcId].source_project = srcProject;
 }
 
-function scanProject(projectRoot) {
+function scanProject(projectRoot: string): void {
   projectsScanned++;
   const projectId = projectRoot.split('/').pop();
   const smarchDir = join(projectRoot, '.smarch');
@@ -78,7 +144,7 @@ function scanProject(projectRoot) {
   if (existsSync(lockPath)) {
     importLocksFound++;
     try {
-      const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+      const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as ImportLock;
       const bricks = lock.resolved_bricks ?? [];
       for (const r of bricks) {
         const srcId = r.source_brick_id ?? r.brick_id ?? r.id;
@@ -97,8 +163,8 @@ function scanProject(projectRoot) {
           upgrade_status: 'unknown',
         });
       }
-    } catch (e) {
-      console.error(`[warn] could not parse ${lockPath}: ${e.message}`);
+    } catch (error: unknown) {
+      console.error(`[warn] could not parse ${lockPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -108,8 +174,8 @@ function scanProject(projectRoot) {
   if (existsSync(importsPath) && existsSync(buildLockPath)) {
     importLocksFound++;
     try {
-      const imports = JSON.parse(readFileSync(importsPath, 'utf8'));
-      const buildLock = JSON.parse(readFileSync(buildLockPath, 'utf8'));
+      const imports = JSON.parse(readFileSync(importsPath, 'utf8')) as ImportsFile;
+      const buildLock = JSON.parse(readFileSync(buildLockPath, 'utf8')) as ImportLock;
       const resolved = buildLock.resolved_bricks ?? [];
       for (const r of resolved) {
         // sma-clone v1 uses artifact_id (canonical brick id);
@@ -130,8 +196,8 @@ function scanProject(projectRoot) {
           upgrade_status: 'unknown',
         });
       }
-    } catch (e) {
-      console.error(`[warn] could not parse ${importsPath}: ${e.message}`);
+    } catch (error: unknown) {
+      console.error(`[warn] could not parse ${importsPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -142,7 +208,7 @@ function scanProject(projectRoot) {
       if (!f.endsWith('.json')) continue;
       reuseReceiptsFound++;
       try {
-        const r = JSON.parse(readFileSync(join(receiptsDir, f), 'utf8'));
+        const r = JSON.parse(readFileSync(join(receiptsDir, f), 'utf8')) as ReuseReceipt;
         for (const item of r.items ?? []) {
           const srcId = item.source_brick_id;
           if (!srcId) continue;
@@ -159,8 +225,8 @@ function scanProject(projectRoot) {
             upgrade_status: 'unknown',
           });
         }
-      } catch (e) {
-        console.error(`[warn] could not parse ${f}: ${e.message}`);
+      } catch (error: unknown) {
+        console.error(`[warn] could not parse ${f}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
@@ -170,7 +236,7 @@ function scanProject(projectRoot) {
     const manifestPath = join(brickDir, 'module.sweetspot.json');
     if (!existsSync(manifestPath)) continue;
     try {
-      const m = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      const m = JSON.parse(readFileSync(manifestPath, 'utf8')) as BrickManifest;
       const targetId = m.brick?.id;
       const sourceChain = m.provenance?.source_chain ?? [];
       // First entry = create event in the target project. Skip self-references.
@@ -198,8 +264,8 @@ function scanProject(projectRoot) {
   }
 }
 
-function findBrickDirs(root) {
-  const out = [];
+function findBrickDirs(root: string): string[] {
+  const out: string[] = [];
   for (const subdir of ['packages', 'apps', 'web/src/modules', 'src/renderer/modules', 'apps/web/src/modules']) {
     const base = join(root, subdir);
     if (!existsSync(base)) continue;
@@ -222,7 +288,7 @@ function findBrickDirs(root) {
 }
 
 // Enrich source metadata from the source project's brick manifest if available
-function enrichSources() {
+function enrichSources(): void {
   for (const srcId of Object.keys(sources)) {
     const srcProject = sources[srcId].source_project;
     if (!srcProject) continue;
@@ -232,11 +298,11 @@ function enrichSources() {
       const manifestPath = join(brickDir, 'module.sweetspot.json');
       if (!existsSync(manifestPath)) continue;
       try {
-        const m = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        const m = JSON.parse(readFileSync(manifestPath, 'utf8')) as BrickManifest;
         if (m.brick?.id === srcId) {
           sources[srcId].source_path = relative(projectDir, brickDir);
           sources[srcId].latest_version = m.brick.version;
-          if (m.brick?.replication?.policy) {
+          if (m.brick.replication?.policy) {
             sources[srcId].replication_policy = m.brick.replication.policy;
           }
           break;
@@ -246,7 +312,7 @@ function enrichSources() {
   }
 }
 
-function findProjectDir(projectId) {
+function findProjectDir(projectId: string): string | null {
   if (existsSync(join(PROJECTS_ROOT, projectId))) return join(PROJECTS_ROOT, projectId);
   for (const ent of readdirSync(PROJECTS_ROOT)) {
     if (ent.toLowerCase().includes(projectId.toLowerCase())) {
@@ -265,7 +331,7 @@ for (const ent of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
 
 enrichSources();
 
-const result: Record<string, any> = {
+const result = {
   schema_version: '1.0.0',
   generated_at: new Date().toISOString(),
   registry_snapshot_sha: existsSync(REGISTRY_SNAPSHOT)
@@ -293,14 +359,14 @@ if (args.json) {
   console.log(JSON.stringify(result, null, 2));
 } else if (!args.write) {
   // human summary
-  console.log(`Dependents index — ${result.stats.unique_source_bricks} source brick(s), ${result.stats.total_dependent_links} link(s) across ${result.stats.projects_scanned} project(s).`);
-  console.log(`  import-locks:    ${result.stats.import_locks_found}`);
-  console.log(`  reuse-receipts:  ${result.stats.reuse_receipts_found}`);
+  console.log(`Dependents index — ${String(result.stats.unique_source_bricks)} source brick(s), ${String(result.stats.total_dependent_links)} link(s) across ${String(result.stats.projects_scanned)} project(s).`);
+  console.log(`  import-locks:    ${String(result.stats.import_locks_found)}`);
+  console.log(`  reuse-receipts:  ${String(result.stats.reuse_receipts_found)}`);
   if (args.sourceBrick) {
     const links = dependents[args.sourceBrick] ?? [];
-    console.log(`\n${args.sourceBrick} (${links.length} dependent${links.length === 1 ? '' : 's'}):`);
+    console.log(`\n${args.sourceBrick} (${String(links.length)} dependent${links.length === 1 ? '' : 's'}):`);
     for (const l of links) {
-      console.log(`  - ${l.target_project}  ${l.target_path ?? ''}  [${l.evidence_kind}]  imported@${(l.source_commit_imported ?? '').slice(0, 7) || 'unknown'}`);
+      console.log(`  - ${String(l.target_project)}  ${l.target_path ?? ''}  [${l.evidence_kind}]  imported@${(l.source_commit_imported ?? '').slice(0, 7) || 'unknown'}`);
     }
   } else {
     console.log('\nTop 10 most-depended-on source bricks:');
@@ -313,8 +379,8 @@ if (args.json) {
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(argv: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--write') out.write = true;

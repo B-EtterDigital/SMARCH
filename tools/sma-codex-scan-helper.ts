@@ -67,6 +67,26 @@ const SCHEMA = {
 
 const SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", ".next", ".astro", ".turbo", ".netlify", "tmp", ".tmp", "playwright-report", "test-results", "coverage", ".sweetspot"]);
 
+interface Detection {
+  path: string;
+  is_brick: boolean;
+  kind_guess: string;
+  reason: string;
+}
+
+function isDetectionPayload(value: unknown): value is { detections: Detection[] } {
+  if (!value || typeof value !== "object" || !("detections" in value)) return false;
+  const detections = Reflect.get(value, "detections");
+  return Array.isArray(detections) && detections.every((item) =>
+    item !== null
+    && typeof item === "object"
+    && typeof Reflect.get(item, "path") === "string"
+    && typeof Reflect.get(item, "is_brick") === "boolean"
+    && typeof Reflect.get(item, "kind_guess") === "string"
+    && typeof Reflect.get(item, "reason") === "string"
+  );
+}
+
 async function listAllFiles(root: string): Promise<string[]> {
   const out: string[] = [];
   async function walk(dir: string): Promise<void> {
@@ -158,8 +178,12 @@ Return only JSON. Use the exact path strings I gave.`;
   console.error(`asking codex about ${promising.length} files...`);
   const r = await codex({ prompt, schema: SCHEMA, model: opts.model, timeoutMs: opts.timeoutMs });
   if (!r.ok) { console.error(JSON.stringify(r, null, 2)); process.exit(1); }
+  if (!isDetectionPayload(r.data)) {
+    console.error("codex returned an invalid detections payload");
+    process.exit(1);
+  }
 
-  const detections = (r.data.detections || []).filter((d) => d.is_brick && d.kind_guess !== "ignore");
+  const detections = r.data.detections.filter((d) => d.is_brick && d.kind_guess !== "ignore");
   await fs.mkdir(path.dirname(opts.out), { recursive: true });
   await fs.writeFile(opts.out, JSON.stringify({
     project: opts.project,

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Runs the repository-wide sequence of scans, validators, security checks, coordination checks, and documentation builds.
  * WHY: Integrators need one fail-closed command that proves all required [gates](../docs/GLOSSARY.md#gate) agree before release.
@@ -13,7 +15,43 @@ import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const defaults = {
+interface CiOptions {
+  root: string;
+  registry: string;
+  wiki: string;
+  requireContext: boolean;
+  contextStrict: boolean;
+  contextProjects: string[] | null;
+  requireNoConflicts: boolean;
+  conflictStrict: boolean;
+  conflictProjects: string[] | null;
+  requireCleanOrLeased: boolean;
+  dirtyStrict: boolean;
+  dirtyProjects: string[] | null;
+}
+
+interface LeaseRunOptions {
+  resourceKind: string;
+  resource: string;
+  intent: string;
+  ttlSeconds?: number;
+  renewEverySeconds?: number;
+  project?: string;
+}
+
+interface ConflictResult {
+  open_conflicts?: number;
+  status?: string;
+  conflicts?: { brick_id?: string; timestamp?: string; actor_id?: string; intent?: string; decision_rationale?: string }[];
+}
+
+interface ControllerSnapshot {
+  dirty_unleased_projects?: unknown[];
+  action_items?: { kind?: string; project?: string; uncovered_dirty_count?: number; impact_score?: number; command?: string; next_commands?: { conflict?: string } }[];
+  projects?: { id?: string; status?: string; git?: { dirty_count?: number; sample?: string[] }; active_leases?: unknown[] }[];
+}
+
+const defaults: CiOptions = {
   root: PROJECTS_ROOT,
   registry: path.join(smaRoot, "registry", "global-modules.generated.json"),
   wiki: path.join(smaRoot, "wiki"),
@@ -117,7 +155,7 @@ function run(label: string, script: string, args: string[]) {
   }
 }
 
-function runLeased(label: string, lease: Record<string, any>, script: string, args: string[]) {
+function runLeased(label: string, lease: LeaseRunOptions, script: string, args: string[]) {
   console.log(`\n== ${label} ==`);
   const result = spawnSync(process.execPath, [
     path.join(smaRoot, "tools", "sma-lease.ts"),
@@ -144,7 +182,7 @@ function runLeased(label: string, lease: Record<string, any>, script: string, ar
 function discoverProjects(root: string): string[] {
   try {
     const entries = readdirSync(root, { withFileTypes: true });
-    const out = [];
+    const out: string[] = [];
     for (const ent of entries) {
       if (!ent.isDirectory()) continue;
       const projDir = path.join(root, ent.name);
@@ -159,7 +197,7 @@ function discoverProjects(root: string): string[] {
   }
 }
 
-function runContextCheck(options: Record<string, any>) {
+function runContextCheck(options: CiOptions) {
   const projects = options.contextProjects ?? discoverProjects(options.root);
   if (!projects.length) {
     console.log("\n== context-check ==");
@@ -191,7 +229,7 @@ function runContextCheck(options: Record<string, any>) {
   }
 }
 
-function runConflictCheck(options: Record<string, any>) {
+function runConflictCheck(options: CiOptions) {
   const projects = options.conflictProjects ?? options.contextProjects ?? discoverProjects(options.root);
   if (!projects.length) {
     console.log("\n== conflict-check ==");
@@ -221,12 +259,12 @@ function runConflictCheck(options: Record<string, any>) {
       continue;
     }
 
-    let result;
+    let result: ConflictResult;
     try {
-      result = JSON.parse(res.stdout);
-    } catch (err) {
+      result = JSON.parse(res.stdout) as ConflictResult;
+    } catch (error: unknown) {
       totalErrors += 1;
-      console.error(`conflict-check parse error in ${projectId}: ${err.message}`);
+      console.error(`conflict-check parse error in ${projectId}: ${error instanceof Error ? error.message : String(error)}`);
       if (res.stdout) process.stdout.write(res.stdout);
       if (options.conflictStrict) process.exit(1);
       continue;
@@ -255,7 +293,7 @@ function runConflictCheck(options: Record<string, any>) {
   }
 }
 
-function runDirtyClaimCheck(options: Record<string, any>) {
+function runDirtyClaimCheck(options: CiOptions) {
   const projects = options.dirtyProjects ?? options.conflictProjects ?? options.contextProjects ?? discoverProjects(options.root);
   if (!projects.length) {
     console.log("\n== dirty-claim-check ==");
@@ -280,11 +318,11 @@ function runDirtyClaimCheck(options: Record<string, any>) {
     return;
   }
 
-  let snapshot;
+  let snapshot: ControllerSnapshot;
   try {
-    snapshot = JSON.parse(res.stdout);
-  } catch (err) {
-    console.error(`dirty-claim-check parse error: ${err.message}`);
+    snapshot = JSON.parse(res.stdout) as ControllerSnapshot;
+  } catch (error: unknown) {
+    console.error(`dirty-claim-check parse error: ${error instanceof Error ? error.message : String(error)}`);
     if (res.stdout) process.stdout.write(res.stdout);
     if (options.dirtyStrict) process.exit(1);
     return;

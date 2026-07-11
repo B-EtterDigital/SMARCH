@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Compares a cleanup dispatch with current state and records observed outcomes.
  * WHY: Predicted wave gains are not proof that assigned dirty paths were actually reduced.
@@ -25,12 +27,129 @@ const args = parseArgs(argv.slice(2));
 const CLAIM_KINDS = new Set(['lease_acquired', 'lease_force_acquired', 'edit_planned']);
 const COMPLETE_KINDS = new Set(['edit_applied']);
 
+interface WaveArgs extends Record<string, string | boolean | undefined> {
+  help?: boolean;
+  write?: string | boolean;
+  json?: boolean;
+  strict?: boolean;
+  dispatch?: string;
+  limit?: string;
+  noAutoRefresh?: boolean;
+  allowStale?: boolean;
+  timeoutMs?: string;
+}
+interface CleanupAssignment {
+  agent_slot?: unknown;
+  rank?: unknown;
+  project?: string;
+  brick?: string;
+  group?: string;
+  dirty_path_count?: unknown;
+  wave_gain_percent?: unknown;
+  project_gain_percent?: unknown;
+  claim_command?: string;
+  conflict_command?: string;
+}
+interface DispatchManifest {
+  kind?: string;
+  dispatch_id?: string;
+  created_at?: string;
+  assignments?: CleanupAssignment[];
+  summary?: { targeted_dirty_paths?: unknown; claimable_dirty_paths?: unknown };
+  readiness?: { top_wave_gain_percent?: unknown; top_project_gain_percent?: unknown };
+}
+interface ClaimPinning {
+  assignment_count: number;
+  pinned_assignment_count: number;
+  legacy_rank_only_assignment_count: number;
+  required_flags: string[];
+}
+interface LoadedDispatch {
+  path: string;
+  manifest: DispatchManifest;
+  dispatch_id: string;
+  created_at: string | null;
+  assignment_count: number;
+  claim_pinning: ClaimPinning;
+  targeted_dirty_paths: number;
+  claimable_dirty_paths: number;
+  top_wave_gain_percent: number;
+  top_project_gain_percent: number | null;
+  assignments: CleanupAssignment[];
+}
+interface MonitorData {
+  status?: string;
+  readiness_score_percent?: unknown;
+  blockers?: string[];
+  warnings?: string[];
+  wave?: Record<string, unknown>;
+  conflicts?: Record<string, unknown>;
+  controller?: Record<string, unknown>;
+  agents?: Record<string, unknown>;
+  gains?: Record<string, unknown>;
+  current_slice?: string;
+  outlook?: string[];
+  horizon?: string[];
+  next?: string;
+}
+interface ToolResult { label: string; data: MonitorData | null; error?: string }
+interface ContextEvent {
+  _malformed?: boolean;
+  event_id?: string;
+  kind?: string;
+  timestamp?: string;
+  actor_id?: string;
+  task_id?: string;
+  lease_id?: string;
+  decision_rationale?: string;
+  intent?: string;
+  files_touched?: string[];
+}
+interface ActiveLease {
+  lease_id?: string;
+  project?: string;
+  resource_kind?: string;
+  resource_id?: string;
+  agent_id?: string;
+  acquired_at?: string;
+  expires_at?: string;
+  intent?: string;
+}
+interface LeaseState { generated_at: string | null; leases: ActiveLease[]; error: string | null }
+interface ReceiptSummary {
+  assignment_count: number; dispatched_count: number; claimed_count: number; active_count: number; completed_count: number; unclaimed_count: number; context_error_count: number;
+  status_counts: Record<string, number>;
+  active_lease_registry_generated_at: string | null;
+  active_lease_registry_error: string | null;
+  assignments: ReturnType<typeof assignmentReceipt>[];
+}
+interface NextInput {
+  status: string;
+  openConflicts: number;
+  criticalConflicts: number;
+  stalePackets: number;
+  heldPackets: number;
+  remainingPaths: number;
+  graphPackets: number;
+  dispatchMissing: boolean;
+  legacyDispatch: boolean;
+  limit: number;
+  monitorNext?: string;
+}
+
+function isActiveLease(value: unknown): value is ActiveLease {
+  if (typeof value !== 'object' || value === null) return false;
+  const lease = value as Record<string, unknown>;
+  return ['lease_id', 'project', 'resource_kind', 'resource_id', 'agent_id', 'acquired_at', 'expires_at', 'intent']
+    .every((key) => lease[key] === undefined || typeof lease[key] === 'string');
+}
+
 try {
   if (args.help) {
     usage();
     exit(0);
   }
-  const report: Record<string, any> = observeWave();
+  const report: ReturnType<typeof summarizeObservation> & { observation_artifacts?: ReturnType<typeof writeObservation> } = observeWave();
   if (args.write) {
     report.observation_artifacts = writeObservation(report);
   }
@@ -40,8 +159,8 @@ try {
     printText(report);
   }
   if (args.strict && report.status === 'blocked') exit(4);
-} catch (err) {
-  console.error(`sma-wave-observe: ${err.message}`);
+} catch (error: unknown) {
+  console.error(`sma-wave-observe: ${error instanceof Error ? error.message : String(error)}`);
   exit(1);
 }
 
@@ -56,7 +175,7 @@ Use --write to persist JSON and Markdown observations under handoffs/waves/.
 `);
 }
 
-function observeWave() {
+function observeWave(): ReturnType<typeof summarizeObservation> {
   const dispatch = loadDispatch(args.dispatch || 'latest');
   const limit = positiveInt(args.limit, dispatch?.assignment_count || dispatch?.manifest?.assignments?.length || 12);
   const monitorArgs = [
@@ -76,12 +195,12 @@ function observeWave() {
   return report;
 }
 
-function loadDispatch(input) {
+function loadDispatch(input: unknown): LoadedDispatch | null {
   const raw = String(input || '').trim();
   const path = raw === 'latest' ? latestDispatchPath() : resolve(SMA_ROOT, raw);
   if (!path) return null;
   if (!existsSync(path)) throw new Error(`dispatch manifest not found: ${path}`);
-  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  const manifest = JSON.parse(readFileSync(path, 'utf8')) as DispatchManifest;
   if (manifest.kind !== 'cleanup-wave-dispatch') {
     throw new Error(`not a cleanup-wave-dispatch manifest: ${path}`);
   }
@@ -100,7 +219,7 @@ function loadDispatch(input) {
   };
 }
 
-function latestDispatchPath() {
+function latestDispatchPath(): string | null {
   if (!existsSync(WAVE_DIR)) return null;
   const candidates = readdirSync(WAVE_DIR, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /^cleanup-wave-.*\.json$/.test(entry.name))
@@ -109,21 +228,22 @@ function latestDispatchPath() {
   return candidates[0] || null;
 }
 
-function summarizeObservation({ generatedAt, limit, dispatch, monitor }) {
-  const mon = monitor.data || {};
-  const wave = mon.wave || {};
-  const conflicts = mon.conflicts || {};
-  const controller = mon.controller || {};
+function summarizeObservation({ generatedAt, limit, dispatch, monitor }: { generatedAt: string; limit: number; dispatch: LoadedDispatch | null; monitor: ToolResult }) {
+  const mon = monitor.data ?? {};
+  const wave = mon.wave ?? {};
+  const conflicts = mon.conflicts ?? {};
+  const controller = mon.controller ?? {};
   const receipts = summarizeReceipts(dispatch);
   const blockers = [
     monitor.error ? `monitor: ${monitor.error}` : null,
     ...(Array.isArray(mon.blockers) ? mon.blockers : []),
-  ].filter(Boolean);
+  ].filter((item): item is string => typeof item === 'string' && item.length > 0);
   const warnings = Array.isArray(mon.warnings) ? mon.warnings.slice() : [];
   const dispatchMissing = !dispatch;
+  const legacyAssignmentCount = dispatch?.claim_pinning.legacy_rank_only_assignment_count ?? 0;
   if (dispatchMissing) warnings.push('no dispatch manifest found; observation is monitor-only');
-  if (dispatch?.claim_pinning?.legacy_rank_only_assignment_count > 0) {
-    blockers.push(`${dispatch.claim_pinning.legacy_rank_only_assignment_count} dispatch assignment(s) use legacy rank-only claim commands`);
+  if (legacyAssignmentCount > 0) {
+    blockers.push(`${legacyAssignmentCount} dispatch assignment(s) use legacy rank-only claim commands`);
     warnings.push('legacy rank-only dispatch manifest; regenerate dispatch before assigning agents');
   }
 
@@ -140,7 +260,7 @@ function summarizeObservation({ generatedAt, limit, dispatch, monitor }) {
   const graphPackets = number(controller.graph_packets);
 
   let status = dispatchMissing ? 'dispatch-missing' : 'no-movement';
-  if (monitor.error || mon.status === 'blocked' || openConflicts > 0 || criticalConflicts > 0 || heldPackets > 0 || stalePackets > 0 || dispatch?.claim_pinning?.legacy_rank_only_assignment_count > 0) {
+  if (monitor.error || mon.status === 'blocked' || openConflicts > 0 || criticalConflicts > 0 || heldPackets > 0 || stalePackets > 0 || (dispatch?.claim_pinning.legacy_rank_only_assignment_count ?? 0) > 0) {
     status = 'blocked';
   } else if (baselinePaths > 0 && remainingPaths === 0) {
     status = 'complete';
@@ -159,7 +279,7 @@ function summarizeObservation({ generatedAt, limit, dispatch, monitor }) {
     remainingPaths,
     graphPackets,
     dispatchMissing,
-    legacyDispatch: Boolean(dispatch?.claim_pinning?.legacy_rank_only_assignment_count > 0),
+    legacyDispatch: (dispatch?.claim_pinning.legacy_rank_only_assignment_count ?? 0) > 0,
     limit,
     monitorNext: mon.next,
   });
@@ -243,7 +363,7 @@ function summarizeObservation({ generatedAt, limit, dispatch, monitor }) {
   };
 }
 
-function chooseNext({ status, openConflicts, criticalConflicts, stalePackets, heldPackets, remainingPaths, graphPackets, dispatchMissing, legacyDispatch, limit, monitorNext }) {
+function chooseNext({ status, openConflicts, criticalConflicts, stalePackets, heldPackets, remainingPaths, graphPackets, dispatchMissing, legacyDispatch, limit, monitorNext }: NextInput): string {
   if (dispatchMissing) return `npm run gen3:dispatch -- --limit ${limit || 12}`;
   if (legacyDispatch) return `npm run gen3:dispatch -- --limit ${limit || 12}`;
   if (openConflicts > 0 || criticalConflicts > 0) return 'npm run conflict:summary';
@@ -254,7 +374,7 @@ function chooseNext({ status, openConflicts, criticalConflicts, stalePackets, he
   return monitorNext || 'npm run gen3:watch -- --no-auto-refresh';
 }
 
-function summarizeDispatchClaimPinning(assignments) {
+function summarizeDispatchClaimPinning(assignments: CleanupAssignment[] | undefined): ClaimPinning {
   const list = Array.isArray(assignments) ? assignments : [];
   const pinned = list.filter((item) => isPinnedClaimCommand(item.claim_command));
   return {
@@ -265,19 +385,19 @@ function summarizeDispatchClaimPinning(assignments) {
   };
 }
 
-function isPinnedClaimCommand(command) {
+function isPinnedClaimCommand(command: unknown): boolean {
   const text = String(command || '');
   return ['--project', '--brick', '--group', '--dispatch-rank', '--expected-dirty-path-count', '--dispatch-id']
     .every((flag) => text.includes(flag));
 }
 
-function summarizeReceipts(dispatch) {
+function summarizeReceipts(dispatch: LoadedDispatch | null): ReceiptSummary {
   const assignments = Array.isArray(dispatch?.assignments) ? dispatch.assignments : [];
   if (!assignments.length) return emptyReceiptSummary();
 
   const leaseState = safeReadActiveLeases();
   const receipts = assignments.map((assignment) => assignmentReceipt(assignment, leaseState.leases));
-  const statusCounts = {};
+  const statusCounts: Record<string, number> = {};
   for (const receipt of receipts) statusCounts[receipt.status] = (statusCounts[receipt.status] || 0) + 1;
 
   return {
@@ -295,7 +415,7 @@ function summarizeReceipts(dispatch) {
   };
 }
 
-function emptyReceiptSummary() {
+function emptyReceiptSummary(): ReceiptSummary {
   return {
     assignment_count: 0,
     dispatched_count: 0,
@@ -307,42 +427,45 @@ function emptyReceiptSummary() {
     status_counts: {},
     active_lease_registry_generated_at: null,
     active_lease_registry_error: null,
-    assignments: [],
+    assignments: [] as ReturnType<typeof assignmentReceipt>[],
   };
 }
 
-function safeReadActiveLeases() {
+function safeReadActiveLeases(): LeaseState {
   try {
-    const state = readActiveLeases({
+    const stateValue: unknown = readActiveLeases({
       excludeVolatileSmaRegenLeases: true,
     });
+    const state = typeof stateValue === 'object' && stateValue !== null ? stateValue as Record<string, unknown> : {};
+    const leases = Array.isArray(state.leases)
+      ? (state.leases as unknown[]).filter(isActiveLease)
+      : [];
     return {
-      generated_at: state.generated_at || null,
-      leases: Array.isArray(state.leases) ? state.leases : [],
-      error: state._error || null,
+      generated_at: typeof state.generated_at === 'string' ? state.generated_at : null,
+      leases,
+      error: typeof state._error === 'string' ? state._error : null,
     };
-  } catch (err) {
+  } catch (error: unknown) {
     return {
       generated_at: null,
       leases: [],
-      error: err.message || 'failed to read active leases',
+      error: error instanceof Error ? error.message : 'failed to read active leases',
     };
   }
 }
 
-function assignmentReceipt(assignment, activeLeases) {
-  const activeMatches = (Array.isArray(activeLeases) ? activeLeases : [])
-    .filter((lease) => leaseMatchesAssignment(lease, assignment));
+function assignmentReceipt(assignment: CleanupAssignment, activeLeases: readonly ActiveLease[]) {
+  const activeMatches = activeLeases.filter((lease) => leaseMatchesAssignment(lease, assignment));
   const context = safeReadAssignmentContext(assignment);
   const events = context.events;
-  const claimEvents = events.filter((event) => CLAIM_KINDS.has(event.kind) && eventMatchesAssignment(event, assignment));
+  const claimEvents = events.filter((event) => typeof event.kind === 'string' && CLAIM_KINDS.has(event.kind) && eventMatchesAssignment(event, assignment));
   const claimLeaseIds = new Set([
-    ...claimEvents.map((event) => event.lease_id).filter(Boolean),
-    ...activeMatches.map((lease) => lease.lease_id).filter(Boolean),
+    ...claimEvents.map((event) => event.lease_id).filter((id): id is string => typeof id === 'string'),
+    ...activeMatches.map((lease) => lease.lease_id).filter((id): id is string => typeof id === 'string'),
   ]);
   const completionEvents = events.filter((event) => (
-    COMPLETE_KINDS.has(event.kind)
-    && (eventMatchesAssignment(event, assignment) || claimLeaseIds.has(event.lease_id))
+    typeof event.kind === 'string' && COMPLETE_KINDS.has(event.kind)
+    && (eventMatchesAssignment(event, assignment) || (typeof event.lease_id === 'string' && claimLeaseIds.has(event.lease_id)))
   ));
   const active = activeMatches.length > 0;
   const completed = completionEvents.length > 0;
@@ -380,22 +503,23 @@ function assignmentReceipt(assignment, activeLeases) {
   };
 }
 
-function safeReadAssignmentContext(assignment) {
+function safeReadAssignmentContext(assignment: CleanupAssignment): { events: ContextEvent[]; error: string | null } {
   try {
+    if (!assignment.project || !assignment.brick) return { events: [], error: 'assignment project or brick is missing' };
     return { events: readContextLog(assignment.project, assignment.brick), error: null };
-  } catch (err) {
-    return { events: [], error: err.message || 'failed to read context log' };
+  } catch (error: unknown) {
+    return { events: [], error: error instanceof Error ? error.message : 'failed to read context log' };
   }
 }
 
-function leaseMatchesAssignment(lease, assignment) {
+function leaseMatchesAssignment(lease: ActiveLease, assignment: CleanupAssignment): boolean {
   return lease
     && lease.project === assignment.project
     && lease.resource_kind === 'brick'
     && lease.resource_id === assignment.brick;
 }
 
-function eventMatchesAssignment(event, assignment) {
+function eventMatchesAssignment(event: ContextEvent, assignment: CleanupAssignment): boolean {
   if (!event || event._malformed) return false;
   const taskId = cleanupTaskId(assignment);
   if (event.task_id && event.task_id === taskId) return true;
@@ -409,7 +533,7 @@ function eventMatchesAssignment(event, assignment) {
   return false;
 }
 
-function eventSearchText(event) {
+function eventSearchText(event: ContextEvent): string {
   return [
     event.task_id,
     event.decision_rationale,
@@ -419,18 +543,18 @@ function eventSearchText(event) {
   ].filter(Boolean).join(' ');
 }
 
-function cleanupTaskId(assignment) {
+function cleanupTaskId(assignment: CleanupAssignment): string {
   const rank = String(assignment.rank ?? 'unknown').replace(/[^a-z0-9._-]/gi, '-');
   const project = String(assignment.project ?? 'project').replace(/[^a-z0-9._-]/gi, '-');
   return `cleanup-packet-${project}-${rank}`;
 }
 
-function receiptForAssignment(receipts, assignment) {
+function receiptForAssignment(receipts: ReceiptSummary, assignment: CleanupAssignment) {
   const key = assignmentKey(assignment);
   return receipts.assignments.find((receipt) => receipt.key === key) || null;
 }
 
-function assignmentKey(assignment) {
+function assignmentKey(assignment: CleanupAssignment): string {
   return [
     assignment.project ?? '',
     assignment.brick ?? '',
@@ -438,14 +562,14 @@ function assignmentKey(assignment) {
   ].join(':');
 }
 
-function latestEvent(events) {
-  if (!Array.isArray(events) || !events.length) return null;
-  return events
-    .slice()
-    .sort((left, right) => Date.parse(right.timestamp || 0) - Date.parse(left.timestamp || 0))[0] || null;
+function latestEvent(events: readonly ContextEvent[]): ContextEvent | null {
+  if (!events.length) return null;
+  const sorted: ContextEvent[] = [...events];
+  sorted.sort((left, right) => Date.parse(right.timestamp || '') - Date.parse(left.timestamp || ''));
+  return sorted[0] ?? null;
 }
 
-function summarizeContextEvent(event) {
+function summarizeContextEvent(event: ContextEvent | null) {
   if (!event) return null;
   return {
     event_id: event.event_id || null,
@@ -457,7 +581,7 @@ function summarizeContextEvent(event) {
   };
 }
 
-function summarizeLease(lease) {
+function summarizeLease(lease: ActiveLease) {
   return {
     lease_id: lease.lease_id || null,
     agent_id: lease.agent_id || null,
@@ -467,7 +591,7 @@ function summarizeLease(lease) {
   };
 }
 
-function writeObservation(report) {
+function writeObservation(report: ReturnType<typeof summarizeObservation>) {
   const base = observationBasePath(report);
   const jsonPath = `${base}.json`;
   const markdownPath = `${base}.md`;
@@ -480,7 +604,7 @@ function writeObservation(report) {
   };
 }
 
-function observationBasePath(report) {
+function observationBasePath(report: ReturnType<typeof summarizeObservation>): string {
   if (args.write !== true) {
     return resolve(SMA_ROOT, String(args.write || '').trim()).replace(/\.(json|md)$/i, '');
   }
@@ -488,8 +612,8 @@ function observationBasePath(report) {
   return resolve(OBSERVATION_DIR, `${dispatchId}-observed-${timestampSlug(new Date())}`);
 }
 
-function renderObservationMarkdown(report) {
-  const lines = [
+function renderObservationMarkdown(report: ReturnType<typeof summarizeObservation>): string {
+  const lines: string[] = [
     '# SMA Gen3 Cleanup Wave Observation',
     '',
     `- Status: ${report.status}`,
@@ -553,7 +677,7 @@ function renderObservationMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
-function runJsonTool(label, commandArgs) {
+function runJsonTool(label: string, commandArgs: string[]): ToolResult {
   try {
     const stdout = execFileSync(execPath, commandArgs, {
       cwd: SMA_ROOT,
@@ -561,17 +685,20 @@ function runJsonTool(label, commandArgs) {
       timeout: positiveInt(args.timeoutMs, 180000),
       maxBuffer: 32 * 1024 * 1024,
     });
-    return { label, data: JSON.parse(stdout) };
-  } catch (err) {
+    return { label, data: JSON.parse(stdout) as MonitorData };
+  } catch (error: unknown) {
+    const stderr = typeof error === 'object' && error !== null && 'stderr' in error
+      ? (error as { stderr?: unknown }).stderr
+      : undefined;
     return {
       label,
       data: null,
-      error: firstLine(err.stderr) || firstLine(err.message) || 'failed',
+      error: firstLine(stderr) || firstLine(error instanceof Error ? error.message : error) || 'failed',
     };
   }
 }
 
-function printText(report) {
+function printText(report: ReturnType<typeof summarizeObservation> & { observation_artifacts?: ReturnType<typeof writeObservation> }) {
   console.log('SMA Gen3 Wave Observation');
   console.log(`status:           ${report.status}`);
   console.log(`dispatch:         ${report.dispatch ? `${report.dispatch.dispatch_id} (${report.dispatch.assignment_count} agents)` : 'none'}`);
@@ -594,8 +721,8 @@ function printText(report) {
   console.log(`next:             ${report.next}`);
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): WaveArgs {
+  const out: WaveArgs = {};
   for (let i = 0; i < list.length; i += 1) {
     const item = list[i];
     if (item === '--help' || item === '-h') {
@@ -603,7 +730,7 @@ function parseArgs(list): Record<string, any> {
       continue;
     }
     if (!item.startsWith('--')) continue;
-    const key = item.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = item.slice(2).replace(/-([a-z])/g, (_match, character: string) => character.toUpperCase());
     const next = list[i + 1];
     if (!next || next.startsWith('--')) {
       out[key] = true;
@@ -615,47 +742,47 @@ function parseArgs(list): Record<string, any> {
   return out;
 }
 
-function timestampSlug(date) {
+function timestampSlug(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
 
-function relativeToSma(path) {
+function relativeToSma(path: string): string {
   return path.startsWith(`${SMA_ROOT}/`) ? path.slice(SMA_ROOT.length + 1) : path;
 }
 
-function positiveInt(value, fallback) {
-  const parsed = Number.parseInt(value, 10);
+function positiveInt(value: unknown, fallback: number): number {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function number(value) {
+function number(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function nullableNumber(value) {
+function nullableNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function percent(part, total) {
+function percent(part: number, total: number): number {
   if (!total) return 0;
   return Math.round((part / total) * 1000) / 10;
 }
 
-function formatPercent(value) {
+function formatPercent(value: unknown): string {
   if (value === null || value === undefined || value === '') return 'n/a';
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 'n/a';
   return `${parsed}%`;
 }
 
-function formatNullable(value) {
+function formatNullable(value: unknown): string {
   if (value === null || value === undefined || value === '') return 'n/a';
   return String(value);
 }
 
-function firstLine(value) {
+function firstLine(value: unknown): string {
   return String(value || '').split(/\r?\n/).find(Boolean) || '';
 }

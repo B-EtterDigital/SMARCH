@@ -33,6 +33,27 @@ Options:
   --help                Show this help
 `;
 
+type Recommendation = ReturnType<typeof buildRecommendations>[number];
+
+interface CliOptions {
+  buildIndex: string;
+  help: boolean;
+  json: boolean;
+  limit: number;
+  project: string;
+  query: string;
+  registry: string;
+  state: string;
+  vision: string;
+}
+
+interface RecommendationReport {
+  project: string | null;
+  result_count: number;
+  results: Recommendation[];
+  vision: string;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
@@ -54,7 +75,7 @@ async function main() {
   });
   const deduped = dedupeRecommendations(recommendations).slice(0, options.limit);
 
-  const report: Record<string, any> = {
+  const report: RecommendationReport = {
     vision: options.vision,
     project: options.project || null,
     result_count: deduped.length,
@@ -69,10 +90,10 @@ async function main() {
   process.stdout.write(renderHuman(report));
 }
 
-function dedupeRecommendations(entries) {
-  const seen = new Set();
-  const output = [];
-  for (const entry of entries || []) {
+function dedupeRecommendations(entries: Recommendation[]): Recommendation[] {
+  const seen = new Set<string>();
+  const output: Recommendation[] = [];
+  for (const entry of entries) {
     const key = [entry.type, entry.project, entry.name].join("::").toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -81,8 +102,8 @@ function dedupeRecommendations(entries) {
   return output;
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+function parseArgs(argv: string[]): CliOptions {
+  const options: CliOptions = {
     vision: "",
     query: "",
     project: "",
@@ -151,7 +172,7 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function renderHuman(report) {
+function renderHuman(report: RecommendationReport): string {
   return [
     "SMARCH recommend-builds",
     `vision: ${report.vision}`,
@@ -159,9 +180,9 @@ function renderHuman(report) {
     "",
     ...(report.results.length > 0
       ? report.results.map((entry, index) => {
-        const matches = entry.matches?.length ? `matches ${entry.matches.join(", ")}` : "matches none";
-        const release = entry.release_count ? `releases ${entry.release_count}` : "no releases yet";
-        return `${index + 1}. ${entry.name} [${entry.type}] (${entry.project})\n   score ${entry.score} · ${entry.readiness || "unknown"} · ${entry.trust || "unknown"} · ${release}\n   ${matches}\n   ${entry.why}`;
+        const matches = entry.matches.length ? `matches ${entry.matches.join(", ")}` : "matches none";
+        const release = entry.release_count ? `releases ${String(entry.release_count)}` : "no releases yet";
+        return `${String(index + 1)}. ${String(entry.name)} [${entry.type}] (${String(entry.project)})\n   score ${String(entry.score)} · ${entry.readiness ?? "unknown"} · ${entry.trust ?? "unknown"} · ${release}\n   ${matches}\n   ${entry.why}`;
       })
       : ["No builds matched the supplied vision."]),
     "",
@@ -172,9 +193,9 @@ function renderHuman(report) {
   ].filter(Boolean).join("\n");
 }
 
-function fail(message) {
+function fail(message: string): never {
   console.error(`Error: ${message}`);
   process.exit(1);
 }
 
-main().catch((error) => fail(error instanceof Error ? error.message : String(error)));
+main().catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));

@@ -15,6 +15,11 @@ import { argv, exit } from 'node:process';
 
 const CONFIG_PATH = resolve('sma.gen3.json');
 
+/** @typedef {{ id?: string, path?: string, paths?: string[], lane_default?: string, laneDefault?: string }} PathEntry */
+/** @typedef {{ modules: PathEntry[], hot_paths?: PathEntry[], shared_hot_paths?: PathEntry[], sharedHotPaths?: PathEntry[] }} Gen3Config */
+/** @typedef {{ changedFile: string | null, json: boolean, selftest: boolean }} CliArgs */
+/** @typedef {{ module: string | null, lane: string }} Classification */
+
 try {
   const args = parseArgs(argv.slice(2));
   const config = readConfig(CONFIG_PATH);
@@ -32,10 +37,14 @@ try {
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(JSON.stringify({ error: message }));
-  exit(typeof error?.exitCode === 'number' ? error.exitCode : 1);
+  const exitCode = error && typeof error === 'object' && 'exitCode' in error
+    && typeof error.exitCode === 'number' ? error.exitCode : 1;
+  exit(exitCode);
 }
 
+/** @param {string[]} values @returns {CliArgs} */
 function parseArgs(values) {
+  /** @type {CliArgs} */
   const parsed = {
     changedFile: null,
     json: false,
@@ -71,6 +80,7 @@ function parseArgs(values) {
   return parsed;
 }
 
+/** @param {string} path @returns {Gen3Config} */
 function readConfig(path) {
   const config = JSON.parse(readFileSync(path, 'utf8'));
 
@@ -85,6 +95,7 @@ function readConfig(path) {
   return config;
 }
 
+/** @param {Gen3Config} config @param {string} changedFile @returns {Classification} */
 function classifyPath(config, changedFile) {
   const normalizedPath = normalizePath(changedFile);
   const module = config.modules.find((candidate) =>
@@ -104,7 +115,7 @@ function classifyPath(config, changedFile) {
 
   if (module) {
     return {
-      module: module.id,
+      module: module.id ?? null,
       lane: module.lane_default ?? module.laneDefault ?? 'single-module',
     };
   }
@@ -115,16 +126,19 @@ function classifyPath(config, changedFile) {
   };
 }
 
+/** @param {Gen3Config} config @returns {PathEntry[]} */
 function sharedHotPaths(config) {
-  return config.hot_paths ?? config.shared_hot_paths ?? config.sharedHotPaths;
+  return config.hot_paths ?? config.shared_hot_paths ?? config.sharedHotPaths ?? [];
 }
 
+/** @param {PathEntry} entry @returns {string[]} */
 function pathsFor(entry) {
   if (Array.isArray(entry.paths)) return entry.paths;
   if (typeof entry.path === 'string') return [entry.path];
   return [];
 }
 
+/** @param {string} path @param {string} pattern @returns {boolean} */
 function matchesPath(path, pattern) {
   const normalizedPattern = normalizePath(pattern);
   const expression = normalizedPattern
@@ -138,6 +152,7 @@ function matchesPath(path, pattern) {
   return new RegExp(`^${expression}$`).test(path);
 }
 
+/** @param {string} path @returns {string} */
 function normalizePath(path) {
   return String(path)
     .replaceAll('\\\\', '/')
@@ -145,6 +160,7 @@ function normalizePath(path) {
     .replace(/^\/+/, '');
 }
 
+/** @param {Gen3Config} config */
 function runSelftest(config) {
   assertClassification(config, 'tools/sma-lease.ts', {
     module: 'coord',
@@ -162,6 +178,7 @@ function runSelftest(config) {
   console.log(JSON.stringify({ ok: true, assertions: 3 }));
 }
 
+/** @param {Gen3Config} config @param {string} path @param {Classification} expected */
 function assertClassification(config, path, expected) {
   const actual = classifyPath(config, path);
   if (actual.module !== expected.module || actual.lane !== expected.lane) {
@@ -171,6 +188,7 @@ function assertClassification(config, path, expected) {
   }
 }
 
+/** @param {string} message @param {number} exitCode @returns {never} */
 function fail(message, exitCode) {
   const error = /** @type {Error & {exitCode?: number}} */ (new Error(message));
   error.exitCode = exitCode;

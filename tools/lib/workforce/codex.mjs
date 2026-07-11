@@ -8,6 +8,11 @@ const DEFAULT_MODEL = "gpt-5.5";
 const DEFAULT_EFFORT = "xhigh";
 const DEFAULT_TIMEOUT_MS = 600_000;
 
+/** @typedef {{ input_tokens?: number, inputTokens?: number, output_tokens?: number, outputTokens?: number }} CodexUsage */
+/** @typedef {{ usage?: CodexUsage, turn?: { usage?: CodexUsage }, item?: { usage?: CodexUsage, type?: string, text?: unknown, content?: unknown }, type?: string, text?: unknown, message?: unknown }} CodexEvent */
+/** @typedef {{ code: number | null, stdout: string, stderr: string, error?: NodeJS.ErrnoException, closeSignal?: NodeJS.Signals | null, timedOut: boolean }} ProcessResult */
+
+/** @param {unknown} packet */
 function packetPrompt(packet) {
   return typeof packet === "string" ? packet : JSON.stringify(packet, null, 2);
 }
@@ -33,6 +38,13 @@ export function buildArgs({
   return args;
 }
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {string} input
+ * @param {{ timeoutMs: number, signal?: AbortSignal, cwd?: string }} options
+ * @returns {Promise<ProcessResult>}
+ */
 function runProcess(command, args, input, { timeoutMs, signal, cwd }) {
   return new Promise((resolve) => {
     const child = spawn(command, args, { env: process.env, cwd });
@@ -41,6 +53,7 @@ function runProcess(command, args, input, { timeoutMs, signal, cwd }) {
     let settled = false;
     let timedOut = false;
 
+    /** @param {ProcessResult} result */
     const finish = (result) => {
       if (settled) return;
       settled = true;
@@ -63,11 +76,19 @@ function runProcess(command, args, input, { timeoutMs, signal, cwd }) {
   });
 }
 
+/**
+ * @param {string} stdout
+ * @returns {{ events: CodexEvent[], output: unknown, tokensIn: number, tokensOut: number }}
+ */
 function parseEvents(stdout) {
+  /** @type {CodexEvent[]} */
   const events = [];
   for (const line of stdout.split("\n")) {
     if (!line.trim()) continue;
-    try { events.push(JSON.parse(line)); } catch {}
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) events.push(parsed);
+    } catch {}
   }
 
   let output = "";
@@ -80,9 +101,13 @@ function parseEvents(stdout) {
       tokensOut = usage.output_tokens ?? usage.outputTokens ?? tokensOut;
     }
     if (event.type === "item.completed" && event.item?.type === "agent_message") {
-      output = event.item.text ?? event.item.content ?? output;
+      output = typeof event.item.text === "string"
+        ? event.item.text
+        : typeof event.item.content === "string" ? event.item.content : output;
     } else if (event.type === "agent_message") {
-      output = event.text ?? event.message ?? output;
+      output = typeof event.text === "string"
+        ? event.text
+        : typeof event.message === "string" ? event.message : output;
     }
   }
   return { events, output: typeof output === "string" ? output.trim() : output, tokensIn, tokensOut };

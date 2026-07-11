@@ -47,10 +47,70 @@ const OUT = resolve(SMA_ROOT, 'security/license-gate.generated.json');
 
 const args = parseArgs(process.argv.slice(2));
 
+type LicenseIndex = ReturnType<typeof buildLicenseIndex>;
+type CompositionComponent = Parameters<typeof checkComposition>[1][number];
+type CompositionResult = ReturnType<typeof checkComposition>;
+type Violation = CompositionResult['violations'][number];
+
+interface LicenseGateArgs {
+  json?: boolean;
+  gate?: boolean;
+  strict?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+interface TheftRecord {
+  brick_id: string;
+  theft_risk?: boolean;
+  copy_of?: string;
+  copy_group?: string;
+}
+
+interface BuildManifest {
+  build?: { id?: string; visibility?: string };
+  source?: { project?: string; derived_from_bricks?: Array<{ brick_id?: string }> };
+  composition?: {
+    brick_refs?: Array<{ brick_id?: string }>;
+    optional_bricks?: Array<{ brick_id?: string }>;
+  };
+  publishing?: {
+    visibility?: string;
+    license?: string | null;
+    openness?: 'closed' | 'source-available' | 'open' | null;
+    publishable?: boolean;
+    exposed_docs?: string[];
+  };
+}
+
+interface BuildResult {
+  build: string;
+  error?: string;
+  build_id?: string | null;
+  declared?: { visibility: string; license: string | null; publishable: boolean };
+  effective?: CompositionResult['effective'];
+  component_count?: number;
+  unresolved_count?: number;
+  ok?: boolean;
+  violations: Violation[];
+}
+
+interface LicenseReport {
+  schema_version: string;
+  generated_at: string;
+  status: string;
+  warning?: string;
+  build_count: number;
+  blocking_count: number;
+  warning_count: number;
+  theft_risk_count: number;
+  builds: BuildResult[];
+  theft_findings: Array<{ brick_id: string; copy_of?: string; copy_group?: string }>;
+}
+
 try {
   main();
 } catch (err) {
-  console.error(`sma-license-gate: ${err.message}`);
+  console.error(`sma-license-gate: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(1);
 }
 
@@ -105,7 +165,7 @@ function main() {
   if (args.gate && status === 'failed') process.exit(4);
 }
 
-function emptyReport() {
+function emptyReport(): LicenseReport {
   return {
     schema_version: '1.0.0',
     generated_at: new Date().toISOString(),
@@ -120,20 +180,21 @@ function emptyReport() {
   };
 }
 
-function evaluateBuild(buildPath: string, ledger: Record<string, any>, theftByBrick: Map<string, any>) {
+function evaluateBuild(buildPath: string, ledger: LicenseIndex, theftByBrick: Map<string, TheftRecord>): BuildResult {
   const rel = relative(SMA_ROOT, buildPath).split(sep).join('/');
-  let manifest;
+  let manifest: BuildManifest;
   try {
     manifest = JSON.parse(readFileSync(buildPath, 'utf8'));
   } catch (err) {
-    return { build: rel, error: `unreadable manifest: ${err.message}`, violations: [{ code: 'MANIFEST_UNREADABLE', severity: 'block', message: err.message }] };
+    const message = err instanceof Error ? err.message : String(err);
+    return { build: rel, error: `unreadable manifest: ${message}`, violations: [{ code: 'MANIFEST_UNREADABLE', severity: 'block', message }] };
   }
 
   const componentIds = collectComponentIds(manifest);
-  const projectHint = manifest.source?.project || manifest.build?.id?.split('.')?.[0] || null;
-  const components = [];
-  const unresolved = [];
-  const theftInComposition = [];
+  const projectHint = manifest.source?.project || manifest.build?.id?.split('.')?.[0];
+  const components: CompositionComponent[] = [];
+  const unresolved: string[] = [];
+  const theftInComposition: Array<{ brick_id: string; copy_of?: string }> = [];
   for (const id of componentIds) {
     const hit = ledger.resolve(id, projectHint);
     const row = hit?.row;
@@ -142,17 +203,28 @@ function evaluateBuild(buildPath: string, ledger: Record<string, any>, theftByBr
       // fail-safe: an unknown component is treated as closed/private.
       components.push({ brick_id: id, spdx: null, openness: 'closed', visibility: 'private' });
     } else {
-      components.push({ brick_id: id, spdx: row.spdx, openness: row.openness, visibility: row.visibility });
+      const openness = row.openness === 'open' || row.openness === 'closed' || row.openness === 'source-available'
+        ? row.openness
+        : undefined;
+      const visibility = row.visibility === 'private' || row.visibility === 'internal' || row.visibility === 'community' || row.visibility === 'public'
+        ? row.visibility
+        : undefined;
+      const spdx = typeof row.spdx === 'string' || row.spdx === null ? row.spdx : undefined;
+      components.push({ brick_id: id, spdx, openness, visibility });
     }
     const theft = theftByBrick.get(row?.brick_id || id);
     if (theft?.theft_risk) theftInComposition.push({ brick_id: id, copy_of: theft.copy_of });
   }
 
   const publishing = manifest.publishing || {};
-  const declared = {
-    visibility: publishing.visibility || manifest.build?.visibility || 'private',
+  const rawVisibility = publishing.visibility || manifest.build?.visibility;
+  const visibility = rawVisibility === 'public' || rawVisibility === 'community' || rawVisibility === 'internal' || rawVisibility === 'private'
+    ? rawVisibility
+    : 'private';
+  const declared: Parameters<typeof checkComposition>[0] = {
+    visibility,
     license: publishing.license || null,
-    openness: publishing.openness || null,
+    openness: publishing.openness || undefined,
     publishable: Boolean(publishing.publishable),
     has_attribution: hasAttribution(publishing),
   };
@@ -178,7 +250,7 @@ function evaluateBuild(buildPath: string, ledger: Record<string, any>, theftByBr
   return {
     build: rel,
     build_id: manifest.build?.id || null,
-    declared: { visibility: declared.visibility, license: declared.license, publishable: declared.publishable },
+    declared: { visibility, license: publishing.license || null, publishable: Boolean(publishing.publishable) },
     effective: check.effective,
     component_count: components.length,
     unresolved_count: unresolved.length,
@@ -187,7 +259,7 @@ function evaluateBuild(buildPath: string, ledger: Record<string, any>, theftByBr
   };
 }
 
-function collectComponentIds(manifest: Record<string, any>): string[] {
+function collectComponentIds(manifest: BuildManifest): string[] {
   const ids = new Set<string>();
   for (const ref of manifest.composition?.brick_refs || []) if (ref.brick_id) ids.add(ref.brick_id);
   for (const ref of manifest.composition?.optional_bricks || []) if (ref.brick_id) ids.add(ref.brick_id);
@@ -195,8 +267,8 @@ function collectComponentIds(manifest: Record<string, any>): string[] {
   return [...ids];
 }
 
-function hasAttribution(publishing: Record<string, any>): boolean {
-  const docs = (publishing.exposed_docs || []).join(' ').toLowerCase();
+function hasAttribution(publishing: BuildManifest['publishing']): boolean {
+  const docs = (publishing?.exposed_docs || []).join(' ').toLowerCase();
   return /attribution|contributor|credits|authors|notice/.test(docs);
 }
 
@@ -210,13 +282,15 @@ function loadLedger() {
   return buildLicenseIndex(data.licenses || []);
 }
 
-function loadTheft() {
-  const map = new Map();
+function loadTheft(): Map<string, TheftRecord> {
+  const map = new Map<string, TheftRecord>();
   if (!existsSync(FINGERPRINT_LEDGER)) return map;
   try {
     const data = JSON.parse(readFileSync(FINGERPRINT_LEDGER, 'utf8'));
     for (const fp of data.fingerprints || []) {
-      if (fp.copy_group) map.set(fp.brick_id, fp);
+      if (fp && typeof fp === 'object' && typeof fp.brick_id === 'string' && fp.copy_group) {
+        map.set(fp.brick_id, fp);
+      }
     }
   } catch { /* ignore */ }
   return map;
@@ -227,6 +301,7 @@ function collectBuildManifests(dir: string): string[] {
   const stack = [dir];
   while (stack.length) {
     const cur = stack.pop();
+    if (!cur) continue;
     let entries;
     try { entries = readdirSync(cur, { withFileTypes: true }); } catch { continue; }
     for (const entry of entries) {
@@ -240,7 +315,7 @@ function collectBuildManifests(dir: string): string[] {
 
 // --- output -----------------------------------------------------------------
 
-function writeReport(report) {
+function writeReport(report: LicenseReport): void {
   const stable = { ...report, generated_at: '<generated_at>' };
   if (existsSync(OUT)) {
     try {
@@ -251,7 +326,7 @@ function writeReport(report) {
   writeFileSync(OUT, `${JSON.stringify(report, null, 2)}\n`);
 }
 
-function printReport(report) {
+function printReport(report: LicenseReport): void {
   console.log(`SMA license-lattice gate: ${report.status}`);
   if (report.warning) console.log(`WARN — ${report.warning}`);
   console.log(`builds: ${report.build_count} | blocking: ${report.blocking_count} | warnings: ${report.warning_count} | theft-risk: ${report.theft_risk_count}`);
@@ -273,11 +348,11 @@ function printReport(report) {
   console.log(`\nwrote: ${relative(SMA_ROOT, OUT).split(sep).join('/')}`);
 }
 
-function parseArgs(list: string[]): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): LicenseGateArgs {
+  const out: LicenseGateArgs = {};
   for (const arg of list) {
     if (!arg.startsWith('--')) continue;
-    out[arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = true;
+    out[arg.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase())] = true;
   }
   return out;
 }

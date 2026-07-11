@@ -123,24 +123,63 @@ const LEASE_SCOPE_STOP_WORDS = new Set([
   'work',
 ]);
 const STALE_CONTEXT_PENDING_KINDS = new Set([
-  'lease_acquired',
-  'lease_renewed',
-  'lease_force_acquired',
-  'lease_expired',
-  'edit_planned',
+  'lease_acquired', 'lease_renewed', 'lease_force_acquired', 'lease_expired', 'edit_planned',
 ]);
-const STALE_CONTEXT_TERMINAL_KINDS = new Set([
-  'edit_applied',
-  'lease_released',
-]);
-const STALE_CONTEXT_RELEVANT_KINDS = new Set([
-  ...STALE_CONTEXT_PENDING_KINDS,
-  ...STALE_CONTEXT_TERMINAL_KINDS,
-]);
-let PROCESS_TABLE_CACHE = null;
-let PROCESS_TABLE_ERROR = null;
-let CURRENT_PROCESS_ANCESTOR_PIDS = null;
-let CURRENT_AGENT_SUBTREE_PIDS = null;
+const STALE_CONTEXT_TERMINAL_KINDS = new Set(['edit_applied', 'lease_released']);
+const STALE_CONTEXT_RELEVANT_KINDS = new Set([...STALE_CONTEXT_PENDING_KINDS, ...STALE_CONTEXT_TERMINAL_KINDS]);
+
+type CliValue = string | boolean | string[];
+type CliArgs = Record<string, CliValue | undefined> & { project: string[] };
+type LeaseState = ReturnType<typeof readActiveLeases>;
+type Lease = LeaseState['leases'][number];
+type LeaseScope = Pick<Lease, 'resource_id'> & Partial<Pick<Lease, 'resource_kind' | 'intent' | 'project'>>;
+type ContextEvent = Record<string, unknown> & { kind: string; brick_id?: string; project?: string; timestamp?: string;
+  actor_id?: string; session_id?: string; lease_id?: string; intent?: string };
+interface DirtyGroupSummary { group: string; count: number; sample_paths?: string[] }
+type DirtyGroupScope = Pick<DirtyGroupSummary, 'group' | 'sample_paths'>;
+type DirtyGroup = DirtyGroupSummary & { modified_count: number; untracked_count: number; sample_paths: string[] };
+interface GitStatus { branch: string | null; dirty_count: number; untracked_count: number; modified_count: number;
+  dirty_limit: number | null; dirty_hidden_count: number; groups: DirtyGroupSummary[]; sample: string[]; error?: string }
+interface ConflictSummary { detected_count: number; resolved_count: number; open_count: number; open: ContextEvent[] }
+interface StaleContextReceipt { brick_id: string; actor_id: string | null; session_id?: string | null;
+  lease_id?: string | null; kind?: string; intent?: string; timestamp?: string | null; age_seconds: number | null;
+  matched_group_count?: number; dirty_count: number; groups: DirtyGroupSummary[] }
+interface StaleContext { receipt_count: number; dirty_count: number; receipts: StaleContextReceipt[] }
+interface ProcessBase { pid: number; ppid: number; age_seconds: number; command: string }
+type ProcessEntry = ProcessBase & { cwd: string | null };
+interface AgentProcessSummary { enabled: true; threshold_seconds: number; process_count: number; stale_count: number;
+  active_lease_count: number; process_scan_error: string | null; sample: ProcessEntry[]; stale: ProcessEntry[] }
+interface GraphStatus { ready: boolean; graph_path: string; report_path: string; node_count: number; edge_count: number;
+  updated_at: string | null; size_bytes?: number }
+interface ModuleGraphCandidate { path: string | null; reason: string | null; score: number }
+interface ModuleGraphGap { module_id: string | null; source_path: string | null; reason: string | null;
+  target_candidates: ModuleGraphCandidate[] }
+interface ModuleGraphStatus { ready: boolean; project_root: string; module_count: number; satisfied_count: number;
+  ready_count: number; known_empty_count: number; actionable_gap_count: number; missing_graph_count: number;
+  missing_target_count: number; graphify_unavailable_count: number; node_count: number; edge_count: number;
+  oldest_graph_updated_at: string | null; newest_graph_updated_at: string | null; actionable_gaps: ModuleGraphGap[]; error?: string }
+interface ProjectSnapshot { id: string; root?: string | null; status: string; active_leases: Lease[];
+  stale_context?: StaleContext; conflicts: ConflictSummary; git?: GitStatus | null; graph?: GraphStatus | null;
+  module_graph?: ModuleGraphStatus | null; agent_processes?: AgentProcessSummary | null }
+interface DirtyClaim { group: string; count: number; brick: string | null; command: string; conflict?: string; sample_paths: string[] }
+type ActionKind = 'open-conflict' | 'stale-agent-process' | 'stale-context' | 'dirty-unleased'
+  | 'active-dirty-scope' | 'graph-gap' | 'module-graph-gap' | 'active-lease';
+type ActionItem = Record<string, unknown> & {
+  severity: 'blocker' | 'warning' | 'watch'; kind: ActionKind; project: string; brick: string | null;
+  title: string; detail: string; command: string; impact_score?: number; dirty_count?: number;
+  uncovered_dirty_count?: number; stale_context_dirty_count?: number; stale_process_count?: number;
+  module_graph_gap_count?: number; top_dirty_group?: string; top_dirty_group_count?: number;
+  top_dirty_group_sample_paths?: string[]; next_commands?: { inspect?: string; conflict?: string }; parallel_claims?: DirtyClaim[];
+};
+interface ParallelCandidate {
+  project: string; group: string; count: number; parent_dirty_count: number; brick: string | null;
+  command: string; inspect: string | null; conflict: string | null; sample_paths: string[];
+}
+
+let PROCESS_TABLE_CACHE: ProcessEntry[] | null = null;
+let PROCESS_TABLE_ERROR: string | null = null;
+let CURRENT_PROCESS_ANCESTOR_PIDS: Set<number> | null = null;
+let CURRENT_AGENT_SUBTREE_PIDS: Set<number> | null = null;
 
 try {
   if (args.help) {
@@ -163,7 +202,7 @@ try {
   if (args.strict && snapshot.summary.open_conflicts > 0) exit(3);
   if (isDirtyStrict() && hasStrictDirtyBlockers(snapshot)) exit(4);
 } catch (err) {
-  console.error(`sma-controller-snapshot: ${err.message}`);
+  console.error(`sma-controller-snapshot: ${errorMessage(err)}`);
   exit(1);
 }
 
@@ -210,7 +249,7 @@ lease. The command is read-only and safe to run during parallel work.
                 explicit override for scripts
   --stale-process-seconds <n>
                 age threshold for project-rooted agent processes;
-                default is ${DEFAULT_STALE_AGENT_PROCESS_SECONDS}
+                default is ${String(DEFAULT_STALE_AGENT_PROCESS_SECONDS)}
   --selftest    run local Gen3 controller regression checks and exit
   --include-generated-dirty
                 include SMA generated snapshots in dirty status; default hides
@@ -222,7 +261,7 @@ lease. The command is read-only and safe to run during parallel work.
 `);
 }
 
-function writeActionReport(snapshot) {
+function writeActionReport(snapshot: Awaited<ReturnType<typeof buildSnapshot>>) {
   const jsonPath = args.writeActions && args.writeActions !== true
     ? resolve(String(args.writeActions))
     : DEFAULT_ACTION_REPORT_JSON;
@@ -252,7 +291,7 @@ function writeActionReport(snapshot) {
   }
 }
 
-function cleanupPacketPaths(actionJsonPath) {
+function cleanupPacketPaths(actionJsonPath: string) {
   const dir = dirname(actionJsonPath);
   return {
     jsonPath: resolve(dir, `${CLEANUP_PACKETS_BASENAME}.json`),
@@ -260,7 +299,7 @@ function cleanupPacketPaths(actionJsonPath) {
   };
 }
 
-function graphPacketPaths(actionJsonPath) {
+function graphPacketPaths(actionJsonPath: string) {
   const dir = dirname(actionJsonPath);
   return {
     jsonPath: resolve(dir, `${GRAPH_PACKETS_BASENAME}.json`),
@@ -274,18 +313,15 @@ async function buildSnapshot() {
     excludeVolatileSmaRegenLeases: Boolean(args.excludeVolatileSmaRegen),
   });
   const projectIds = await resolveProjectIds(leases);
-  const projects = [];
+  const projects: ProjectSnapshot[] = [];
   for (const projectId of projectIds) {
     projects.push(buildProjectSnapshot(projectId, leases));
   }
 
-  const dirtyProjects = projects.filter((project) => project.git?.dirty_count > 0);
-  const dirtyUnleasedProjects = projects.filter((project) => project.status === 'dirty-unleased');
-  const staleContextProjects = projects.filter((project) => Number(project.stale_context?.receipt_count ?? 0) > 0);
-  const graphGaps = projects.filter((project) => project.graph && !project.graph.ready);
+  const dirtyProjects = projects.filter((project) => (project.git?.dirty_count ?? 0) > 0), dirtyUnleasedProjects = projects.filter((project) => project.status === 'dirty-unleased');
+  const staleContextProjects = projects.filter((project) => (project.stale_context?.receipt_count ?? 0) > 0), graphGaps = projects.filter((project) => project.graph && !project.graph.ready);
   const moduleGraphGaps = projects.filter((project) => moduleGraphGapCount(project.module_graph) > 0);
-  const staleAgentProcessProjects = projects.filter((project) => Number(project.agent_processes?.stale_count ?? 0) > 0);
-  const agentProcessScanErrorProjects = projects.filter((project) => project.agent_processes?.process_scan_error).length;
+  const staleAgentProcessProjects = projects.filter((project) => (project.agent_processes?.stale_count ?? 0) > 0), agentProcessScanErrorProjects = projects.filter((project) => project.agent_processes?.process_scan_error).length;
   const openConflicts = projects.flatMap((project) => project.conflicts.open.map((event) => ({
     project: project.id,
     brick: event.brick_id,
@@ -293,7 +329,6 @@ async function buildSnapshot() {
     actor: event.actor_id,
     intent: event.intent,
   })));
-  /** @type {any[]} */
   const actionItems = buildActionItems(projects);
   const activeDirtyScopeItems = actionItems.filter((item) => item.kind === 'active-dirty-scope');
   const parallelWave = buildParallelWave(actionItems);
@@ -307,11 +342,11 @@ async function buildSnapshot() {
       dirty_projects: dirtyProjects.length,
       dirty_unleased_projects: dirtyUnleasedProjects.length,
       stale_context_projects: staleContextProjects.length,
-      stale_context_dirty_paths: staleContextProjects.reduce((sum, project) => sum + Number(project.stale_context?.dirty_count ?? 0), 0),
+      stale_context_dirty_paths: staleContextProjects.reduce((sum, project) => sum + (project.stale_context?.dirty_count ?? 0), 0),
       active_dirty_scope_projects: new Set(activeDirtyScopeItems.map((item) => item.project)).size,
-      active_dirty_scope_paths: activeDirtyScopeItems.reduce((sum, item) => sum + Number(item.uncovered_dirty_count ?? item.impact_score ?? 0), 0),
+      active_dirty_scope_paths: activeDirtyScopeItems.reduce((sum, item) => sum + (item.uncovered_dirty_count ?? item.impact_score ?? 0), 0),
       stale_agent_process_projects: staleAgentProcessProjects.length,
-      stale_agent_processes: staleAgentProcessProjects.reduce((sum, project) => sum + Number(project.agent_processes?.stale_count ?? 0), 0),
+      stale_agent_processes: staleAgentProcessProjects.reduce((sum, project) => sum + (project.agent_processes?.stale_count ?? 0), 0),
       agent_process_scan_error_projects: agentProcessScanErrorProjects,
       graph_gaps: graphGaps.length,
       module_graph_gaps: moduleGraphGaps.length,
@@ -335,196 +370,130 @@ async function buildSnapshot() {
   };
 }
 
-function buildActionItems(projects) {
-  const items = [];
+function buildActionItems(projects: ProjectSnapshot[]) {
+  const items: ActionItem[] = [];
   for (const project of projects) {
-    for (const conflict of project.conflicts.open) {
-      items.push({
-        severity: 'blocker',
-        kind: 'open-conflict',
-        project: project.id,
-        brick: conflict.brick_id || null,
-        title: `Resolve open conflict on ${project.id}`,
-        detail: conflict.intent || 'conflict report has no intent',
-        command: `npm run conflict -- resolve --project ${shellArg(project.id)} --brick ${shellArg(conflict.brick_id || '<brick>')} --intent "<resolution>" --decision "<decision>"`,
-      });
-    }
+    addConflictActions(items, project);
+    addDirtyUnleasedAction(items, project);
 
-    if (project.status === 'dirty-unleased') {
-      const dirtyCount = project.git?.dirty_count ?? 0;
-      const modifiedCount = project.git?.modified_count ?? 0;
-      const untrackedCount = project.git?.untracked_count ?? 0;
-      const groups = formatDirtyGroups(project.git?.groups);
-      const commands = dirtyGroupCommands(project, project.git?.groups, dirtyCount >= DIRTY_PARALLEL_CLAIM_MIN_DIRTY);
-      const topGroup = firstDirtyGroup(project.git?.groups);
-      items.push({
-        severity: 'blocker',
-        kind: 'dirty-unleased',
-        project: project.id,
-        brick: commands.brick,
-        impact_score: dirtyCount,
-        dirty_count: dirtyCount,
-        modified_count: modifiedCount,
-        untracked_count: untrackedCount,
-        top_dirty_group: topGroup.group,
-        top_dirty_group_count: topGroup.count,
-        top_dirty_group_sample_paths: topGroup.sample_paths || [],
-        title: `Claim, clean, or conflict-report ${dirtyCount} unleased dirty path${dirtyCount === 1 ? '' : 's'}`,
-        detail: `${modifiedCount} modified, ${untrackedCount} untracked; full paths hidden by default${groups ? `; groups: ${groups}` : ''}`,
-        command: commands.claim,
-        next_commands: {
-          inspect: commands.inspect,
-          conflict: commands.conflict,
-        },
-        ...(commands.parallel_claims.length > 1 ? { parallel_claims: commands.parallel_claims } : {}),
-      });
-    }
+    addStaleContextActions(items, project);
 
-    if (Number(project.stale_context?.receipt_count ?? 0) > 0) {
-      const stale = project.stale_context || emptyStaleContext();
-      const receipts = Array.isArray(stale.receipts) ? stale.receipts : [];
-      for (const receipt of receipts) {
-        const topGroup = firstDirtyGroup(receipt.groups || []);
-        const brick = receipt.brick_id || dirtyGroupBrick(topGroup.group || 'stale-context');
-        const dirtyCount = Number(receipt.dirty_count ?? topGroup.count ?? 0);
-        const renewIntent = `renew or hand off stale Gen3 context ${brick} (${dirtyCount} dirty path${dirtyCount === 1 ? '' : 's'})`;
-        items.push({
-          severity: 'blocker',
-          kind: 'stale-context',
-          project: project.id,
-          brick,
-          impact_score: dirtyCount,
-          dirty_count: project.git?.dirty_count ?? dirtyCount,
-          stale_context_dirty_count: dirtyCount,
-          stale_context_receipt_count: 1,
-          stale_context_total_receipt_count: Number(stale.receipt_count ?? receipts.length),
-          top_dirty_group: topGroup.group,
-          top_dirty_group_count: topGroup.count,
-          top_dirty_group_sample_paths: topGroup.sample_paths || [],
-          title: `Renew, hand off, or conflict-report stale Gen3 context ${brick}`,
-          detail: formatStaleContextReceiptDetail(receipt),
-          command: `npm run start:edit -- --project ${shellArg(project.id)} --brick ${shellArg(brick)} --intent ${shellArg(renewIntent)}`,
-          next_commands: {
-            inspect: `npm run controller:snapshot -- --project ${shellArg(project.id)} --dirty-limit 20`,
-            conflict: `npm run conflict -- report --project ${shellArg(project.id)} --brick ${shellArg(brick)} --intent ${shellArg('stale Gen3 context receipt overlaps current cleanup or module work')} --resolution-plan ${shellArg('renew the lease, hand off the work, or document the conflict before cleanup claims this scope')}`,
-          },
-          stale_context_receipts: [receipt],
-        });
-      }
-    }
+    addStaleProcessAction(items, project);
 
-    const staleProcesses = Array.isArray(project.agent_processes?.stale)
-      ? project.agent_processes.stale
-      : [];
-    const staleProcessCount = Number(project.agent_processes?.stale_count ?? staleProcesses.length);
-    if (staleProcessCount > 0) {
-      const pids = staleProcesses.map((item) => item.pid).filter(Boolean);
-      const oldest = staleProcesses.reduce((max, item) => Math.max(max, Number(item.age_seconds || 0)), 0);
-      const sampleSuffix = staleProcessCount > pids.length ? `; sample pids ${pids.join(', ')}` : `; pids ${pids.join(', ')}`;
-      items.push({
-        severity: 'blocker',
-        kind: 'stale-agent-process',
-        project: project.id,
-        brick: 'stale-agent-process',
-        impact_score: staleProcessCount,
-        stale_process_count: staleProcessCount,
-        stale_process_pids: pids,
-        oldest_age_seconds: oldest,
-        threshold_seconds: Number(project.agent_processes?.threshold_seconds ?? staleProcessSeconds()),
-        title: `Inspect ${staleProcessCount} stale-looking project-rooted agent process${staleProcessCount === 1 ? '' : 'es'}`,
-        detail: `oldest ${formatDuration(oldest)}, threshold ${formatDuration(project.agent_processes?.threshold_seconds ?? staleProcessSeconds())}${sampleSuffix}; verify owner before any termination`,
-        command: `npm run controller:snapshot:quiet -- --project ${shellArg(project.id)} --dirty-limit 0`,
-        next_commands: {
-          inspect: pids.length ? `ps -o pid,ppid,etimes,cmd -p ${pids.join(',')}` : `npm run controller:snapshot:quiet -- --project ${shellArg(project.id)} --dirty-limit 0`,
-          conflict: `npm run conflict -- report --project ${shellArg(project.id)} --brick 'stale-agent-process' --intent 'stale project-rooted agent process overlaps current Gen3 wave' --resolution-plan 'verify owner, attach or renew lease, and only terminate after explicit owner check'`,
-        },
-        process_sample: staleProcesses,
-      });
-    }
-
-    const uncoveredGroups = activeDirtyScopeGaps(project);
-    if (uncoveredGroups.length) {
-      const dirtyCount = project.git?.dirty_count ?? 0;
-      const leaseCount = project.active_leases.length;
-      const uncoveredDirtyCount = sumDirtyGroups(uncoveredGroups);
-      const commands = dirtyGroupCommands(project, uncoveredGroups, uncoveredDirtyCount >= DIRTY_PARALLEL_CLAIM_MIN_DIRTY);
-      const topGroup = firstDirtyGroup(uncoveredGroups);
-      items.push({
-        severity: 'blocker',
-        kind: 'active-dirty-scope',
-        project: project.id,
-        brick: commands.brick,
-        impact_score: uncoveredDirtyCount,
-        dirty_count: dirtyCount,
-        uncovered_dirty_count: uncoveredDirtyCount,
-        uncovered_group_count: uncoveredGroups.length,
-        top_dirty_group: topGroup.group,
-        top_dirty_group_count: topGroup.count,
-        top_dirty_group_sample_paths: topGroup.sample_paths || [],
-        title: `Verify active dirty scope for ${uncoveredDirtyCount} uncovered dirty path${uncoveredDirtyCount === 1 ? '' : 's'}`,
-        detail: `${leaseCount} active lease${leaseCount === 1 ? '' : 's'}; suspect uncovered groups: ${formatDirtyGroups(uncoveredGroups)}`,
-        command: commands.claim,
-        next_commands: {
-          inspect: commands.inspect,
-          conflict: commands.conflict,
-        },
-        ...(commands.parallel_claims.length > 1 ? { parallel_claims: commands.parallel_claims } : {}),
-      });
-    }
-
-    if (project.graph && !project.graph.ready) {
-      items.push({
-        severity: 'warning',
-        kind: 'graph-gap',
-        project: project.id,
-        brick: null,
-        impact_score: 1,
-        title: `Refresh missing project graph for ${project.id}`,
-        detail: project.graph.graph_path,
-        command: graphGapCommand(project),
-      });
-    }
-
-    if (moduleGraphGapCount(project.module_graph) > 0) {
-      const gapCount = moduleGraphGapCount(project.module_graph);
-      items.push({
-        severity: 'warning',
-        kind: 'module-graph-gap',
-        project: project.id,
-        brick: null,
-        impact_score: gapCount,
-        module_graph_gap_count: gapCount,
-        missing_graph_count: Number(project.module_graph?.missing_graph_count ?? 0),
-        missing_target_count: Number(project.module_graph?.missing_target_count ?? 0),
-        repair_kind: moduleGraphGapRepairKind(project.module_graph),
-        target_fixes: moduleGraphTargetFixes(project.module_graph),
-        title: `Repair module graph gaps for ${project.id}`,
-        detail: moduleGraphGapDetail(project.module_graph),
-        command: moduleGraphGapCommand(project),
-      });
-    }
-
-    for (const lease of project.active_leases) {
-      items.push({
-        severity: 'watch',
-        kind: 'active-lease',
-        project: project.id,
-        brick: lease.resource_kind === 'brick' ? lease.resource_id : null,
-        title: `Watch active ${lease.resource_kind}:${lease.resource_id}`,
-        detail: `${lease.agent_id}; ${lease.intent || 'no intent'}`,
-        command: `npm run controller:snapshot:quiet -- --project ${shellArg(project.id)}`,
-      });
-    }
+    addActiveDirtyScopeAction(items, project);
+    addGraphActions(items, project);
+    addLeaseActions(items, project);
   }
 
   return items.sort((left, right) => actionRank(left) - actionRank(right)
     || actionImpact(right) - actionImpact(left)
     || actionParallelBreadth(right) - actionParallelBreadth(left)
-    || String(left.project).localeCompare(String(right.project))
-    || String(left.kind).localeCompare(String(right.kind)));
+    || left.project.localeCompare(right.project)
+    || left.kind.localeCompare(right.kind));
 }
 
-function actionRank(item) {
+function addConflictActions(items: ActionItem[], project: ProjectSnapshot) {
+  for (const conflict of project.conflicts.open) {
+    items.push({ severity: 'blocker', kind: 'open-conflict', project: project.id, brick: conflict.brick_id ?? null,
+      title: `Resolve open conflict on ${project.id}`, detail: conflict.intent ?? 'conflict report has no intent',
+      command: `npm run conflict -- resolve --project ${shellArg(project.id)} --brick ${shellArg(conflict.brick_id ?? '<brick>')} --intent "<resolution>" --decision "<decision>"` });
+  }
+}
+
+function addDirtyUnleasedAction(items: ActionItem[], project: ProjectSnapshot) {
+  if (project.status !== 'dirty-unleased') return;
+  const dirtyCount = project.git?.dirty_count ?? 0;
+  const modifiedCount = project.git?.modified_count ?? 0;
+  const untrackedCount = project.git?.untracked_count ?? 0;
+  const groups = formatDirtyGroups(project.git?.groups);
+  const commands = dirtyGroupCommands(project, project.git?.groups, dirtyCount >= DIRTY_PARALLEL_CLAIM_MIN_DIRTY);
+  const topGroup = firstDirtyGroup(project.git?.groups);
+  items.push({ severity: 'blocker', kind: 'dirty-unleased', project: project.id, brick: commands.brick, impact_score: dirtyCount,
+    dirty_count: dirtyCount, modified_count: modifiedCount, untracked_count: untrackedCount, top_dirty_group: topGroup.group,
+    top_dirty_group_count: topGroup.count, top_dirty_group_sample_paths: topGroup.sample_paths ?? [],
+    title: `Claim, clean, or conflict-report ${String(dirtyCount)} unleased dirty path${dirtyCount === 1 ? '' : 's'}`,
+    detail: `${String(modifiedCount)} modified, ${String(untrackedCount)} untracked; full paths hidden by default${groups ? `; groups: ${groups}` : ''}`,
+    command: commands.claim, next_commands: { inspect: commands.inspect, conflict: commands.conflict },
+    ...(commands.parallel_claims.length > 1 ? { parallel_claims: commands.parallel_claims } : {}) });
+}
+
+function addStaleContextActions(items: ActionItem[], project: ProjectSnapshot) {
+  const stale = project.stale_context ?? emptyStaleContext();
+  if (stale.receipt_count <= 0) return;
+  for (const receipt of stale.receipts) {
+    const topGroup = firstDirtyGroup(receipt.groups);
+    const brick = receipt.brick_id || dirtyGroupBrick(topGroup.group || 'stale-context');
+    const dirtyCount = receipt.dirty_count;
+    const renewIntent = `renew or hand off stale Gen3 context ${brick} (${String(dirtyCount)} dirty path${dirtyCount === 1 ? '' : 's'})`;
+    items.push({ severity: 'blocker', kind: 'stale-context', project: project.id, brick, impact_score: dirtyCount,
+      dirty_count: project.git?.dirty_count ?? dirtyCount, stale_context_dirty_count: dirtyCount, stale_context_receipt_count: 1,
+      stale_context_total_receipt_count: stale.receipt_count, top_dirty_group: topGroup.group, top_dirty_group_count: topGroup.count,
+      top_dirty_group_sample_paths: topGroup.sample_paths ?? [], title: `Renew, hand off, or conflict-report stale Gen3 context ${brick}`,
+      detail: formatStaleContextReceiptDetail(receipt),
+      command: `npm run start:edit -- --project ${shellArg(project.id)} --brick ${shellArg(brick)} --intent ${shellArg(renewIntent)}`,
+      next_commands: { inspect: `npm run controller:snapshot -- --project ${shellArg(project.id)} --dirty-limit 20`,
+        conflict: `npm run conflict -- report --project ${shellArg(project.id)} --brick ${shellArg(brick)} --intent ${shellArg('stale Gen3 context receipt overlaps current cleanup or module work')} --resolution-plan ${shellArg('renew the lease, hand off the work, or document the conflict before cleanup claims this scope')}` },
+      stale_context_receipts: [receipt] });
+  }
+}
+
+function addStaleProcessAction(items: ActionItem[], project: ProjectSnapshot) {
+  const staleProcesses = project.agent_processes?.stale ?? [];
+  const staleProcessCount = project.agent_processes?.stale_count ?? staleProcesses.length;
+  if (staleProcessCount <= 0) return;
+  const pids = staleProcesses.map((item) => item.pid).filter(Boolean);
+  const oldest = staleProcesses.reduce((max, item) => Math.max(max, item.age_seconds), 0);
+  const sampleSuffix = staleProcessCount > pids.length ? `; sample pids ${pids.join(', ')}` : `; pids ${pids.join(', ')}`;
+  const threshold = project.agent_processes?.threshold_seconds ?? staleProcessSeconds();
+  items.push({ severity: 'blocker', kind: 'stale-agent-process', project: project.id, brick: 'stale-agent-process', impact_score: staleProcessCount,
+    stale_process_count: staleProcessCount, stale_process_pids: pids, oldest_age_seconds: oldest, threshold_seconds: threshold,
+    title: `Inspect ${String(staleProcessCount)} stale-looking project-rooted agent process${staleProcessCount === 1 ? '' : 'es'}`,
+    detail: `oldest ${formatDuration(oldest)}, threshold ${formatDuration(threshold)}${sampleSuffix}; verify owner before any termination`,
+    command: `npm run controller:snapshot:quiet -- --project ${shellArg(project.id)} --dirty-limit 0`,
+    next_commands: { inspect: pids.length ? `ps -o pid,ppid,etimes,cmd -p ${pids.join(',')}` : `npm run controller:snapshot:quiet -- --project ${shellArg(project.id)} --dirty-limit 0`,
+      conflict: `npm run conflict -- report --project ${shellArg(project.id)} --brick 'stale-agent-process' --intent 'stale project-rooted agent process overlaps current Gen3 wave' --resolution-plan 'verify owner, attach or renew lease, and only terminate after explicit owner check'` },
+    process_sample: staleProcesses });
+}
+
+function addActiveDirtyScopeAction(items: ActionItem[], project: ProjectSnapshot) {
+  const uncoveredGroups = activeDirtyScopeGaps(project);
+  if (uncoveredGroups.length === 0) return;
+  const dirtyCount = project.git?.dirty_count ?? 0;
+  const uncoveredDirtyCount = sumDirtyGroups(uncoveredGroups);
+  const commands = dirtyGroupCommands(project, uncoveredGroups, uncoveredDirtyCount >= DIRTY_PARALLEL_CLAIM_MIN_DIRTY);
+  const topGroup = firstDirtyGroup(uncoveredGroups);
+  items.push({ severity: 'blocker', kind: 'active-dirty-scope', project: project.id, brick: commands.brick, impact_score: uncoveredDirtyCount,
+    dirty_count: dirtyCount, uncovered_dirty_count: uncoveredDirtyCount, uncovered_group_count: uncoveredGroups.length,
+    top_dirty_group: topGroup.group, top_dirty_group_count: topGroup.count, top_dirty_group_sample_paths: topGroup.sample_paths ?? [],
+    title: `Verify active dirty scope for ${String(uncoveredDirtyCount)} uncovered dirty path${uncoveredDirtyCount === 1 ? '' : 's'}`,
+    detail: `${String(project.active_leases.length)} active lease${project.active_leases.length === 1 ? '' : 's'}; suspect uncovered groups: ${formatDirtyGroups(uncoveredGroups)}`,
+    command: commands.claim, next_commands: { inspect: commands.inspect, conflict: commands.conflict },
+    ...(commands.parallel_claims.length > 1 ? { parallel_claims: commands.parallel_claims } : {}) });
+}
+
+function addGraphActions(items: ActionItem[], project: ProjectSnapshot) {
+  if (project.graph && !project.graph.ready) {
+    items.push({ severity: 'warning', kind: 'graph-gap', project: project.id, brick: null, impact_score: 1,
+      title: `Refresh missing project graph for ${project.id}`, detail: project.graph.graph_path, command: graphGapCommand(project) });
+  }
+  const gapCount = moduleGraphGapCount(project.module_graph);
+  if (gapCount <= 0) return;
+  items.push({ severity: 'warning', kind: 'module-graph-gap', project: project.id, brick: null, impact_score: gapCount,
+    module_graph_gap_count: gapCount, missing_graph_count: project.module_graph?.missing_graph_count ?? 0,
+    missing_target_count: project.module_graph?.missing_target_count ?? 0, repair_kind: moduleGraphGapRepairKind(project.module_graph),
+    target_fixes: moduleGraphTargetFixes(project.module_graph), title: `Repair module graph gaps for ${project.id}`,
+    detail: moduleGraphGapDetail(project.module_graph), command: moduleGraphGapCommand(project) });
+}
+
+function addLeaseActions(items: ActionItem[], project: ProjectSnapshot) {
+  for (const lease of project.active_leases) {
+    items.push({ severity: 'watch', kind: 'active-lease', project: project.id,
+      brick: lease.resource_kind === 'brick' ? lease.resource_id : null, title: `Watch active ${lease.resource_kind}:${lease.resource_id}`,
+      detail: `${lease.agent_id}; ${lease.intent ?? 'no intent'}`, command: `npm run controller:snapshot:quiet -- --project ${shellArg(project.id)}` });
+  }
+}
+
+function actionRank(item: Pick<ActionItem, 'severity' | 'kind'>) {
   const severityRank = { blocker: 0, warning: 1, watch: 2 };
   const kindRank = {
     'open-conflict': 0,
@@ -536,40 +505,11 @@ function actionRank(item) {
     'module-graph-gap': 6,
     'active-lease': 7,
   };
-  return (severityRank[item.severity] ?? 9) * 10 + (kindRank[item.kind] ?? 9);
+  return severityRank[item.severity] * 10 + kindRank[item.kind];
 }
 
-function buildParallelWave(actionItems, limit = DEFAULT_PARALLEL_WAVE_LIMIT) {
-  const candidates = [];
-  for (const item of actionItems) {
-    if (item.severity !== 'blocker' || item.kind !== 'dirty-unleased') continue;
-    const claims = Array.isArray(item.parallel_claims) && item.parallel_claims.length
-      ? item.parallel_claims
-      : [{
-        group: item.top_dirty_group || item.brick || 'dirty',
-        count: Number(item.top_dirty_group_count ?? item.dirty_count ?? 0),
-        brick: item.brick,
-        command: item.command,
-        conflict: item.next_commands?.conflict,
-        sample_paths: item.top_dirty_group_sample_paths || [],
-      }];
-
-    for (const claim of claims) {
-      const count = Number(claim.count ?? 0);
-      if (!claim.command || count <= 0) continue;
-      candidates.push({
-        project: item.project,
-        group: claim.group || item.top_dirty_group || item.brick || 'dirty',
-        count,
-        parent_dirty_count: Number(item.dirty_count ?? item.impact_score ?? 0),
-        brick: claim.brick || item.brick || null,
-        command: claim.command,
-        inspect: item.next_commands?.inspect || null,
-        conflict: claim.conflict || item.next_commands?.conflict || null,
-        sample_paths: claim.sample_paths || [],
-      });
-    }
-  }
+function buildParallelWave(actionItems: ActionItem[], limit = DEFAULT_PARALLEL_WAVE_LIMIT) {
+  const candidates = collectParallelCandidates(actionItems);
 
   candidates.sort((left, right) => right.count - left.count
     || right.parent_dirty_count - left.parent_dirty_count
@@ -577,11 +517,11 @@ function buildParallelWave(actionItems, limit = DEFAULT_PARALLEL_WAVE_LIMIT) {
     || left.group.localeCompare(right.group));
 
   const selectedSource = candidates.slice(0, limit);
-  const selectedTotal = selectedSource.reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const selectedTotal = selectedSource.reduce((sum, item) => sum + (item.count || 0), 0);
   const selected = selectedSource.map((item, index) => ({
     rank: index + 1,
     wave_gain_percent: percent(item.count, selectedTotal),
-    project_gain_percent: Number(item.parent_dirty_count || 0) > 0 ? percent(item.count, item.parent_dirty_count) : null,
+    project_gain_percent: (item.parent_dirty_count || 0) > 0 ? percent(item.count, item.parent_dirty_count) : null,
     ...item,
   }));
 
@@ -596,51 +536,76 @@ function buildParallelWave(actionItems, limit = DEFAULT_PARALLEL_WAVE_LIMIT) {
   };
 }
 
-function actionImpact(item) {
-  const explicit = Number(item?.impact_score ?? 0);
+function collectParallelCandidates(actionItems: ActionItem[]) {
+  const candidates: ParallelCandidate[] = [];
+  for (const item of actionItems) {
+    if (item.severity !== 'blocker' || item.kind !== 'dirty-unleased') continue;
+    for (const claim of parallelClaims(item)) {
+      if (!claim.command || claim.count <= 0) continue;
+      candidates.push(parallelCandidate(item, claim));
+    }
+  }
+  return candidates;
+}
+
+function parallelClaims(item: ActionItem): DirtyClaim[] {
+  if (item.parallel_claims?.length) return item.parallel_claims;
+  return [{ group: item.top_dirty_group ?? item.brick ?? 'dirty', count: item.top_dirty_group_count ?? item.dirty_count ?? 0,
+    brick: item.brick, command: item.command, conflict: item.next_commands?.conflict, sample_paths: item.top_dirty_group_sample_paths ?? [] }];
+}
+
+function parallelCandidate(item: ActionItem, claim: DirtyClaim): ParallelCandidate {
+  return { project: item.project, group: firstNonEmpty(claim.group, item.top_dirty_group, item.brick, 'dirty'), count: claim.count,
+    parent_dirty_count: item.dirty_count ?? item.impact_score ?? 0, brick: claim.brick ?? item.brick,
+    command: claim.command, inspect: item.next_commands?.inspect ?? null, conflict: claim.conflict ?? item.next_commands?.conflict ?? null,
+    sample_paths: claim.sample_paths };
+}
+
+function firstNonEmpty(...values: (string | null | undefined)[]) {
+  for (const value of values) if (value) return value;
+  return '';
+}
+
+function actionImpact(item: ActionItem) {
+  const explicit = (item.impact_score ?? 0);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
-  if (item?.kind === 'stale-context') return Number(item.stale_context_dirty_count ?? item.dirty_count ?? 0);
-  if (item?.kind === 'dirty-unleased') return Number(item.dirty_count ?? 0);
-  if (item?.kind === 'active-dirty-scope') return Number(item.uncovered_dirty_count ?? item.dirty_count ?? 0);
-  if (item?.kind === 'module-graph-gap') return Number(item.module_graph_gap_count ?? 0);
-  if (item?.kind === 'graph-gap') return 1;
+  if (item.kind === 'stale-context') return (item.stale_context_dirty_count ?? item.dirty_count ?? 0);
+  if (item.kind === 'dirty-unleased') return (item.dirty_count ?? 0);
+  if (item.kind === 'active-dirty-scope') return (item.uncovered_dirty_count ?? item.dirty_count ?? 0);
+  if (item.kind === 'module-graph-gap') return (item.module_graph_gap_count ?? 0);
+  if (item.kind === 'graph-gap') return 1;
   return 0;
 }
 
-function percent(part, whole) {
-  const numerator = Number(part || 0);
-  const denominator = Number(whole || 0);
+function percent(part: unknown, whole: unknown) {
+  const numerator = Number(part ?? 0);
+  const denominator = Number(whole ?? 0);
   if (!denominator) return 0;
   return Math.round((numerator / denominator) * 1000) / 10;
 }
 
-function formatNullablePercent(value) {
-  if (value === null || value === undefined || value === '') return 'n/a';
-  return `${value}%`;
-}
-
-function formatDuration(seconds) {
-  const value = Number(seconds || 0);
+function formatDuration(seconds: unknown) {
+  const value = Number(seconds ?? 0);
   if (!Number.isFinite(value) || value <= 0) return '0s';
   const hours = Math.floor(value / 3600);
   const minutes = Math.floor((value % 3600) / 60);
   const secs = Math.floor(value % 60);
-  if (hours > 0) return `${hours}h${String(minutes).padStart(2, '0')}m`;
-  if (minutes > 0) return `${minutes}m${String(secs).padStart(2, '0')}s`;
-  return `${secs}s`;
+  if (hours > 0) return `${String(hours)}h${String(minutes).padStart(2, '0')}m`;
+  if (minutes > 0) return `${String(minutes)}m${String(secs).padStart(2, '0')}s`;
+  return `${String(secs)}s`;
 }
 
-function truncate(value, limit) {
-  const text = String(value || '');
+function truncate(value: unknown, limit: number) {
+  const text = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
   return text.length > limit ? `${text.slice(0, Math.max(0, limit - 3))}...` : text;
 }
 
-function actionParallelBreadth(item) {
-  return Array.isArray(item?.parallel_claims) ? item.parallel_claims.length : 0;
+function actionParallelBreadth(item: ActionItem) {
+  return Array.isArray(item.parallel_claims) ? item.parallel_claims.length : 0;
 }
 
-async function resolveProjectIds(leases) {
-  const ids = new Set();
+async function resolveProjectIds(leases: LeaseState) {
+  const ids = new Set<string>();
   const explicit = asArray(args.project);
   if (explicit.length) {
     explicit.forEach((id) => ids.add(id));
@@ -662,12 +627,12 @@ async function resolveProjectIds(leases) {
   return dedupeByResolvedRoot([...ids]);
 }
 
-function dedupeByResolvedRoot(projectIds) {
-  const out = [];
-  const seenRoots = new Set();
+function dedupeByResolvedRoot(projectIds: string[]) {
+  const out: string[] = [];
+  const seenRoots = new Set<string>();
   for (const id of projectIds) {
     const root = safeProjectRoot(id);
-    const key = root || `missing:${id}`;
+    const key = root ?? `missing:${id}`;
     if (seenRoots.has(key)) continue;
     seenRoots.add(key);
     out.push(id);
@@ -675,7 +640,7 @@ function dedupeByResolvedRoot(projectIds) {
   return out;
 }
 
-function buildProjectSnapshot(projectId, leases) {
+function buildProjectSnapshot(projectId: string, leases: LeaseState): ProjectSnapshot {
   const root = safeProjectRoot(projectId);
   const conflicts = root ? readConflictSummary(projectId) : emptyConflicts();
   const git = root && !args.noDirty ? readGitStatus(root) : null;
@@ -683,7 +648,7 @@ function buildProjectSnapshot(projectId, leases) {
   const graph = root && !args.noGraphs ? readGraphStatus(root) : null;
   const moduleGraph = root && args.moduleGraphs ? readModuleGraphStatus(projectId, root) : null;
   const staleContext = root && git ? readStaleContextReceipts(projectId, git, projectLeases) : emptyStaleContext();
-  const processScanEnabled = args.processes || args.staleProcessSeconds !== undefined;
+  const processScanEnabled = args.processes ?? args.staleProcessSeconds !== undefined;
   const agentProcesses = root && processScanEnabled && !args.noProcesses
     ? readProjectAgentProcesses(root, projectLeases)
     : null;
@@ -702,31 +667,44 @@ function buildProjectSnapshot(projectId, leases) {
   };
 }
 
-function projectStatus({ root, projectLeases, conflicts, git, graph, moduleGraph, agentProcesses, staleContext }) {
+function projectStatus({ root, projectLeases, conflicts, git, graph, moduleGraph, agentProcesses, staleContext }: {
+  root: string | null;
+  projectLeases: Lease[];
+  conflicts: ConflictSummary;
+  git: GitStatus | null;
+  graph: GraphStatus | null;
+  moduleGraph: ModuleGraphStatus | null;
+  agentProcesses: AgentProcessSummary | null;
+  staleContext: StaleContext;
+}) {
   if (!root) return 'missing';
   if (conflicts.open_count > 0) return 'blocked';
-  if (git?.dirty_count > 0 && projectLeases.length === 0 && Number(staleContext?.receipt_count ?? 0) > 0) return 'stale-context';
-  if (git?.dirty_count > 0 && projectLeases.length === 0) return 'dirty-unleased';
-  if (Number(agentProcesses?.stale_count ?? 0) > 0) return 'stale-agent-process';
-  if (graph && !graph.ready) return 'graph-gap';
-  if (moduleGraphGapCount(moduleGraph) > 0) return 'graph-gap';
-  if (projectLeases.length > 0 || git?.dirty_count > 0) return 'active';
+  const dirtyCount = git?.dirty_count ?? 0;
+  if (dirtyCount > 0 && projectLeases.length === 0) return staleContext.receipt_count > 0 ? 'stale-context' : 'dirty-unleased';
+  if ((agentProcesses?.stale_count ?? 0) > 0) return 'stale-agent-process';
+  if (hasGraphGap(graph, moduleGraph)) return 'graph-gap';
+  if (projectLeases.length > 0 || dirtyCount > 0) return 'active';
   return 'clear';
 }
 
-function safeProjectRoot(projectId) {
+function hasGraphGap(graph: GraphStatus | null, moduleGraph: ModuleGraphStatus | null) {
+  return Boolean(graph && !graph.ready) || moduleGraphGapCount(moduleGraph) > 0;
+}
+
+function safeProjectRoot(projectId: string) {
   try { return projectRoot(projectId); } catch { return null; }
 }
 
-function readConflictSummary(projectId) {
-  const all = [];
+function readConflictSummary(projectId: string): ConflictSummary {
+  const all: ContextEvent[] = [];
   let detected = 0;
   let resolved = 0;
   try {
     for (const brick of listBricksWithContext(projectId)) {
       const events = readContextLog(projectId, brick)
+        .filter(isContextEvent)
         .filter((event) => event.kind === 'conflict_detected' || event.kind === 'conflict_resolved')
-        .map((event) => ({ ...event, brick_id: event.brick_id || brick, project: event.project || projectId }));
+        .map((event) => ({ ...event, brick_id: event.brick_id ?? brick, project: event.project ?? projectId }));
       for (const event of events) {
         if (event.kind === 'conflict_detected') detected += 1;
         if (event.kind === 'conflict_resolved') resolved += 1;
@@ -736,7 +714,7 @@ function readConflictSummary(projectId) {
   } catch {
     return { detected_count: detected, resolved_count: resolved, open_count: 0, open: [] };
   }
-  all.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+  all.sort((a, b) => (b.timestamp ?? '').localeCompare((a.timestamp ?? '')));
   return {
     detected_count: detected,
     resolved_count: resolved,
@@ -745,9 +723,9 @@ function readConflictSummary(projectId) {
   };
 }
 
-function openConflicts(events) {
+function openConflicts(events: ContextEvent[]) {
   let openCount = 0;
-  const out = [];
+  const out: ContextEvent[] = [];
   for (const event of events) {
     if (event.kind === 'conflict_detected') {
       openCount += 1;
@@ -759,27 +737,27 @@ function openConflicts(events) {
   return openCount > 0 ? out.slice(-openCount) : [];
 }
 
-function emptyConflicts() {
+function emptyConflicts(): ConflictSummary {
   return { detected_count: 0, resolved_count: 0, open_count: 0, open: [] };
 }
 
-function emptyStaleContext() {
+function emptyStaleContext(): StaleContext {
   return { receipt_count: 0, dirty_count: 0, receipts: [] };
 }
 
-function readStaleContextReceipts(projectId, git, activeLeases = []) {
-  const groups = Array.isArray(git?.groups) ? git.groups : [];
+function readStaleContextReceipts(projectId: string, git: GitStatus, activeLeases: LeaseScope[] = []): StaleContext {
+  const groups = Array.isArray(git.groups) ? git.groups : [];
   const contextBrickIds = dirtyContextBrickIdsFromGit(git);
-  if (!groups.length || !contextBrickIds.size) return emptyStaleContext();
+  if (hasNoContextReceipts(groups, contextBrickIds)) return emptyStaleContext();
 
-  const activeResources = new Set<string>((Array.isArray(activeLeases) ? activeLeases : [])
+  const activeResources = new Set<string>(activeLeases
     .map((lease) => normalizeScopeId(lease.resource_id))
-    .filter(Boolean) as string[]);
-  const receipts = [];
-  for (const brickId of ([...contextBrickIds] as string[]).sort()) {
+    .filter(Boolean));
+  const receipts: StaleContextReceipt[] = [];
+  for (const brickId of [...contextBrickIds].sort()) {
     if (activeResources.has(brickId)) continue;
     const latest = latestRelevantContextEvent(safeReadContextEvents(projectId, brickId));
-    if (!latest || !STALE_CONTEXT_PENDING_KINDS.has(latest.kind)) continue;
+    if (!isPendingContextEvent(latest)) continue;
     const ageSeconds = eventAgeSeconds(latest);
     if (ageSeconds === null || ageSeconds > STALE_CONTEXT_RECEIPT_SECONDS) continue;
     const pseudoLease = {
@@ -792,18 +770,18 @@ function readStaleContextReceipts(projectId, git, activeLeases = []) {
     if (!matchedGroups.length) continue;
     receipts.push({
       brick_id: brickId,
-      actor_id: latest.actor_id || null,
-      session_id: latest.session_id || null,
-      lease_id: latest.lease_id || null,
+      actor_id: latest.actor_id ?? null,
+      session_id: latest.session_id ?? null,
+      lease_id: latest.lease_id ?? null,
       kind: latest.kind,
-      intent: latest.intent || '',
-      timestamp: latest.timestamp || null,
+      intent: latest.intent ?? '',
+      timestamp: latest.timestamp ?? null,
       age_seconds: ageSeconds,
       matched_group_count: matchedGroups.length,
       dirty_count: sumDirtyGroups(matchedGroups),
       groups: matchedGroups.slice(0, 5).map((group) => ({
         group: group.group,
-        count: Number(group.count || 0),
+        count: (group.count || 0),
         sample_paths: normalizeSamplePaths(group.sample_paths),
       })),
     });
@@ -816,41 +794,49 @@ function readStaleContextReceipts(projectId, git, activeLeases = []) {
   };
 }
 
-function sumUniqueReceiptGroups(receipts) {
-  const groups = new Map();
-  for (const receipt of Array.isArray(receipts) ? receipts : []) {
-    for (const group of receipt.groups || []) {
-      if (!group?.group) continue;
-      const previous = Number(groups.get(group.group) || 0);
-      groups.set(group.group, Math.max(previous, Number(group.count || 0)));
+function hasNoContextReceipts(groups: DirtyGroupSummary[], brickIds: Set<string>) {
+  return groups.length === 0 || brickIds.size === 0;
+}
+
+function isPendingContextEvent(event: ContextEvent | null): event is ContextEvent {
+  return event !== null && STALE_CONTEXT_PENDING_KINDS.has(event.kind);
+}
+
+function sumUniqueReceiptGroups(receipts: StaleContextReceipt[]) {
+  const groups = new Map<string, number>();
+  for (const receipt of receipts) {
+    for (const group of receipt.groups) {
+      if (!group.group) continue;
+      const previous = (groups.get(group.group) ?? 0);
+      groups.set(group.group, Math.max(previous, group.count));
     }
   }
   return [...groups.values()].reduce((sum, count) => sum + count, 0);
 }
 
-function safeReadContextEvents(projectId, brickId) {
+function safeReadContextEvents(projectId: string, brickId: string): ContextEvent[] {
   try {
-    return readContextLog(projectId, brickId);
+    return readContextLog(projectId, brickId).filter(isContextEvent);
   } catch {
     return [];
   }
 }
 
-function latestRelevantContextEvent(events) {
-  const relevant = (Array.isArray(events) ? events : [])
-    .filter((event) => STALE_CONTEXT_RELEVANT_KINDS.has(event?.kind))
-    .filter((event) => event?.timestamp)
-    .sort((left, right) => String(right.timestamp || '').localeCompare(String(left.timestamp || '')));
-  return relevant[0] || null;
+function latestRelevantContextEvent(events: ContextEvent[]): ContextEvent | null {
+  const relevant = events
+    .filter((event) => STALE_CONTEXT_RELEVANT_KINDS.has(event.kind))
+    .filter((event) => event.timestamp)
+    .sort((left, right) => (right.timestamp ?? '').localeCompare((left.timestamp ?? '')));
+  return relevant.at(0) ?? null;
 }
 
-function eventAgeSeconds(event) {
-  const parsed = Date.parse(event?.timestamp || '');
+function eventAgeSeconds(event: ContextEvent) {
+  const parsed = Date.parse(event.timestamp ?? '');
   if (!Number.isFinite(parsed)) return null;
   return Math.max(0, Math.round((Date.now() - parsed) / 1000));
 }
 
-function readGitStatus(root) {
+function readGitStatus(root: string): GitStatus {
   try {
     const raw = execFileSync('git', ['status', '--short', '--branch'], {
       cwd: root,
@@ -883,19 +869,19 @@ function readGitStatus(root) {
       dirty_hidden_count: 0,
       groups: [],
       sample: [],
-      error: err.message,
+      error: errorMessage(err),
     };
   }
 }
 
-function filterSelfGeneratedDirty(changes, root) {
+function filterSelfGeneratedDirty(changes: string[], root: string) {
   if (args.includeGeneratedDirty) return changes;
   const resolvedRoot = root ? resolve(root) : '';
   if (resolvedRoot !== SMA_ROOT) return changes;
   return changes.filter((line) => !isSmaSelfGeneratedDirtyPath(statusPath(line)));
 }
 
-function readProjectAgentProcesses(root, projectLeases) {
+function readProjectAgentProcesses(root: string, projectLeases: Lease[]): AgentProcessSummary {
   const threshold = staleProcessSeconds();
   const resolvedRoot = resolve(root);
   const table = processTable();
@@ -926,7 +912,7 @@ function readProjectAgentProcesses(root, projectLeases) {
   };
 }
 
-function processTable() {
+function processTable(): ProcessEntry[] {
   if (PROCESS_TABLE_CACHE) return PROCESS_TABLE_CACHE;
   try {
     const raw = execFileSync('ps', ['-eo', 'pid=,ppid=,etimes=,args='], {
@@ -940,19 +926,19 @@ function processTable() {
       .map((line) => line.trim())
       .filter(Boolean)
       .map(parseProcessLine)
-      .filter(Boolean)
+      .filter((proc): proc is ProcessBase => proc !== null)
       .map((proc) => ({ ...proc, cwd: safeProcessCwd(proc.pid) }))
-      .filter((proc) => proc.cwd);
+      .filter((proc): proc is ProcessEntry => proc.cwd !== null);
     PROCESS_TABLE_ERROR = null;
   } catch (err) {
-    PROCESS_TABLE_ERROR = err.message;
+    PROCESS_TABLE_ERROR = errorMessage(err);
     PROCESS_TABLE_CACHE = [];
   }
   return PROCESS_TABLE_CACHE;
 }
 
-function parseProcessLine(line) {
-  const match = String(line || '').match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/);
+function parseProcessLine(line: string): ProcessBase | null {
+  const match = /^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/.exec((line || ''));
   if (!match) return null;
   return {
     pid: Number(match[1]),
@@ -962,20 +948,20 @@ function parseProcessLine(line) {
   };
 }
 
-function safeProcessCwd(pid) {
+function safeProcessCwd(pid: number) {
   try {
-    return resolve(readlinkSync(`/proc/${pid}/cwd`));
+    return resolve(readlinkSync(`/proc/${String(pid)}/cwd`));
   } catch {
     return null;
   }
 }
 
-function currentProcessAncestorPids() {
+function currentProcessAncestorPids(): Set<number> {
   if (CURRENT_PROCESS_ANCESTOR_PIDS) return CURRENT_PROCESS_ANCESTOR_PIDS;
-  const out = new Set();
+  const out = new Set<number>();
   let pid = process.pid;
   for (let depth = 0; pid && depth < 64; depth += 1) {
-    out.add(Number(pid));
+    out.add(pid);
     const parent = processParentPid(pid);
     if (!parent || parent === pid || out.has(parent)) break;
     pid = parent;
@@ -984,15 +970,15 @@ function currentProcessAncestorPids() {
   return out;
 }
 
-function currentAgentSubtreePids(table = processTable()) {
+function currentAgentSubtreePids(table = processTable()): Set<number> {
   if (CURRENT_AGENT_SUBTREE_PIDS) return CURRENT_AGENT_SUBTREE_PIDS;
   CURRENT_AGENT_SUBTREE_PIDS = agentSubtreePids(table, process.pid, currentProcessAncestorPids());
   return CURRENT_AGENT_SUBTREE_PIDS;
 }
 
-function agentSubtreePids(table, currentPid, ancestorPids) {
-  const tableByPid = new Map<number, any>(table.map((proc) => [proc.pid, proc]));
-  const ancestors = ancestorPids || [currentPid];
+function agentSubtreePids(table: ProcessEntry[], currentPid: number, ancestorPids: Iterable<number>) {
+  const tableByPid = new Map<number, ProcessEntry>(table.map((proc) => [proc.pid, proc]));
+  const ancestors = ancestorPids;
   let rootPid = currentPid;
   let seenAgentAncestor = false;
   for (const pid of ancestors) {
@@ -1017,7 +1003,7 @@ function agentSubtreePids(table, currentPid, ancestorPids) {
   return out;
 }
 
-function runSelfTest() {
+function runAgentProcessSelfTest() {
   const projectRoot = '/tmp/sma-gen3-fixture/project';
   const table = [
     { pid: 1, ppid: 0, age_seconds: 1000, cwd: '/', command: 'systemd' },
@@ -1052,6 +1038,9 @@ function runSelfTest() {
     DEFAULT_STALE_AGENT_PROCESS_SECONDS >= 24 * 60 * 60,
     'default stale process threshold must leave long-running Codex sessions alone',
   );
+}
+
+function runDirtyGroupingSelfTest() {
   assertSelftest(
     dirtyGroupKey('src/main/services/coreAgent/coreAgentTraceRecorder.ts') === 'src/main/services/coreAgent',
     'main service dirty group should stay service-specific instead of broad src/main',
@@ -1093,6 +1082,9 @@ function runSelfTest() {
     }, [modviralLease]),
     'module-specific dirty lease must not cover sibling modules through generic src/renderer tokens',
   );
+}
+
+function runLeaseCoverageSelfTest() {
   const coreAgentLease = {
     resource_kind: 'brick',
     resource_id: 'coreagent-live-ui-action-bridge',
@@ -1102,10 +1094,7 @@ function runSelfTest() {
   assertSelftest(
     dirtyGroupCoveredByLeases({
       group: 'src/main/ipc',
-      sample_paths: [
-        'src/main/ipc/coreAgentHandlers.ts',
-        'src/main/ipc/coreAgentRendererServices.ts',
-      ],
+      sample_paths: ['src/main/ipc/coreAgentHandlers.ts', 'src/main/ipc/coreAgentRendererServices.ts'],
     }, [coreAgentLease]),
     'camelCase CoreAgent IPC dirty paths should be covered by a coreagent active lease',
   );
@@ -1153,6 +1142,9 @@ function runSelfTest() {
     }),
     'unprojected SMA brick lease should apply to its matching SMA agent context log',
   );
+}
+
+function runStaleContextSelfTest() {
   assertSelftest(
     actionRank({ severity: 'blocker', kind: 'stale-context' }) < actionRank({ severity: 'blocker', kind: 'dirty-unleased' }),
     'stale context blockers should rank ahead of generic dirty-unleased cleanup',
@@ -1168,15 +1160,19 @@ function runSelfTest() {
     !STALE_CONTEXT_PENDING_KINDS.has(latestRelevantContextEvent([
       { kind: 'edit_planned', timestamp: '2026-01-01T00:00:00.000Z' },
       { kind: 'edit_applied', timestamp: '2026-01-01T00:02:00.000Z' },
-    ])?.kind),
+    ])?.kind ?? ''),
     'edit_applied should clear stale context state',
   );
   const staleSplitActions = buildActionItems([{
     id: 'demo',
+    root: '/tmp/demo',
     status: 'stale-context',
     active_leases: [],
-    conflicts: { open: [] },
-    git: { dirty_count: 7, modified_count: 7, untracked_count: 0, groups: [] },
+    conflicts: { detected_count: 0, resolved_count: 0, open_count: 0, open: [] },
+    git: {
+      branch: 'main', dirty_count: 7, modified_count: 7, untracked_count: 0,
+      dirty_limit: 0, dirty_hidden_count: 7, groups: [], sample: [],
+    },
     stale_context: {
       receipt_count: 2,
       dirty_count: 7,
@@ -1192,16 +1188,23 @@ function runSelfTest() {
   assertSelftest(staleSplitActions.length === 2, 'stale context receipts should become independently actionable blockers');
   assertSelftest(staleSplitActions[0].brick !== staleSplitActions[1].brick, 'split stale context blockers should preserve receipt brick identity');
 
+}
+
+function runSelfTest() {
+  runAgentProcessSelfTest();
+  runDirtyGroupingSelfTest();
+  runLeaseCoverageSelfTest();
+  runStaleContextSelfTest();
   console.log('OK sma-controller-snapshot selftest');
 }
 
-function assertSelftest(condition, message) {
+function assertSelftest(condition: unknown, message: string) {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }
 
-function processParentPid(pid) {
+function processParentPid(pid: number) {
   try {
-    const raw = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    const raw = readFileSync(`/proc/${String(pid)}/stat`, 'utf8');
     const end = raw.lastIndexOf(')');
     if (end < 0) return 0;
     const fields = raw.slice(end + 2).trim().split(/\s+/);
@@ -1211,8 +1214,8 @@ function processParentPid(pid) {
   }
 }
 
-function isAgentCommand(command) {
-  const value = String(command || '').toLowerCase();
+function isAgentCommand(command: string) {
+  const value = (command || '').toLowerCase();
   const tokens = value.split(/\s+/).filter(Boolean);
   if (!tokens.length) return false;
   const firstBase = commandTokenBase(tokens[0]);
@@ -1226,42 +1229,42 @@ function isAgentCommand(command) {
   return false;
 }
 
-function commandTokenBase(token) {
-  const normalized = String(token || '').replace(/^["']|["']$/g, '');
-  return normalized.split('/').filter(Boolean).pop() || normalized;
+function commandTokenBase(token: string) {
+  const normalized = (token || '').replace(/^["']|["']$/g, '');
+  return normalized.split('/').filter(Boolean).pop() ?? normalized;
 }
 
-function pathInside(candidate, root) {
+function pathInside(candidate: string, root: string) {
   const resolved = resolve(candidate);
   return resolved === root || resolved.startsWith(`${root}/`);
 }
 
 function staleProcessSeconds() {
   const raw = args.staleProcessSeconds;
-  if (raw === undefined || raw === null || raw === true) return DEFAULT_STALE_AGENT_PROCESS_SECONDS;
+  if (raw === undefined || raw === true) return DEFAULT_STALE_AGENT_PROCESS_SECONDS;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`invalid --stale-process-seconds value: ${raw}`);
+    throw new Error(`invalid --stale-process-seconds value: ${String(raw)}`);
   }
   return Math.floor(parsed);
 }
 
-function statusPath(line) {
+function statusPath(line: string) {
   const raw = line.slice(3).trim();
-  return raw.includes(' -> ') ? raw.split(' -> ').pop().trim() : raw;
+  return raw.includes(' -> ') ? (raw.split(' -> ').pop() ?? raw).trim() : raw;
 }
 
-function isSmaSelfGeneratedDirtyPath(path) {
+function isSmaSelfGeneratedDirtyPath(path: string) {
   return SMA_SELF_GENERATED_PATHS.has(path)
     || SMA_SELF_GENERATED_PATTERNS.some((pattern) => pattern.test(path));
 }
 
-function dirtyGroups(changes) {
-  const groups = new Map();
+function dirtyGroups(changes: string[]) {
+  const groups = new Map<string, DirtyGroup>();
   for (const line of changes) {
     const path = statusPath(line);
     const key = dirtyGroupKey(path);
-    const current = groups.get(key) || { group: key, count: 0, modified_count: 0, untracked_count: 0, sample_paths: [] };
+    const current = groups.get(key) ?? { group: key, count: 0, modified_count: 0, untracked_count: 0, sample_paths: [] };
     current.count += 1;
     if (line.startsWith('??')) current.untracked_count += 1;
     else current.modified_count += 1;
@@ -1275,49 +1278,59 @@ function dirtyGroups(changes) {
     .slice(0, 8);
 }
 
-function dirtyGroupKey(filePath) {
-  const path = String(filePath || '').replace(/\\/g, '/');
+function dirtyGroupKey(filePath: string) {
+  const path = filePath.replace(/\\/g, '/');
   const parts = path.split('/').filter(Boolean);
   if (!parts.length) return '(root)';
+  return controllerInfrastructureGroup(parts) ?? controllerSourceGroup(parts)
+    ?? (parts.length === 1 ? '(root)' : parts.slice(0, Math.min(2, parts.length - 1)).join('/'));
+}
+
+function controllerInfrastructureGroup(parts: string[]): string | null {
   if (parts[0] === '.smarch') return parts.slice(0, 3).join('/') || '.smarch';
   if (parts[0] === 'supabase' && parts[1] === 'functions') return parts.slice(0, 3).join('/');
   if (parts[0] === 'apps' || parts[0] === 'packages') return parts.slice(0, 2).join('/');
   if (parts[0] === 'web' && parts[1] === 'src' && parts[2] === 'modules') return parts.slice(0, 4).join('/');
-  if (parts[0] === 'src' && parts[1] === 'renderer' && (parts[2] === 'modules' || parts[2] === 'features')) {
-    return parts.slice(0, 4).join('/');
-  }
-  if (parts[0] === 'src' && parts[1] === 'main' && parts[2] === 'services' && parts[3]) {
-    return parts.slice(0, 4).join('/');
-  }
-  if (parts[0] === 'src' && parts[1] === 'shared' && parts[2]) {
-    return parts.slice(0, 3).join('/');
-  }
-  if (parts[0] === 'src' && (parts[1] === 'services' || parts[1] === 'components' || parts[1] === 'hooks' || parts[1] === 'systems')) {
-    return parts.slice(0, 3).join('/');
-  }
-  if (parts.length === 1) return '(root)';
-  return parts.slice(0, Math.min(2, parts.length - 1)).join('/');
+  return null;
 }
 
-function formatDirtyGroups(groups, limit = 3) {
-  const list = Array.isArray(groups) ? groups.filter((group) => group?.count > 0).slice(0, limit) : [];
+function controllerSourceGroup(parts: string[]): string | null {
+  if (parts[0] !== 'src') return null;
+  if (parts[1] === 'renderer' && (parts[2] === 'modules' || parts[2] === 'features')) {
+    return parts.slice(0, 4).join('/');
+  }
+  if (parts[1] === 'main' && parts[2] === 'services' && parts[3]) {
+    return parts.slice(0, 4).join('/');
+  }
+  if (parts[1] === 'shared' && parts[2]) {
+    return parts.slice(0, 3).join('/');
+  }
+  if (parts[1] === 'services' || parts[1] === 'components' || parts[1] === 'hooks' || parts[1] === 'systems') {
+    return parts.slice(0, 3).join('/');
+  }
+  return null;
+}
+
+function formatDirtyGroups(groups: DirtyGroupSummary[] | null | undefined, limit = 3) {
+  const source = Array.isArray(groups) ? groups : [];
+  const list = source.filter((group) => group.count > 0).slice(0, limit);
   if (!list.length) return '';
-  const text = list.map((group) => `${group.group} ${group.count}`).join(', ');
-  const hidden = groups.length - list.length;
-  return hidden > 0 ? `${text}, +${hidden} more` : text;
+  const text = list.map((group) => `${group.group} ${String(group.count)}`).join(', ');
+  const hidden = source.length - list.length;
+  return hidden > 0 ? `${text}, +${String(hidden)} more` : text;
 }
 
-function formatStaleContextReceiptDetail(receipt) {
+function formatStaleContextReceiptDetail(receipt: StaleContextReceipt | null | undefined) {
   if (!receipt) return 'pending Gen3 context receipt without an active lease';
-  const actor = receipt.actor_id || 'unknown';
-  const age = receipt.age_seconds === null || receipt.age_seconds === undefined
+  const actor = receipt.actor_id ?? 'unknown';
+  const age = receipt.age_seconds === null
     ? 'unknown age'
     : formatDuration(receipt.age_seconds);
-  const groupText = formatDirtyGroups(receipt.groups || [], 4);
-  return `${receipt.brick_id} by ${actor}, ${age} old, ${receipt.dirty_count} dirty${groupText ? `; groups: ${groupText}` : ''}`;
+  const groupText = formatDirtyGroups(receipt.groups, 4);
+  return `${receipt.brick_id} by ${actor}, ${age} old, ${String(receipt.dirty_count)} dirty${groupText ? `; groups: ${groupText}` : ''}`;
 }
 
-function dirtyGroupCommands(project, groups = project.git?.groups, includeParallel = false) {
+function dirtyGroupCommands(project: ProjectSnapshot, groups = project.git?.groups, includeParallel = false) {
   const group = firstDirtyGroup(groups);
   const primary = dirtyGroupClaim(project, group);
   return {
@@ -1329,26 +1342,26 @@ function dirtyGroupCommands(project, groups = project.git?.groups, includeParall
   };
 }
 
-function firstDirtyGroup(groups) {
-  const list = Array.isArray(groups) ? groups.filter((group) => group?.count > 0) : [];
+function firstDirtyGroup(groups: DirtyGroupSummary[] | null | undefined): DirtyGroupSummary {
+  const list = Array.isArray(groups) ? groups.filter((group) => group.count > 0) : [];
   return list[0] || { group: 'unclassified-dirty', count: 0 };
 }
 
-function sumDirtyGroups(groups) {
+function sumDirtyGroups(groups: DirtyGroupSummary[] | null | undefined) {
   const list = Array.isArray(groups) ? groups : [];
-  return list.reduce((sum, group) => sum + Number(group?.count || 0), 0);
+  return list.reduce((sum, group) => sum + (group.count || 0), 0);
 }
 
-function dirtyGroupClaims(project, groups) {
-  const list = Array.isArray(groups) ? groups.filter((group) => group?.count > 0) : [];
+function dirtyGroupClaims(project: ProjectSnapshot, groups: DirtyGroupSummary[] | null | undefined) {
+  const list = Array.isArray(groups) ? groups.filter((group) => group.count > 0) : [];
   return list.slice(0, DIRTY_PARALLEL_CLAIM_LIMIT).map((group) => dirtyGroupClaim(project, group));
 }
 
-function dirtyGroupClaim(project, group) {
+function dirtyGroupClaim(project: ProjectSnapshot, group: DirtyGroupSummary): DirtyClaim {
   const groupName = group.group;
-  const count = Number(group.count || 0);
+  const count = (group.count || 0);
   const brick = dirtyGroupBrick(groupName);
-  const intent = `claim dirty group ${groupName} (${count} path${count === 1 ? '' : 's'})`;
+  const intent = `claim dirty group ${groupName} (${String(count)} path${count === 1 ? '' : 's'})`;
   return {
     group: groupName,
     count,
@@ -1359,10 +1372,10 @@ function dirtyGroupClaim(project, group) {
   };
 }
 
-function normalizeSamplePaths(paths, limit = DIRTY_GROUP_SAMPLE_LIMIT) {
-  const out = [];
+function normalizeSamplePaths(paths: string[] | null | undefined, limit = DIRTY_GROUP_SAMPLE_LIMIT) {
+  const out: string[] = [];
   for (const value of Array.isArray(paths) ? paths : []) {
-    const file = String(value || '').trim();
+    const file = (value || '').trim();
     if (!file || out.includes(file)) continue;
     out.push(file);
     if (out.length >= limit) break;
@@ -1370,8 +1383,8 @@ function normalizeSamplePaths(paths, limit = DIRTY_GROUP_SAMPLE_LIMIT) {
   return out;
 }
 
-function dirtyGroupBrick(groupName) {
-  const slug = String(groupName || 'unclassified-dirty')
+function dirtyGroupBrick(groupName: string) {
+  const slug = (groupName || 'unclassified-dirty')
     .toLowerCase()
     .replace(/^\.+/, '')
     .replace(/[^a-z0-9]+/g, '-')
@@ -1380,21 +1393,21 @@ function dirtyGroupBrick(groupName) {
   return `dirty-${slug || 'root'}`;
 }
 
-function activeDirtyScopeGaps(project) {
+function activeDirtyScopeGaps(project: ProjectSnapshot) {
   const groups = Array.isArray(project.git?.groups) ? project.git.groups : [];
   const leases = Array.isArray(project.active_leases) ? project.active_leases : [];
   if (!groups.length || !leases.length || project.status !== 'active') return [];
   return groups.filter((group) => !dirtyGroupCoveredByLeases(group, leases));
 }
 
-function leaseAppliesToProject(lease, projectId, git) {
+function leaseAppliesToProject(lease: LeaseScope, projectId: string, git: { groups?: DirtyGroupScope[] } | null) {
   if (lease.project === projectId) return true;
   if (lease.project || projectId !== 'sma') return false;
   const contextBrickIds = dirtyContextBrickIdsFromGit(git);
   return contextBrickIds.has(normalizeScopeId(lease.resource_id));
 }
 
-function dirtyGroupCoveredByLeases(dirtyGroup, leases) {
+function dirtyGroupCoveredByLeases(dirtyGroup: DirtyGroupScope | string, leases: LeaseScope[]) {
   const group = normalizeDirtyGroup(dirtyGroup);
   if (!group.group) return false;
   for (const lease of leases) {
@@ -1403,7 +1416,7 @@ function dirtyGroupCoveredByLeases(dirtyGroup, leases) {
   return false;
 }
 
-function dirtyGroupCoveredByLease(group, lease) {
+function dirtyGroupCoveredByLease(group: ReturnType<typeof normalizeDirtyGroup>, lease: LeaseScope) {
   const resourceId = normalizeScopeId(lease.resource_id);
   if (!resourceId) return false;
   if (group.context_brick_ids.has(resourceId)) return true;
@@ -1418,42 +1431,42 @@ function dirtyGroupCoveredByLease(group, lease) {
   return false;
 }
 
-function normalizeDirtyGroup(dirtyGroup) {
-  const group = typeof dirtyGroup === 'string' ? dirtyGroup : dirtyGroup?.group;
-  const samplePaths = typeof dirtyGroup === 'string' ? [] : normalizeSamplePaths(dirtyGroup?.sample_paths);
-  const values = [group, ...samplePaths].map((value) => String(value || ''));
+function normalizeDirtyGroup(dirtyGroup: DirtyGroupScope | string) {
+  const group = typeof dirtyGroup === 'string' ? dirtyGroup : dirtyGroup.group;
+  const samplePaths = typeof dirtyGroup === 'string' ? [] : normalizeSamplePaths(dirtyGroup.sample_paths);
+  const values = [group, ...samplePaths].map((value) => (value || ''));
   return {
-    group: String(group || '').toLowerCase(),
+    group: (group || '').toLowerCase(),
     sample_paths: samplePaths,
     context_brick_ids: dirtyContextBrickIds(values),
     scope_tokens: new Set(values.flatMap((value) => scopeTokens(value))),
   };
 }
 
-function dirtyContextBrickIdsFromGit(git) {
+function dirtyContextBrickIdsFromGit(git: { groups?: DirtyGroupScope[] } | null) {
   const groups = Array.isArray(git?.groups) ? git.groups : [];
-  return dirtyContextBrickIds(groups.flatMap((group) => [group.group, ...(group.sample_paths || [])]));
+  return dirtyContextBrickIds(groups.flatMap((group) => [group.group, ...(group.sample_paths ?? [])]));
 }
 
-function dirtyContextBrickIds(values) {
-  const out = new Set();
+function dirtyContextBrickIds(values: string[] | string) {
+  const out = new Set<string>();
   for (const value of Array.isArray(values) ? values : [values]) {
-    const match = String(value || '').replace(/\\/g, '/').match(/(?:^|\/)\.smarch\/agent-context\/([^/]+)\.ndjson$/);
+    const match = /(?:^|\/)\.smarch\/agent-context\/([^/]+)\.ndjson$/.exec((value || '').replace(/\\/g, '/'));
     if (match?.[1]) out.add(normalizeScopeId(match[1]));
   }
   return out;
 }
 
-function leaseScopeTokens(lease) {
+function leaseScopeTokens(lease: LeaseScope) {
   return new Set([
     ...scopeTokens(lease.resource_id),
     ...scopeTokens(lease.intent),
   ]);
 }
 
-function scopeTokens(value) {
-  const out = new Set();
-  const rawParts = String(value || '').split(/[^a-zA-Z0-9]+/g).filter(Boolean);
+function scopeTokens(value: unknown) {
+  const out = new Set<string>();
+  const rawParts = scalarText(value).split(/[^a-zA-Z0-9]+/g).filter(Boolean);
   for (const rawPart of rawParts) {
     const expanded = expandScopePart(rawPart);
     for (const token of expanded) {
@@ -1465,8 +1478,8 @@ function scopeTokens(value) {
   return [...out];
 }
 
-function normalizeScopeId(value) {
-  return String(value || '')
+function normalizeScopeId(value: unknown) {
+  return scalarText(value)
     .toLowerCase()
     .replace(/\\/g, '/')
     .replace(/\.ndjson$/, '')
@@ -1474,8 +1487,8 @@ function normalizeScopeId(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function expandScopePart(value) {
-  const part = String(value || '').trim();
+function expandScopePart(value: unknown) {
+  const part = scalarText(value).trim();
   if (!part) return [];
   const words = part
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -1490,7 +1503,11 @@ function expandScopePart(value) {
   return tokens;
 }
 
-function readGraphStatus(root) {
+function scalarText(value: unknown) {
+  return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+}
+
+function readGraphStatus(root: string): GraphStatus {
   const graphPath = resolve(root, 'graphify-out/graph.json');
   const reportPath = resolve(root, 'graphify-out/GRAPH_REPORT.md');
   if (!existsSync(graphPath)) {
@@ -1510,19 +1527,19 @@ function readGraphStatus(root) {
   };
 }
 
-function readGraphReportCounts(reportPath) {
+function readGraphReportCounts(reportPath: string) {
   if (!existsSync(reportPath)) return { node_count: 0, edge_count: 0 };
   try {
     const raw = readFileSync(reportPath, 'utf8');
-    const nodes = Number((raw.match(/^Nodes:\s*(\d+)/m) || [])[1] || 0);
-    const edges = Number((raw.match(/^Edges:\s*(\d+)/m) || [])[1] || 0);
+    const nodes = Number(((/^Nodes:\s*(\d+)/m.exec(raw)) ?? [])[1] || 0);
+    const edges = Number(((/^Edges:\s*(\d+)/m.exec(raw)) ?? [])[1] || 0);
     return { node_count: nodes, edge_count: edges };
   } catch {
     return { node_count: 0, edge_count: 0 };
   }
 }
 
-function readModuleGraphStatus(projectId, root) {
+function readModuleGraphStatus(projectId: string, root: string): ModuleGraphStatus | null {
   const modulesRoot = resolve(root, 'graphify-out/modules');
   if (!existsSync(modulesRoot)) return null;
   try {
@@ -1538,37 +1555,9 @@ function readModuleGraphStatus(projectId, root) {
       timeout: 30000,
       maxBuffer: 12 * 1024 * 1024,
     });
-    const summary = JSON.parse(raw);
-    return {
-      ready: Boolean(summary.ok),
-      project_root: summary.projectRoot ?? root,
-      module_count: Number(summary.moduleCount ?? 0),
-      satisfied_count: Number(summary.satisfiedCount ?? 0),
-      ready_count: Number(summary.readyCount ?? 0),
-      known_empty_count: Number(summary.knownEmptyCount ?? 0),
-      actionable_gap_count: Number(summary.actionableGapCount ?? 0),
-      missing_graph_count: Number(summary.missingGraphCount ?? 0),
-      missing_target_count: Number(summary.missingTargetCount ?? 0),
-      graphify_unavailable_count: Number(summary.graphifyUnavailableCount ?? 0),
-      node_count: Number(summary.nodeCount ?? 0),
-      edge_count: Number(summary.edgeCount ?? 0),
-      oldest_graph_updated_at: summary.oldestGraphUpdatedAt ?? null,
-      newest_graph_updated_at: summary.newestGraphUpdatedAt ?? null,
-      actionable_gaps: Array.isArray(summary.actionableGaps)
-        ? summary.actionableGaps.slice(0, 8).map((gap) => ({
-          module_id: gap.moduleId ?? null,
-          source_path: gap.sourcePath ?? null,
-          reason: gap.reason ?? null,
-          target_candidates: Array.isArray(gap.targetCandidates)
-            ? gap.targetCandidates.slice(0, 5).map((candidate) => ({
-              path: candidate.path ?? null,
-              reason: candidate.reason ?? null,
-              score: Number(candidate.score ?? 0),
-            }))
-            : [],
-        }))
-        : [],
-    };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) throw new Error('module graph summary must be an object');
+    return moduleGraphStatusFromSummary(parsed, root);
   } catch (err) {
     return {
       ready: false,
@@ -1585,110 +1574,133 @@ function readModuleGraphStatus(projectId, root) {
       edge_count: 0,
       oldest_graph_updated_at: null,
       newest_graph_updated_at: null,
-      error: err.message,
+      error: errorMessage(err),
       actionable_gaps: [],
     };
   }
 }
 
-function moduleGraphGapCount(moduleGraph) {
-  return Number(moduleGraph?.actionable_gap_count ?? 0);
+function moduleGraphStatusFromSummary(summary: Record<string, unknown>, root: string): ModuleGraphStatus {
+  return { ready: Boolean(summary.ok), project_root: optionalString(summary.projectRoot) ?? root,
+    module_count: Number(summary.moduleCount ?? 0), satisfied_count: Number(summary.satisfiedCount ?? 0),
+    ready_count: Number(summary.readyCount ?? 0), known_empty_count: Number(summary.knownEmptyCount ?? 0),
+    actionable_gap_count: Number(summary.actionableGapCount ?? 0), missing_graph_count: Number(summary.missingGraphCount ?? 0),
+    missing_target_count: Number(summary.missingTargetCount ?? 0), graphify_unavailable_count: Number(summary.graphifyUnavailableCount ?? 0),
+    node_count: Number(summary.nodeCount ?? 0), edge_count: Number(summary.edgeCount ?? 0),
+    oldest_graph_updated_at: optionalString(summary.oldestGraphUpdatedAt), newest_graph_updated_at: optionalString(summary.newestGraphUpdatedAt),
+    actionable_gaps: parseActionableGaps(summary.actionableGaps) };
 }
 
-function moduleGraphGapDetail(moduleGraph) {
-  const missingGraphs = Number(moduleGraph?.missing_graph_count ?? 0);
-  const missingTargets = Number(moduleGraph?.missing_target_count ?? 0);
-  const unavailable = Number(moduleGraph?.graphify_unavailable_count ?? 0);
-  const total = Number(moduleGraph?.module_count ?? 0);
-  const satisfied = Number(moduleGraph?.satisfied_count ?? 0);
+function parseActionableGaps(value: unknown): ModuleGraphStatus['actionable_gaps'] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).slice(0, 8).map((gap) => ({ module_id: optionalString(gap.moduleId), source_path: optionalString(gap.sourcePath),
+    reason: optionalString(gap.reason), target_candidates: parseTargetCandidates(gap.targetCandidates) }));
+}
+
+function parseTargetCandidates(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).slice(0, 5).map((candidate) => ({ path: optionalString(candidate.path), reason: optionalString(candidate.reason),
+    score: Number(candidate.score ?? 0) }));
+}
+
+function moduleGraphGapCount(moduleGraph: ModuleGraphStatus | null | undefined) {
+  return (moduleGraph?.actionable_gap_count ?? 0);
+}
+
+function moduleGraphGapDetail(moduleGraph: ModuleGraphStatus | null | undefined) {
+  const missingGraphs = (moduleGraph?.missing_graph_count ?? 0);
+  const missingTargets = (moduleGraph?.missing_target_count ?? 0);
+  const unavailable = (moduleGraph?.graphify_unavailable_count ?? 0);
+  const total = (moduleGraph?.module_count ?? 0);
+  const satisfied = (moduleGraph?.satisfied_count ?? 0);
   const gap = moduleGraphGapCount(moduleGraph);
   const drift = missingTargets > 0 ? '; target/source-map drift needs a map fix before refresh' : '';
-  const unavailableText = unavailable > 0 ? `, ${unavailable} graphify unavailable` : '';
+  const unavailableText = unavailable > 0 ? `, ${String(unavailable)} graphify unavailable` : '';
   const candidateText = moduleGraphCandidateDetail(moduleGraph);
-  return `${gap} actionable gap${gap === 1 ? '' : 's'} across ${satisfied}/${total} satisfied modules (${missingGraphs} missing graphs, ${missingTargets} missing targets${unavailableText})${drift}${candidateText}`;
+  return `${String(gap)} actionable gap${gap === 1 ? '' : 's'} across ${String(satisfied)}/${String(total)} satisfied modules (${String(missingGraphs)} missing graphs, ${String(missingTargets)} missing targets${unavailableText})${drift}${candidateText}`;
 }
 
-function moduleGraphCandidateDetail(moduleGraph) {
-  const hints = [];
-  for (const gap of moduleGraph?.actionable_gaps || []) {
-    const candidate = (gap.target_candidates || []).find((item) => item?.path);
+function moduleGraphCandidateDetail(moduleGraph: ModuleGraphStatus | null | undefined) {
+  const hints: string[] = [];
+  for (const gap of moduleGraph?.actionable_gaps ?? []) {
+    const candidate = gap.target_candidates.find((item) => item.path);
     if (!candidate) continue;
-    const source = gap.source_path || gap.module_id || 'missing target';
-    hints.push(`${source} -> ${candidate.path}`);
+    const source = (gap.source_path ?? gap.module_id) ?? 'missing target';
+    hints.push(`${source} -> ${String(candidate.path)}`);
     if (hints.length >= 2) break;
   }
   return hints.length ? `; candidates: ${hints.join('; ')}` : '';
 }
 
-function moduleGraphTargetFixes(moduleGraph) {
-  return (moduleGraph?.actionable_gaps || [])
-    .filter((gap) => gap?.reason === 'target missing')
+function moduleGraphTargetFixes(moduleGraph: ModuleGraphStatus | null | undefined) {
+  return (moduleGraph?.actionable_gaps ?? [])
+    .filter((gap) => gap.reason === 'target missing')
     .map((gap) => ({
       module_id: gap.module_id ?? null,
       source_path: gap.source_path ?? null,
-      candidates: (gap.target_candidates || []).slice(0, 5).map((candidate) => ({
+      candidates: gap.target_candidates.slice(0, 5).map((candidate) => ({
         path: candidate.path ?? null,
         reason: candidate.reason ?? null,
-        score: Number(candidate.score ?? 0),
+        score: candidate.score,
       })),
     }));
 }
 
-function moduleGraphGapRepairKind(moduleGraph) {
-  const missingGraphs = Number(moduleGraph?.missing_graph_count ?? 0);
-  const missingTargets = Number(moduleGraph?.missing_target_count ?? 0);
+function moduleGraphGapRepairKind(moduleGraph: ModuleGraphStatus | null | undefined) {
+  const missingGraphs = (moduleGraph?.missing_graph_count ?? 0);
+  const missingTargets = (moduleGraph?.missing_target_count ?? 0);
   if (missingTargets > 0 && missingGraphs === 0) return 'target-drift';
   if (missingTargets > 0 && missingGraphs > 0) return 'mixed';
   return 'missing-graphs';
 }
 
-function moduleGraphGapCommand(project) {
-  const missingGraphs = Number(project.module_graph?.missing_graph_count ?? 0);
-  const missingTargets = Number(project.module_graph?.missing_target_count ?? 0);
+function moduleGraphGapCommand(project: ProjectSnapshot) {
+  const missingGraphs = (project.module_graph?.missing_graph_count ?? 0);
+  const missingTargets = (project.module_graph?.missing_target_count ?? 0);
   if (missingTargets > 0 && missingGraphs === 0) {
     return `npm run graphify:target-fixes -- --project ${shellArg(project.id)}`;
   }
-  return `npm run graphify:refresh:modules -- --project ${shellArg(project.id)} --missing-only --limit 25 --no-cluster --timeout-seconds ${GRAPH_REPAIR_TIMEOUT_SECONDS} && npm run graphify:project-from-modules -- --project ${shellArg(project.id)}`;
+  return `npm run graphify:refresh:modules -- --project ${shellArg(project.id)} --missing-only --limit 25 --no-cluster --timeout-seconds ${String(GRAPH_REPAIR_TIMEOUT_SECONDS)} && npm run graphify:project-from-modules -- --project ${shellArg(project.id)}`;
 }
 
-function graphGapCommand(project) {
+function graphGapCommand(project: ProjectSnapshot) {
   if (project.id === 'sma') return 'npm run graphify:refresh:self';
   if (hasModuleGraphSurface(project)) {
-    return `npm run graphify:refresh:modules -- --project ${shellArg(project.id)} --missing-only --limit 25 --no-cluster --timeout-seconds ${GRAPH_REPAIR_TIMEOUT_SECONDS} && npm run graphify:project-from-modules -- --project ${shellArg(project.id)}`;
+    return `npm run graphify:refresh:modules -- --project ${shellArg(project.id)} --missing-only --limit 25 --no-cluster --timeout-seconds ${String(GRAPH_REPAIR_TIMEOUT_SECONDS)} && npm run graphify:project-from-modules -- --project ${shellArg(project.id)}`;
   }
   if (project.id) {
-    return `npm run graphify:refresh -- --project ${shellArg(project.id)} --no-cluster --timeout-seconds ${GRAPH_REPAIR_TIMEOUT_SECONDS}`;
+    return `npm run graphify:refresh -- --project ${shellArg(project.id)} --no-cluster --timeout-seconds ${String(GRAPH_REPAIR_TIMEOUT_SECONDS)}`;
   }
   if (project.root) {
-    return `npm run graphify:refresh -- --project-root ${shellArg(project.root)} --as ${shellArg(project.id)} --no-cluster --timeout-seconds ${GRAPH_REPAIR_TIMEOUT_SECONDS}`;
+    return `npm run graphify:refresh -- --project-root ${shellArg(project.root)} --as ${shellArg(project.id)} --no-cluster --timeout-seconds ${String(GRAPH_REPAIR_TIMEOUT_SECONDS)}`;
   }
-  return `npm run graphify:refresh -- --project ${shellArg(project.id)} --no-cluster --timeout-seconds ${GRAPH_REPAIR_TIMEOUT_SECONDS}`;
+  return `npm run graphify:refresh -- --project ${shellArg(project.id)} --no-cluster --timeout-seconds ${String(GRAPH_REPAIR_TIMEOUT_SECONDS)}`;
 }
 
-function hasModuleGraphSurface(project) {
+function hasModuleGraphSurface(project: ProjectSnapshot) {
   if (project.module_graph) return true;
   if (!project.root) return false;
   return existsSync(resolve(project.root, 'graphify-out/modules'))
     || existsSync(resolve(project.root, 'sma.gen3.json'));
 }
 
-function printText(snapshot) {
+function printText(snapshot: Awaited<ReturnType<typeof buildSnapshot>>) {
   console.log('SMA Gen3 Controller Snapshot');
   console.log(`generated:       ${snapshot.generated_at}`);
-  console.log(`projects:        ${snapshot.summary.projects}`);
-  console.log(`active leases:   ${snapshot.summary.active_leases}`);
-  console.log(`open conflicts:  ${snapshot.summary.open_conflicts}`);
-  console.log(`dirty projects:  ${snapshot.summary.dirty_projects}`);
-  console.log(`dirty unleased:  ${snapshot.summary.dirty_unleased_projects}`);
+  console.log(`projects:        ${String(snapshot.summary.projects)}`);
+  console.log(`active leases:   ${String(snapshot.summary.active_leases)}`);
+  console.log(`open conflicts:  ${String(snapshot.summary.open_conflicts)}`);
+  console.log(`dirty projects:  ${String(snapshot.summary.dirty_projects)}`);
+  console.log(`dirty unleased:  ${String(snapshot.summary.dirty_unleased_projects)}`);
   if (snapshot.summary.active_dirty_scope_projects > 0) {
-    console.log(`active scope:    ${snapshot.summary.active_dirty_scope_projects} project${snapshot.summary.active_dirty_scope_projects === 1 ? '' : 's'}, ${snapshot.summary.active_dirty_scope_paths} uncovered path${snapshot.summary.active_dirty_scope_paths === 1 ? '' : 's'}`);
+    console.log(`active scope:    ${String(snapshot.summary.active_dirty_scope_projects)} project${snapshot.summary.active_dirty_scope_projects === 1 ? '' : 's'}, ${String(snapshot.summary.active_dirty_scope_paths)} uncovered path${snapshot.summary.active_dirty_scope_paths === 1 ? '' : 's'}`);
   }
   if (snapshot.summary.stale_agent_processes > 0) {
-    console.log(`stale agents:    ${snapshot.summary.stale_agent_processes} process${snapshot.summary.stale_agent_processes === 1 ? '' : 'es'} across ${snapshot.summary.stale_agent_process_projects} project${snapshot.summary.stale_agent_process_projects === 1 ? '' : 's'}`);
+    console.log(`stale agents:    ${String(snapshot.summary.stale_agent_processes)} process${snapshot.summary.stale_agent_processes === 1 ? '' : 'es'} across ${String(snapshot.summary.stale_agent_process_projects)} project${snapshot.summary.stale_agent_process_projects === 1 ? '' : 's'}`);
   }
-  console.log(`graph gaps:      ${snapshot.summary.graph_gaps}`);
-  if (args.moduleGraphs) console.log(`module gaps:     ${snapshot.summary.module_graph_gaps}`);
-  console.log(`actions:         ${snapshot.summary.controller_actions}`);
+  console.log(`graph gaps:      ${String(snapshot.summary.graph_gaps)}`);
+  if (args.moduleGraphs) console.log(`module gaps:     ${String(snapshot.summary.module_graph_gaps)}`);
+  console.log(`actions:         ${String(snapshot.summary.controller_actions)}`);
   console.log('');
 
   printActions(snapshot);
@@ -1697,58 +1709,67 @@ function printText(snapshot) {
   if (snapshot.leases.active_count) {
     console.log('Active leases:');
     for (const lease of snapshot.leases.leases) {
-      console.log(`  - ${lease.resource_kind}:${lease.resource_id} ${lease.agent_id} ttl=${lease.ttl_remaining_seconds}s project=${lease.project ?? '-'}`);
-      console.log(`    ${lease.intent}`);
+      console.log(`  - ${lease.resource_kind}:${lease.resource_id} ${lease.agent_id} ttl=${String(lease.ttl_remaining_seconds)}s project=${lease.project ?? '-'}`);
+      console.log(`    ${String(lease.intent)}`);
     }
     console.log('');
   }
 
-  console.log('Projects:');
-  for (const project of snapshot.projects) {
-    const dirty = project.git ? formatDirty(project.git) : 'dirty skipped';
-    const conflicts = `${project.conflicts.open_count} open conflicts`;
-    const graph = project.graph ? (project.graph.ready ? `graph ${project.graph.node_count || '?'} nodes` : 'graph missing') : 'graph skipped';
-    const moduleGraph = project.module_graph ? `, module graphs ${project.module_graph.satisfied_count}/${project.module_graph.module_count}` : '';
-    const processText = project.agent_processes?.stale_count
-      ? `, stale agents ${project.agent_processes.stale_count}/${project.agent_processes.process_count}`
-      : '';
-    console.log(`  - ${project.status.toUpperCase()} ${project.id}: ${dirty}, ${conflicts}, ${graph}${moduleGraph}${processText}`);
-    if (project.git?.sample?.length) {
-      for (const line of project.git.sample) console.log(`      ${line}`);
-    }
-    if (project.git?.dirty_hidden_count > 0) {
-      console.log(`      ${project.git.dirty_hidden_count} dirty path${project.git.dirty_hidden_count === 1 ? '' : 's'} hidden; use --dirty-limit <n> or --dirty-full for file names`);
-    }
-    if (project.git?.groups?.length) {
-      console.log(`      dirty groups: ${formatDirtyGroups(project.git.groups, 5)}`);
-    }
-    for (const conflict of project.conflicts.open.slice(0, 3)) {
-      console.log(`      conflict ${conflict.brick_id}: ${conflict.intent}`);
-    }
-    if (project.status === 'dirty-unleased') {
-      console.log('      action: claim with start-edit/end-edit, clean the worktree, or report a conflict before integration');
-    }
-    if (Number(project.stale_context?.receipt_count ?? 0) > 0) {
-      console.log('      action: renew or hand off stale Gen3 context before cleanup claims this scope');
-    }
-    if (project.agent_processes?.stale?.length) {
-      for (const proc of project.agent_processes.stale.slice(0, 3)) {
-        console.log(`      stale agent pid ${proc.pid}: age=${formatDuration(proc.age_seconds)} cmd=${proc.command}`);
-      }
-    }
-  }
+  printProjects(snapshot.projects);
 }
 
-function printActions(snapshot) {
+function printProjects(projects: ProjectSnapshot[]) {
+  console.log('Projects:');
+  for (const project of projects) printProject(project);
+}
+
+function printProject(project: ProjectSnapshot) {
+  console.log(projectSummaryLine(project));
+  printProjectDetails(project);
+}
+
+function projectSummaryLine(project: ProjectSnapshot) {
+  const dirty = project.git ? formatDirty(project.git) : 'dirty skipped';
+  const conflicts = `${String(project.conflicts.open_count)} open conflicts`;
+  const graph = project.graph ? (project.graph.ready ? `graph ${String(project.graph.node_count || '?')} nodes` : 'graph missing') : 'graph skipped';
+  const moduleGraph = project.module_graph ? `, module graphs ${String(project.module_graph.satisfied_count)}/${String(project.module_graph.module_count)}` : '';
+  const processText = project.agent_processes?.stale_count ? `, stale agents ${String(project.agent_processes.stale_count)}/${String(project.agent_processes.process_count)}` : '';
+  return `  - ${project.status.toUpperCase()} ${project.id}: ${dirty}, ${conflicts}, ${graph}${moduleGraph}${processText}`;
+}
+
+function printProjectDetails(project: ProjectSnapshot) {
+  printProjectDirtyDetails(project);
+  printProjectConflictDetails(project);
+  printProjectProcessDetails(project);
+}
+
+function printProjectDirtyDetails(project: ProjectSnapshot) {
+  for (const line of project.git?.sample ?? []) console.log(`      ${line}`);
+  const hiddenDirtyCount = project.git?.dirty_hidden_count ?? 0;
+  if (hiddenDirtyCount > 0) console.log(`      ${String(hiddenDirtyCount)} dirty path${hiddenDirtyCount === 1 ? '' : 's'} hidden; use --dirty-limit <n> or --dirty-full for file names`);
+  if (project.git?.groups.length) console.log(`      dirty groups: ${formatDirtyGroups(project.git.groups, 5)}`);
+}
+
+function printProjectConflictDetails(project: ProjectSnapshot) {
+  for (const conflict of project.conflicts.open.slice(0, 3)) console.log(`      conflict ${String(conflict.brick_id)}: ${String(conflict.intent)}`);
+  if (project.status === 'dirty-unleased') console.log('      action: claim with start-edit/end-edit, clean the worktree, or report a conflict before integration');
+  if ((project.stale_context?.receipt_count ?? 0) > 0) console.log('      action: renew or hand off stale Gen3 context before cleanup claims this scope');
+}
+
+function printProjectProcessDetails(project: ProjectSnapshot) {
+  for (const proc of project.agent_processes?.stale.slice(0, 3) ?? []) console.log(`      stale agent pid ${String(proc.pid)}: age=${formatDuration(proc.age_seconds)} cmd=${proc.command}`);
+}
+
+function printActions(snapshot: Awaited<ReturnType<typeof buildSnapshot>>) {
   if (!snapshot.action_items.length) {
     console.log('Controller actions: none');
     console.log('');
     return;
   }
-  if (snapshot.parallel_wave?.commands?.length) {
-    console.log(`Parallel cleanup wave: ${snapshot.parallel_wave.recommended_agent_count} agents, ${snapshot.parallel_wave.total_impact} dirty paths covered`);
+  if (snapshot.parallel_wave.commands.length) {
+    console.log(`Parallel cleanup wave: ${String(snapshot.parallel_wave.recommended_agent_count)} agents, ${String(snapshot.parallel_wave.total_impact)} dirty paths covered`);
     for (const item of snapshot.parallel_wave.commands) {
-      console.log(`  - ${item.rank}. ${item.project} ${item.group} (${item.count})`);
+      console.log(`  - ${String(item.rank)}. ${item.project} ${item.group} (${String(item.count)})`);
       console.log(`      ${item.command}`);
       if (item.conflict) console.log(`      conflict: ${item.conflict}`);
     }
@@ -1765,84 +1786,89 @@ function printActions(snapshot) {
     printNextActionCommands(item);
   }
   if (snapshot.action_items.length > items.length) {
-    console.log(`  ... ${snapshot.action_items.length - items.length} more action item${snapshot.action_items.length - items.length === 1 ? '' : 's'} hidden; use --action-limit ${snapshot.action_items.length} for the full queue`);
+    console.log(`  ... ${String(snapshot.action_items.length - items.length)} more action item${snapshot.action_items.length - items.length === 1 ? '' : 's'} hidden; use --action-limit ${String(snapshot.action_items.length)} for the full queue`);
   }
   console.log('');
 }
 
-function printNextActionCommands(item) {
-  if (!item?.next_commands) return;
+function printNextActionCommands(item: ActionItem) {
+  if (!item.next_commands) return;
   for (const [name, command] of Object.entries(item.next_commands)) {
     if (!command || command === item.command) continue;
     console.log(`      ${name}: ${command}`);
   }
 }
 
-function formatDirty(git) {
+function formatDirty(git: GitStatus) {
   if (!git.dirty_count) return '0 dirty';
-  return `${git.dirty_count} dirty (${git.modified_count} modified, ${git.untracked_count} untracked)`;
+  return `${String(git.dirty_count)} dirty (${String(git.modified_count)} modified, ${String(git.untracked_count)} untracked)`;
 }
 
-function actionImpactLabel(item) {
+function actionImpactLabel(item: ActionItem | null | undefined) {
   if (!item) return '';
-  if (item.kind === 'stale-context') return `${Number(item.stale_context_dirty_count ?? item.impact_score ?? 0)} stale-context`;
-  if (item.kind === 'dirty-unleased') return `${Number(item.dirty_count ?? item.impact_score ?? 0)} dirty`;
-  if (item.kind === 'active-dirty-scope') return `${Number(item.uncovered_dirty_count ?? item.impact_score ?? 0)} uncovered`;
-  if (item.kind === 'stale-agent-process') return `${Number(item.stale_process_count ?? item.impact_score ?? 0)} stale`;
-  if (item.kind === 'module-graph-gap') return `${Number(item.module_graph_gap_count ?? item.impact_score ?? 0)} module gaps`;
+  if (item.kind === 'stale-context') return `${String(actionMetric(item, 'stale_context_dirty_count'))} stale-context`;
+  if (item.kind === 'dirty-unleased') return `${String(actionMetric(item, 'dirty_count'))} dirty`;
+  if (item.kind === 'active-dirty-scope') return `${String(actionMetric(item, 'uncovered_dirty_count'))} uncovered`;
+  if (item.kind === 'stale-agent-process') return `${String(actionMetric(item, 'stale_process_count'))} stale`;
+  if (item.kind === 'module-graph-gap') return `${String(actionMetric(item, 'module_graph_gap_count'))} module gaps`;
   if (item.kind === 'graph-gap') return 'missing graph';
   return '';
+}
+
+function actionMetric(item: ActionItem, key: keyof ActionItem) {
+  const value = item[key];
+  return typeof value === 'number' ? value : item.impact_score ?? 0;
 }
 
 function dirtySampleLimit() {
   if (args.dirtyFull) return Number.POSITIVE_INFINITY;
   const raw = args.dirtyLimit ?? args.maxStatus;
-  if (raw === undefined || raw === null || raw === true) return DEFAULT_DIRTY_LIMIT;
+  if (raw === undefined || raw === true) return DEFAULT_DIRTY_LIMIT;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`invalid --dirty-limit value: ${raw}`);
+    throw new Error(`invalid --dirty-limit value: ${String(raw)}`);
   }
   return Math.floor(parsed);
 }
 
 function actionPrintLimit() {
   const raw = args.actionLimit;
-  if (raw === undefined || raw === null || raw === true) return DEFAULT_ACTION_LIMIT;
+  if (raw === undefined || raw === true) return DEFAULT_ACTION_LIMIT;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`invalid --action-limit value: ${raw}`);
+    throw new Error(`invalid --action-limit value: ${String(raw)}`);
   }
   return Math.floor(parsed);
 }
 
 function isDirtyStrict() {
-  return Boolean(args.dirtyStrict || args.requireCleanOrLeased);
+  return Boolean(args.dirtyStrict ?? args.requireCleanOrLeased);
 }
 
-function hasStrictDirtyBlockers(snapshot) {
-  return Number(snapshot.summary?.dirty_unleased_projects ?? 0) > 0
-    || Number(snapshot.summary?.active_dirty_scope_projects ?? 0) > 0
-    || Number(snapshot.summary?.stale_agent_processes ?? 0) > 0;
+function hasStrictDirtyBlockers(snapshot: Awaited<ReturnType<typeof buildSnapshot>>) {
+  return snapshot.summary.dirty_unleased_projects > 0
+    || snapshot.summary.active_dirty_scope_projects > 0
+    || snapshot.summary.stale_agent_processes > 0;
 }
 
-function asArray(value) {
+function asArray<T>(value: T | T[] | null | undefined): T[] {
   if (Array.isArray(value)) return value;
   if (value === undefined || value === null) return [];
   return [value];
 }
 
-function shellArg(value) {
-  return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
+function shellArg(value: unknown) {
+  return `'${scalarText(value).replace(/'/g, `'\\''`)}'`;
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = { project: [] };
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = { project: [] };
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     if (arg === '--help' || arg === '-h') { out.help = true; continue; }
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[i + 1];
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
+    const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
       out[key] = true;
@@ -1853,4 +1879,20 @@ function parseArgs(list) {
     i += 1;
   }
   return out;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isContextEvent(value: Record<string, unknown>): value is ContextEvent {
+  return typeof value.kind === 'string';
+}
+
+function optionalString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

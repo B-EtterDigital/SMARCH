@@ -54,6 +54,19 @@ const REGISTRY_PATH = resolve(SMA_ROOT, 'scans/all-projects/latest.registry.json
 // Project id → relative path overrides come from registry/portfolio.config.json.
 const PROJECT_OVERRIDES = PROJECT_PATH_OVERRIDES;
 
+interface SeedArgs {
+  help?: boolean;
+  project?: string;
+  bricks?: string;
+  ttl?: string;
+  commit?: boolean;
+  dryRun?: boolean;
+  actor?: string;
+  model?: string;
+}
+interface RegistryBrick { id: string; project: string; source_paths?: string[] }
+interface SeedLease { lease_id: string }
+
 const args = parseArgs(argv.slice(2));
 
 if (args.help || !args.project) {
@@ -73,11 +86,11 @@ try {
 
   console.log(`[seed] project: ${args.project} (${projectAbs})`);
   console.log(`[seed] mode:    ${doCommit ? 'COMMIT (will append events)' : 'dry-run'}`);
-  console.log(`[seed] bricks:  ${numBricks}`);
+  console.log(`[seed] bricks:  ${String(numBricks)}`);
   console.log('');
 
-  const registry = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
-  const allBricks = (registry.bricks || []).filter((b) => b.project === args.project);
+  const registry = readRegistry();
+  const allBricks = registry.bricks.filter((brick) => brick.project === args.project);
   if (!allBricks.length) {
     console.log(`(no bricks for project ${args.project} in registry)`);
     exit(0);
@@ -92,7 +105,7 @@ try {
     const commits = lastCommits(projectAbs, src, 3);
     if (!commits.length) continue;
     const headTs = commitTimestamp(projectAbs, commits[0].sha);
-    ranked.push({ brick, commits, head_ts: headTs });
+    ranked.push({ brick, source: src, commits, head_ts: headTs });
   }
   ranked.sort((a, b) => b.head_ts - a.head_ts);
   const picked = ranked.slice(0, numBricks);
@@ -106,7 +119,7 @@ try {
     const brick = entry.brick;
     const head = entry.commits[0];
     console.log(`-- ${brick.id}`);
-    console.log(`   source: ${brick.source_paths[0]}`);
+    console.log(`   source: ${entry.source}`);
     console.log(`   commit: ${head.sha} ${head.subject}`);
     if (!doCommit) {
       console.log(`   would: lease acquire → edit_planned → edit_applied → lease release`);
@@ -134,7 +147,7 @@ try {
       ],
     );
     if (!acquired) { console.log('   FAILED to acquire'); console.log(''); continue; }
-    const lease = JSON.parse(acquired);
+    const lease = parseLease(acquired);
 
     run(
       'sma-context.ts',
@@ -195,7 +208,7 @@ try {
     console.log(`[seed] dry-run complete. Re-run with --commit to actually append.`);
   }
 } catch (err) {
-  console.error(`sma-seed: ${err.message}`);
+  console.error(`sma-seed: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -210,7 +223,29 @@ lease + edit_planned + edit_applied + release cycle. Default is dry-run; pass
 `);
 }
 
-function resolveProjectRoot(projectId) {
+function readRegistry(): { bricks: RegistryBrick[] } {
+  const parsed: unknown = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'));
+  if (!isRecord(parsed)) throw new Error('registry must be a JSON object');
+  const bricks = Array.isArray(parsed.bricks) ? parsed.bricks.filter(isRegistryBrick) : [];
+  return { bricks };
+}
+
+function parseLease(raw: string): SeedLease {
+  const parsed: unknown = JSON.parse(raw);
+  if (!isRecord(parsed) || typeof parsed.lease_id !== 'string') throw new Error('lease command returned an invalid lease');
+  return { lease_id: parsed.lease_id };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isRegistryBrick(value: unknown): value is RegistryBrick {
+  return isRecord(value) && typeof value.id === 'string' && typeof value.project === 'string'
+    && (value.source_paths === undefined || (Array.isArray(value.source_paths) && value.source_paths.every((item) => typeof item === 'string')));
+}
+
+function resolveProjectRoot(projectId: string) {
   const direct = resolve(PROJECTS_ROOT, projectId);
   if (existsSync(direct)) return direct;
   const overridden = PROJECT_OVERRIDES[projectId];
@@ -226,7 +261,7 @@ function resolveProjectRoot(projectId) {
   return null;
 }
 
-function lastCommits(cwd, sourcePath, n) {
+function lastCommits(cwd: string, sourcePath: string, n: number) {
   try {
     const out = execFileSync('git',
       ['log', '-n', String(n), '--pretty=%H%x09%s', '--', sourcePath],
@@ -240,7 +275,7 @@ function lastCommits(cwd, sourcePath, n) {
   }
 }
 
-function commitTimestamp(cwd, sha) {
+function commitTimestamp(cwd: string, sha: string) {
   try {
     const out = execFileSync('git',
       ['show', '-s', '--format=%ct', sha],
@@ -249,27 +284,32 @@ function commitTimestamp(cwd, sha) {
   } catch { return 0; }
 }
 
-function run(script, scriptArgs) {
+function run(script: string, scriptArgs: string[]) {
   const res = spawnSync('node', [resolve(TOOLS_DIR, script), ...scriptArgs], { encoding: 'utf8' });
   if (res.status !== 0) {
-    process.stderr.write(res.stderr ?? '');
+    process.stderr.write(res.stderr);
     return null;
   }
   return res.stdout;
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): SeedArgs {
+  const out: SeedArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (a === '--help' || a === '-h') { out.help = true; continue; }
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[i + 1];
+    const camel = key.replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
+    const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
-    if (isBool) { out[camel] = true; continue; }
-    out[camel] = next;
+    if (isBool) {
+      if (camel === 'help' || camel === 'commit' || camel === 'dryRun') out[camel] = true;
+      continue;
+    }
+    if (camel === 'project' || camel === 'bricks' || camel === 'ttl' || camel === 'actor' || camel === 'model') {
+      out[camel] = next;
+    }
     i += 1;
   }
   return out;

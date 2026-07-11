@@ -23,6 +23,20 @@ const repoQueuesScriptPath = path.resolve(repoRoot, "tools/sma-repo-queues.ts");
 const mergeScriptPath = path.resolve(repoRoot, "tools/sma-merge-registries.ts");
 const scanScriptPath = path.resolve(repoRoot, "tools/sma-scan.ts");
 
+interface PortfolioScanArgs {
+  project: string[];
+  priorityOnly: boolean;
+  includeScanned: boolean;
+  merge: boolean;
+  refresh: boolean;
+  stdout: boolean;
+  dryRun: boolean;
+  help: boolean;
+  limit: number | null;
+  offset: number;
+  existingScanIds: Set<string>;
+}
+
 const HELP_TEXT = `Usage: node tools/sma-portfolio-scan.ts [options]
 
 Scan first-class portfolio projects from ~/DEV/Projects into SMA scan outputs.
@@ -40,8 +54,8 @@ Options:
   --help                  Show this help text.
 `;
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+function parseArgs(argv: string[]): PortfolioScanArgs {
+  const options: PortfolioScanArgs = {
     project: [],
     priorityOnly: false,
     includeScanned: false,
@@ -52,6 +66,7 @@ function parseArgs(argv): Record<string, any> {
     help: false,
     limit: null,
     offset: 0,
+    existingScanIds: new Set(),
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -106,11 +121,11 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function registryPathForProject(projectId) {
+function registryPathForProject(projectId: string): string {
   return path.resolve(scansRoot, projectId, "latest.registry.json");
 }
 
-async function pathExists(targetPath) {
+async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -119,7 +134,7 @@ async function pathExists(targetPath) {
   }
 }
 
-async function runNodeScript(scriptPath, args) {
+async function runNodeScript(scriptPath: string, args: string[]): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const child = spawn(process.execPath, [scriptPath, ...args], {
       cwd: repoRoot,
@@ -154,7 +169,7 @@ async function bootstrap() {
   await mainWithArgs(args);
 }
 
-async function mainWithArgs(args) {
+async function mainWithArgs(args: PortfolioScanArgs): Promise<void> {
   const portfolioProjects = await discoverPortfolioProjects();
   const selectedIds = new Set(args.project);
   let targets = portfolioProjects.filter((entry) => {
@@ -233,7 +248,7 @@ async function mainWithArgs(args) {
   }, null, 2)}\n`);
 }
 
-async function discoverExistingScanIds() {
+async function discoverExistingScanIds(): Promise<string[]> {
   const entries = await fs.readdir(scansRoot, { withFileTypes: true }).catch(() => []);
   const ids = [];
   for (const entry of entries) {

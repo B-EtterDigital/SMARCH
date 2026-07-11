@@ -9,7 +9,7 @@
  * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, type Stats } from 'node:fs';
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,29 +26,82 @@ const OUT = resolve(SMA_ROOT, 'security/similarity-scan.generated.json');
 const TEXT_RE = /\.(?:[cm]?[jt]sx?|py|rb|go|rs|java|kt|swift|c|h|cpp|cs|php|sql|sh|css|scss|html?|vue|svelte|json|ya?ml|toml|md)$/i;
 const IGNORE_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '.turbo', 'vendor']);
 
+interface CliArgs {
+  json?: boolean;
+  limit?: string;
+  minTokens?: string;
+  project?: string;
+  threshold?: string;
+}
+
+interface RegistryBrick {
+  id: string;
+  manifest_path?: string;
+  project: string;
+  source_paths?: string[];
+}
+
+interface RegistryData {
+  bricks?: RegistryBrick[];
+  scanned_project_roots?: { id: string; root: string }[];
+}
+
+interface BrickSignature {
+  brick_id: string;
+  content_hash: string | null;
+  project: string;
+  simhash: string;
+  winnow: Set<string>;
+}
+
+interface FindingSide {
+  author: string | null;
+  brick_id: string;
+  owner: string | null;
+  project: string;
+}
+
+interface SimilarityFinding {
+  a: FindingSide;
+  b: FindingSide;
+  near_duplicate: true;
+  similarity: number;
+  theft_risk: boolean;
+}
+
+interface SimilarityReport {
+  bricks_scanned: number;
+  findings: SimilarityFinding[];
+  generated_at: string;
+  near_duplicate_pairs: number;
+  schema_version: string;
+  theft_risk_pairs: number;
+  threshold: number;
+}
+
 const args = parseArgs(process.argv.slice(2));
 const THRESHOLD = Number(args.threshold) || 0.9;      // winnowing-Jaccard, not simhash
 const MIN_TOKENS = Number(args.minTokens) || 400;     // ignore tiny/boilerplate bricks
 
-try { main(); } catch (err) { console.error(`sma-similarity-scan: ${err.message}`); process.exit(1); }
+try { main(); } catch (err: unknown) { console.error(`sma-similarity-scan: ${err instanceof Error ? err.message : String(err)}`); process.exit(1); }
 
 function main() {
   if (!existsSync(REGISTRY)) throw new Error(`registry not found: ${REGISTRY}`);
-  const registry = JSON.parse(readFileSync(REGISTRY, 'utf8'));
-  const roots = new Map<string, string>((registry.scanned_project_roots || []).map((r) => [r.id, r.root]));
+  const registry = JSON.parse(readFileSync(REGISTRY, 'utf8')) as RegistryData;
+  const roots = new Map<string, string>((registry.scanned_project_roots ?? []).map((root) => [root.id, root.root]));
   const authorOf = loadAuthors();
   const hashOf = loadHashes();
 
-  let bricks = registry.bricks || [];
+  let bricks = registry.bricks ?? [];
   if (args.project) bricks = bricks.filter((b) => b.project === args.project);
   if (args.limit) bricks = bricks.slice(0, Number(args.limit));
 
   // Pass 1: simhash every brick (reads source once).
-  const sigs = [];
+  const sigs: BrickSignature[] = [];
   let processed = 0;
   for (const brick of bricks) {
     processed += 1;
-    if (!args.json && processed % 400 === 0) process.stderr.write(`  …${processed}/${bricks.length}\n`);
+    if (!args.json && processed % 400 === 0) process.stderr.write(`  …${String(processed)}/${String(bricks.length)}\n`);
     const projectAbs = roots.get(brick.project);
     const resolved = projectAbs ? resolveBrickPath(brick, projectAbs) : null;
     if (!resolved?.absolutePath) continue;
@@ -59,20 +112,20 @@ function main() {
     const shingles = kGramShingles(tokens, 5);
     if (!shingles.length) continue;
     // simhash for cheap LSH candidate generation; winnowing set for precise scoring.
-    sigs.push({ brick_id: brick.id, project: brick.project, simhash: simhash(shingles), winnow: winnow(shingles, 4), content_hash: hashOf.get(brick.id) || null });
+    sigs.push({ brick_id: brick.id, project: brick.project, simhash: simhash(shingles), winnow: winnow(shingles, 4), content_hash: hashOf.get(brick.id) ?? null });
   }
 
   // Pass 2: LSH bucketing on 4 x 16-bit bands — only compare within a shared band.
-  const buckets = new Map();
+  const buckets = new Map<string, number[]>();
   for (let i = 0; i < sigs.length; i += 1) {
     for (const band of bands(sigs[i].simhash)) {
       if (!buckets.has(band)) buckets.set(band, []);
-      buckets.get(band).push(i);
+      buckets.get(band)?.push(i);
     }
   }
 
-  const seenPair = new Set();
-  const findings = [];
+  const seenPair = new Set<string>();
+  const findings: SimilarityFinding[] = [];
   for (const idxs of buckets.values()) {
     if (idxs.length < 2) continue;
     for (let a = 0; a < idxs.length; a += 1) {
@@ -98,15 +151,15 @@ function main() {
           similarity: Number(sim.toFixed(3)),
           near_duplicate: true,
           theft_risk: crossOwner,
-          a: { brick_id: x.brick_id, project: x.project, owner: ox || null, author: canonicalIdentity(authorOf.get(x.brick_id)) || null },
-          b: { brick_id: y.brick_id, project: y.project, owner: oy || null, author: canonicalIdentity(authorOf.get(y.brick_id)) || null },
+          a: { brick_id: x.brick_id, project: x.project, owner: ox ?? null, author: canonicalIdentity(authorOf.get(x.brick_id)) ?? null },
+          b: { brick_id: y.brick_id, project: y.project, owner: oy ?? null, author: canonicalIdentity(authorOf.get(y.brick_id)) ?? null },
         });
       }
     }
   }
   findings.sort((p, q) => q.similarity - p.similarity);
 
-  const report: Record<string, any> = {
+  const report: SimilarityReport = {
     schema_version: '1.0.0',
     generated_at: new Date().toISOString(),
     threshold: THRESHOLD,
@@ -119,25 +172,25 @@ function main() {
 
   if (args.json) { console.log(JSON.stringify(report, null, 2)); return; }
   console.log('SMA similarity (fuzzy theft) scan');
-  console.log(`  bricks scanned:      ${report.bricks_scanned}`);
-  console.log(`  threshold:           ${THRESHOLD}`);
-  console.log(`  near-duplicate pairs:${report.near_duplicate_pairs} (${report.theft_risk_pairs} cross-owner theft-risk)`);
+  console.log(`  bricks scanned:      ${String(report.bricks_scanned)}`);
+  console.log(`  threshold:           ${String(THRESHOLD)}`);
+  console.log(`  near-duplicate pairs:${String(report.near_duplicate_pairs)} (${String(report.theft_risk_pairs)} cross-owner theft-risk)`);
   for (const f of findings.slice(0, 15)) {
-    console.log(`    ${f.theft_risk ? 'THEFT-RISK' : 'near-dup  '} sim=${f.similarity} ${f.a.project} ~ ${f.b.project}`);
+    console.log(`    ${f.theft_risk ? 'THEFT-RISK' : 'near-dup  '} sim=${String(f.similarity)} ${f.a.project} ~ ${f.b.project}`);
   }
   console.log(`\nwrote: ${relative(SMA_ROOT, OUT).split(sep).join('/')}`);
 }
 
-function bands(hex) {
+function bands(hex: string): string[] {
   // 64-bit simhash = 16 hex chars → 4 bands of 4 hex chars each.
-  return [0, 4, 8, 12].map((i, n) => `${n}:${hex.slice(i, i + 4)}`);
+  return [0, 4, 8, 12].map((i, n) => `${String(n)}:${hex.slice(i, i + 4)}`);
 }
 
-function readBrickText(absPath) {
+function readBrickText(absPath: string): string {
   const st = safeStat(absPath);
   if (!st) return '';
   const files = st.isFile() ? [absPath] : collectText(absPath);
-  const parts = [];
+  const parts: string[] = [];
   let bytes = 0;
   for (const f of files.sort()) {
     try {
@@ -151,11 +204,12 @@ function readBrickText(absPath) {
   return parts.join('\n');
 }
 
-function collectText(root) {
-  const out = [];
-  const stack = [root];
+function collectText(root: string): string[] {
+  const out: string[] = [];
+  const stack: string[] = [root];
   while (stack.length) {
     const dir = stack.pop();
+    if (dir === undefined) continue;
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { continue; }
     for (const e of entries) {
@@ -166,37 +220,41 @@ function collectText(root) {
   return out;
 }
 
-function loadAuthors() {
-  const map = new Map();
+function loadAuthors(): Map<string, string | null> {
+  const map = new Map<string, string | null>();
   if (!existsSync(PROV_LEDGER)) return map;
   try {
-    const data = JSON.parse(readFileSync(PROV_LEDGER, 'utf8'));
-    for (const p of data.provenance || []) map.set(p.brick_id, p.created_by?.actor_id || p.owner || null);
+    const data = JSON.parse(readFileSync(PROV_LEDGER, 'utf8')) as { provenance?: { brick_id: string; created_by?: { actor_id?: string }; owner?: string }[] };
+    for (const provenance of data.provenance ?? []) map.set(provenance.brick_id, provenance.created_by?.actor_id ?? provenance.owner ?? null);
   } catch { /* ignore */ }
   return map;
 }
 
-function loadHashes() {
-  const map = new Map();
+function loadHashes(): Map<string, string> {
+  const map = new Map<string, string>();
   if (!existsSync(FP_LEDGER)) return map;
   try {
-    const data = JSON.parse(readFileSync(FP_LEDGER, 'utf8'));
-    for (const f of data.fingerprints || []) map.set(f.brick_id, f.content_hash);
+    const data = JSON.parse(readFileSync(FP_LEDGER, 'utf8')) as { fingerprints?: { brick_id: string; content_hash: string }[] };
+    for (const fingerprint of data.fingerprints ?? []) map.set(fingerprint.brick_id, fingerprint.content_hash);
   } catch { /* ignore */ }
   return map;
 }
 
-function safeStat(p) { try { return statSync(p); } catch { return null; } }
+function safeStat(filePath: string): Stats | null { try { return statSync(filePath); } catch { return null; } }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < list.length; i += 1) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
-    const k = a.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = a.slice(2).replace(/-([a-z])/g, (_, character: string) => character.toUpperCase());
     const n = list[i + 1];
-    if (n === undefined || n.startsWith('--')) { out[k] = true; continue; }
-    out[k] = n; i += 1;
+    if (n === undefined || n.startsWith('--')) {
+      if (key === 'json') out.json = true;
+      continue;
+    }
+    if (key === 'limit' || key === 'minTokens' || key === 'project' || key === 'threshold') out[key] = n;
+    i += 1;
   }
   return out;
 }

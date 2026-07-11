@@ -8,6 +8,9 @@ import { CliError, asCliError, emitFailure, requireValue } from "./cli-contract.
 const TOOL_PATH = fileURLToPath(import.meta.url);
 const TEMPLATE_ROOT = path.resolve(path.dirname(TOOL_PATH), "../templates/capsule");
 
+/** @typedef {{ id?: string, directory?: string, name?: string, force: boolean, json: boolean, quiet: boolean, verbose: boolean, help: boolean }} BrickOptions */
+/** @typedef {{ templateRoot?: string }} BrickDependencies */
+
 export function usage() {
   return `Create a runnable capsule brick from the canonical template.
 
@@ -24,12 +27,19 @@ Exit codes: 0 success; 2 usage; 3 destination exists; 4 template/creation failur
 Known limitation: --force replaces only the requested destination directory.`;
 }
 
+/** @param {string[]} argv @returns {BrickOptions} */
 export function parseArgs(argv) {
+  /** @type {BrickOptions} */
   const options = { force: false, json: false, quiet: false, verbose: false, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (["--id", "--directory", "--name"].includes(arg)) { options[arg.slice(2)] = requireValue(argv, index, arg, "Run `sma brick-new --help`."); index += 1; }
-    else if (["--force", "--json", "--quiet", "--verbose"].includes(arg)) options[arg.slice(2)] = true;
+    if (arg === "--id") { options.id = requireValue(argv, index, arg, "Run `sma brick-new --help`."); index += 1; }
+    else if (arg === "--directory") { options.directory = requireValue(argv, index, arg, "Run `sma brick-new --help`."); index += 1; }
+    else if (arg === "--name") { options.name = requireValue(argv, index, arg, "Run `sma brick-new --help`."); index += 1; }
+    else if (arg === "--force") options.force = true;
+    else if (arg === "--json") options.json = true;
+    else if (arg === "--quiet") options.quiet = true;
+    else if (arg === "--verbose") options.verbose = true;
     else if (arg === "--help" || arg === "-h") options.help = true;
     else throw new CliError("USAGE_ERROR", `Unknown option: ${arg}`, { exitCode: 2, nextCommand: "Run `sma brick-new --help`." });
   }
@@ -37,6 +47,7 @@ export function parseArgs(argv) {
   return options;
 }
 
+/** @param {BrickOptions} options @param {BrickDependencies} [dependencies] */
 export function createBrick(options, dependencies = {}) {
   if (!options.id || !/^[a-z0-9][a-z0-9._-]*$/i.test(options.id)) throw new CliError("USAGE_ERROR", "--id must be a non-empty dot-safe identifier.", { exitCode: 2, nextCommand: "Retry with `--id namespace.brick`." });
   if (!options.directory) throw new CliError("USAGE_ERROR", "--directory is required.", { exitCode: 2, nextCommand: "Run `sma brick-new --help`." });
@@ -58,7 +69,9 @@ export function createBrick(options, dependencies = {}) {
   return { ok: true, id: options.id, directory: destination, files: ["module.sweetspot.json", "src/index.ts", "fixtures/run.json", "README.md", "CONSTRAINTS.md"] };
 }
 
+/** @param {string[]} argv @param {BrickDependencies} [dependencies] */
 export function run(argv, dependencies = {}) {
+  /** @type {BrickOptions | undefined} */
   let options;
   try {
     options = parseArgs(argv);

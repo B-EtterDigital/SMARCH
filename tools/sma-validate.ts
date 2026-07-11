@@ -11,6 +11,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { calculateScore } from "./sma-score.ts";
+import type { BrickManifest } from './lib/schema-types/brick.manifest.schema.d.ts';
+
+type DeepPartial<T> = T extends readonly unknown[]
+  ? DeepPartial<T[number]>[]
+  : T extends object
+    ? { [Key in keyof T]?: DeepPartial<T[Key]> }
+    : T;
+type ManifestInput = DeepPartial<BrickManifest> & Record<string, unknown>;
+interface ValidationFinding { code: string; message: string }
+interface ValidationReport {
+  brick_id: string; calculated_score?: number; declared_score?: number | null;
+  errors: ValidationFinding[]; manifest_path: string; status: string; warnings: ValidationFinding[];
+}
+type Severity = 'errors' | 'warnings';
 
 const defaultOptions = {
   root: "",
@@ -51,7 +65,7 @@ const requiredTopLevel = [
   "provenance"
 ];
 
-const requiredGates = [
+const requiredGates: (keyof BrickManifest['sweetspot'])[] = [
   "ssa_v2",
   "ssi",
   "sstf",
@@ -77,7 +91,7 @@ const privateDataClasses = new Set([
   "regulated"
 ]);
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]): typeof defaultOptions {
   const options = { ...defaultOptions };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -114,7 +128,7 @@ Usage:
   return options;
 }
 
-async function walk(dir, results = []) {
+async function walk(dir: string, results: string[] = []): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -135,12 +149,12 @@ async function walk(dir, results = []) {
   return results;
 }
 
-async function manifestsFromRegistry(registryPath) {
-  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"));
-  return [...new Set((registry.bricks || []).map((brick) => brick.manifest_path).filter(Boolean))];
+async function manifestsFromRegistry(registryPath: string): Promise<string[]> {
+  const registry = JSON.parse(await fs.readFile(registryPath, "utf8")) as { bricks?: { manifest_path?: string }[] };
+  return [...new Set((registry.bricks ?? []).map((brick) => brick.manifest_path).filter((value): value is string => typeof value === 'string'))];
 }
 
-async function manifestPaths(options) {
+async function manifestPaths(options: typeof defaultOptions): Promise<string[]> {
   if (options.manifest) {
     return [options.manifest];
   }
@@ -152,27 +166,27 @@ async function manifestPaths(options) {
   return walk(options.root);
 }
 
-function hasText(value) {
+function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function add(report, severity, code, message) {
+function add(report: ValidationReport, severity: Severity, code: string, message: string): void {
   report[severity].push({ code, message });
 }
 
-function canonical(manifest) {
+function canonical(manifest: ManifestInput): boolean {
   return manifest.brick?.status === "canonical";
 }
 
-function candidateOrCanonical(manifest) {
+function candidateOrCanonical(manifest: ManifestInput): boolean {
   return manifest.brick?.status === "candidate" || manifest.brick?.status === "canonical";
 }
 
-export function validateManifest(manifestPath, manifest) {
-  const report: Record<string, any> = {
+export function validateManifest(manifestPath: string, manifest: ManifestInput): ValidationReport {
+  const report: ValidationReport = {
     manifest_path: manifestPath,
-    brick_id: manifest.brick?.id || "unknown",
-    status: manifest.brick?.status || "unknown",
+    brick_id: manifest.brick?.id ?? "unknown",
+    status: manifest.brick?.status ?? "unknown",
     errors: [],
     warnings: []
   };
@@ -211,7 +225,7 @@ export function validateManifest(manifestPath, manifest) {
     add(report, "warnings", "hierarchy_missing", "Candidate/canonical brick should declare hierarchy.level");
   }
 
-  if (manifest.hierarchy?.level === "component" && !hasText(manifest.hierarchy?.parent_module_id) && !hasText(manifest.hierarchy?.parent_brick_id)) {
+  if (manifest.hierarchy?.level === "component" && !hasText(manifest.hierarchy.parent_module_id) && !hasText(manifest.hierarchy.parent_brick_id)) {
     add(report, "warnings", "component_parent_missing", "Component brick should name its parent module or parent brick");
   }
 
@@ -232,22 +246,22 @@ export function validateManifest(manifestPath, manifest) {
       add(report, "errors", "gate_score", `${gate}.score must be a number`);
     }
 
-    if (canonical(manifest) && ["missing", "blocked"].includes(gateData.status)) {
-      add(report, "errors", "canonical_gate_blocked", `Canonical brick cannot have ${gate} status ${gateData.status}`);
-    } else if (candidateOrCanonical(manifest) && ["missing", "blocked"].includes(gateData.status)) {
-      add(report, "warnings", "candidate_gate_blocked", `Candidate brick has ${gate} status ${gateData.status}`);
+    if (canonical(manifest) && ["missing", "blocked"].includes(gateData.status ?? '')) {
+      add(report, "errors", "canonical_gate_blocked", `Canonical brick cannot have ${gate} status ${String(gateData.status)}`);
+    } else if (candidateOrCanonical(manifest) && ["missing", "blocked"].includes(gateData.status ?? '')) {
+      add(report, "warnings", "candidate_gate_blocked", `Candidate brick has ${gate} status ${String(gateData.status)}`);
     }
   }
 
-  const findings = manifest.security?.vulnerability_findings || {};
-  const highRiskFindings = (findings.critical || 0) + (findings.high || 0);
+  const findings = manifest.security?.vulnerability_findings ?? {};
+  const highRiskFindings = (findings.critical ?? 0) + (findings.high ?? 0);
 
   if (highRiskFindings > 0) {
     const severity = canonical(manifest) ? "errors" : "warnings";
     add(report, severity, "vulnerability_blocker", "High or critical vulnerability findings are present");
   }
 
-  if (canonical(manifest) && (manifest.quality?.score || 0) < 90) {
+  if (canonical(manifest) && (manifest.quality?.score ?? 0) < 90) {
     add(report, "errors", "canonical_score", "Canonical brick requires quality.score >= 90");
   }
 
@@ -255,13 +269,13 @@ export function validateManifest(manifestPath, manifest) {
   const declaredScore = manifest.quality?.score;
 
   if (typeof declaredScore === "number" && Math.abs(declaredScore - calculatedScore) > 10) {
-    add(report, "warnings", "score_drift", `Declared score ${declaredScore} differs from calculated score ${calculatedScore}`);
+    add(report, "warnings", "score_drift", `Declared score ${String(declaredScore)} differs from calculated score ${String(calculatedScore)}`);
   }
 
-  if ((manifest.quality?.line_count?.max_file_lines || 0) > 600) {
+  if ((manifest.quality?.line_count?.max_file_lines ?? 0) > 600) {
     const severity = canonical(manifest) ? "errors" : "warnings";
     add(report, severity, "file_size_hard_limit", "A source file is over the 600-line hard limit");
-  } else if ((manifest.quality?.line_count?.max_file_lines || 0) > 400) {
+  } else if ((manifest.quality?.line_count?.max_file_lines ?? 0) > 400) {
     add(report, "warnings", "file_size_target", "A source file is over the 400-line target");
   }
 
@@ -273,11 +287,11 @@ export function validateManifest(manifestPath, manifest) {
       add(report, severity, "code_bloat", "Code budget status is bloated");
     }
 
-    if ((manifest.quality.code_budget.dependency_count || 0) > 12) {
+    if ((manifest.quality.code_budget.dependency_count ?? 0) > 12) {
       add(report, "warnings", "dependency_creep", "Brick declares more than 12 dependencies; verify they earn their place");
     }
 
-    if ((manifest.quality.code_budget.file_count || 0) > 30) {
+    if ((manifest.quality.code_budget.file_count ?? 0) > 30) {
       add(report, "warnings", "wide_brick", "Brick spans more than 30 files; consider module_group or submodules");
     }
   }
@@ -286,7 +300,7 @@ export function validateManifest(manifestPath, manifest) {
     add(report, candidateOrCanonical(manifest) ? "errors" : "warnings", "test_commands", "test_commands should be declared");
   }
 
-  const skippedVerification = (manifest.quality?.verification || []).some((event) => event.status === "skipped");
+  const skippedVerification = (manifest.quality?.verification ?? []).some((event) => event.status === "skipped");
   if (candidateOrCanonical(manifest) && skippedVerification) {
     add(report, "warnings", "skipped_verification", "Candidate/canonical brick has skipped verification");
   }
@@ -301,7 +315,7 @@ export function validateManifest(manifestPath, manifest) {
     add(report, severity, "env_incomplete", "Required env contract is not complete");
   }
 
-  const privateClasses = (manifest.classification?.data_classes || []).filter((item) => privateDataClasses.has(item));
+  const privateClasses = (manifest.classification?.data_classes ?? []).filter((item) => privateDataClasses.has(item));
   if (privateClasses.length > 0 && manifest.security?.rls?.status === "not_applicable" && !hasText(manifest.classification?.notes)) {
     add(report, "warnings", "private_data_no_rls_note", "Private data class with RLS marked not_applicable needs an explanation");
   }
@@ -326,7 +340,7 @@ export function validateManifest(manifestPath, manifest) {
     add(report, "errors", "known_traps", "clone.known_traps are required");
   }
 
-  if (canonical(manifest) && !["copy_ready", "guided"].includes(manifest.clone?.readiness)) {
+  if (canonical(manifest) && !["copy_ready", "guided"].includes(manifest.clone?.readiness ?? '')) {
     add(report, "errors", "clone_readiness", "Canonical brick requires clone.readiness copy_ready or guided");
   }
 
@@ -338,13 +352,14 @@ export function validateManifest(manifestPath, manifest) {
 
   const modelTouches = [
     manifest.provenance?.created_by,
-    ...(manifest.provenance?.touched_by || []),
-    ...(manifest.provenance?.reviewed_by || [])
-  ].filter((event) => event?.actor_kind === "ai_model" || (event?.actor_kind === "agent" && event.model));
+    ...(manifest.provenance?.touched_by ?? []),
+    ...(manifest.provenance?.reviewed_by ?? [])
+  ].filter((event): event is NonNullable<typeof event> => event !== undefined)
+    .filter((event) => event.actor_kind === "ai_model" || (event.actor_kind === "agent" && Boolean(event.model)));
 
   for (const event of modelTouches) {
     if (!Array.isArray(event.verification) || event.verification.length === 0) {
-      add(report, "warnings", "model_touch_without_verification", `Model/agent touch by ${event.model || event.actor_id} has no verification evidence`);
+      add(report, "warnings", "model_touch_without_verification", `Model/agent touch by ${String(event.model ?? event.actor_id)} has no verification evidence`);
     }
   }
 
@@ -354,7 +369,7 @@ export function validateManifest(manifestPath, manifest) {
   return report;
 }
 
-function printReports(reports) {
+function printReports(reports: ValidationReport[]): void {
   for (const report of reports) {
     console.log(`${report.errors.length ? "FAIL" : "OK"} ${report.brick_id} (${report.status})`);
 
@@ -371,11 +386,11 @@ function printReports(reports) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const paths = await manifestPaths(options);
-  const reports = [];
+  const reports: ValidationReport[] = [];
 
   for (const manifestPath of paths) {
     try {
-      const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+      const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ManifestInput;
       reports.push(validateManifest(manifestPath, manifest));
     } catch (error) {
       reports.push({
@@ -395,7 +410,7 @@ async function main() {
     console.log(JSON.stringify({ count: reports.length, error_count: errorCount, warning_count: warningCount, reports }, null, 2));
   } else {
     printReports(reports);
-    console.log(`SMA validation complete: ${reports.length} manifest(s), ${errorCount} error(s), ${warningCount} warning(s)`);
+    console.log(`SMA validation complete: ${String(reports.length)} manifest(s), ${String(errorCount)} error(s), ${String(warningCount)} warning(s)`);
   }
 
   if (errorCount > 0) {
@@ -404,7 +419,7 @@ async function main() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
+  main().catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);
   });

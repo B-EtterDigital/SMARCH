@@ -18,10 +18,12 @@ const weights = {
   srls: 10,
   sev: 5,
   ssc: 5
-};
+} as const;
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = { manifest: "" };
+interface ScoreArgs { manifest: string }
+
+function parseArgs(argv: string[]): ScoreArgs {
+  const options: ScoreArgs = { manifest: "" };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -47,12 +49,19 @@ Usage:
   return options;
 }
 
-export function calculateScore(manifest) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function calculateScore(manifest: unknown): number {
+  const root = isRecord(manifest) ? manifest : {};
+  const sweetspot = isRecord(root.sweetspot) ? root.sweetspot : {};
   let totalWeight = 0;
   let weighted = 0;
 
   for (const [gate, weight] of Object.entries(weights)) {
-    const score = manifest.sweetspot?.[gate]?.score;
+    const gateValue = sweetspot[gate];
+    const score = isRecord(gateValue) ? gateValue.score : undefined;
 
     if (typeof score !== "number") {
       continue;
@@ -62,7 +71,8 @@ export function calculateScore(manifest) {
     weighted += score * weight;
   }
 
-  const cloneReadiness = manifest.clone?.readiness;
+  const clone = isRecord(root.clone) ? root.clone : {};
+  const cloneReadiness = clone.readiness;
   const cloneScore = cloneReadiness === "copy_ready"
     ? 100
     : cloneReadiness === "guided"
@@ -83,19 +93,22 @@ export function calculateScore(manifest) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const manifest = JSON.parse(await fs.readFile(options.manifest, "utf8"));
+  const manifest: unknown = JSON.parse(await fs.readFile(options.manifest, "utf8"));
+  const root = isRecord(manifest) ? manifest : {};
+  const brick = isRecord(root.brick) ? root.brick : {};
+  const quality = isRecord(root.quality) ? root.quality : {};
   const calculated = calculateScore(manifest);
 
   console.log(JSON.stringify({
     manifest: options.manifest,
-    brick_id: manifest.brick?.id || "",
-    declared_score: manifest.quality?.score ?? null,
+    brick_id: typeof brick.id === "string" ? brick.id : "",
+    declared_score: typeof quality.score === "number" ? quality.score : null,
     calculated_score: calculated
   }, null, 2));
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
+  main().catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);
   });

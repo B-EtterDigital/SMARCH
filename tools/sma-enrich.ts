@@ -28,8 +28,25 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
-function parseArgs(argv): Record<string, any> {
-  const opts = {
+interface EnrichOptions { candidates: string; registry: string; dryRun: boolean; limit: number }
+interface EnrichBrick {
+  manifest_path: string;
+  project?: string;
+  source_paths?: string[];
+  domain?: string[];
+  kind?: string;
+  name?: string;
+  feature_cluster?: { id?: string };
+  data_classes?: string[];
+}
+interface EnrichSemantics {
+  purpose?: string; purpose_synthesized?: boolean; public_api?: string[]; tags?: string[]; use_when?: string[];
+  do_not_use_when?: string[]; clone_steps?: string[]; enriched_at?: string; enrichment_source?: string;
+}
+interface EnrichManifest { semantics: EnrichSemantics; [key: string]: unknown }
+
+function parseArgs(argv: string[]): EnrichOptions {
+  const opts: EnrichOptions = {
     candidates: smaPath("security/reuse_candidates.json"),
     registry: smaPath("scans/all-projects/latest.registry.json"),
     dryRun: false,
@@ -45,9 +62,12 @@ function parseArgs(argv): Record<string, any> {
   return opts;
 }
 
-async function readJson(p) { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson(p: string): Promise<unknown> {
+  const parsed: unknown = JSON.parse(await fs.readFile(p, "utf8"));
+  return parsed;
+}
 
-function sentenceClean(line) {
+function sentenceClean(line: unknown) {
   return String(line)
     .replace(/^[\s*/#-]+/, "")
     .replace(/^\*+/, "")
@@ -56,7 +76,7 @@ function sentenceClean(line) {
     .trim();
 }
 
-async function extractPurpose(brick) {
+async function extractPurpose(brick: EnrichBrick) {
   const rootDir = path.dirname(brick.manifest_path);
   const candidatesFiles = [
     path.join(rootDir, "README.md"),
@@ -70,8 +90,9 @@ async function extractPurpose(brick) {
   ];
 
   // Also look for a sidecar source file if this is a file-level brick
-  if ((brick.source_paths || [])[0]) {
-    const srcAbs = path.resolve(PROJECTS_ROOT, brick.project || "", brick.source_paths[0]);
+  const sourcePath = brick.source_paths?.[0];
+  if (sourcePath) {
+    const srcAbs = path.resolve(PROJECTS_ROOT, brick.project ?? "", sourcePath);
     candidatesFiles.push(srcAbs);
   }
 
@@ -80,26 +101,8 @@ async function extractPurpose(brick) {
       const stat = await fs.stat(f);
       if (!stat.isFile() || stat.size > 500_000) continue;
       const text = await fs.readFile(f, "utf8");
-      // Markdown: first non-heading paragraph
-      if (/\.md$|\.txt$/i.test(f)) {
-        const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        for (const l of lines) {
-          if (l.startsWith("#")) continue;
-          if (l.length >= 20 && !l.startsWith("!") && !l.startsWith("[")) return sentenceClean(l).slice(0, 280);
-        }
-        continue;
-      }
-      // Source: top file comment block
-      const blockMatch = text.match(/\/\*\*?([\s\S]*?)\*\//);
-      if (blockMatch) {
-        const firstSentence = blockMatch[1].split(/\r?\n/).map(sentenceClean).filter(Boolean).join(" ").split(/(?<=[.!?])\s+/)[0];
-        if (firstSentence && firstSentence.length >= 20) return firstSentence.slice(0, 280);
-      }
-      const lineMatch = text.match(/^[\t ]*\/\/\s*(.+)/m);
-      if (lineMatch) {
-        const first = sentenceClean(lineMatch[1]);
-        if (first.length >= 20) return first.slice(0, 280);
-      }
+      const purpose = purposeFromText(f, text);
+      if (purpose) return purpose;
     } catch {
       // Source inspection is optional enrichment; retain the next evidence source on failure.
     }
@@ -107,8 +110,24 @@ async function extractPurpose(brick) {
   return null;
 }
 
-async function extractExportsFromFile(filePath) {
-  const exported = new Set();
+function purposeFromText(filePath: string, text: string): string | null {
+  if (/\.md$|\.txt$/i.test(filePath)) return markdownPurpose(text);
+  const blockMatch = /\/\*\*?([\s\S]*?)\*\//.exec(text);
+  const firstSentence = blockMatch?.[1].split(/\r?\n/).map(sentenceClean).filter(Boolean).join(" ").split(/(?<=[.!?])\s+/)[0];
+  if (firstSentence && firstSentence.length >= 20) return firstSentence.slice(0, 280);
+  const lineMatch = /^[\t ]*\/\/\s*(.+)/m.exec(text);
+  const first = lineMatch ? sentenceClean(lineMatch[1]) : "";
+  return first.length >= 20 ? first.slice(0, 280) : null;
+}
+
+function markdownPurpose(text: string): string | null {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const line = lines.find((candidate) => !candidate.startsWith("#") && candidate.length >= 20 && !candidate.startsWith("!") && !candidate.startsWith("["));
+  return line ? sentenceClean(line).slice(0, 280) : null;
+}
+
+async function extractExportsFromFile(filePath: string) {
+  const exported = new Set<string>();
   try {
     const stat = await fs.stat(filePath);
     if (!stat.isFile() || stat.size > 500_000) return exported;
@@ -126,9 +145,9 @@ async function extractExportsFromFile(filePath) {
   return exported;
 }
 
-async function extractPublicApi(brick) {
+async function extractPublicApi(brick: EnrichBrick) {
   const rootDir = path.dirname(brick.manifest_path);
-  const allExports = new Set();
+  const allExports = new Set<string>();
   const candidates = [
     path.join(rootDir, "index.ts"),
     path.join(rootDir, "index.tsx"),
@@ -138,8 +157,9 @@ async function extractPublicApi(brick) {
     path.join(rootDir, `${path.basename(rootDir)}.tsx`)
   ];
 
-  if ((brick.source_paths || [])[0]) {
-    const srcAbs = path.resolve(PROJECTS_ROOT, brick.project || "", brick.source_paths[0]);
+  const sourcePath = brick.source_paths?.[0];
+  if (sourcePath) {
+    const srcAbs = path.resolve(PROJECTS_ROOT, brick.project ?? "", sourcePath);
     try {
       const st = await fs.stat(srcAbs);
       if (st.isFile()) candidates.unshift(srcAbs);
@@ -153,46 +173,39 @@ async function extractPublicApi(brick) {
     for (const x of exports) allExports.add(x);
     if (allExports.size > 0) break; // prefer the first entry point found
   }
-
-  // Fallback: scan top-level .ts/.tsx files in the brick folder
-  if (allExports.size === 0) {
-    try {
-      const entries = await fs.readdir(rootDir, { withFileTypes: true });
-      for (const e of entries) {
-        if (!e.isFile()) continue;
-        if (!/\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(e.name)) continue;
-        if (/\.(test|spec)\./i.test(e.name)) continue;
-        if (e.name === "module.sweetspot.json" || e.name.endsWith(".module.sweetspot.json")) continue;
-        const exports = await extractExportsFromFile(path.join(rootDir, e.name));
-        for (const x of exports) allExports.add(x);
-        if (allExports.size >= 20) break;
-      }
-    } catch {
-      // An unreadable brick directory exposes no top-level export fallback.
-    }
-  }
-
-  // Last-resort fallback: describe the surface by file name so promotion can proceed.
-  if (allExports.size === 0) {
-    try {
-      const entries = await fs.readdir(rootDir, { withFileTypes: true });
-      const files = entries
-        .filter((e) => e.isFile() && /\.(ts|tsx|js|jsx|mjs|cjs|py|sql|go)$/i.test(e.name))
-        .map((e) => `file:${e.name}`);
-      if (files.length) {
-        for (const f of files.slice(0, 10)) allExports.add(f);
-        allExports.add("__api_inferred_from_files__");
-      }
-    } catch {
-      // An unreadable brick directory exposes no filename-based API fallback.
-    }
-    if (allExports.size === 0 && (brick.source_paths || [])[0]) {
-      allExports.add(`file:${path.basename(brick.source_paths[0])}`);
-      allExports.add("__api_inferred_from_files__");
-    }
-  }
+  if (allExports.size === 0) await scanDirectoryExports(rootDir, allExports);
+  if (allExports.size === 0) await inferFileApi(rootDir, brick.source_paths?.[0], allExports);
 
   return [...allExports].slice(0, 20);
+}
+
+async function scanDirectoryExports(rootDir: string, allExports: Set<string>) {
+  try {
+    const entries = await fs.readdir(rootDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile() || !/\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(entry.name) || /\.(test|spec)\./i.test(entry.name)) continue;
+      if (entry.name === "module.sweetspot.json" || entry.name.endsWith(".module.sweetspot.json")) continue;
+      for (const item of await extractExportsFromFile(path.join(rootDir, entry.name))) allExports.add(item);
+      if (allExports.size >= 20) break;
+    }
+  } catch {
+    // An unreadable brick directory exposes no top-level export fallback.
+  }
+}
+
+async function inferFileApi(rootDir: string, sourcePath: string | undefined, allExports: Set<string>) {
+  try {
+    const entries = await fs.readdir(rootDir, { withFileTypes: true });
+    const files = entries.filter((entry) => entry.isFile() && /\.(ts|tsx|js|jsx|mjs|cjs|py|sql|go)$/i.test(entry.name)).map((entry) => `file:${entry.name}`);
+    for (const file of files.slice(0, 10)) allExports.add(file);
+    if (files.length > 0) allExports.add("__api_inferred_from_files__");
+  } catch {
+    // An unreadable brick directory exposes no filename-based API fallback.
+  }
+  if (allExports.size === 0 && sourcePath) {
+    allExports.add(`file:${path.basename(sourcePath)}`);
+    allExports.add("__api_inferred_from_files__");
+  }
 }
 
 const genericWordTags = [
@@ -215,53 +228,48 @@ const genericWordTags = [
   "rls", "supabase-function", "edge-function"
 ];
 
-function deriveTags(brick) {
-  const tags = new Set();
-  for (const d of brick.domain || []) tags.add(String(d).toLowerCase());
-  if (brick.kind) tags.add(String(brick.kind).toLowerCase());
+function deriveTags(brick: EnrichBrick) {
+  const tags = new Set<string>();
+  for (const d of brick.domain ?? []) tags.add(d.toLowerCase());
+  if (brick.kind) tags.add(brick.kind.toLowerCase());
   if (brick.feature_cluster?.id) tags.add(brick.feature_cluster.id);
 
-  const hay = `${brick.name || ""} ${(brick.source_paths || []).join(" ")} ${(brick.domain || []).join(" ")}`.toLowerCase();
+  const hay = `${brick.name ?? ""} ${(brick.source_paths ?? []).join(" ")} ${(brick.domain ?? []).join(" ")}`.toLowerCase();
   for (const w of genericWordTags) {
     if (hay.includes(w)) tags.add(w);
   }
 
-  // Path segments as tags
-  for (const p of brick.source_paths || []) {
-    for (const seg of p.split("/")) {
-      if (seg.length >= 3 && seg.length <= 30 && /^[a-z0-9_-]+$/i.test(seg)) {
-        tags.add(seg.toLowerCase().replace(/_/g, "-"));
-      }
-    }
-  }
+  addPathTags(tags, brick.source_paths ?? []);
 
   return [...tags].slice(0, 40);
 }
 
-function deriveUseWhen(brick, purpose) {
+function addPathTags(tags: Set<string>, sourcePaths: string[]) {
+  for (const sourcePath of sourcePaths) {
+    for (const segment of sourcePath.split("/")) {
+      if (segment.length >= 3 && segment.length <= 30 && /^[a-z0-9_-]+$/i.test(segment)) tags.add(segment.toLowerCase().replace(/_/g, "-"));
+    }
+  }
+}
+
+function deriveUseWhen(brick: EnrichBrick, purpose: string | null) {
   const tags = deriveTags(brick);
-  const hints = [];
-  if (tags.includes("auth") || tags.includes("workos") || tags.includes("clerk") || tags.includes("jwt") || tags.includes("session")) {
-    hints.push("you need authentication / session management");
-  }
-  if (tags.includes("stripe") || tags.includes("billing") || tags.includes("checkout")) {
-    hints.push("you need billing / payment checkout");
-  }
-  if (tags.includes("chat")) hints.push("you need chat UI or chat routing");
-  if (tags.includes("transcription") || tags.includes("whisper")) hints.push("you need speech-to-text / transcription");
-  if (tags.includes("capture") || tags.includes("screen")) hints.push("you need screen / audio capture");
-  if (tags.includes("push") || tags.includes("fcm")) hints.push("you need push notifications");
-  if (tags.includes("migration")) hints.push("you need a database migration for this schema change");
-  if (tags.includes("supabase-function") || tags.includes("supabase_function")) hints.push("the host uses Supabase edge functions");
-  if (tags.includes("rls")) hints.push("you need Row-Level Security rules for this table");
+  const rules: [tags: string[], message: string][] = [
+    [["auth", "workos", "clerk", "jwt", "session"], "you need authentication / session management"],
+    [["stripe", "billing", "checkout"], "you need billing / payment checkout"], [["chat"], "you need chat UI or chat routing"],
+    [["transcription", "whisper"], "you need speech-to-text / transcription"], [["capture", "screen"], "you need screen / audio capture"],
+    [["push", "fcm"], "you need push notifications"], [["migration"], "you need a database migration for this schema change"],
+    [["supabase-function", "supabase_function"], "the host uses Supabase edge functions"], [["rls"], "you need Row-Level Security rules for this table"],
+  ];
+  const hints = rules.filter(([needles]) => needles.some((tag) => tags.includes(tag))).map(([, message]) => message);
   if (hints.length === 0 && purpose) hints.push("the problem statement matches the brick's purpose");
   return hints.slice(0, 6);
 }
 
-function deriveDoNotUseWhen(brick) {
+function deriveDoNotUseWhen(brick: EnrichBrick) {
   const tags = deriveTags(brick);
   const warn = [];
-  if ((brick.data_classes || []).includes("admin_only") || tags.includes("admin")) {
+  if ((brick.data_classes ?? []).includes("admin_only") || tags.includes("admin")) {
     warn.push("the target project doesn't have an admin surface");
   }
   if (tags.includes("electron") && !tags.includes("browser")) {
@@ -273,18 +281,17 @@ function deriveDoNotUseWhen(brick) {
   return warn.slice(0, 4);
 }
 
-function deriveCloneSteps(brick) {
+function deriveCloneSteps(brick: EnrichBrick) {
   const steps = [];
-  const src = (brick.source_paths || [])[0] || "";
-  const targetRel = src;
-  const kind = brick.kind || "";
+  const src = (brick.source_paths ?? [])[0] || "";
+  const kind = brick.kind ?? "";
 
   steps.push(`copy ${src} into the target project at the same relative path (or adjust to the target's layout)`);
 
-  if (kind === "supabase-function" || kind === "function" || /supabase_function/i.test(brick.domain?.join(" ") || "")) {
+  if (kind === "supabase-function" || kind === "function" || /supabase_function/i.test(brick.domain?.join(" ") ?? "")) {
     steps.push("deploy with: supabase functions deploy <name> --project-ref <target-ref>");
   }
-  if (kind === "migration" || /migration/i.test(brick.domain?.join(" ") || "")) {
+  if (kind === "migration" || /migration/i.test(brick.domain?.join(" ") ?? "")) {
     steps.push("apply with: supabase db push");
   }
   if (/module|feature|component/.test(kind)) {
@@ -299,61 +306,16 @@ function deriveCloneSteps(brick) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const cands = await readJson(opts.candidates);
-  const items = opts.limit > 0 ? cands.bricks.slice(0, opts.limit) : cands.bricks;
+  const candidates = parseCandidates(await readJson(opts.candidates));
+  const items = opts.limit > 0 ? candidates.slice(0, opts.limit) : candidates;
   let touched = 0;
   let skipped = 0;
 
   for (const brick of items) {
     try {
-      const mf = JSON.parse(await fs.readFile(brick.manifest_path, "utf8"));
-      if (!mf.semantics) mf.semantics = {};
-
-      if (!mf.semantics.purpose) {
-        const purpose = await extractPurpose(brick);
-        if (purpose) {
-          mf.semantics.purpose = purpose;
-        } else {
-          // Synthesize a fallback so downstream tools never see an empty
-          // purpose. Agents can still query this; a human can rewrite later.
-          const kindHuman = String(brick.kind || "brick").replace(/_/g, " ");
-          const tagList = (deriveTags(brick).slice(0, 6)).join(", ") || "reusable unit";
-          const pathHint = (brick.source_paths || [])[0] || "";
-          mf.semantics.purpose = `${kindHuman} in ${brick.project || "unknown"} (${pathHint}). Covers: ${tagList}. [synthesized — rewrite with a real sentence before promoting]`;
-          mf.semantics.purpose_synthesized = true;
-        }
-      }
-
-      if (!mf.semantics.public_api || (Array.isArray(mf.semantics.public_api) && mf.semantics.public_api.length === 0)) {
-        const api = await extractPublicApi(brick);
-        if (api.length) mf.semantics.public_api = api;
-      }
-
-      if (!mf.semantics.tags || mf.semantics.tags.length === 0) {
-        mf.semantics.tags = deriveTags(brick);
-      }
-
-      if (!mf.semantics.use_when || mf.semantics.use_when.length === 0) {
-        mf.semantics.use_when = deriveUseWhen(brick, mf.semantics.purpose || "");
-      }
-
-      if (!mf.semantics.do_not_use_when || mf.semantics.do_not_use_when.length === 0) {
-        const warn = deriveDoNotUseWhen(brick);
-        if (warn.length) mf.semantics.do_not_use_when = warn;
-      }
-
-      if (!mf.semantics.clone_steps || mf.semantics.clone_steps.length === 0) {
-        mf.semantics.clone_steps = deriveCloneSteps(brick);
-      }
-
-      mf.semantics.enriched_at = new Date().toISOString();
-      mf.semantics.enrichment_source = "sma-enrich-heuristic";
-
-      if (!opts.dryRun) {
-        await fs.writeFile(brick.manifest_path, `${JSON.stringify(mf, null, 2)}\n`);
-      }
+      await enrichBrick(brick, opts.dryRun);
       touched += 1;
-    } catch (err) {
+    } catch {
       skipped += 1;
     }
   }
@@ -366,4 +328,80 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+async function enrichBrick(brick: EnrichBrick, dryRun: boolean) {
+  const parsed: unknown = JSON.parse(await fs.readFile(brick.manifest_path, "utf8"));
+  const manifest = parseManifest(parsed);
+  const semantics = manifest.semantics;
+  await ensurePurpose(brick, semantics);
+  if (!semantics.public_api?.length) {
+    const api = await extractPublicApi(brick);
+    if (api.length > 0) semantics.public_api = api;
+  }
+  semantics.tags ??= deriveTags(brick);
+  if (semantics.tags.length === 0) semantics.tags = deriveTags(brick);
+  semantics.use_when ??= deriveUseWhen(brick, semantics.purpose ?? "");
+  if (semantics.use_when.length === 0) semantics.use_when = deriveUseWhen(brick, semantics.purpose ?? "");
+  ensureWarnings(brick, semantics);
+  if (!semantics.clone_steps?.length) semantics.clone_steps = deriveCloneSteps(brick);
+  semantics.enriched_at = new Date().toISOString();
+  semantics.enrichment_source = "sma-enrich-heuristic";
+  if (!dryRun) await fs.writeFile(brick.manifest_path, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+function ensureWarnings(brick: EnrichBrick, semantics: EnrichSemantics) {
+  const warnings = deriveDoNotUseWhen(brick);
+  if (!semantics.do_not_use_when?.length && warnings.length > 0) semantics.do_not_use_when = warnings;
+}
+
+async function ensurePurpose(brick: EnrichBrick, semantics: EnrichSemantics) {
+  if (semantics.purpose) return;
+  const purpose = await extractPurpose(brick);
+  if (purpose) {
+    semantics.purpose = purpose;
+    return;
+  }
+  const kindHuman = (brick.kind ?? "brick").replace(/_/g, " ");
+  const tagList = deriveTags(brick).slice(0, 6).join(", ") || "reusable unit";
+  const pathHint = brick.source_paths?.[0] ?? "";
+  semantics.purpose = `${kindHuman} in ${brick.project ?? "unknown"} (${pathHint}). Covers: ${tagList}. [synthesized — rewrite with a real sentence before promoting]`;
+  semantics.purpose_synthesized = true;
+}
+
+function parseCandidates(value: unknown): EnrichBrick[] {
+  const root = objectValue(value);
+  if (!root || !Array.isArray(root.bricks)) throw new Error("candidate file must contain a bricks array");
+  return root.bricks.map(parseBrick).filter((brick): brick is EnrichBrick => brick !== null);
+}
+
+function parseBrick(value: unknown): EnrichBrick | null {
+  const brick = objectValue(value);
+  if (!brick || typeof brick.manifest_path !== "string") return null;
+  const cluster = objectValue(brick.feature_cluster);
+  return { manifest_path: brick.manifest_path, project: optionalString(brick.project), source_paths: stringList(brick.source_paths),
+    domain: stringList(brick.domain), kind: optionalString(brick.kind), name: optionalString(brick.name),
+    feature_cluster: cluster ? { id: optionalString(cluster.id) } : undefined, data_classes: stringList(brick.data_classes) };
+}
+
+function parseManifest(value: unknown): EnrichManifest {
+  const record = objectValue(value);
+  if (!record) throw new Error("manifest must be a JSON object");
+  const source = objectValue(record.semantics) ?? {};
+  return { ...record, semantics: { purpose: optionalString(source.purpose), purpose_synthesized: source.purpose_synthesized === true,
+    public_api: stringList(source.public_api), tags: stringList(source.tags), use_when: stringList(source.use_when),
+    do_not_use_when: stringList(source.do_not_use_when), clone_steps: stringList(source.clone_steps),
+    enriched_at: optionalString(source.enriched_at), enrichment_source: optionalString(source.enrichment_source) } };
+}
+
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+main().catch((err: unknown) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });

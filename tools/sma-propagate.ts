@@ -39,6 +39,42 @@ import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const DEPENDENTS_INDEX = join(SMA_ROOT, 'registry/dependents.generated.json');
 
+type CliArgs = { help: boolean; sourceBrick?: string; since?: string; sourceProject?: string; release?: string; apply: boolean; applyPr: boolean; json: boolean };
+type SourceMeta = { source_project?: string; source_path?: string; latest_version?: string };
+type DependentLink = { target_project: string; target_root: string; target_path: string; evidence_kind: string };
+type DependentsIndex = { sources: Record<string, SourceMeta>; dependents: Record<string, DependentLink[]> };
+type FanOutItem = { target_project: string; target_root: string; target_path: string; evidence_kind: string; action: string; plan_path: string | null; stub_path: string | null; notes: string[] };
+type PropagationReport = { schema_version: string; generated_at: string; source_brick_id: string; source_meta?: SourceMeta; release_artifact?: string; dependent_count: number; fan_out: FanOutItem[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseDependentsIndex(value: unknown): DependentsIndex {
+  if (!isRecord(value) || !isRecord(value.sources) || !isRecord(value.dependents)) {
+    throw new Error('dependents index has an invalid shape');
+  }
+  const sources: Record<string, SourceMeta> = {};
+  for (const [id, source] of Object.entries(value.sources)) {
+    if (!isRecord(source)) continue;
+    sources[id] = {
+      source_project: typeof source.source_project === 'string' ? source.source_project : undefined,
+      source_path: typeof source.source_path === 'string' ? source.source_path : undefined,
+      latest_version: typeof source.latest_version === 'string' ? source.latest_version : undefined,
+    };
+  }
+  const dependents: Record<string, DependentLink[]> = {};
+  for (const [id, links] of Object.entries(value.dependents)) {
+    dependents[id] = Array.isArray(links)
+      ? links.filter(isRecord).flatMap((link) =>
+        typeof link.target_project === 'string' && typeof link.target_root === 'string' && typeof link.target_path === 'string' && typeof link.evidence_kind === 'string'
+          ? [{ target_project: link.target_project, target_root: link.target_root, target_path: link.target_path, evidence_kind: link.evidence_kind }]
+          : [])
+      : [];
+  }
+  return { sources, dependents };
+}
+
 const args = parseArgs(argv.slice(2));
 if (args.help || (!args.sourceBrick && !args.since)) {
   console.log(`Usage:
@@ -67,19 +103,19 @@ if (!existsSync(DEPENDENTS_INDEX)) {
   console.error(`Dependents index missing — run: node tools/sma-dependents-index.ts --write`);
   exit(1);
 }
-const index = JSON.parse(readFileSync(DEPENDENTS_INDEX, 'utf8'));
+const index = parseDependentsIndex(JSON.parse(readFileSync(DEPENDENTS_INDEX, 'utf8')) as unknown);
 
 const targetBricks = args.sourceBrick
   ? [args.sourceBrick]
   : enumerateBricksSince(args.since, args.sourceProject);
 
-const reports = [];
+const reports: PropagationReport[] = [];
 const ts = new Date().toISOString().replace(/[:.]/g, '-');
 
 for (const brickId of targetBricks) {
   const sourceMeta = index.sources[brickId];
   const links = index.dependents[brickId] ?? [];
-  const report: Record<string, any> = {
+  const report: PropagationReport = {
     schema_version: '1.0.0',
     generated_at: new Date().toISOString(),
     source_brick_id: brickId,
@@ -96,7 +132,7 @@ for (const brickId of targetBricks) {
   }
 
   for (const l of links) {
-    const item = {
+    const item: FanOutItem = {
       target_project: l.target_project,
       target_root: l.target_root,
       target_path: l.target_path,
@@ -180,7 +216,7 @@ for (const brickId of targetBricks) {
 
 if (args.json) console.log(JSON.stringify(reports, null, 2));
 
-function enumerateBricksSince(since, sourceProject) {
+function enumerateBricksSince(since: string | undefined, sourceProject: string | undefined): string[] {
   if (!sourceProject) {
     console.error('--since requires --source-project');
     exit(2);
@@ -189,21 +225,22 @@ function enumerateBricksSince(since, sourceProject) {
   try {
     const out = execSync(`git -C "${projectDir}" diff --name-only ${since}..HEAD`, { encoding: 'utf8' });
     const changedFiles = out.split('\n').filter(Boolean);
-    const bricks = new Set();
+    const bricks = new Set<string>();
     for (const id of Object.keys(index.sources)) {
       const meta = index.sources[id];
-      if (meta.source_project !== sourceProject || !meta.source_path) continue;
-      if (changedFiles.some((f) => f.startsWith(meta.source_path))) bricks.add(id);
+      const sourcePath = meta.source_path;
+      if (meta.source_project !== sourceProject || !sourcePath) continue;
+      if (changedFiles.some((file: string) => file.startsWith(sourcePath))) bricks.add(id);
     }
     return [...bricks];
   } catch (e) {
-    console.error(`git diff failed: ${e.message}`);
+    console.error(`git diff failed: ${e instanceof Error ? e.message : String(e)}`);
     return [];
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(argv: string[]): CliArgs {
+  const out: CliArgs = { help: false, apply: false, applyPr: false, json: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--source-brick') out.sourceBrick = argv[++i];

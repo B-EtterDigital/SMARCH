@@ -13,9 +13,20 @@ const FIXTURE_TIMEOUT_MS = 30_000;
 const RESULT_MARKER = "__SMA_CAPSULE_RESULT__";
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 let isolationFallbackWarned = false;
+/** @typedef {{ permissionFlag: string, syncModuleHooks: boolean, netPermission: boolean }} IsolationCapabilities */
+/** @typedef {{ allowNet?: boolean, emit?: boolean, strictSandbox?: boolean, timeoutMs?: number }} RunOptions */
+/** @typedef {{ allowNet?: boolean, allowedPorts: string[], runtimeTemp: string, strictSandbox?: boolean }} FixtureOptions */
+/** @typedef {{ name: string, inputs: unknown, expected_outputs: unknown }} Fixture */
+/** @typedef {{ fixture: string | null, status: "PASS" | "FAIL", expected_outputs?: unknown, actual_outputs?: unknown, error?: unknown, checks?: string[] }} FixtureResult */
+/** @typedef {{ interfaces: { ports: string[] }, security?: { env?: { variables?: Array<string | { name?: string }> } } }} CapsuleManifest */
+/** @type {IsolationCapabilities | undefined} */
 let cachedIsolationCapabilities;
 
 class CapsuleError extends Error {
+  /**
+* @param {string} code
+* @param {string | undefined} message
+*/
   constructor(code, message) {
     super(message);
     this.name = "CapsuleError";
@@ -47,6 +58,7 @@ async function main() {
   if (failed.length) process.exitCode = 4;
 }
 
+/** @param {string[]} args */
 function parseArgs(args) {
   const options = { allowNet: false, selftest: false, strictSandbox: false, capsulePath: "", json: false, quiet: false, verbose: false };
   for (let index = 0; index < args.length; index += 1) {
@@ -95,10 +107,11 @@ Known limitation: default mode may use documented isolation fallbacks; use --str
   return options;
 }
 
+/** @param {string} capsulePath @param {RunOptions} [options] @returns {Promise<FixtureResult[]>} */
 async function runCapsule(capsulePath, options = {}) {
   const root = path.resolve(capsulePath);
   if (options.strictSandbox === true) assertStrictSandboxAvailable();
-  const manifest = await readJson(path.join(root, "module.sweetspot.json"), "capsule manifest");
+  const manifest = /** @type {CapsuleManifest} */ (await readJson(path.join(root, "module.sweetspot.json"), "capsule manifest"));
   const fixtureDocument = await readJson(path.join(root, "fixtures", "run.json"), "capsule fixture file");
   const fixtures = validateFixtures(fixtureDocument);
   await enforceConstraints(root, manifest);
@@ -106,8 +119,10 @@ async function runCapsule(capsulePath, options = {}) {
   const runtimeTemp = await mkdtemp(path.join(tmpdir(), "sma-capsule-runtime-"));
   try {
     const env = childEnvironment(manifest, runtimeTemp);
+    /** @type {FixtureResult[]} */
     const results = [];
     for (const fixture of fixtures) {
+      /** @type {FixtureResult} */
       let result;
       try {
         const actual = await executeFixture(root, fixture.inputs, env, options.timeoutMs || FIXTURE_TIMEOUT_MS, {
@@ -132,6 +147,7 @@ async function runCapsule(capsulePath, options = {}) {
   }
 }
 
+/** @param {string} filePath @param {string} label @returns {Promise<unknown>} */
 async function readJson(filePath, label) {
   let text;
   try {
@@ -146,8 +162,9 @@ async function readJson(filePath, label) {
   }
 }
 
+/** @param {unknown} document @returns {Fixture[]} */
 function validateFixtures(document) {
-  if (!document || !Array.isArray(document.fixtures) || document.fixtures.length === 0) {
+  if (!document || typeof document !== 'object' || !("fixtures" in document) || !Array.isArray(document.fixtures) || document.fixtures.length === 0) {
     throw new CapsuleError("INVALID_FIXTURES", "fixtures/run.json must contain a non-empty fixtures array");
   }
   const names = new Set();
@@ -167,9 +184,10 @@ function validateFixtures(document) {
       throw new CapsuleError("INVALID_FIXTURES", `Fixture ${fixture.name} must declare expected_outputs`);
     }
   }
-  return document.fixtures;
+  return /** @type {Fixture[]} */ (document.fixtures);
 }
 
+/** @param {string} root @param {CapsuleManifest} manifest */
 async function enforceConstraints(root, manifest) {
   await rejectSymbolicLinks(root, root);
   const sourceRoot = path.join(root, "src");
@@ -195,6 +213,7 @@ async function enforceConstraints(root, manifest) {
   }
 }
 
+/** @param {string} directory @param {string} root */
 async function rejectSymbolicLinks(directory, root) {
   let entries;
   try {
@@ -215,6 +234,7 @@ async function rejectSymbolicLinks(directory, root) {
   }
 }
 
+/** @param {string} directory @returns {Promise<string[]>} */
 async function collectSourceFiles(directory) {
   let entries;
   try {
@@ -222,6 +242,7 @@ async function collectSourceFiles(directory) {
   } catch (error) {
     throw new CapsuleError("CONSTRAINT_VIOLATION", `Cannot read capsule src directory ${directory}: ${errorMessage(error)}`);
   }
+  /** @type {string[]} */
   const files = [];
   for (const entry of entries) {
     const entryPath = path.join(directory, entry.name);
@@ -231,6 +252,9 @@ async function collectSourceFiles(directory) {
   return files;
 }
 
+/**
+* @param {string} source
+*/
 function importSpecifiers(source) {
   const specifiers = new Set();
   const patterns = [
@@ -244,6 +268,7 @@ function importSpecifiers(source) {
   return specifiers;
 }
 
+/** @param {{ root: string, sourceRoot: string, filePath: string, specifier: string, allowedPorts: Set<string> }} input */
 function validateSpecifier({ root, sourceRoot, filePath, specifier, allowedPorts }) {
   const relativeFile = path.relative(root, filePath).replaceAll(path.sep, "/");
   if (specifier.startsWith(".")) {
@@ -268,11 +293,13 @@ function validateSpecifier({ root, sourceRoot, filePath, specifier, allowedPorts
   }
 }
 
+/** @param {CapsuleManifest} manifest @param {string} runtimeTemp @returns {NodeJS.ProcessEnv} */
 function childEnvironment(manifest, runtimeTemp) {
   const variables = manifest?.security?.env?.variables ?? [];
   if (!Array.isArray(variables)) {
     throw new CapsuleError("INVALID_MANIFEST", "module.sweetspot.json security.env.variables must be an array");
   }
+  /** @type {NodeJS.ProcessEnv} */
   const env = {
     TMPDIR: runtimeTemp,
     TMP: runtimeTemp,
@@ -288,7 +315,8 @@ function childEnvironment(manifest, runtimeTemp) {
   return env;
 }
 
-function executeFixture(root, inputs, env, timeoutMs, options = {}) {
+/** @param {string} root @param {unknown} inputs @param {NodeJS.ProcessEnv} env @param {number} timeoutMs @param {FixtureOptions} options @returns {Promise<unknown>} */
+function executeFixture(root, inputs, env, timeoutMs, options) {
   const isolation = runtimeIsolationPlan({
     allowNet: options.allowNet === true,
     root,
@@ -375,8 +403,8 @@ try {
 
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stdout.on("data", (/** @type {string} */ chunk) => { stdout += chunk; });
+    child.stderr.on("data", (/** @type {string} */ chunk) => { stderr += chunk; });
     child.on("error", (error) => finish(() => reject(new CapsuleError("CHILD_PROCESS", errorMessage(error)))));
     child.on("close", (code) => finish(() => {
       const lines = stdout.split(/\r?\n/);
@@ -403,6 +431,9 @@ try {
     }));
     child.stdin.end(JSON.stringify(inputs));
 
+    /**
+* @param {{ (): void; (): void; (): void; }} callback
+*/
     function finish(callback) {
       if (settled) return;
       settled = true;
@@ -412,6 +443,7 @@ try {
   });
 }
 
+/** @param {{ root: string, runtimeTemp: string, allowNet: boolean, strictSandbox: boolean }} input */
 function runtimeIsolationPlan({ root, runtimeTemp, allowNet, strictSandbox }) {
   const capabilities = isolationCapabilities();
   if (strictSandbox) assertStrictSandboxAvailable(capabilities);
@@ -441,6 +473,7 @@ function runtimeIsolationPlan({ root, runtimeTemp, allowNet, strictSandbox }) {
   };
 }
 
+/** @returns {IsolationCapabilities} */
 function isolationCapabilities() {
   if (cachedIsolationCapabilities) return cachedIsolationCapabilities;
   const permissionFlag = ["--permission", "--experimental-permission"]
@@ -480,6 +513,9 @@ function isolationCapabilities() {
   return cachedIsolationCapabilities;
 }
 
+/**
+* @param {string[]} args
+*/
 function probeNode(args) {
   const result = spawnSync(process.execPath, args, {
     env: {},
@@ -489,7 +525,9 @@ function probeNode(args) {
   return result.status === 0 && !result.error;
 }
 
+/** @param {IsolationCapabilities} [capabilities] */
 function assertStrictSandboxAvailable(capabilities = isolationCapabilities()) {
+  /** @type {string[]} */
   const missing = [];
   if (!capabilities.permissionFlag) missing.push("Node permission model (--permission; experimental form accepted)");
   if (!capabilities.syncModuleHooks) missing.push("synchronous module.registerHooks (Node >=22.15.0 or >=23.5.0)");
@@ -501,6 +539,9 @@ function assertStrictSandboxAvailable(capabilities = isolationCapabilities()) {
   );
 }
 
+/**
+* @param {string} message
+*/
 function warnIsolationFallback(message) {
   if (isolationFallbackWarned) return;
   isolationFallbackWarned = true;
@@ -543,7 +584,7 @@ export default function run(inputs: { value: number }) {
     try {
       assertStrictSandboxAvailable({ permissionFlag: "", syncModuleHooks: false, netPermission: false });
     } catch (error) {
-      strictRefusal = `${error?.code ?? ""}: ${errorMessage(error)}`;
+      strictRefusal = `${error instanceof CapsuleError ? error.code : ""}: ${errorMessage(error)}`;
     }
     assertSelftest(
       strictRefusal.includes("STRICT_SANDBOX_UNSUPPORTED")
@@ -621,7 +662,9 @@ export default async function run() {
   }
 }
 
+/** @param {{ root: string, workspace: string }} input @returns {Promise<Record<string, boolean>>} */
 async function runEscapeSelftests({ root, workspace }) {
+  /** @type {Record<string, boolean>} */
   const checks = {};
 
   await writeSelftestCapsule(root, {
@@ -748,6 +791,7 @@ async function runEscapeSelftests({ root, workspace }) {
   return checks;
 }
 
+/** @param {string} root @param {{ source: string, expectedOutputs: unknown, inputs?: unknown, ports?: string[] }} fixture */
 async function writeSelftestCapsule(root, { source, expectedOutputs, inputs = {}, ports = [] }) {
   await writeFile(path.join(root, "module.sweetspot.json"), JSON.stringify({
     interfaces: { ports },
@@ -760,6 +804,7 @@ async function writeSelftestCapsule(root, { source, expectedOutputs, inputs = {}
   }));
 }
 
+/** @param {string} root */
 async function escapeAttemptFailed(root) {
   try {
     const results = await runCapsule(root, { emit: false, strictSandbox: true });
@@ -772,7 +817,7 @@ async function escapeAttemptFailed(root) {
 async function startSelftestServer() {
   let requestCount = 0;
   const sockets = new Set();
-  const server = createServer((socket) => {
+  const server = createServer((/** @type {{ once: (arg0: string, arg1: () => boolean) => void; end: (arg0: string) => void; }} */ socket) => {
     sockets.add(socket);
     socket.once("close", () => sockets.delete(socket));
     requestCount += 1;
@@ -780,7 +825,7 @@ async function startSelftestServer() {
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
+    server.listen(0, "127.0.0.1", () => resolve(undefined));
   });
   const address = server.address();
   if (!address || typeof address === "string") throw new CapsuleError("SELFTEST", "Could not determine local test server address");
@@ -788,12 +833,13 @@ async function startSelftestServer() {
     url: `http://127.0.0.1:${address.port}/`,
     requests: () => requestCount,
     close: () => new Promise((resolve, reject) => {
-      server.close((error) => error ? reject(error) : resolve());
+      server.close((error) => error ? reject(error) : resolve(undefined));
       for (const socket of sockets) socket.destroy();
     }),
   };
 }
 
+/** @param {string} filePath */
 async function pathExists(filePath) {
   try {
     await access(filePath);
@@ -803,19 +849,31 @@ async function pathExists(filePath) {
   }
 }
 
+/**
+* @param {boolean} condition
+* @param {string} message
+*/
 function assertSelftest(condition, message) {
   if (!condition) throw new CapsuleError("SELFTEST", message);
 }
 
+/**
+* @param {string} name
+* @param {string | undefined} value
+*/
 function restoreEnvironment(name, value) {
   if (value === undefined) delete process.env[name];
   else process.env[name] = value;
 }
 
+/** @param {FixtureResult} result */
 function printResult(result) {
   console.log(JSON.stringify(result));
 }
 
+/**
+* @param {unknown} error
+*/
 function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }

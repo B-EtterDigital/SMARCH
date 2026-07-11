@@ -22,6 +22,40 @@ import { writeJsonIfMeaningfulChanged, writeTextIfChanged } from './lib/stable-g
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_OUT = resolve(SMA_ROOT, 'handoffs/operator-packet.generated.json');
+
+interface OperatorArgs { help: boolean; h: boolean; selftest: boolean; json: boolean; noWrite: boolean; project?: string; out?: string; timeoutMs?: string }
+interface ModuleMetric {
+  project?: string;
+  id?: string;
+  family?: string;
+  event_count?: unknown;
+  pass_count?: unknown;
+  fail_count?: unknown;
+  blocked_count?: unknown;
+  file_count?: unknown;
+  srs_signal_count?: unknown;
+  graph_signal_count?: unknown;
+  collision_signal_count?: unknown;
+}
+interface GoalProgress { summary?: Record<string, unknown>; modules?: ModuleMetric[] }
+interface Preflight {
+  status?: string;
+  active_lane?: string;
+  launch_allowed?: unknown;
+  active_lane_capacity_percent?: unknown;
+  integration_readiness_score_percent?: unknown;
+  readiness_score_percent?: unknown;
+  active_recommended_agents?: unknown;
+  recommended_agents?: unknown;
+  requested_agents?: unknown;
+  primary_next_command?: string;
+  big_picture?: { tldr?: string; current_slice?: string; next_slices?: string[]; horizon?: string[] };
+  controller?: Record<string, unknown>;
+  conflict_sla?: Record<string, unknown>;
+  graph_packets?: Record<string, unknown>;
+  gains?: Record<string, unknown>;
+  module_work?: { available?: unknown; gains?: Record<string, unknown> };
+}
 const args = parseArgs(argv.slice(2));
 
 try {
@@ -35,7 +69,7 @@ try {
   }
   await run();
 } catch (err) {
-  console.error(`sma-operator-packet: ${err.message}`);
+  console.error(`sma-operator-packet: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -50,16 +84,16 @@ Use it as the first reusable context artifact before reading full dashboards.
 }
 
 async function run() {
-  const project = args.project ? String(args.project) : null;
+  const project = args.project ?? null;
   const outPath = args.out ? resolve(args.out) : defaultOut(project);
   const mdPath = outPath.replace(/\.json$/i, '.md');
-  const preflight = runJsonTool('preflight', [
+  const preflight = runPreflightTool('preflight', [
     'tools/sma-parallel-preflight.ts',
     '--json',
     '--no-auto-refresh',
     ...(project ? ['--project', project] : []),
   ]);
-  const goal = runJsonTool('goal-progress', [
+  const goal = runGoalTool('goal-progress', [
     'tools/sma-goal-progress.ts',
     '--json',
     ...(project ? ['--project', project] : []),
@@ -77,10 +111,10 @@ async function run() {
   }
 }
 
-export function buildOperatorPacket({ project = null, preflight, goal }) {
-  const g = goal?.summary || {};
-  const p = preflight || {};
-  const topModules = aggregateModuleFamilies(goal?.modules || []);
+export function buildOperatorPacket({ project = null, preflight, goal }: { project?: string | null; preflight: Preflight; goal: GoalProgress }) {
+  const g = goal.summary ?? {};
+  const p = preflight;
+  const topModules = aggregateModuleFamilies(goal.modules ?? []);
   const hasModuleGains = Boolean(p.module_work?.available);
 
   return {
@@ -88,18 +122,7 @@ export function buildOperatorPacket({ project = null, preflight, goal }) {
     kind: 'sma-gen3-operator-packet',
     generated_at: new Date().toISOString(),
     scope: project ? { project } : { portfolio: true },
-    executive_summary: {
-      tldr: p.big_picture?.tldr || 'No preflight TLDR available.',
-      current_slice: p.big_picture?.current_slice || '',
-      status: p.status || 'unknown',
-      active_lane: p.active_lane || 'unknown',
-      launch_allowed: Boolean(p.launch_allowed),
-      launch_capacity_percent: number(p.active_lane_capacity_percent),
-      integration_readiness_percent: number(p.integration_readiness_score_percent ?? p.readiness_score_percent),
-      recommended_agents: number(p.active_recommended_agents ?? p.recommended_agents),
-      requested_agents: number(p.requested_agents),
-      next_command: p.primary_next_command || '',
-    },
+    executive_summary: buildExecutiveSummary(p),
     why_switch: [
       'Module graphs replace broad repo reads as the default context path.',
       'Leases and conflict receipts make collisions explicit instead of invisible.',
@@ -114,43 +137,12 @@ export function buildOperatorPacket({ project = null, preflight, goal }) {
       'parallel:preflight and operator:packet are the low-token control-plane APIs.',
       'dashboards are presentation; packets are the reusable decision cache.',
     ],
-    proof_metrics: {
-      hardening_score_percent: number(g.hardening_score_percent),
-      proof_coverage_percent: number(g.proof_coverage_percent),
-      verification_pass: number(g.pass_count),
-      verification_total: number(g.verification_count),
-      failed_then_passed: number(g.failed_then_passed_count),
-      srs_signals: number(g.srs_signal_count),
-      graph_signals: number(g.graph_signal_count),
-      collision_signals: number(g.collision_signal_count),
-      conflict_detected: number(g.conflict_detected_count),
-      conflict_resolved: number(g.conflict_resolved_count),
-      current_agents_supported: number(g.current_agents_supported),
-      future_agents_target: number(g.future_agents_target),
-    },
-    controller_metrics: {
-      active_leases: number(p.controller?.active_leases),
-      open_conflicts: number(p.conflict_sla?.open_conflicts),
-      graph_packets: number(p.graph_packets?.packet_count),
-      project_graph_gaps: number(p.graph_packets?.project_graph_gaps),
-      module_graph_gaps: number(p.graph_packets?.module_graph_gap_count),
-      dirty_projects: number(p.controller?.dirty_projects),
-      dirty_unleased_projects: number(p.controller?.dirty_unleased_projects),
-      cleanup_claimable_paths: number(p.gains?.claimable_dirty_paths),
-      cleanup_targeted_paths: number(p.gains?.targeted_dirty_paths),
-    },
-    gains: {
-      controller_roundtrip_reduction_percent: number(p.gains?.coordination_roundtrip_reduction_percent_estimate),
-      dirty_status_token_reduction_percent: number(p.gains?.dirty_status_token_reduction_percent_estimate),
-      manual_wave_sizing_reduction_percent: number(p.gains?.manual_wave_sizing_reduction_percent_estimate),
-      graph_first_token_reduction_percent: hasModuleGains ? number(p.module_work?.gains?.module_graph_first_token_reduction_percent_estimate) : null,
-      collision_reduction_percent: hasModuleGains ? number(p.module_work?.gains?.collision_reduction_percent_estimate) : null,
-      selected_wave_top_gain_percent: number(p.gains?.selected_wave_top_gain_percent),
-      selected_project_top_gain_percent: number(p.gains?.selected_project_top_gain_percent),
-    },
+    proof_metrics: buildProofMetrics(g),
+    controller_metrics: buildControllerMetrics(p),
+    gains: buildGains(p, hasModuleGains),
     top_module_families: topModules,
-    next_slices: p.big_picture?.next_slices || [],
-    horizon: p.big_picture?.horizon || [],
+    next_slices: p.big_picture?.next_slices ?? [],
+    horizon: p.big_picture?.horizon ?? [],
     agent_start_sequence: [
       'Read handoffs/operator-packet.generated.md first.',
       'Run npm run gen3:status -- --no-auto-refresh only when the packet is stale or a live decision is needed.',
@@ -167,14 +159,58 @@ export function buildOperatorPacket({ project = null, preflight, goal }) {
   };
 }
 
-export function renderMarkdown(packet) {
-  const e = packet.executive_summary || {};
-  const proof = packet.proof_metrics || {};
-  const gains = packet.gains || {};
-  const controller = packet.controller_metrics || {};
-  const modules = (packet.top_module_families || [])
+function buildExecutiveSummary(preflight: Preflight) {
+  return {
+    tldr: preflight.big_picture?.tldr ?? 'No preflight TLDR available.', current_slice: preflight.big_picture?.current_slice ?? '',
+    status: preflight.status ?? 'unknown', active_lane: preflight.active_lane ?? 'unknown', launch_allowed: Boolean(preflight.launch_allowed),
+    launch_capacity_percent: number(preflight.active_lane_capacity_percent),
+    integration_readiness_percent: number(preflight.integration_readiness_score_percent ?? preflight.readiness_score_percent),
+    recommended_agents: number(preflight.active_recommended_agents ?? preflight.recommended_agents), requested_agents: number(preflight.requested_agents),
+    next_command: preflight.primary_next_command ?? '',
+  };
+}
+
+function buildProofMetrics(summary: Record<string, unknown>) {
+  return {
+    hardening_score_percent: number(summary.hardening_score_percent), proof_coverage_percent: number(summary.proof_coverage_percent),
+    verification_pass: number(summary.pass_count), verification_total: number(summary.verification_count),
+    failed_then_passed: number(summary.failed_then_passed_count), srs_signals: number(summary.srs_signal_count),
+    graph_signals: number(summary.graph_signal_count), collision_signals: number(summary.collision_signal_count),
+    conflict_detected: number(summary.conflict_detected_count), conflict_resolved: number(summary.conflict_resolved_count),
+    current_agents_supported: number(summary.current_agents_supported), future_agents_target: number(summary.future_agents_target),
+  };
+}
+
+function buildControllerMetrics(preflight: Preflight) {
+  return {
+    active_leases: number(preflight.controller?.active_leases), open_conflicts: number(preflight.conflict_sla?.open_conflicts),
+    graph_packets: number(preflight.graph_packets?.packet_count), project_graph_gaps: number(preflight.graph_packets?.project_graph_gaps),
+    module_graph_gaps: number(preflight.graph_packets?.module_graph_gap_count), dirty_projects: number(preflight.controller?.dirty_projects),
+    dirty_unleased_projects: number(preflight.controller?.dirty_unleased_projects), cleanup_claimable_paths: number(preflight.gains?.claimable_dirty_paths),
+    cleanup_targeted_paths: number(preflight.gains?.targeted_dirty_paths),
+  };
+}
+
+function buildGains(preflight: Preflight, hasModuleGains: boolean) {
+  return {
+    controller_roundtrip_reduction_percent: number(preflight.gains?.coordination_roundtrip_reduction_percent_estimate),
+    dirty_status_token_reduction_percent: number(preflight.gains?.dirty_status_token_reduction_percent_estimate),
+    manual_wave_sizing_reduction_percent: number(preflight.gains?.manual_wave_sizing_reduction_percent_estimate),
+    graph_first_token_reduction_percent: hasModuleGains ? number(preflight.module_work?.gains?.module_graph_first_token_reduction_percent_estimate) : null,
+    collision_reduction_percent: hasModuleGains ? number(preflight.module_work?.gains?.collision_reduction_percent_estimate) : null,
+    selected_wave_top_gain_percent: number(preflight.gains?.selected_wave_top_gain_percent),
+    selected_project_top_gain_percent: number(preflight.gains?.selected_project_top_gain_percent),
+  };
+}
+
+export function renderMarkdown(packet: ReturnType<typeof buildOperatorPacket>) {
+  const e = packet.executive_summary;
+  const proof = packet.proof_metrics;
+  const gains = packet.gains;
+  const controller = packet.controller_metrics;
+  const modules = packet.top_module_families
     .slice(0, 8)
-    .map((module) => `| ${escMd(module.project)} | ${escMd(module.family)} | ${module.events} | ${module.pass}/${module.pass + module.fail + module.blocked} | ${module.files} | ${module.srs} | ${module.graphs} | ${module.collisions} |`)
+    .map((module) => `| ${escMd(module.project)} | ${escMd(module.family)} | ${String(module.events)} | ${String(module.pass)}/${String(module.pass + module.fail + module.blocked)} | ${String(module.files)} | ${String(module.srs)} | ${String(module.graphs)} | ${String(module.collisions)} |`)
     .join('\n');
   return `${[
     '# SMA Gen3 Operator Packet',
@@ -182,32 +218,32 @@ export function renderMarkdown(packet) {
     '## Executive Read',
     `- TLDR: ${e.tldr}`,
     `- Current slice: ${stripLabel(e.current_slice, 'Current slice') || 'n/a'}`,
-    `- Status: ${e.status}; lane ${e.active_lane}; ${e.recommended_agents}/${e.requested_agents} agents; launch ${e.launch_capacity_percent}%; integration ${e.integration_readiness_percent}%`,
+    `- Status: ${e.status}; lane ${e.active_lane}; ${String(e.recommended_agents)}/${String(e.requested_agents)} agents; launch ${String(e.launch_capacity_percent)}%; integration ${String(e.integration_readiness_percent)}%`,
     `- Next command: \`${e.next_command || 'n/a'}\``,
     '',
     '## Why Teams Switch',
-    ...(packet.why_switch || []).map((item) => `- ${item}`),
+    ...packet.why_switch.map((item) => `- ${item}`),
     '',
     '## Architecture Primitives',
-    ...(packet.architecture_primitives || []).map((item) => `- ${item}`),
+    ...packet.architecture_primitives.map((item) => `- ${item}`),
     '',
     '## Proof Metrics',
-    `- Hardening: ${proof.hardening_score_percent}%`,
-    `- Proof coverage: ${proof.proof_coverage_percent}%; verification ${proof.verification_pass}/${proof.verification_total}; fail-to-pass ${proof.failed_then_passed}`,
-    `- SRS ${proof.srs_signals}; graph ${proof.graph_signals}; collision-control ${proof.collision_signals}`,
-    `- Conflicts ${proof.conflict_detected}/${proof.conflict_resolved}; agent target ${proof.current_agents_supported}->${proof.future_agents_target}`,
+    `- Hardening: ${String(proof.hardening_score_percent)}%`,
+    `- Proof coverage: ${String(proof.proof_coverage_percent)}%; verification ${String(proof.verification_pass)}/${String(proof.verification_total)}; fail-to-pass ${String(proof.failed_then_passed)}`,
+    `- SRS ${String(proof.srs_signals)}; graph ${String(proof.graph_signals)}; collision-control ${String(proof.collision_signals)}`,
+    `- Conflicts ${String(proof.conflict_detected)}/${String(proof.conflict_resolved)}; agent target ${String(proof.current_agents_supported)}->${String(proof.future_agents_target)}`,
     '',
     '## Controller Metrics',
-    `- Active leases ${controller.active_leases}; open conflicts ${controller.open_conflicts}; graph packets ${controller.graph_packets}; module graph gaps ${controller.module_graph_gaps}`,
-    `- Dirty projects ${controller.dirty_projects}; dirty-unleased ${controller.dirty_unleased_projects}; cleanup paths ${controller.cleanup_claimable_paths}/${controller.cleanup_targeted_paths}`,
+    `- Active leases ${String(controller.active_leases)}; open conflicts ${String(controller.open_conflicts)}; graph packets ${String(controller.graph_packets)}; module graph gaps ${String(controller.module_graph_gaps)}`,
+    `- Dirty projects ${String(controller.dirty_projects)}; dirty-unleased ${String(controller.dirty_unleased_projects)}; cleanup paths ${String(controller.cleanup_claimable_paths)}/${String(controller.cleanup_targeted_paths)}`,
     '',
     '## Gains',
-    `- Controller round trips: ${gains.controller_roundtrip_reduction_percent}% fewer`,
-    `- Dirty status tokens: ${gains.dirty_status_token_reduction_percent}% fewer`,
-    `- Manual wave sizing: ${gains.manual_wave_sizing_reduction_percent}% less`,
+    `- Controller round trips: ${String(gains.controller_roundtrip_reduction_percent)}% fewer`,
+    `- Dirty status tokens: ${String(gains.dirty_status_token_reduction_percent)}% fewer`,
+    `- Manual wave sizing: ${String(gains.manual_wave_sizing_reduction_percent)}% less`,
     `- Graph-first module context: ${formatMaybePercent(gains.graph_first_token_reduction_percent, ' fewer tokens')}`,
     `- Collision reduction estimate: ${formatMaybePercent(gains.collision_reduction_percent)}`,
-    `- Top wave/project gain: ${gains.selected_wave_top_gain_percent}% / ${gains.selected_project_top_gain_percent}%`,
+    `- Top wave/project gain: ${String(gains.selected_wave_top_gain_percent)}% / ${String(gains.selected_project_top_gain_percent)}%`,
     '',
     '## Top Module Families',
     '| Project | Family | Events | Verifications | Files | SRS | Graph | Collision |',
@@ -215,14 +251,14 @@ export function renderMarkdown(packet) {
     modules || '| n/a | n/a | 0 | 0/0 | 0 | 0 | 0 | 0 |',
     '',
     '## Agent Start Sequence',
-    ...(packet.agent_start_sequence || []).map((item, index) => `${index + 1}. ${item}`),
+    ...packet.agent_start_sequence.map((item, index: number) => `${String(index + 1)}. ${item}`),
     '',
     '## Horizon',
-    ...(packet.horizon || []).map((item) => `- ${item}`),
+    ...packet.horizon.map((item) => `- ${item}`),
   ].join('\n')}\n`;
 }
 
-function runJsonTool(label, commandArgs) {
+function runJsonTool(label: string, commandArgs: string[]): Record<string, unknown> {
   const raw = execFileSync(process.execPath, commandArgs, {
     cwd: SMA_ROOT,
     encoding: 'utf8',
@@ -231,19 +267,32 @@ function runJsonTool(label, commandArgs) {
     maxBuffer: 96 * 1024 * 1024,
   });
   try {
-    return JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('expected a JSON object');
+    return parsed as Record<string, unknown>;
   } catch (err) {
-    throw new Error(`${label} returned invalid JSON: ${err.message}`);
+    throw new Error(`${label} returned invalid JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
-function aggregateModuleFamilies(modules) {
-  const groups = new Map();
-  for (const module of modules || []) {
-    const family = module.family || module.id || 'unmapped';
-    const key = `${module.project || 'unknown'}:${family}`;
-    const current = groups.get(key) || {
-      project: module.project || 'unknown',
+function runPreflightTool(label: string, commandArgs: string[]): Preflight {
+  return runJsonTool(label, commandArgs);
+}
+
+function runGoalTool(label: string, commandArgs: string[]): GoalProgress {
+  return runJsonTool(label, commandArgs);
+}
+
+function aggregateModuleFamilies(modules: ModuleMetric[]) {
+  const groups = new Map<string, {
+    project: string; family: string; events: number; pass: number; fail: number;
+    blocked: number; files: number; srs: number; graphs: number; collisions: number;
+  }>();
+  for (const module of modules) {
+    const family = (module.family ?? module.id) ?? 'unmapped';
+    const key = `${module.project ?? 'unknown'}:${family}`;
+    const current = groups.get(key) ?? {
+      project: module.project ?? 'unknown',
       family,
       events: 0,
       pass: 0,
@@ -269,13 +318,15 @@ function aggregateModuleFamilies(modules) {
     .slice(0, 10);
 }
 
-function defaultOut(project) {
+function defaultOut(project: string|null) {
   if (!project) return DEFAULT_OUT;
   return resolve(SMA_ROOT, 'handoffs', `operator-packet.${safeSegment(project)}.generated.json`);
 }
 
-function normalizeOperatorPacket(packet) {
-  const clone = JSON.parse(JSON.stringify(packet));
+function normalizeOperatorPacket(packet: ReturnType<typeof buildOperatorPacket>) {
+  const parsed: unknown = JSON.parse(JSON.stringify(packet));
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('operator packet clone must be an object');
+  const clone = parsed as ReturnType<typeof buildOperatorPacket>;
   clone.generated_at = '<generated_at>';
   return clone;
 }
@@ -328,51 +379,53 @@ function runSelfTest() {
   console.log('sma-operator-packet selftest: ok');
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): OperatorArgs {
+  const out: OperatorArgs = { help: false, h: false, selftest: false, json: false, noWrite: false };
   for (let index = 0; index < list.length; index += 1) {
     const arg = list[index];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[index + 1];
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
+    const next = list.at(index + 1);
     if (next === undefined || next.startsWith('--')) {
-      out[key] = true;
+      if (key === 'help' || key === 'h' || key === 'selftest' || key === 'json' || key === 'noWrite') out[key] = true;
       continue;
     }
-    out[key] = next;
+    if (key === 'project' || key === 'out' || key === 'timeoutMs') out[key] = next;
     index += 1;
   }
   return out;
 }
 
-function safeSegment(value) {
-  return String(value || 'project').toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
+function safeSegment(value: unknown) {
+  const text = typeof value === 'string' || typeof value === 'number' ? String(value) : 'project';
+  return text.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
 }
 
-function number(value) {
+function number(value: unknown) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function numberArg(value, fallback) {
+function numberArg(value: unknown, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
-function escMd(value) {
-  return String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+function escMd(value: unknown) {
+  const text = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+  return text.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 }
 
-function formatMaybePercent(value, suffix = '') {
-  return value === null || value === undefined ? 'n/a' : `${value}%${suffix || ''}`;
+function formatMaybePercent(value: number | null | undefined, suffix = '') {
+  return value === null || value === undefined ? 'n/a' : `${String(value)}%${suffix || ''}`;
 }
 
-function stripLabel(value, label) {
-  const text = String(value || '').trim();
+function stripLabel(value: unknown, label: string) {
+  const text = (typeof value === 'string' || typeof value === 'number' ? String(value) : '').trim();
   const prefix = `${label}:`;
   return text.toLowerCase().startsWith(prefix.toLowerCase()) ? text.slice(prefix.length).trim() : text;
 }
 
-function assert(condition, message) {
+function assert(condition: boolean, message: string) {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }

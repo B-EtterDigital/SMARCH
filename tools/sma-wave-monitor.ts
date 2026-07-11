@@ -18,6 +18,32 @@ const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const args = parseArgs(argv.slice(2));
 
+interface MonitorArgs { help: boolean; json: boolean; strict: boolean; noAutoRefresh: boolean; allowStale: boolean; limit: string }
+interface ToolData {
+  summary?: Record<string, unknown>;
+  big_picture?: Record<string, unknown>;
+  cleanup_wave?: Record<string, unknown>;
+  gains?: Record<string, unknown>;
+  controller?: Record<string, unknown>;
+  graph_packets?: Record<string, unknown>;
+  conflict_sla?: Record<string, unknown>;
+  status?: string;
+  blockers?: string[];
+  readiness_score_percent?: unknown;
+  recommended_agents?: unknown;
+  requested_agents?: unknown;
+  primary_next_command?: string;
+}
+interface ToolProbe { label: string; data?: ToolData; error?: string }
+
+function record(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.entries(value)) : {};
+}
+
+function message(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 try {
   if (args.help) {
     usage();
@@ -31,7 +57,7 @@ try {
   }
   if (args.strict && result.status === 'blocked') exit(4);
 } catch (err) {
-  console.error(`sma-wave-monitor: ${err.message}`);
+  console.error(`sma-wave-monitor: ${message(err)}`);
   exit(1);
 }
 
@@ -79,16 +105,17 @@ function runMonitor() {
   return summarize({ limit, preflight, progress, conflicts });
 }
 
-function summarize({ limit, preflight, progress, conflicts }) {
+function summarize({ limit, preflight, progress, conflicts }: { limit: number; preflight: ToolProbe; progress: ToolProbe; conflicts: ToolProbe }) {
   const pre = preflight.data || {};
-  const progressSummary = progress.data?.summary || {};
-  const conflictSummary = conflicts.data?.summary || {};
-  const bigPicture = pre.big_picture || {};
-  const cleanupWave = pre.cleanup_wave || {};
-  const gains = pre.gains || {};
-  const controller = pre.controller || {};
-  const graphPackets = pre.graph_packets || {};
-  const conflictCount = number(conflictSummary.open_conflicts ?? pre.conflict_sla?.open_conflicts);
+  const progressSummary = record(progress.data?.summary);
+  const conflictSummary = record(conflicts.data?.summary);
+  const bigPicture = record(pre.big_picture);
+  const cleanupWave = record(pre.cleanup_wave);
+  const gains = record(pre.gains);
+  const controller = record(pre.controller);
+  const graphPackets = record(pre.graph_packets);
+  const conflictSla = record(pre.conflict_sla);
+  const conflictCount = number(conflictSummary.open_conflicts ?? conflictSla.open_conflicts);
   const criticalConflicts = number(conflictSummary.critical_conflicts);
   const warningConflicts = number(conflictSummary.warning_conflicts);
   const baselinePaths = number(progressSummary.progress_baseline_paths || cleanupWave.targeted_dirty_paths || progressSummary.default_wave_dirty_paths);
@@ -120,13 +147,13 @@ function summarize({ limit, preflight, progress, conflicts }) {
     packetStale ? 'cleanup packet file is stale' : null,
     heldPackets > 0 ? `${heldPackets} cleanup packet(s) held` : null,
     stalePackets > 0 ? `${stalePackets} cleanup packet(s) stale` : null,
-  ].filter(Boolean);
+  ].filter((value): value is string => Boolean(value));
   const warnings = [
     warningConflicts > 0 ? `${warningConflicts} warning conflict SLA item(s)` : null,
     grewPackets > 0 ? `${grewPackets} cleanup packet(s) grew` : null,
     number(controller.active_leases) > 0 ? `${number(controller.active_leases)} active lease(s)` : null,
     number(gains.overflow_groups) > 0 ? `${number(gains.overflow_groups)} cleanup group(s) outside selected wave` : null,
-  ].filter(Boolean);
+  ].filter((value): value is string => Boolean(value));
   const next = chooseNext({
     conflictCount,
     criticalConflicts,
@@ -148,7 +175,7 @@ function summarize({ limit, preflight, progress, conflicts }) {
     agents: {
       recommended: number(pre.recommended_agents),
       requested: number(pre.requested_agents || limit),
-      launch_slots: number(bigPicture.current_state?.launch_slots ?? cleanupWave.launch_plan_slots),
+      launch_slots: number(record(bigPicture.current_state).launch_slots ?? cleanupWave.launch_plan_slots),
     },
     wave: {
       baseline_paths: baselinePaths,
@@ -192,12 +219,15 @@ function summarize({ limit, preflight, progress, conflicts }) {
     warnings,
     next,
     current_slice: bigPicture.current_slice || '',
-    outlook: bigPicture.next_slices || [],
-    horizon: bigPicture.horizon || [],
+    outlook: Array.isArray(bigPicture.next_slices) ? bigPicture.next_slices.map(String) : [],
+    horizon: Array.isArray(bigPicture.horizon) ? bigPicture.horizon.map(String) : [],
   };
 }
 
-function chooseNext({ conflictCount, criticalConflicts, packetStale, heldPackets, stalePackets, remainingPaths, baselinePaths, primaryNext, limit }) {
+function chooseNext({ conflictCount, criticalConflicts, packetStale, heldPackets, stalePackets, remainingPaths, baselinePaths, primaryNext, limit }: {
+  conflictCount: number; criticalConflicts: number; packetStale: boolean; heldPackets: number;
+  stalePackets: number; remainingPaths: number; baselinePaths: number; primaryNext?: string; limit: number;
+}): string {
   if (conflictCount > 0 || criticalConflicts > 0) return 'npm run conflict:summary';
   if (packetStale || stalePackets > 0) return 'npm run controller:sweep:write';
   if (heldPackets > 0) return `npm run cleanup:progress -- --limit ${limit}`;
@@ -206,7 +236,7 @@ function chooseNext({ conflictCount, criticalConflicts, packetStale, heldPackets
   return `npm run cleanup:progress -- --limit ${limit}`;
 }
 
-function printText(result) {
+function printText(result: ReturnType<typeof summarize>): void {
   console.log('SMA Gen3 Wave Monitor');
   console.log(`big picture:      ${result.big_picture}`);
   if (result.current_slice) console.log(`current slice:    ${result.current_slice}`);
@@ -229,7 +259,7 @@ function printText(result) {
   console.log(`next:             ${result.next}`);
 }
 
-function runJsonTool(label, commandArgs) {
+function runJsonTool(label: string, commandArgs: string[]): ToolProbe {
   try {
     const stdout = execFileSync(execPath, commandArgs, {
       cwd: SMA_ROOT,
@@ -240,13 +270,13 @@ function runJsonTool(label, commandArgs) {
   } catch (err) {
     return {
       label,
-      error: firstLine(err.stderr) || firstLine(err.message) || 'failed',
+      error: firstLine(err && typeof err === 'object' && 'stderr' in err ? err.stderr : '') || firstLine(message(err)) || 'failed',
     };
   }
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): MonitorArgs {
+  const out: MonitorArgs = { help: false, json: false, strict: false, noAutoRefresh: false, allowStale: false, limit: '' };
   for (let i = 0; i < list.length; i++) {
     const item = list[i];
     if (item === '--help' || item === '-h') {
@@ -254,37 +284,37 @@ function parseArgs(list): Record<string, any> {
       continue;
     }
     if (!item.startsWith('--')) continue;
-    const key = item.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = item.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
     const next = list[i + 1];
     if (!next || next.startsWith('--')) {
-      out[key] = true;
+      Object.assign(out, { [key]: true });
       continue;
     }
-    out[key] = next;
+    Object.assign(out, { [key]: next });
     i += 1;
   }
   return out;
 }
 
-function positiveInt(value, fallback) {
+function positiveInt(value: string, fallback: number): number {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function number(value) {
+function number(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function percent(part, total) {
+function percent(part: number, total: number): number {
   if (!total) return 0;
   return Math.round((part / total) * 1000) / 10;
 }
 
-function formatPercent(value) {
+function formatPercent(value: number): string {
   return `${number(value).toFixed(1).replace(/\.0$/, '')}%`;
 }
 
-function firstLine(value) {
+function firstLine(value: unknown): string {
   return String(value || '').split(/\r?\n/).find((line) => line.trim())?.trim() || '';
 }

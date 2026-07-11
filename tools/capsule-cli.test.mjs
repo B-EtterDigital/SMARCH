@@ -12,7 +12,8 @@ import { parseArgs as parseInspectArgs } from "./sma-brick-inspect.mjs";
 const tools = path.dirname(fileURLToPath(import.meta.url));
 
 test("capsule CLI parsers reject conflicting and missing values", () => {
-  assert.equal(parseNewArgs(["--id", "acme.one", "--directory", "one"]).id, "acme.one");
+  const parsed = /** @type {{ id?: string }} */ (parseNewArgs(["--id", "acme.one", "--directory", "one"]));
+  assert.equal(parsed.id, "acme.one");
   assert.throws(() => parseNewArgs(["--id"]), { code: "USAGE_ERROR" });
   assert.throws(() => parseInspectArgs(["one", "two"]), { code: "USAGE_ERROR" });
 });
@@ -21,7 +22,7 @@ test("brick-new, brick-run, and brick-inspect execute against a real fixture wor
   const root = mkdtempSync(path.join(os.tmpdir(), "smarch-capsule-cli-"));
   try {
     const capsule = path.join(root, "identity");
-    const created = createBrick({ id: "fixture.identity", directory: capsule });
+    const created = createBrick({ id: "fixture.identity", directory: capsule, force: false, json: false, quiet: false, verbose: false, help: false });
     assert.equal(created.ok, true);
     assert.equal(JSON.parse(readFileSync(path.join(capsule, "module.sweetspot.json"), "utf8")).brick.id, "fixture.identity");
 

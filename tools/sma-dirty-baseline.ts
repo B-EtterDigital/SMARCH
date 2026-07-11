@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Saves and compares repository dirty-state baselines outside the repository.
  * WHY: Agents need to separate their own changes from pre-existing work without adding noise.
@@ -25,10 +27,37 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, isAbsolute, resolve } from 'node:path';
+import { basename, isAbsolute, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { argv, env, exit } from 'node:process';
 import { projectRoot } from './lib/context-log.ts';
+
+interface DirtyArgs extends Record<string, string | boolean | undefined> {
+  command: string;
+  help?: boolean;
+  project?: string;
+  root?: string;
+  label?: string;
+  baseline?: string;
+  limit?: string;
+  keep?: string;
+  json?: boolean;
+}
+interface ProjectRef { id: string; root: string }
+interface DirtyRecord { line: string; status: string; path: string; untracked: boolean }
+interface DirtySummary { dirty_count: number; modified_count: number; untracked_count: number }
+interface DirtyBaseline {
+  schema_version: string;
+  id: string;
+  created_at: string;
+  project: string;
+  root: string;
+  label: string;
+  branch: string;
+  summary: DirtySummary;
+  records: DirtyRecord[];
+}
+interface StatusChange { before: DirtyRecord; after: DirtyRecord }
 
 const args = parseArgs(argv.slice(2));
 const DEFAULT_LIMIT = 12;
@@ -65,8 +94,8 @@ try {
     default:
       throw new Error(`unknown command: ${args.command}`);
   }
-} catch (err) {
-  console.error(`sma-dirty-baseline: ${err.message}`);
+} catch (error: unknown) {
+  console.error(`sma-dirty-baseline: ${error instanceof Error ? error.message : String(error)}`);
   exit(1);
 }
 
@@ -161,7 +190,7 @@ function listBaselines() {
     : [];
   const baselines = entries
     .map((name) => safeReadJson(resolve(dir, name)))
-    .filter((item) => item && (!args.label || item.label === label))
+    .filter((item): item is DirtyBaseline => item !== null && (!args.label || item.label === label))
     .sort((left, right) => String(right.created_at).localeCompare(String(left.created_at)));
 
   if (args.json) {
@@ -195,7 +224,7 @@ function cleanBaselines() {
   const entries = readdirSync(dir)
     .filter((name) => name.endsWith('.json') && !name.startsWith('_latest-'))
     .map((name) => ({ name, item: safeReadJson(resolve(dir, name)) }))
-    .filter(({ item }) => item)
+    .filter((entry): entry is { name: string; item: DirtyBaseline } => entry.item !== null)
     .sort((left, right) => String(right.item.created_at).localeCompare(String(left.item.created_at)));
 
   const remove = entries.slice(keep);
@@ -203,7 +232,7 @@ function cleanBaselines() {
   console.log(`removed ${remove.length} old baseline${remove.length === 1 ? '' : 's'} for ${project.id}; kept ${Math.min(entries.length, keep)}`);
 }
 
-function buildBaseline(project, overrides: Record<string, any> = {}) {
+function buildBaseline(project: ProjectRef, overrides: { id?: string } = {}): DirtyBaseline {
   const status = readGitStatus(project.root);
   const label = labelName();
   return {
@@ -219,7 +248,7 @@ function buildBaseline(project, overrides: Record<string, any> = {}) {
   };
 }
 
-function readGitStatus(root) {
+function readGitStatus(root: string): { branch: string; records: DirtyRecord[] } {
   const raw = execFileSync('git', ['status', '--short', '--branch'], {
     cwd: root,
     encoding: 'utf8',
@@ -233,7 +262,7 @@ function readGitStatus(root) {
   };
 }
 
-function statusRecord(line) {
+function statusRecord(line: string): DirtyRecord {
   const path = statusPath(line);
   return {
     line,
@@ -243,12 +272,12 @@ function statusRecord(line) {
   };
 }
 
-function statusPath(line) {
+function statusPath(line: string): string {
   const raw = line.slice(3).trim();
-  return raw.includes(' -> ') ? raw.split(' -> ').pop().trim() : raw;
+  return raw.includes(' -> ') ? (raw.split(' -> ').at(-1)?.trim() ?? raw) : raw;
 }
 
-function summarizeRecords(records) {
+function summarizeRecords(records: readonly DirtyRecord[]): DirtySummary {
   return {
     dirty_count: records.length,
     modified_count: records.filter((record) => !record.untracked).length,
@@ -256,12 +285,12 @@ function summarizeRecords(records) {
   };
 }
 
-function diffStatuses(baseline, current) {
-  const before = new Map<string, any>(baseline.records.map((record) => [record.path, record]));
-  const after = new Map<string, any>(current.records.map((record) => [record.path, record]));
-  const added = [];
-  const cleared = [];
-  const changed = [];
+function diffStatuses(baseline: DirtyBaseline, current: DirtyBaseline) {
+  const before = new Map<string, DirtyRecord>(baseline.records.map((record) => [record.path, record]));
+  const after = new Map<string, DirtyRecord>(current.records.map((record) => [record.path, record]));
+  const added: DirtyRecord[] = [];
+  const cleared: DirtyRecord[] = [];
+  const changed: StatusChange[] = [];
   let unchangedCount = 0;
 
   for (const record of current.records) {
@@ -287,52 +316,52 @@ function diffStatuses(baseline, current) {
   };
 }
 
-function readBaseline(project) {
+function readBaseline(project: ProjectRef): DirtyBaseline {
   const requested = args.baseline;
   const label = labelName();
   if (requested) {
     const direct = isAbsolute(requested) ? requested : baselinePath(project, requested);
     if (!existsSync(direct)) throw new Error(`baseline not found: ${requested}`);
-    return JSON.parse(readFileSync(direct, 'utf8'));
+    return JSON.parse(readFileSync(direct, 'utf8')) as DirtyBaseline;
   }
 
   const latest = latestPath(project, label);
   if (!existsSync(latest)) {
     throw new Error(`no latest baseline for ${project.id}/${label}; run npm run dirty:save -- --project ${project.id}`);
   }
-  const pointer = JSON.parse(readFileSync(latest, 'utf8'));
+  const pointer = JSON.parse(readFileSync(latest, 'utf8')) as { path?: string };
   if (!pointer.path || !existsSync(pointer.path)) throw new Error(`latest baseline pointer is stale for ${project.id}/${label}`);
-  return JSON.parse(readFileSync(pointer.path, 'utf8'));
+  return JSON.parse(readFileSync(pointer.path, 'utf8')) as DirtyBaseline;
 }
 
-function resolveProject() {
+function resolveProject(): ProjectRef {
   const id = args.project || (args.root ? basename(resolve(args.root)) : 'sma');
   const root = args.root ? resolve(args.root) : projectRoot(id);
   return { id: String(id), root };
 }
 
-function projectCacheDir(project) {
+function projectCacheDir(project: ProjectRef): string {
   return resolve(CACHE_ROOT, slug(project.id || basename(project.root)));
 }
 
-function baselinePath(project, id) {
+function baselinePath(project: ProjectRef, id: string): string {
   return resolve(projectCacheDir(project), `${slug(id)}.json`);
 }
 
-function latestPath(project, label) {
+function latestPath(project: ProjectRef, label: string): string {
   return resolve(projectCacheDir(project), `_latest-${slug(label)}.json`);
 }
 
-function labelName() {
+function labelName(): string {
   return String(args.label || env.SMA_AGENT || env.USER || 'agent');
 }
 
-function printSample(title, items, limit) {
+function printSample(title: string, items: readonly (DirtyRecord | StatusChange)[], limit: number) {
   if (!items.length) return;
   const sample = items.slice(0, limit);
   console.log(`${title}:`);
   for (const item of sample) {
-    if (item.before && item.after) {
+    if ('before' in item) {
       console.log(`  - ${item.before.status.trim() || '--'} -> ${item.after.status.trim() || '--'} ${item.after.path}`);
     } else {
       console.log(`  - ${item.line}`);
@@ -342,19 +371,19 @@ function printSample(title, items, limit) {
   if (hidden > 0) console.log(`  ... ${hidden} more hidden; use --limit ${items.length}`);
 }
 
-function formatDirtyCounts(summary) {
+function formatDirtyCounts(summary: DirtySummary): string {
   return `${summary.dirty_count} dirty (${summary.modified_count} modified, ${summary.untracked_count} untracked)`;
 }
 
-function safeReadJson(path) {
-  try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
+function safeReadJson(path: string): DirtyBaseline | null {
+  try { return JSON.parse(readFileSync(path, 'utf8')) as DirtyBaseline; } catch { return null; }
 }
 
-function timestampId() {
+function timestampId(): string {
   return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 }
 
-function slug(value) {
+function slug(value: unknown): string {
   return String(value || 'default')
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, '-')
@@ -362,25 +391,25 @@ function slug(value) {
     .slice(0, 140) || 'default';
 }
 
-function shellArg(value) {
+function shellArg(value: unknown): string {
   return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
 }
 
-function numberArg(value, fallback) {
+function numberArg(value: unknown, fallback: number): number {
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = { command: '' };
-  const args = [...list];
-  out.command = args.shift() || '';
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
+function parseArgs(list: string[]): DirtyArgs {
+  const out: DirtyArgs = { command: '' };
+  const remaining = [...list];
+  out.command = remaining.shift() || '';
+  for (let i = 0; i < remaining.length; i += 1) {
+    const arg = remaining[i];
     if (arg === '--help' || arg === '-h') { out.help = true; continue; }
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = args[i + 1];
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match, character: string) => character.toUpperCase());
+    const next = remaining[i + 1];
     if (next === undefined || next.startsWith('--')) {
       out[key] = true;
       continue;

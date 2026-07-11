@@ -41,6 +41,48 @@ import { SMA_ROOT } from "./lib/sma-paths.ts";
 const HANDOFFS = resolve(SMA_ROOT, 'handoffs/backfill');
 const DEFAULT_OUT = resolve(HANDOFFS, 'summary.generated.json');
 
+interface BackfillEvent { status?: string }
+interface BackfillResult { project?: string; manifest_path?: string; events: BackfillEvent[] }
+interface BatchReport {
+  _file: string; batch_id: string; phase?: string | number; mode: string; generated_at: string;
+  processed: number; succeeded: number; failure_count: number; skipped_already_done?: number;
+  skipped_no_commit?: number; skipped_already_attested?: number; results: BackfillResult[];
+}
+interface BackfillFailure { reason: string; brick: string; batch_id?: string }
+interface ProjectAccumulator { project: string; succeeded: number; attempted: number; distinct_bricks: number; batches: Set<string> }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseBatch(value: unknown, file: string): BatchReport | null {
+  if (!isRecord(value)) return null;
+  const results: BackfillResult[] = (Array.isArray(value.results) ? value.results : []).flatMap((raw) => {
+    if (!isRecord(raw)) return [];
+    const events: BackfillEvent[] = (Array.isArray(raw.events) ? raw.events : []).flatMap((event) =>
+      isRecord(event) && typeof event.status === 'string' ? [{ status: event.status }] : []);
+    return [{
+      project: typeof raw.project === 'string' ? raw.project : undefined,
+      manifest_path: typeof raw.manifest_path === 'string' ? raw.manifest_path : undefined,
+      events,
+    }];
+  });
+  return {
+    _file: file,
+    batch_id: typeof value.batch_id === 'string' ? value.batch_id : file,
+    phase: typeof value.phase === 'string' || typeof value.phase === 'number' ? value.phase : undefined,
+    mode: typeof value.mode === 'string' ? value.mode : '',
+    generated_at: typeof value.generated_at === 'string' ? value.generated_at : '',
+    processed: typeof value.processed === 'number' ? value.processed : 0,
+    succeeded: typeof value.succeeded === 'number' ? value.succeeded : 0,
+    failure_count: typeof value.failure_count === 'number' ? value.failure_count : 0,
+    skipped_already_done: typeof value.skipped_already_done === 'number' ? value.skipped_already_done : undefined,
+    skipped_no_commit: typeof value.skipped_no_commit === 'number' ? value.skipped_no_commit : undefined,
+    skipped_already_attested: typeof value.skipped_already_attested === 'number' ? value.skipped_already_attested : undefined,
+    results,
+  };
+}
+
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
@@ -71,7 +113,7 @@ try {
       exit(2);
   }
 } catch (err) {
-  console.error(`sma-backfill-summary: ${err.message}`);
+  console.error(`sma-backfill-summary: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -86,31 +128,32 @@ function usage() {
 
 // ── data load ────────────────────────────────────────────────────────────────
 
-function loadBatches() {
+function loadBatches(): BatchReport[] {
   if (!existsSync(HANDOFFS)) return [];
   const files = readdirSync(HANDOFFS)
-    .filter((f) => /^phase-[0-9]/.test(f) && f.endsWith('.json') && !f.endsWith('-failures.json'));
-  const batches = [];
+    .filter((f: string) => /^phase-[0-9]/.test(f) && f.endsWith('.json') && !f.endsWith('-failures.json'));
+  const batches: BatchReport[] = [];
   for (const f of files) {
     try {
-      const r = JSON.parse(readFileSync(resolve(HANDOFFS, f), 'utf8'));
-      r._file = f;
-      batches.push(r);
+      const report = parseBatch(JSON.parse(readFileSync(resolve(HANDOFFS, f), 'utf8')) as unknown, f);
+      if (report) batches.push(report);
     } catch { /* skip malformed */ }
   }
-  batches.sort((a, b) => (a.generated_at || '').localeCompare(b.generated_at || ''));
+  batches.sort((a, b) => a.generated_at.localeCompare(b.generated_at));
   return batches;
 }
 
-function loadFailures() {
+function loadFailures(): BackfillFailure[] {
   if (!existsSync(HANDOFFS)) return [];
-  const files = readdirSync(HANDOFFS).filter((f) => f.endsWith('-failures.json'));
-  const all = [];
+  const files = readdirSync(HANDOFFS).filter((f: string) => f.endsWith('-failures.json'));
+  const all: BackfillFailure[] = [];
   for (const f of files) {
     try {
-      const r = JSON.parse(readFileSync(resolve(HANDOFFS, f), 'utf8'));
-      for (const x of r.failures || []) {
-        all.push({ ...x, batch_id: r.batch_id });
+      const parsed: unknown = JSON.parse(readFileSync(resolve(HANDOFFS, f), 'utf8'));
+      if (!isRecord(parsed)) continue;
+      for (const failure of Array.isArray(parsed.failures) ? parsed.failures : []) {
+        if (!isRecord(failure) || typeof failure.reason !== 'string') continue;
+        all.push({ reason: failure.reason, brick: typeof failure.brick === 'string' ? failure.brick : '', batch_id: typeof parsed.batch_id === 'string' ? parsed.batch_id : undefined });
       }
     } catch { /* skip */ }
   }
@@ -120,12 +163,12 @@ function loadFailures() {
 // ── summary ──────────────────────────────────────────────────────────────────
 
 function runSummary() {
-  const includeDryRuns = !!args.includeDryRuns;
+  const includeDryRuns = args.includeDryRuns === true;
   const all = loadBatches();
   const batches = includeDryRuns ? all : all.filter((b) => b.mode === 'commit');
   const failures = loadFailures();
 
-  const perProject: Record<string, any> = {};
+  const perProject: Record<string, ProjectAccumulator> = {};
   const perBatch = batches.map((b) => ({
     batch_id: b.batch_id,
     phase: b.phase,
@@ -141,7 +184,7 @@ function runSummary() {
 
   // distinct bricks per project (a brick appears multiple times if it was
   // attested in more than one batch — count distinct manifest_paths)
-  const distinctByProject = new Map();
+  const distinctByProject = new Map<string, Set<string>>();
   let totalProcessed = 0, totalSucceeded = 0, totalFailures = 0;
   for (const b of batches) {
     totalProcessed += b.processed ?? 0;
@@ -150,17 +193,19 @@ function runSummary() {
     for (const r of b.results || []) {
       const proj = r.project ?? 'unknown';
       if (!perProject[proj]) perProject[proj] = { project: proj, succeeded: 0, attempted: 0, distinct_bricks: 0, batches: new Set() };
-      perProject[proj].attempted += 1;
-      const wrote = (r.events || []).some((e) => e.status === 'wrote' || e.status === 'would-backfill');
-      if (wrote) perProject[proj].succeeded += 1;
-      perProject[proj].batches.add(b.batch_id);
+      const project = perProject[proj];
+      if (!project) continue;
+      project.attempted += 1;
+      const wrote = r.events.some((event) => event.status === 'wrote' || event.status === 'would-backfill');
+      if (wrote) project.succeeded += 1;
+      project.batches.add(b.batch_id);
       if (!distinctByProject.has(proj)) distinctByProject.set(proj, new Set());
-      distinctByProject.get(proj).add(r.manifest_path);
+      if (r.manifest_path) distinctByProject.get(proj)?.add(r.manifest_path);
     }
   }
   for (const [proj, set] of distinctByProject) {
-    perProject[proj].distinct_bricks = set.size;
-    perProject[proj].batches = [...perProject[proj].batches];
+    const project = perProject[proj];
+    if (project) project.distinct_bricks = set.size;
   }
 
   // failure analysis
@@ -172,7 +217,8 @@ function runSummary() {
     byProjectFail[proj] = (byProjectFail[proj] ?? 0) + 1;
   }
 
-  const summary: Record<string, any> = {
+  const perProjectRows = Object.values(perProject).map((project) => ({ ...project, batches: [...project.batches] })).sort((a, b) => b.succeeded - a.succeeded);
+  const summary = {
     generated_at: new Date().toISOString(),
     counts: {
       batches: batches.length,
@@ -183,7 +229,7 @@ function runSummary() {
       distinct_bricks_attempted: [...distinctByProject.values()].reduce((n, s) => n + s.size, 0),
     },
     per_batch: perBatch,
-    per_project: Object.values(perProject).sort((a, b) => b.succeeded - a.succeeded),
+    per_project: perProjectRows,
     failures: {
       total: failures.length,
       by_reason: byReason,
@@ -229,15 +275,17 @@ function runSummary() {
 
 function runPerProject() {
   const all = loadBatches().filter((b) => b.mode === 'commit');
-  const perProject = new Map();
+  const perProject = new Map<string, { project: string; succeeded: number; attempted: number; distinct: Set<string>; batches: Set<string> }>();
   for (const b of all) {
     for (const r of b.results || []) {
       const proj = r.project ?? 'unknown';
       if (!perProject.has(proj)) perProject.set(proj, { project: proj, succeeded: 0, attempted: 0, distinct: new Set(), batches: new Set() });
-      perProject.get(proj).attempted += 1;
-      perProject.get(proj).distinct.add(r.manifest_path);
-      perProject.get(proj).batches.add(b.batch_id);
-      if ((r.events || []).some((e) => e.status === 'wrote')) perProject.get(proj).succeeded += 1;
+      const project = perProject.get(proj);
+      if (!project) continue;
+      project.attempted += 1;
+      if (r.manifest_path) project.distinct.add(r.manifest_path);
+      project.batches.add(b.batch_id);
+      if (r.events.some((event) => event.status === 'wrote')) project.succeeded += 1;
     }
   }
   const rows = [...perProject.values()].map((x) => ({
@@ -283,19 +331,26 @@ function runFailures() {
   }
 }
 
-function pad(s, n) { return String(s ?? '').slice(0, n).padEnd(n); }
+function pad(s: string, n: number) { return String(s ?? '').slice(0, n).padEnd(n); }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+type SummaryArgs = { out?: string; json?: boolean; includeDryRuns?: boolean; top?: string };
+
+function parseArgs(list: string[]): SummaryArgs {
+  const out: SummaryArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
-    if (isBool) { out[camel] = true; continue; }
-    out[camel] = next;
+    if (isBool) {
+      if (camel === 'json') out.json = true;
+      if (camel === 'includeDryRuns') out.includeDryRuns = true;
+      continue;
+    }
+    if (camel === 'out') out.out = next;
+    if (camel === 'top') out.top = next;
     i += 1;
   }
   return out;

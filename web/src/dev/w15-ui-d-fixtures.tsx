@@ -24,7 +24,7 @@ function Fixtures() {
     <section><h1>W15 UI D fixtures</h1><div style={{ display: "flex", gap: "8px" }}><SealChip status="pass" /><SealChip status="fail" /><SealChip status="waived" /><SealChip broken /></div></section>
     <section><SearchBar results={results} /></section>
     <section><RegistryTable rows={rows} /></section>
-    <SettingsPanel theme={theme} onThemeChange={setTheme} sseEndpoint="/api/events" dataRootPath="/home/example/DEV/SMA" />
+    <SettingsPanel theme={theme} onThemeChange={setTheme} sseEndpoint="/api/events" dataRootPath="/workspace/example" />
   </main>;
 }
 

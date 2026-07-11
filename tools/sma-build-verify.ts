@@ -24,7 +24,7 @@ const DEFAULTS = {
 const BUILD_ID_RE = /^[a-z0-9][a-z0-9._-]{2,120}$/;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{2,120}$/;
 const SEMVER_RE = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
-const SIGNAL_AREAS = ["readiness", "installability", "updateability", "publishability"];
+const SIGNAL_AREAS = ["readiness", "installability", "updateability", "publishability"] as const;
 
 const VERIFICATION_RANK = {
   unverified: 0,
@@ -33,7 +33,7 @@ const VERIFICATION_RANK = {
   canonical: 3,
 };
 
-const TRUST_RANK = {
+const _TRUST_RANK = {
   blocked: 0,
   low: 1,
   medium: 2,
@@ -89,7 +89,7 @@ Examples:
   node tools/sma-build-verify.ts --root builds --out builds/build-verify.generated.json
 `;
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
@@ -132,10 +132,10 @@ async function main() {
     }));
   }
 
-  builds.sort((left, right) => compareStrings(left.build_id || left.path, right.build_id || right.path));
+  builds.sort((left, right) => compareStrings(left.build_id ?? left.path, right.build_id ?? right.path));
   skipped.sort((left, right) => compareStrings(left.path, right.path));
 
-  const report: Record<string, any> = {
+  const report: JsonObject = {
     schema_version: "1.0.0",
     kind: "smarch-build-verification-report",
     generated_at: new Date().toISOString(),
@@ -158,8 +158,96 @@ async function main() {
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+type JsonObject = Record<string, unknown>;
+type CheckLevel = "pass" | "warn" | "fail";
+type SignalArea = (typeof SIGNAL_AREAS)[number];
+type VerificationStatus = keyof typeof VERIFICATION_RANK;
+type TrustLevel = keyof typeof _TRUST_RANK;
+interface BuildCheck { level: CheckLevel; code: string; message: string; areas: string[]; detail?: JsonObject }
+interface CheckOptions { areas?: unknown; detail?: unknown; forceBlocked?: boolean }
+interface Recorder {
+  counts: Record<CheckLevel, number>; checks: BuildCheck[]; truncated: number;
+  pass(code: string, message: string, options?: CheckOptions): void;
+  warn(code: string, message: string, options?: CheckOptions): void;
+  fail(code: string, message: string, options?: CheckOptions): void;
+}
+interface BuildVerifyOptions {
+  manifests: string[]; noReleases: boolean; out: string; compact: boolean; stdout: boolean; help: boolean;
+  root: string; registry: string; releases: string; maxChecks: number;
+}
+interface VerifyOptions {
+  maxChecks: number; compact: boolean;
+  registryContext: Awaited<ReturnType<typeof loadRegistryContext>>;
+  releaseContext: Awaited<ReturnType<typeof loadReleaseContext>>;
+}
+interface ReferencedBrick { ref: JsonObject; registryBrick: JsonObject }
+interface RegistrySummary {
+  missing_brick_count: number;
+  failing_member_count: number;
+  [key: string]: unknown;
+}
+interface ReleaseSummary {
+  available: boolean;
+  artifact_found: boolean;
+  latest_status?: string | null;
+  latest_verification_status?: string | null;
+  latest_channel?: string | null;
+  [key: string]: unknown;
+}
+interface BuildSignal {
+  status: string;
+  score: number;
+  fail_count: number;
+  warn_count: number;
+  blockers: ReturnType<typeof topIssues>;
+}
+interface SuggestVerificationOptions {
+  build: JsonObject;
+  verification: JsonObject;
+  provenance: JsonObject;
+  recorder: Recorder;
+  releaseSummary: ReleaseSummary;
+  registrySummary: RegistrySummary;
+  installabilitySignal: BuildSignal;
+  updateabilitySignal: BuildSignal;
+  readinessSignal: BuildSignal;
+}
+interface SuggestTrustOptions {
+  suggestedVerificationStatus: VerificationStatus;
+  recorder: Recorder;
+  releaseSummary: ReleaseSummary;
+}
+interface VerifiedBuildReport extends JsonObject {
+  path: string;
+  build_id: string | null;
+  counts: Record<CheckLevel, number>;
+  verification: { suggested_status: VerificationStatus; suggested_trust_level: TrustLevel; [key: string]: unknown };
+  signals: Record<SignalArea, BuildSignal>;
+  booleans: { ready_for_adoption: boolean; installable: boolean; updateable: boolean; publishable: boolean };
+  release: ReleaseSummary;
+  top_blockers: ReturnType<typeof topIssues>;
+}
+interface SkippedBuild { path: string; reason: string; error?: string }
+interface BlockerAggregate { code: string; level: CheckLevel; count: number; builds: Set<string>; message: string }
+interface ManifestBlocks {
+  manifest: JsonObject; build: JsonObject; source: JsonObject; composition: JsonObject; interfaces: JsonObject;
+  contracts: JsonObject; verification: JsonObject; clone: JsonObject; upgrade: JsonObject; publishing: JsonObject;
+  economics: JsonObject; provenance: JsonObject; sweetspot: JsonObject;
+}
+interface BuildResolution {
+  buildId: string; buildName: string; buildVersion: string; manifestPath: string; manifestDirName: string;
+  sourceProject: string; buildPrefix: string; project: JsonObject | null; projectRoot: string; releaseArtifact: JsonObject | null;
+}
+interface SourcePathSummary { sourcePaths: string[]; missingSourcePaths: string[]; existingSourcePaths: string[] }
+interface CompositionSummary {
+  compositionRefs: JsonObject[]; optionalRefs: JsonObject[]; derivedRefs: JsonObject[]; compositionById: Map<string, JsonObject>;
+  compositionIds: string[]; requiredCompositionIds: string[]; referencedBricks: ReferencedBrick[];
+  registryStatusCounts: Record<string, number>; registryCloneCounts: Record<string, number>;
+  registryScoreTotal: number; registryScoreCount: number; failingBrickCount: number; projectBoundCount: number; candidateOrBetterCount: number;
+}
+
+function parseArgs(argv: string[]): BuildVerifyOptions {
+  const options: BuildVerifyOptions = {
     ...DEFAULTS,
     manifests: [],
     noReleases: false,
@@ -172,24 +260,8 @@ function parseArgs(argv): Record<string, any> {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     const next = argv[i + 1];
-
     if (arg === "--manifest" && next) {
       options.manifests.push(next);
-      i += 1;
-    } else if (arg === "--root" && next) {
-      options.root = path.resolve(next);
-      i += 1;
-    } else if (arg === "--registry" && next) {
-      options.registry = path.resolve(next);
-      i += 1;
-    } else if (arg === "--releases" && next) {
-      options.releases = path.resolve(next);
-      i += 1;
-    } else if (arg === "--out" && next) {
-      options.out = path.resolve(next);
-      i += 1;
-    } else if (arg === "--max-checks" && next) {
-      options.maxChecks = Math.max(0, Number.parseInt(next, 10) || DEFAULTS.maxChecks);
       i += 1;
     } else if (arg === "--compact") {
       options.compact = true;
@@ -199,6 +271,8 @@ function parseArgs(argv): Record<string, any> {
       options.noReleases = true;
     } else if (arg === "--help" || arg === "-h") {
       options.help = true;
+    } else if (next && applyBuildVerifyOption(options, arg, next)) {
+      i += 1;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -207,15 +281,25 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-async function collectBuildManifests(root) {
+function applyBuildVerifyOption(options: BuildVerifyOptions, flag: string, value: string) {
+  if (flag === "--root") options.root = path.resolve(value);
+  else if (flag === "--registry") options.registry = path.resolve(value);
+  else if (flag === "--releases") options.releases = path.resolve(value);
+  else if (flag === "--out") options.out = path.resolve(value);
+  else if (flag === "--max-checks") options.maxChecks = Math.max(0, Number.parseInt(value, 10) || DEFAULTS.maxChecks);
+  else return false;
+  return true;
+}
+
+async function collectBuildManifests(root: string) {
   const stat = await fs.stat(root).catch(() => null);
-  if (!stat || !stat.isDirectory()) return [];
-  const files = [];
+  if (!stat?.isDirectory()) return [];
+  const files: string[] = [];
   await walkDirectory(root, files);
   return files.sort(compareStrings);
 }
 
-async function walkDirectory(directory, files) {
+async function walkDirectory(directory: string, files: string[]) {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   entries.sort((left, right) => compareStrings(left.name, right.name));
   for (const entry of entries) {
@@ -230,30 +314,31 @@ async function walkDirectory(directory, files) {
   }
 }
 
-async function readJson(filePath) {
+async function readJson(filePath: string) {
   try {
     const text = await fs.readFile(filePath, "utf8");
-    return { ok: true, value: JSON.parse(text) };
+    const value: unknown = JSON.parse(text);
+    return { ok: true, value };
   } catch (error) {
-    return { ok: false, error: error?.message || String(error) };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
-async function loadRegistryContext(registryPath) {
+async function loadRegistryContext(registryPath: string) {
   const parsed = await readJson(registryPath);
   if (!parsed.ok || !isObject(parsed.value)) {
     throw new Error(`Could not read merged registry at ${registryPath}`);
   }
 
   const registry = parsed.value;
-  const bricksById = new Map();
+  const bricksById = new Map<string, JsonObject>();
   for (const brick of safeArray(registry.bricks)) {
     if (isObject(brick) && isNonEmptyString(brick.id)) {
       bricksById.set(brick.id, brick);
     }
   }
 
-  const projectsByAlias = new Map();
+  const projectsByAlias = new Map<string, JsonObject>();
   for (const project of safeArray(registry.projects)) {
     if (!isObject(project)) continue;
     const aliases = projectAliases(project);
@@ -265,22 +350,22 @@ async function loadRegistryContext(registryPath) {
   return { registry, bricksById, projectsByAlias };
 }
 
-async function loadReleaseContext(options) {
+async function loadReleaseContext(options: ReturnType<typeof parseArgs>) {
   if (options.noReleases) {
-    return { available: false, path: null, byArtifactId: new Map() };
+    return { available: false, path: null, byArtifactId: new Map<string, JsonObject>() };
   }
 
   const releasePath = path.resolve(options.releases);
   if (!existsSync(releasePath)) {
-    return { available: false, path: releasePath, byArtifactId: new Map() };
+    return { available: false, path: releasePath, byArtifactId: new Map<string, JsonObject>() };
   }
 
   const parsed = await readJson(releasePath);
   if (!parsed.ok || !isObject(parsed.value)) {
-    return { available: false, path: releasePath, byArtifactId: new Map(), error: parsed.error };
+    return { available: false, path: releasePath, byArtifactId: new Map<string, JsonObject>(), error: parsed.error };
   }
 
-  const byArtifactId = new Map();
+  const byArtifactId = new Map<string, JsonObject>();
   for (const artifact of collectReleaseArtifacts(parsed.value.artifacts)) {
     if (!isObject(artifact) || artifact.artifact_type !== "build" || !isNonEmptyString(artifact.artifact_id)) continue;
     byArtifactId.set(artifact.artifact_id, artifact);
@@ -289,15 +374,15 @@ async function loadReleaseContext(options) {
   return { available: true, path: releasePath, byArtifactId };
 }
 
-function collectReleaseArtifacts(artifacts) {
+function collectReleaseArtifacts(artifacts: unknown): unknown[] {
   if (Array.isArray(artifacts)) return artifacts;
   if (!isObject(artifacts)) return [];
   if (isObject(artifacts.build)) return Object.values(artifacts.build);
   return Object.values(artifacts);
 }
 
-function projectAliases(project) {
-  const aliases = new Set();
+function projectAliases(project: JsonObject) {
+  const aliases = new Set<string>();
   if (isNonEmptyString(project.id)) aliases.add(project.id.toLowerCase());
   if (isNonEmptyString(project.root)) {
     aliases.add(path.basename(project.root).toLowerCase());
@@ -306,7 +391,7 @@ function projectAliases(project) {
   return [...aliases];
 }
 
-function lookupProject(projectsByAlias, ...candidates) {
+function lookupProject(projectsByAlias: Map<string, JsonObject>, ...candidates: string[]) {
   for (const candidate of candidates) {
     if (!isNonEmptyString(candidate)) continue;
     const project = projectsByAlias.get(candidate.trim().toLowerCase());
@@ -315,18 +400,18 @@ function lookupProject(projectsByAlias, ...candidates) {
   return null;
 }
 
-function createRecorder(maxChecks) {
+function createRecorder(maxChecks: number) {
   const counts = { pass: 0, warn: 0, fail: 0 };
-  const checks = [];
+  const checks: BuildCheck[] = [];
   let truncated = 0;
 
-  function push(level, code, message, options: Record<string, any> = {}) {
+  function push(level: CheckLevel, code: string, message: string, options: CheckOptions = {}) {
     counts[level] += 1;
-    const check: Record<string, any> = {
+    const check: BuildCheck = {
       level,
       code,
       message,
-      areas: uniqStrings(options.areas || []),
+      areas: uniqStrings(options.areas ?? []),
     };
     if (options.detail && isObject(options.detail) && Object.keys(options.detail).length > 0) {
       check.detail = options.detail;
@@ -346,75 +431,56 @@ function createRecorder(maxChecks) {
     get truncated() {
       return truncated;
     },
-    pass(code, message, options = {}) {
+    pass(code: string, message: string, options = {}) {
       push("pass", code, message, options);
     },
-    warn(code, message, options = {}) {
+    warn(code: string, message: string, options = {}) {
       push("warn", code, message, options);
     },
-    fail(code, message, options = {}) {
+    fail(code: string, message: string, options = {}) {
       push("fail", code, message, options);
     },
   };
 }
 
-async function verifyBuildManifest(document, filePath, options: Record<string, any>) {
-  const recorder = createRecorder(options.maxChecks);
+function manifestBlocks(document: unknown): ManifestBlocks {
   const manifest = isObject(document) ? document : {};
-  const build = isObject(manifest.build) ? manifest.build : {};
-  const source = isObject(manifest.source) ? manifest.source : {};
-  const composition = isObject(manifest.composition) ? manifest.composition : {};
-  const interfaces = isObject(manifest.interfaces) ? manifest.interfaces : {};
-  const contracts = isObject(manifest.contracts) ? manifest.contracts : {};
-  const verification = isObject(manifest.verification) ? manifest.verification : {};
-  const clone = isObject(manifest.clone) ? manifest.clone : {};
-  const upgrade = isObject(manifest.upgrade) ? manifest.upgrade : {};
-  const publishing = isObject(manifest.publishing) ? manifest.publishing : {};
-  const economics = isObject(manifest.economics) ? manifest.economics : {};
-  const provenance = isObject(manifest.provenance) ? manifest.provenance : {};
-  const sweetspot = isObject(manifest.sweetspot) ? manifest.sweetspot : {};
+  const block = (key: string) => isObject(manifest[key]) ? manifest[key] : {};
+  return { manifest, build: block("build"), source: block("source"), composition: block("composition"), interfaces: block("interfaces"),
+    contracts: block("contracts"), verification: block("verification"), clone: block("clone"), upgrade: block("upgrade"),
+    publishing: block("publishing"), economics: block("economics"), provenance: block("provenance"), sweetspot: block("sweetspot") };
+}
 
+function resolveBuildManifest(build: JsonObject, source: JsonObject, filePath: string, options: VerifyOptions): BuildResolution {
   const buildId = safeString(build.id);
-  const buildName = safeString(build.name);
-  const buildVersion = safeString(build.version);
-  const manifestPath = relativeRepoPath(filePath);
   const manifestDirName = path.basename(path.dirname(filePath));
   const sourceProject = safeString(source.project);
   const buildPrefix = buildProjectPrefix(buildId);
   const project = lookupProject(options.registryContext.projectsByAlias, sourceProject, buildPrefix, manifestDirName);
-  const projectRoot = isNonEmptyString(project?.root) ? path.resolve(project.root) : "";
-  const releaseArtifact = isNonEmptyString(buildId) ? options.releaseContext.byArtifactId.get(buildId) || null : null;
+  return { buildId, buildName: safeString(build.name), buildVersion: safeString(build.version), manifestPath: relativeRepoPath(filePath),
+    manifestDirName, sourceProject, buildPrefix, project, projectRoot: isNonEmptyString(project?.root) ? path.resolve(project.root) : "",
+    releaseArtifact: isNonEmptyString(buildId) ? options.releaseContext.byArtifactId.get(buildId) ?? null : null };
+}
 
-  validateTopLevelBlocks(recorder, manifest);
-  validateBuildIdentity(recorder, build, filePath, sourceProject, buildPrefix);
-
-  if (manifest.schema_version === "1.0.0") {
-    recorder.pass("schema.version", "schema_version is 1.0.0");
-  } else {
-    recorder.fail("schema.version", `schema_version should be 1.0.0, got "${safeString(manifest.schema_version) || "missing"}"`, { areas: ["readiness"] });
+function validateSchemaAndProject(recorder: Recorder, manifest: JsonObject, resolution: BuildResolution) {
+  if (manifest.schema_version === "1.0.0") recorder.pass("schema.version", "schema_version is 1.0.0");
+  else recorder.fail("schema.version", `schema_version should be 1.0.0, got "${safeString(manifest.schema_version) || "missing"}"`, { areas: ["readiness"] });
+  if (resolution.project) {
+    recorder.pass("registry.project.present", `Source project "${String(resolution.project.id)}" exists in merged registry`, { areas: ["readiness", "installability"] });
+    return;
   }
+  recorder.fail("registry.project.missing", `Source project "${resolution.sourceProject || resolution.buildPrefix || resolution.manifestDirName || "unknown"}" is not present in merged registry`, {
+    areas: ["readiness", "installability"], detail: { source_project: resolution.sourceProject, build_prefix: resolution.buildPrefix, manifest_directory: resolution.manifestDirName },
+  });
+}
 
-  if (project) {
-    recorder.pass("registry.project.present", `Source project "${project.id}" exists in merged registry`, { areas: ["readiness", "installability"] });
-  } else {
-    recorder.fail("registry.project.missing", `Source project "${sourceProject || buildPrefix || manifestDirName || "unknown"}" is not present in merged registry`, {
-      areas: ["readiness", "installability"],
-      detail: { source_project: sourceProject, build_prefix: buildPrefix, manifest_directory: manifestDirName },
-    });
-  }
-
+async function validateSourcePaths(recorder: Recorder, source: JsonObject, projectRoot: string): Promise<SourcePathSummary> {
   const sourcePaths = uniqStrings(source.paths);
-  if (sourcePaths.length > 0) {
-    recorder.pass("source.paths.present", `${sourcePaths.length} source path(s) declared`, { areas: ["readiness"] });
-  } else {
-    recorder.fail("source.paths.missing", "Build must declare source.paths", { areas: ["readiness", "installability"] });
-  }
-
-  const missingSourcePaths = [];
-  const existingSourcePaths = [];
+  if (sourcePaths.length > 0) recorder.pass("source.paths.present", `${String(sourcePaths.length)} source path(s) declared`, { areas: ["readiness"] });
+  else recorder.fail("source.paths.missing", "Build must declare source.paths", { areas: ["readiness", "installability"] });
+  const missingSourcePaths: string[] = [], existingSourcePaths: string[] = [];
   for (const sourcePath of sourcePaths) {
-    const check = await verifySourcePath(sourcePath, projectRoot);
-    if (check.exists) {
+    if ((await verifySourcePath(sourcePath, projectRoot)).exists) {
       existingSourcePaths.push(sourcePath);
       recorder.pass("source.path.exists", `Source path exists: ${sourcePath}`, { areas: ["readiness"], detail: { path: sourcePath } });
     } else {
@@ -422,250 +488,189 @@ async function verifyBuildManifest(document, filePath, options: Record<string, a
       recorder.fail("source.path.missing", `Source path does not exist: ${sourcePath}`, { areas: ["readiness", "installability"], detail: { path: sourcePath } });
     }
   }
+  return { sourcePaths, missingSourcePaths, existingSourcePaths };
+}
 
-  const compositionRefs = safeArray(composition.brick_refs).filter(isObject);
-  const optionalRefs = safeArray(composition.optional_bricks).filter(isObject);
-  const derivedRefs = safeArray(source.derived_from_bricks).filter(isObject);
-  const compositionById = new Map();
-  const compositionIds = [];
-  const requiredCompositionIds = [];
-  const referencedBricks = [];
-  const registryStatusCounts = {};
-  const registryCloneCounts = {};
-  let registryScoreTotal = 0;
-  let registryScoreCount = 0;
-  let failingBrickCount = 0;
-  let projectBoundCount = 0;
-  let candidateOrBetterCount = 0;
+function validateCompositionRefs(recorder: Recorder, composition: JsonObject, source: JsonObject, registry: VerifyOptions['registryContext']): CompositionSummary {
+  const summary: CompositionSummary = {
+    compositionRefs: safeArray(composition.brick_refs).filter(isObject), optionalRefs: safeArray(composition.optional_bricks).filter(isObject),
+    derivedRefs: safeArray(source.derived_from_bricks).filter(isObject), compositionById: new Map(), compositionIds: [],
+    requiredCompositionIds: [], referencedBricks: [], registryStatusCounts: {}, registryCloneCounts: {}, registryScoreTotal: 0,
+    registryScoreCount: 0, failingBrickCount: 0, projectBoundCount: 0, candidateOrBetterCount: 0,
+  };
+  if (summary.compositionRefs.length > 0) recorder.pass("composition.refs.present", `${String(summary.compositionRefs.length)} primary brick ref(s) declared`, { areas: ["readiness", "installability"] });
+  else recorder.fail("composition.refs.missing", "Build must declare at least one composition.brick_refs entry", { areas: ["readiness", "installability"] });
+  const seenIds = new Set<string>(), seenOrders = new Set<unknown>();
+  for (const ref of summary.compositionRefs) processCompositionRef(recorder, ref, registry, summary, seenIds, seenOrders);
+  return summary;
+}
 
-  if (compositionRefs.length > 0) {
-    recorder.pass("composition.refs.present", `${compositionRefs.length} primary brick ref(s) declared`, { areas: ["readiness", "installability"] });
-  } else {
-    recorder.fail("composition.refs.missing", "Build must declare at least one composition.brick_refs entry", { areas: ["readiness", "installability"] });
+function processCompositionRef(recorder: Recorder, ref: JsonObject, registry: VerifyOptions['registryContext'], summary: CompositionSummary, seenIds: Set<string>, seenOrders: Set<unknown>) {
+  const refId = safeString(ref.brick_id);
+  if (!isNonEmptyString(refId)) {
+    recorder.fail("composition.ref.id.missing", "Every composition brick ref needs brick_id", { areas: ["readiness", "installability"] });
+    return;
   }
-
-  const seenRefIds = new Set();
-  const seenRefOrders = new Set();
-  for (const ref of compositionRefs) {
-    const refId = safeString(ref.brick_id);
-    if (!isNonEmptyString(refId)) {
-      recorder.fail("composition.ref.id.missing", "Every composition brick ref needs brick_id", { areas: ["readiness", "installability"] });
-      continue;
-    }
-    compositionIds.push(refId);
-    compositionById.set(refId, ref);
-    if (seenRefIds.has(refId)) {
-      recorder.fail("composition.ref.duplicate", `Duplicate composition brick ref "${refId}"`, { areas: ["readiness"] });
-    } else {
-      seenRefIds.add(refId);
-    }
-
-    if (Number.isInteger(ref.order)) {
-      if (seenRefOrders.has(ref.order)) {
-        recorder.warn("composition.ref.order.duplicate", `Repeated brick ref order "${ref.order}"`, { areas: ["readiness"], detail: { brick_id: refId } });
-      } else {
-        seenRefOrders.add(ref.order);
-      }
-    } else {
-      recorder.warn("composition.ref.order.missing", `Brick ref "${refId}" should declare an integer order`, { areas: ["readiness"], detail: { brick_id: refId } });
-    }
-
-    if (!isNonEmptyString(ref.role)) {
-      recorder.warn("composition.ref.role.missing", `Brick ref "${refId}" should declare a role`, { areas: ["readiness"], detail: { brick_id: refId } });
-    }
-    if (!isNonEmptyString(ref.path)) {
-      recorder.warn("composition.ref.path.missing", `Brick ref "${refId}" should declare a source path`, { areas: ["installability"], detail: { brick_id: refId } });
-    }
-
-    const required = ref.required !== false;
-    if (required) requiredCompositionIds.push(refId);
-
-    const registryBrick = options.registryContext.bricksById.get(refId);
-    if (!registryBrick) {
-      recorder.fail("registry.brick.missing", `Brick ref "${refId}" is not present in merged registry`, { areas: ["readiness", "installability"], detail: { brick_id: refId } });
-      continue;
-    }
-
-    referencedBricks.push({ ref, registryBrick });
-    recorder.pass("registry.brick.present", `Brick ref "${refId}" resolved in merged registry`, { areas: ["readiness"], detail: { brick_id: refId } });
-
-    const status = safeString(registryBrick.status) || "unknown";
-    incrementCounter(registryStatusCounts, status);
-    if (status === "project_bound") {
-      projectBoundCount += 1;
-      recorder.warn("registry.brick.project_bound", `Brick ref "${refId}" is still project_bound`, { areas: ["readiness", "publishability"], detail: { brick_id: refId } });
-    }
-    if (status === "candidate" || status === "canonical") candidateOrBetterCount += 1;
-
-    const cloneReadiness = safeString(registryBrick.clone_readiness) || "unknown";
-    incrementCounter(registryCloneCounts, cloneReadiness);
-    if (required && (cloneReadiness === "manual_only" || cloneReadiness === "blocked")) {
-      recorder.warn("registry.brick.clone_readiness", `Required brick "${refId}" is ${cloneReadiness}`, { areas: ["installability"], detail: { brick_id: refId, clone_readiness: cloneReadiness } });
-    }
-
-    const healthStatus = safeString(registryBrick.health?.status) || "unknown";
-    if (healthStatus === "fail") {
-      failingBrickCount += 1;
-      recorder.fail("registry.brick.health_fail", `Registry brick "${refId}" has failing health`, { areas: ["readiness", "installability"], detail: { brick_id: refId } });
-    } else if ((registryBrick.health?.warning_count || 0) > 0) {
-      recorder.warn("registry.brick.health_warn", `Registry brick "${refId}" carries scanner warnings`, { areas: ["readiness"], detail: { brick_id: refId, warning_count: registryBrick.health.warning_count } });
-    }
-
-    if (typeof registryBrick.score === "number") {
-      registryScoreTotal += registryBrick.score;
-      registryScoreCount += 1;
-    }
-
-    if (isNonEmptyString(ref.path) && !matchesSourcePath(ref.path, safeArray(registryBrick.source_paths))) {
-      recorder.warn("registry.brick.path_mismatch", `Declared path for "${refId}" does not match registry source_paths`, {
-        areas: ["installability"],
-        detail: { brick_id: refId, manifest_path: ref.path, registry_paths: safeArray(registryBrick.source_paths) },
-      });
-    }
+  summary.compositionIds.push(refId);
+  summary.compositionById.set(refId, ref);
+  validateCompositionRefMetadata(recorder, ref, refId, seenIds, seenOrders);
+  const required = ref.required !== false;
+  if (required) summary.requiredCompositionIds.push(refId);
+  const registryBrick = registry.bricksById.get(refId);
+  if (!registryBrick) {
+    recorder.fail("registry.brick.missing", `Brick ref "${refId}" is not present in merged registry`, { areas: ["readiness", "installability"], detail: { brick_id: refId } });
+    return;
   }
+  summary.referencedBricks.push({ ref, registryBrick });
+  recorder.pass("registry.brick.present", `Brick ref "${refId}" resolved in merged registry`, { areas: ["readiness"], detail: { brick_id: refId } });
+  recordRegistryBrick(recorder, ref, refId, required, registryBrick, summary);
+}
 
-  const derivedIds = uniqStrings(derivedRefs.map((ref) => ref.brick_id));
-  const missingDerivedIds = requiredCompositionIds.filter((brickId) => !derivedIds.includes(brickId));
-  const extraDerivedIds = derivedIds.filter((brickId) => !compositionIds.includes(brickId));
+function validateCompositionRefMetadata(recorder: Recorder, ref: JsonObject, refId: string, seenIds: Set<string>, seenOrders: Set<unknown>) {
+  if (seenIds.has(refId)) recorder.fail("composition.ref.duplicate", `Duplicate composition brick ref "${refId}"`, { areas: ["readiness"] });
+  else seenIds.add(refId);
+  if (Number.isInteger(ref.order)) {
+    if (seenOrders.has(ref.order)) recorder.warn("composition.ref.order.duplicate", `Repeated brick ref order "${String(ref.order)}"`, { areas: ["readiness"], detail: { brick_id: refId } });
+    else seenOrders.add(ref.order);
+  } else recorder.warn("composition.ref.order.missing", `Brick ref "${refId}" should declare an integer order`, { areas: ["readiness"], detail: { brick_id: refId } });
+  if (!isNonEmptyString(ref.role)) recorder.warn("composition.ref.role.missing", `Brick ref "${refId}" should declare a role`, { areas: ["readiness"], detail: { brick_id: refId } });
+  if (!isNonEmptyString(ref.path)) recorder.warn("composition.ref.path.missing", `Brick ref "${refId}" should declare a source path`, { areas: ["installability"], detail: { brick_id: refId } });
+}
+
+function recordRegistryBrick(recorder: Recorder, ref: JsonObject, refId: string, required: boolean, brick: JsonObject, summary: CompositionSummary) {
+  const status = safeString(brick.status) || "unknown";
+  incrementCounter(summary.registryStatusCounts, status);
+  if (status === "project_bound") {
+    summary.projectBoundCount += 1;
+    recorder.warn("registry.brick.project_bound", `Brick ref "${refId}" is still project_bound`, { areas: ["readiness", "publishability"], detail: { brick_id: refId } });
+  }
+  if (status === "candidate" || status === "canonical") summary.candidateOrBetterCount += 1;
+  const cloneReadiness = safeString(brick.clone_readiness) || "unknown";
+  incrementCounter(summary.registryCloneCounts, cloneReadiness);
+  if (required && (cloneReadiness === "manual_only" || cloneReadiness === "blocked")) recorder.warn("registry.brick.clone_readiness", `Required brick "${refId}" is ${cloneReadiness}`, { areas: ["installability"], detail: { brick_id: refId, clone_readiness: cloneReadiness } });
+  recordRegistryHealth(recorder, refId, brick, summary);
+  if (typeof brick.score === "number") { summary.registryScoreTotal += brick.score; summary.registryScoreCount += 1; }
+  if (isNonEmptyString(ref.path) && !matchesSourcePath(ref.path, safeArray(brick.source_paths))) recorder.warn("registry.brick.path_mismatch", `Declared path for "${refId}" does not match registry source_paths`, {
+    areas: ["installability"], detail: { brick_id: refId, manifest_path: ref.path, registry_paths: safeArray(brick.source_paths) },
+  });
+}
+
+function recordRegistryHealth(recorder: Recorder, refId: string, brick: JsonObject, summary: CompositionSummary) {
+  const health = isObject(brick.health) ? brick.health : {};
+  const status = safeString(health.status) || "unknown";
+  if (status === "fail") {
+    summary.failingBrickCount += 1;
+    recorder.fail("registry.brick.health_fail", `Registry brick "${refId}" has failing health`, { areas: ["readiness", "installability"], detail: { brick_id: refId } });
+  } else if (Number(health.warning_count ?? 0) > 0) {
+    recorder.warn("registry.brick.health_warn", `Registry brick "${refId}" carries scanner warnings`, { areas: ["readiness"], detail: { brick_id: refId, warning_count: health.warning_count } });
+  }
+}
+
+function validateCompositionRelations(recorder: Recorder, composition: JsonObject, summary: CompositionSummary) {
+  const derivedIds = uniqStrings(summary.derivedRefs.map((ref) => ref.brick_id));
+  const missingDerivedIds = summary.requiredCompositionIds.filter((brickId) => !derivedIds.includes(brickId));
+  const extraDerivedIds = derivedIds.filter((brickId) => !summary.compositionIds.includes(brickId));
   if (missingDerivedIds.length === 0 && extraDerivedIds.length === 0 && derivedIds.length > 0) {
     recorder.pass("source.derived_from_bricks.aligned", "source.derived_from_bricks aligns with composition brick refs", { areas: ["readiness"] });
   } else {
-    if (missingDerivedIds.length > 0) {
-      recorder.warn("source.derived_from_bricks.missing", "Some required composition bricks are not represented in source.derived_from_bricks", {
-        areas: ["readiness"],
-        detail: { brick_ids: missingDerivedIds },
-      });
-    }
-    if (extraDerivedIds.length > 0) {
-      recorder.warn("source.derived_from_bricks.extra", "source.derived_from_bricks includes bricks not present in composition.brick_refs", {
-        areas: ["readiness"],
-        detail: { brick_ids: extraDerivedIds },
-      });
-    }
+    if (missingDerivedIds.length > 0) recorder.warn("source.derived_from_bricks.missing", "Some required composition bricks are not represented in source.derived_from_bricks", { areas: ["readiness"], detail: { brick_ids: missingDerivedIds } });
+    if (extraDerivedIds.length > 0) recorder.warn("source.derived_from_bricks.extra", "source.derived_from_bricks includes bricks not present in composition.brick_refs", { areas: ["readiness"], detail: { brick_ids: extraDerivedIds } });
   }
-
-  const flowSummary = validateFlows(recorder, compositionById, safeArray(composition.flows));
-  for (const missingBrickId of requiredCompositionIds.filter((brickId) => !flowSummary.usedBrickIds.has(brickId))) {
-    recorder.warn("composition.flow.coverage", `Required brick "${missingBrickId}" is not referenced by any flow step`, {
-      areas: ["readiness", "installability"],
-      detail: { brick_id: missingBrickId },
-    });
+  const flowSummary = validateFlows(recorder, summary.compositionById, safeArray(composition.flows));
+  for (const brickId of summary.requiredCompositionIds.filter((id) => !flowSummary.usedBrickIds.has(id))) {
+    recorder.warn("composition.flow.coverage", `Required brick "${brickId}" is not referenced by any flow step`, { areas: ["readiness", "installability"], detail: { brick_id: brickId } });
   }
+}
 
-  const interfaceSummary = validateInterfaces(recorder, interfaces, verification);
-  const contractSummary = validateContracts(recorder, contracts, manifest.classification, build);
-  const cloneSummary = validateCloneSurface(recorder, clone, {
-    sourcePaths,
-    requiredRefs: compositionRefs.filter((entry) => entry.required !== false),
-    optionalRefs,
-  });
-  const upgradeSummary = validateUpgradeSurface(recorder, upgrade);
-  const publishingSummary = validatePublishingSurface(recorder, publishing, build);
-  validateEconomics(recorder, economics);
-  validateProvenance(recorder, provenance, compositionIds);
-  validateSweetspot(recorder, sweetspot, build);
-  validateVerification(recorder, verification, build);
+function validateManifestSurfaces(recorder: Recorder, blocks: ManifestBlocks, paths: SourcePathSummary, composition: CompositionSummary) {
+  validateInterfaces(recorder, blocks.interfaces, blocks.verification);
+  const contractSummary = validateContracts(recorder, blocks.contracts, isObject(blocks.manifest.classification) ? blocks.manifest.classification : {}, blocks.build);
+  const cloneSummary = validateCloneSurface(recorder, blocks.clone, { sourcePaths: paths.sourcePaths,
+    requiredRefs: composition.compositionRefs.filter((entry) => entry.required !== false), optionalRefs: composition.optionalRefs });
+  const upgradeSummary = validateUpgradeSurface(recorder, blocks.upgrade);
+  validatePublishingSurface(recorder, blocks.publishing, blocks.build);
+  validateEconomics(recorder, blocks.economics);
+  validateProvenance(recorder, blocks.provenance, composition.compositionIds);
+  validateSweetspot(recorder, blocks.sweetspot, blocks.build);
+  validateVerification(recorder, blocks.verification, blocks.build);
+  return { contractSummary, cloneSummary, upgradeSummary };
+}
 
-  const releaseSummary = validateReleaseLink(recorder, releaseArtifact, options.releaseContext, {
-    buildId,
-    buildVersion,
-    buildStatus: safeString(build.status),
-    requiredEnvCount: contractSummary.requiredEnvCount,
-    sourcePathCount: sourcePaths.length,
-  });
-
-  const registrySummary = {
-    source_project_found: Boolean(project),
-    source_project_id: project?.id || sourceProject || buildPrefix || null,
-    source_root: projectRoot ? relativeRepoPath(projectRoot) : null,
-    source_path_count: sourcePaths.length,
-    existing_source_path_count: existingSourcePaths.length,
-    missing_source_paths: missingSourcePaths,
-    referenced_brick_count: referencedBricks.length,
-    missing_brick_count: compositionRefs.length - referencedBricks.length,
-    required_brick_count: requiredCompositionIds.length,
-    required_ready_brick_count: referencedBricks.filter(({ ref, registryBrick }) => ref.required !== false && safeString(registryBrick.clone_readiness) !== "blocked" && safeString(registryBrick.clone_readiness) !== "manual_only").length,
-    average_brick_score: registryScoreCount ? Math.round(registryScoreTotal / registryScoreCount) : 0,
-    status_counts: registryStatusCounts,
-    clone_readiness_counts: registryCloneCounts,
-    project_bound_member_count: projectBoundCount,
-    candidate_or_better_member_count: candidateOrBetterCount,
-    failing_member_count: failingBrickCount,
+function buildRegistrySummary(resolution: BuildResolution, paths: SourcePathSummary, composition: CompositionSummary): RegistrySummary {
+  return {
+    source_project_found: Boolean(resolution.project), source_project_id: firstText(resolution.project?.id, resolution.sourceProject, resolution.buildPrefix),
+    source_root: resolution.projectRoot ? relativeRepoPath(resolution.projectRoot) : null, source_path_count: paths.sourcePaths.length,
+    existing_source_path_count: paths.existingSourcePaths.length, missing_source_paths: paths.missingSourcePaths,
+    referenced_brick_count: composition.referencedBricks.length, missing_brick_count: composition.compositionRefs.length - composition.referencedBricks.length,
+    required_brick_count: composition.requiredCompositionIds.length,
+    required_ready_brick_count: composition.referencedBricks.filter(({ ref, registryBrick }) => ref.required !== false && safeString(registryBrick.clone_readiness) !== "blocked" && safeString(registryBrick.clone_readiness) !== "manual_only").length,
+    average_brick_score: composition.registryScoreCount ? Math.round(composition.registryScoreTotal / composition.registryScoreCount) : 0,
+    status_counts: composition.registryStatusCounts, clone_readiness_counts: composition.registryCloneCounts,
+    project_bound_member_count: composition.projectBoundCount, candidate_or_better_member_count: composition.candidateOrBetterCount,
+    failing_member_count: composition.failingBrickCount,
   };
+}
 
-  const publishabilitySignal = buildSignal("publishability", recorder.checks, {
-    forceBlocked: publishing.publishable !== true,
-  });
+function firstText(...values: unknown[]): string | null {
+  for (const value of values) if (isNonEmptyString(value)) return value;
+  return null;
+}
+
+function finalizeBuildReport(recorder: Recorder, blocks: ManifestBlocks, resolution: BuildResolution, paths: SourcePathSummary,
+  registrySummary: RegistrySummary, surface: ReturnType<typeof validateManifestSurfaces>, releaseSummary: ReleaseSummary, compact: boolean): VerifiedBuildReport {
+  const publishabilitySignal = buildSignal("publishability", recorder.checks, { forceBlocked: blocks.publishing.publishable !== true });
   const installabilitySignal = buildSignal("installability", recorder.checks, {
-    forceBlocked: cloneSummary.requiredMappingMissingCount > 0 || registrySummary.missing_brick_count > 0 || missingSourcePaths.length > 0,
+    forceBlocked: surface.cloneSummary.requiredMappingMissingCount > 0 || registrySummary.missing_brick_count > 0 || paths.missingSourcePaths.length > 0,
   });
-  const updateabilitySignal = buildSignal("updateability", recorder.checks, {
-    forceBlocked: upgradeSummary.missingCriticalFields > 0,
-  });
+  const updateabilitySignal = buildSignal("updateability", recorder.checks, { forceBlocked: surface.upgradeSummary.missingCriticalFields > 0 });
   const readinessSignal = buildSignal("readiness", recorder.checks, {
-    forceBlocked: registrySummary.missing_brick_count > 0 || missingSourcePaths.length > 0 || recorder.checks.some((check) => check.level === "fail" && check.areas.includes("readiness")),
+    forceBlocked: registrySummary.missing_brick_count > 0 || paths.missingSourcePaths.length > 0 || recorder.checks.some((check) => check.level === "fail" && check.areas.includes("readiness")),
   });
-
-  const suggestedVerificationStatus = suggestVerificationStatus({
-    build,
-    verification,
-    provenance,
-    recorder,
-    releaseSummary,
-    registrySummary,
-    installabilitySignal,
-    updateabilitySignal,
-    readinessSignal,
-  });
-  const suggestedTrustLevel = suggestTrustLevel({
-    suggestedVerificationStatus,
-    recorder,
-    releaseSummary,
-  });
-
-  const topBlockers = topIssues(recorder.checks, 6);
-  const booleans = {
-    ready_for_adoption: readinessSignal.status !== "blocked" && installabilitySignal.status !== "blocked" && VERIFICATION_RANK[suggestedVerificationStatus] >= VERIFICATION_RANK.candidate,
-    installable: installabilitySignal.status !== "blocked",
-    updateable: updateabilitySignal.status !== "blocked",
-    publishable: publishabilitySignal.status === "ready",
+  const suggestedVerificationStatus = suggestVerificationStatus({ build: blocks.build, verification: blocks.verification,
+    provenance: blocks.provenance, recorder, releaseSummary, registrySummary, installabilitySignal, updateabilitySignal, readinessSignal });
+  const suggestedTrustLevel = suggestTrustLevel({ suggestedVerificationStatus, recorder, releaseSummary });
+  const report: VerifiedBuildReport = {
+    path: resolution.manifestPath, build_id: resolution.buildId || null, name: resolution.buildName || null,
+    version: resolution.buildVersion || null, source_project: resolution.sourceProject || resolution.buildPrefix || null,
+    declared_status: safeString(blocks.build.status) || null, declared_trust_tier: safeString(blocks.build.trust_tier) || null,
+    counts: recorder.counts, verification: { declared_status: safeString(blocks.verification.status) || null,
+      suggested_status: suggestedVerificationStatus, suggested_trust_level: suggestedTrustLevel },
+    signals: { readiness: readinessSignal, installability: installabilitySignal, updateability: updateabilitySignal, publishability: publishabilitySignal },
+    booleans: { ready_for_adoption: isReadyForAdoption(readinessSignal, installabilitySignal, suggestedVerificationStatus),
+      installable: installabilitySignal.status !== "blocked", updateable: updateabilitySignal.status !== "blocked", publishable: publishabilitySignal.status === "ready" },
+    registry: registrySummary, release: releaseSummary, top_blockers: topIssues(recorder.checks, 6),
   };
-
-  const report: Record<string, any> = {
-    path: manifestPath,
-    build_id: buildId || null,
-    name: buildName || null,
-    version: buildVersion || null,
-    source_project: sourceProject || buildPrefix || null,
-    declared_status: safeString(build.status) || null,
-    declared_trust_tier: safeString(build.trust_tier) || null,
-    counts: recorder.counts,
-    verification: {
-      declared_status: safeString(verification.status) || null,
-      suggested_status: suggestedVerificationStatus,
-      suggested_trust_level: suggestedTrustLevel,
-    },
-    signals: {
-      readiness: readinessSignal,
-      installability: installabilitySignal,
-      updateability: updateabilitySignal,
-      publishability: publishabilitySignal,
-    },
-    booleans,
-    registry: registrySummary,
-    release: releaseSummary,
-    top_blockers: topBlockers,
-  };
-
-  if (!options.compact) {
-    report.checks = recorder.checks;
-    report.checks_truncated = recorder.truncated;
-  }
-
+  if (!compact) { report.checks = recorder.checks; report.checks_truncated = recorder.truncated; }
   return report;
 }
 
-function validateTopLevelBlocks(recorder, manifest) {
+function isReadyForAdoption(readiness: BuildSignal, installability: BuildSignal, status: VerificationStatus) {
+  return readiness.status !== "blocked" && installability.status !== "blocked" && VERIFICATION_RANK[status] >= VERIFICATION_RANK.candidate;
+}
+
+async function verifyBuildManifest(document: unknown, filePath: string, options: VerifyOptions) {
+  const recorder = createRecorder(options.maxChecks);
+  const blocks = manifestBlocks(document);
+  const resolution = resolveBuildManifest(blocks.build, blocks.source, filePath, options);
+
+  validateTopLevelBlocks(recorder, blocks.manifest);
+  validateBuildIdentity(recorder, blocks.build, filePath, resolution.sourceProject, resolution.buildPrefix);
+
+  validateSchemaAndProject(recorder, blocks.manifest, resolution);
+  const pathSummary = await validateSourcePaths(recorder, blocks.source, resolution.projectRoot);
+
+  const compositionSummary = validateCompositionRefs(recorder, blocks.composition, blocks.source, options.registryContext);
+  validateCompositionRelations(recorder, blocks.composition, compositionSummary);
+  const surface = validateManifestSurfaces(recorder, blocks, pathSummary, compositionSummary);
+  const releaseSummary = validateReleaseLink(recorder, resolution.releaseArtifact, options.releaseContext, {
+    buildId: resolution.buildId, buildVersion: resolution.buildVersion, buildStatus: safeString(blocks.build.status), requiredEnvCount: surface.contractSummary.requiredEnvCount,
+    sourcePathCount: pathSummary.sourcePaths.length,
+  });
+  const registrySummary = buildRegistrySummary(resolution, pathSummary, compositionSummary);
+  return finalizeBuildReport(recorder, blocks, resolution, pathSummary, registrySummary, surface, releaseSummary, options.compact);
+}
+
+function validateTopLevelBlocks(recorder: Recorder, manifest: JsonObject) {
   const requiredObjectBlocks = ["build", "source", "owner", "composition", "classification", "sweetspot", "interfaces", "contracts", "verification", "clone", "upgrade", "publishing", "economics", "provenance"];
   for (const key of requiredObjectBlocks) {
     if (isObject(manifest[key])) {
@@ -676,80 +681,64 @@ function validateTopLevelBlocks(recorder, manifest) {
   }
 }
 
-function validateBuildIdentity(recorder, build, filePath, sourceProject, buildPrefix) {
-  if (!isNonEmptyString(build.id)) {
-    recorder.fail("build.id.missing", "build.id is required", { areas: ["readiness"] });
-  } else if (!BUILD_ID_RE.test(build.id)) {
-    recorder.fail("build.id.invalid", `build.id "${build.id}" is not registry-safe`, { areas: ["readiness"] });
-  } else {
-    recorder.pass("build.id.valid", `build.id "${build.id}" looks valid`, { areas: ["readiness"] });
-  }
-
-  if (!safeString(build.id).includes(".build.")) {
-    recorder.fail("build.id.prefix", "build.id should include '.build.' to mark first-class builds", { areas: ["readiness"] });
-  } else {
-    recorder.pass("build.id.prefix", "build.id carries the build prefix", { areas: ["readiness"] });
-  }
-
-  if (isNonEmptyString(build.name)) recorder.pass("build.name.present", "build.name present", { areas: ["readiness"] });
-  else recorder.fail("build.name.missing", "build.name is required", { areas: ["readiness"] });
-
-  if (isNonEmptyString(build.slug) && SLUG_RE.test(build.slug)) {
-    recorder.pass("build.slug.valid", `build.slug "${build.slug}" looks valid`, { areas: ["readiness"] });
-    const expectedName = `${build.slug}.build.sweetspot.json`;
-    if (path.basename(filePath) === expectedName) {
-      recorder.pass("build.file.matches_slug", "Manifest filename matches build.slug", { areas: ["readiness"] });
-    } else {
-      recorder.warn("build.file.slug_mismatch", `Manifest filename should usually be "${expectedName}"`, {
-        areas: ["readiness"],
-        detail: { filename: path.basename(filePath), expected: expectedName },
-      });
-    }
-  } else {
-    recorder.fail("build.slug.invalid", "build.slug is missing or invalid", { areas: ["readiness"] });
-  }
-
-  if (isNonEmptyString(build.version) && SEMVER_RE.test(build.version)) {
-    recorder.pass("build.version.valid", `build.version "${build.version}" is semver-like`, { areas: ["readiness", "updateability"] });
-  } else {
-    recorder.fail("build.version.invalid", `build.version "${safeString(build.version) || "missing"}" is not semver`, { areas: ["readiness", "updateability"] });
-  }
-
-  if (isNonEmptyString(sourceProject) && isNonEmptyString(buildPrefix)) {
-    if (sourceProject === buildPrefix) {
-      recorder.pass("build.project_prefix.aligned", "build.id prefix aligns with source.project", { areas: ["readiness"] });
-    } else {
-      recorder.warn("build.project_prefix.mismatch", `build.id prefix "${buildPrefix}" does not match source.project "${sourceProject}"`, {
-        areas: ["readiness"],
-        detail: { source_project: sourceProject, build_prefix: buildPrefix },
-      });
-    }
-  }
-
-  const buildDir = path.basename(path.dirname(filePath));
-  if (isNonEmptyString(sourceProject) && buildDir === sourceProject) {
-    recorder.pass("build.directory.aligned", "Build directory matches source.project", { areas: ["readiness"] });
-  } else if (isNonEmptyString(sourceProject)) {
-    recorder.warn("build.directory.mismatch", `Build directory "${buildDir}" does not match source.project "${sourceProject}"`, {
-      areas: ["readiness"],
-      detail: { build_directory: buildDir, source_project: sourceProject },
-    });
-  }
-
-  const declaredStatus = safeString(build.status);
-  const trustTier = safeString(build.trust_tier);
-  if (declaredStatus) recorder.pass("build.status.present", `build.status "${declaredStatus}" declared`, { areas: ["readiness"] });
-  else recorder.fail("build.status.missing", "build.status is required", { areas: ["readiness"] });
-
-  if (trustTier) recorder.pass("build.trust_tier.present", `build.trust_tier "${trustTier}" declared`, { areas: ["readiness"] });
-  else recorder.warn("build.trust_tier.missing", "build.trust_tier should be declared", { areas: ["readiness"] });
-
-  if (BUILD_STATUS_RANK[declaredStatus] !== undefined && TRUST_TIER_RANK[trustTier] !== undefined && TRUST_TIER_RANK[trustTier] + 1 < BUILD_STATUS_RANK[declaredStatus]) {
-    recorder.fail("build.status_trust_mismatch", `build.status "${declaredStatus}" is stronger than build.trust_tier "${trustTier}"`, { areas: ["readiness"] });
-  }
+function validateBuildIdentity(recorder: Recorder, build: JsonObject, filePath: string, sourceProject: string, buildPrefix: string) {
+  validateBuildId(recorder, build);
+  validateBuildSlug(recorder, build, filePath);
+  validateBuildVersionAndLocation(recorder, build, filePath, sourceProject, buildPrefix);
+  validateBuildTrust(recorder, build);
 }
 
-async function verifySourcePath(sourcePath, projectRoot) {
+function validateBuildId(recorder: Recorder, build: JsonObject) {
+  if (!isNonEmptyString(build.id)) recorder.fail("build.id.missing", "build.id is required", { areas: ["readiness"] });
+  else if (!BUILD_ID_RE.test(build.id)) recorder.fail("build.id.invalid", `build.id "${build.id}" is not registry-safe`, { areas: ["readiness"] });
+  else recorder.pass("build.id.valid", `build.id "${build.id}" looks valid`, { areas: ["readiness"] });
+  if (safeString(build.id).includes(".build.")) recorder.pass("build.id.prefix", "build.id carries the build prefix", { areas: ["readiness"] });
+  else recorder.fail("build.id.prefix", "build.id should include '.build.' to mark first-class builds", { areas: ["readiness"] });
+  if (isNonEmptyString(build.name)) recorder.pass("build.name.present", "build.name present", { areas: ["readiness"] });
+  else recorder.fail("build.name.missing", "build.name is required", { areas: ["readiness"] });
+}
+
+function validateBuildSlug(recorder: Recorder, build: JsonObject, filePath: string) {
+  if (!isNonEmptyString(build.slug) || !SLUG_RE.test(build.slug)) {
+    recorder.fail("build.slug.invalid", "build.slug is missing or invalid", { areas: ["readiness"] });
+    return;
+  }
+  recorder.pass("build.slug.valid", `build.slug "${build.slug}" looks valid`, { areas: ["readiness"] });
+  const expectedName = `${build.slug}.build.sweetspot.json`;
+  if (path.basename(filePath) === expectedName) recorder.pass("build.file.matches_slug", "Manifest filename matches build.slug", { areas: ["readiness"] });
+  else recorder.warn("build.file.slug_mismatch", `Manifest filename should usually be "${expectedName}"`, {
+    areas: ["readiness"], detail: { filename: path.basename(filePath), expected: expectedName },
+  });
+}
+
+function validateBuildVersionAndLocation(recorder: Recorder, build: JsonObject, filePath: string, sourceProject: string, buildPrefix: string) {
+  if (isNonEmptyString(build.version) && SEMVER_RE.test(build.version)) recorder.pass("build.version.valid", `build.version "${build.version}" is semver-like`, { areas: ["readiness", "updateability"] });
+  else recorder.fail("build.version.invalid", `build.version "${safeString(build.version) || "missing"}" is not semver`, { areas: ["readiness", "updateability"] });
+  if (sourceProject && buildPrefix) {
+    if (sourceProject === buildPrefix) recorder.pass("build.project_prefix.aligned", "build.id prefix aligns with source.project", { areas: ["readiness"] });
+    else recorder.warn("build.project_prefix.mismatch", `build.id prefix "${buildPrefix}" does not match source.project "${sourceProject}"`, {
+      areas: ["readiness"], detail: { source_project: sourceProject, build_prefix: buildPrefix },
+    });
+  }
+  const buildDir = path.basename(path.dirname(filePath));
+  if (sourceProject && buildDir === sourceProject) recorder.pass("build.directory.aligned", "Build directory matches source.project", { areas: ["readiness"] });
+  else if (sourceProject) recorder.warn("build.directory.mismatch", `Build directory "${buildDir}" does not match source.project "${sourceProject}"`, {
+    areas: ["readiness"], detail: { build_directory: buildDir, source_project: sourceProject },
+  });
+}
+
+function validateBuildTrust(recorder: Recorder, build: JsonObject) {
+  const status = safeString(build.status), trustTier = safeString(build.trust_tier);
+  if (status) recorder.pass("build.status.present", `build.status "${status}" declared`, { areas: ["readiness"] });
+  else recorder.fail("build.status.missing", "build.status is required", { areas: ["readiness"] });
+  if (trustTier) recorder.pass("build.trust_tier.present", `build.trust_tier "${trustTier}" declared`, { areas: ["readiness"] });
+  else recorder.warn("build.trust_tier.missing", "build.trust_tier should be declared", { areas: ["readiness"] });
+  const statusRank = buildStatusRank(status), tierRank = trustTierRank(trustTier);
+  if (statusRank !== null && tierRank !== null && tierRank + 1 < statusRank) {
+    recorder.fail("build.status_trust_mismatch", `build.status "${status}" is stronger than build.trust_tier "${trustTier}"`, { areas: ["readiness"] });
+  }
+}
+async function verifySourcePath(sourcePath: string, projectRoot: string) {
   if (!isNonEmptyString(sourcePath)) return { exists: false };
   if (!projectRoot) return { exists: false };
   if (path.isAbsolute(sourcePath)) return { exists: false };
@@ -758,87 +747,70 @@ async function verifySourcePath(sourcePath, projectRoot) {
   return { exists: await pathExists(resolved), resolved };
 }
 
-function validateFlows(recorder, compositionById, flows) {
-  const usedBrickIds = new Set();
-
+function validateFlows(recorder: Recorder, compositionById: Map<string, JsonObject>, flows: unknown[]) {
+  const usedBrickIds = new Set<string>();
   if (flows.length === 0) {
     recorder.fail("composition.flows.missing", "Build should declare at least one composition flow", { areas: ["readiness", "installability"] });
     return { usedBrickIds };
   }
-
-  recorder.pass("composition.flows.present", `${flows.length} flow(s) declared`, { areas: ["readiness"] });
-
-  const seenFlowIds = new Set();
-  for (const flow of flows) {
-    const flowId = safeString(flow?.id);
-    if (!flowId) {
-      recorder.fail("composition.flow.id.missing", "Every flow needs an id", { areas: ["readiness"] });
-      continue;
-    }
-    if (seenFlowIds.has(flowId)) {
-      recorder.fail("composition.flow.id.duplicate", `Duplicate flow id "${flowId}"`, { areas: ["readiness"] });
-    } else {
-      seenFlowIds.add(flowId);
-    }
-
-    const steps = safeArray(flow?.steps).filter(isObject);
-    if (steps.length === 0) {
-      recorder.fail("composition.flow.steps.missing", `Flow "${flowId}" must declare steps`, { areas: ["readiness", "installability"], detail: { flow_id: flowId } });
-      continue;
-    }
-
-    const seenStepIds = new Set();
-    let previousOrder = -Infinity;
-    for (const step of steps) {
-      const stepId = safeString(step.id);
-      if (!stepId) {
-        recorder.fail("composition.step.id.missing", `Flow "${flowId}" contains a step without id`, { areas: ["readiness"], detail: { flow_id: flowId } });
-      } else if (seenStepIds.has(stepId)) {
-        recorder.fail("composition.step.id.duplicate", `Flow "${flowId}" repeats step id "${stepId}"`, { areas: ["readiness"], detail: { flow_id: flowId, step_id: stepId } });
-      } else {
-        seenStepIds.add(stepId);
-      }
-
-      if (!Number.isInteger(step.order)) {
-        recorder.warn("composition.step.order.missing", `Flow "${flowId}" step "${stepId || "unknown"}" should declare integer order`, {
-          areas: ["readiness"],
-          detail: { flow_id: flowId, step_id: stepId },
-        });
-      } else if (step.order < previousOrder) {
-        recorder.warn("composition.step.order.unsorted", `Flow "${flowId}" step "${stepId}" is out of order`, {
-          areas: ["readiness"],
-          detail: { flow_id: flowId, step_id: stepId, order: step.order, previous_order: previousOrder },
-        });
-        previousOrder = step.order;
-      } else {
-        previousOrder = step.order;
-      }
-
-      const stepBrickRefs = uniqStrings(step.brick_refs);
-      if (stepBrickRefs.length === 0) {
-        recorder.warn("composition.step.refs.missing", `Flow "${flowId}" step "${stepId || "unknown"}" should reference one or more brick refs`, {
-          areas: ["readiness", "installability"],
-          detail: { flow_id: flowId, step_id: stepId },
-        });
-      }
-
-      for (const brickId of stepBrickRefs) {
-        if (!compositionById.has(brickId)) {
-          recorder.fail("composition.step.refs.unknown", `Flow "${flowId}" step "${stepId || "unknown"}" references unknown brick "${brickId}"`, {
-            areas: ["readiness", "installability"],
-            detail: { flow_id: flowId, step_id: stepId, brick_id: brickId },
-          });
-        } else {
-          usedBrickIds.add(brickId);
-        }
-      }
-    }
-  }
-
+  recorder.pass("composition.flows.present", `${String(flows.length)} flow(s) declared`, { areas: ["readiness"] });
+  const seenFlowIds = new Set<string>();
+  for (const rawFlow of flows) if (isObject(rawFlow)) validateFlow(recorder, rawFlow, compositionById, usedBrickIds, seenFlowIds);
   return { usedBrickIds };
 }
 
-function validateInterfaces(recorder, interfaces, verification) {
+function validateFlow(recorder: Recorder, flow: JsonObject, compositionById: Map<string, JsonObject>, usedBrickIds: Set<string>, seenFlowIds: Set<string>) {
+  const flowId = safeString(flow.id);
+  if (!flowId) {
+    recorder.fail("composition.flow.id.missing", "Every flow needs an id", { areas: ["readiness"] });
+    return;
+  }
+  if (seenFlowIds.has(flowId)) recorder.fail("composition.flow.id.duplicate", `Duplicate flow id "${flowId}"`, { areas: ["readiness"] });
+  else seenFlowIds.add(flowId);
+  const steps = safeArray(flow.steps).filter(isObject);
+  if (steps.length === 0) {
+    recorder.fail("composition.flow.steps.missing", `Flow "${flowId}" must declare steps`, { areas: ["readiness", "installability"], detail: { flow_id: flowId } });
+    return;
+  }
+  const seenStepIds = new Set<string>();
+  let previousOrder = -Infinity;
+  for (const step of steps) previousOrder = validateFlowStep(recorder, flowId, step, compositionById, usedBrickIds, seenStepIds, previousOrder);
+}
+
+function validateFlowStep(recorder: Recorder, flowId: string, step: JsonObject, compositionById: Map<string, JsonObject>,
+  usedBrickIds: Set<string>, seenStepIds: Set<string>, previousOrder: number) {
+  const stepId = safeString(step.id);
+  if (!stepId) recorder.fail("composition.step.id.missing", `Flow "${flowId}" contains a step without id`, { areas: ["readiness"], detail: { flow_id: flowId } });
+  else if (seenStepIds.has(stepId)) recorder.fail("composition.step.id.duplicate", `Flow "${flowId}" repeats step id "${stepId}"`, { areas: ["readiness"], detail: { flow_id: flowId, step_id: stepId } });
+  else seenStepIds.add(stepId);
+  const nextOrder = validateStepOrder(recorder, flowId, stepId, step.order, previousOrder);
+  const brickRefs = uniqStrings(step.brick_refs);
+  if (brickRefs.length === 0) recorder.warn("composition.step.refs.missing", `Flow "${flowId}" step "${stepId || "unknown"}" should reference one or more brick refs`, {
+    areas: ["readiness", "installability"], detail: { flow_id: flowId, step_id: stepId },
+  });
+  for (const brickId of brickRefs) {
+    if (!compositionById.has(brickId)) recorder.fail("composition.step.refs.unknown", `Flow "${flowId}" step "${stepId || "unknown"}" references unknown brick "${brickId}"`, {
+      areas: ["readiness", "installability"], detail: { flow_id: flowId, step_id: stepId, brick_id: brickId },
+    });
+    else usedBrickIds.add(brickId);
+  }
+  return nextOrder;
+}
+
+function validateStepOrder(recorder: Recorder, flowId: string, stepId: string, order: unknown, previousOrder: number) {
+  const stepOrder = typeof order === "number" && Number.isInteger(order) ? order : null;
+  if (stepOrder === null) {
+    recorder.warn("composition.step.order.missing", `Flow "${flowId}" step "${stepId || "unknown"}" should declare integer order`, {
+      areas: ["readiness"], detail: { flow_id: flowId, step_id: stepId },
+    });
+    return previousOrder;
+  }
+  if (stepOrder < previousOrder) recorder.warn("composition.step.order.unsorted", `Flow "${flowId}" step "${stepId}" is out of order`, {
+    areas: ["readiness"], detail: { flow_id: flowId, step_id: stepId, order: stepOrder, previous_order: previousOrder },
+  });
+  return stepOrder;
+}
+function validateInterfaces(recorder: Recorder, interfaces: JsonObject, verification: JsonObject) {
   const entrypoints = uniqStrings(interfaces.entrypoints);
   const apiEndpoints = uniqStrings(interfaces.api_endpoints);
   const commands = uniqStrings(interfaces.commands);
@@ -859,72 +831,52 @@ function validateInterfaces(recorder, interfaces, verification) {
   return { entrypoints, apiEndpoints, commands };
 }
 
-function validateContracts(recorder, contracts, classification, build) {
+function validateContracts(recorder: Recorder, contracts: JsonObject, classification: JsonObject, build: JsonObject) {
   const env = isObject(contracts.env) ? contracts.env : {};
-  const rls = isObject(contracts.rls) ? contracts.rls : {};
-  const auth = isObject(contracts.auth) ? contracts.auth : {};
-  const network = isObject(contracts.network) ? contracts.network : {};
-  const performance = isObject(contracts.performance) ? contracts.performance : {};
   const requiredEnv = safeArray(env.required).filter(isObject);
   const optionalEnv = safeArray(env.optional).filter(isObject);
-
-  if (requiredEnv.length > 0 || optionalEnv.length > 0) {
-    recorder.pass("contracts.env.present", `Build declares ${requiredEnv.length} required and ${optionalEnv.length} optional env var(s)`, { areas: ["installability", "publishability"] });
-  } else {
-    recorder.warn("contracts.env.missing", "Build does not declare any environment contract", { areas: ["installability", "publishability"] });
-  }
-
-  for (const item of requiredEnv) {
-    if (isNonEmptyString(item.name)) {
-      recorder.pass("contracts.env.required_entry", `Required env "${item.name}" declared`, { areas: ["installability"] });
-    } else {
-      recorder.fail("contracts.env.required_invalid", "Required env entry missing name", { areas: ["installability", "publishability"] });
-    }
-  }
-
-  if (auth.required === true) {
-    if (uniqStrings(auth.roles).length === 0 || uniqStrings(auth.modes).length === 0) {
-      recorder.warn("contracts.auth.thin", "Auth contract is marked required but roles or modes are missing", { areas: ["readiness", "installability"] });
-    } else {
-      recorder.pass("contracts.auth.defined", "Auth contract declares modes and roles", { areas: ["installability"] });
-    }
-  }
-
-  const buildRisk = safeString(classification?.risk) || safeString(build?.risk);
-  const rlsStatus = safeString(rls.status);
-  if (rls.required === true) {
-    if (!rlsStatus) {
-      recorder.fail("contracts.rls.status_missing", "RLS is required but contracts.rls.status is missing", { areas: ["readiness", "publishability"] });
-    } else if (rlsStatus === "missing") {
-      const level = buildRisk === "critical" || buildRisk === "high" ? "fail" : "warn";
-      recorder[level]("contracts.rls.missing", "RLS is required but still marked missing", { areas: ["readiness", "publishability"] });
-    } else if (rlsStatus === "partial") {
-      recorder.warn("contracts.rls.partial", "RLS is required but still partial", { areas: ["readiness", "publishability"] });
-    } else {
-      recorder.pass("contracts.rls.defined", `RLS contract status is "${rlsStatus}"`, { areas: ["readiness", "publishability"] });
-    }
-
-    if (uniqStrings(rls.negative_tests).length === 0) {
-      recorder.warn("contracts.rls.negative_tests_missing", "RLS contract should include negative tests", { areas: ["readiness", "publishability"] });
-    }
-  }
-
-  if (uniqStrings(network.inbound_endpoints).length > 0 || uniqStrings(network.outbound_hosts).length > 0) {
-    recorder.pass("contracts.network.present", "Network contract declares inbound or outbound surfaces", { areas: ["installability", "publishability"] });
-  }
-
-  if (typeof performance.latency_budget_ms === "number" && performance.latency_budget_ms > 0) {
-    recorder.pass("contracts.performance.latency_budget", "Performance contract includes latency budget", { areas: ["readiness"] });
-  } else {
-    recorder.warn("contracts.performance.latency_budget_missing", "Performance contract should include latency budget", { areas: ["readiness"] });
-  }
-
-  return {
-    requiredEnvCount: requiredEnv.length,
-  };
+  validateEnvContract(recorder, requiredEnv, optionalEnv);
+  validateAuthContract(recorder, isObject(contracts.auth) ? contracts.auth : {});
+  validateRlsContract(recorder, isObject(contracts.rls) ? contracts.rls : {}, safeString(classification.risk) || safeString(build.risk));
+  validateNetworkContract(recorder, isObject(contracts.network) ? contracts.network : {});
+  validatePerformanceContract(recorder, isObject(contracts.performance) ? contracts.performance : {});
+  return { requiredEnvCount: requiredEnv.length };
 }
 
-function validateVerification(recorder, verification, build) {
+function validateEnvContract(recorder: Recorder, required: JsonObject[], optional: JsonObject[]) {
+  if (required.length > 0 || optional.length > 0) recorder.pass("contracts.env.present", `Build declares ${String(required.length)} required and ${String(optional.length)} optional env var(s)`, { areas: ["installability", "publishability"] });
+  else recorder.warn("contracts.env.missing", "Build does not declare any environment contract", { areas: ["installability", "publishability"] });
+  for (const item of required) {
+    if (isNonEmptyString(item.name)) recorder.pass("contracts.env.required_entry", `Required env "${item.name}" declared`, { areas: ["installability"] });
+    else recorder.fail("contracts.env.required_invalid", "Required env entry missing name", { areas: ["installability", "publishability"] });
+  }
+}
+
+function validateAuthContract(recorder: Recorder, auth: JsonObject) {
+  if (auth.required !== true) return;
+  if (uniqStrings(auth.roles).length === 0 || uniqStrings(auth.modes).length === 0) recorder.warn("contracts.auth.thin", "Auth contract is marked required but roles or modes are missing", { areas: ["readiness", "installability"] });
+  else recorder.pass("contracts.auth.defined", "Auth contract declares modes and roles", { areas: ["installability"] });
+}
+
+function validateRlsContract(recorder: Recorder, rls: JsonObject, buildRisk: string) {
+  if (rls.required !== true) return;
+  const status = safeString(rls.status);
+  if (!status) recorder.fail("contracts.rls.status_missing", "RLS is required but contracts.rls.status is missing", { areas: ["readiness", "publishability"] });
+  else if (status === "missing") recorder[buildRisk === "critical" || buildRisk === "high" ? "fail" : "warn"]("contracts.rls.missing", "RLS is required but still marked missing", { areas: ["readiness", "publishability"] });
+  else if (status === "partial") recorder.warn("contracts.rls.partial", "RLS is required but still partial", { areas: ["readiness", "publishability"] });
+  else recorder.pass("contracts.rls.defined", `RLS contract status is "${status}"`, { areas: ["readiness", "publishability"] });
+  if (uniqStrings(rls.negative_tests).length === 0) recorder.warn("contracts.rls.negative_tests_missing", "RLS contract should include negative tests", { areas: ["readiness", "publishability"] });
+}
+
+function validateNetworkContract(recorder: Recorder, network: JsonObject) {
+  if (uniqStrings(network.inbound_endpoints).length > 0 || uniqStrings(network.outbound_hosts).length > 0) recorder.pass("contracts.network.present", "Network contract declares inbound or outbound surfaces", { areas: ["installability", "publishability"] });
+}
+
+function validatePerformanceContract(recorder: Recorder, performance: JsonObject) {
+  if (typeof performance.latency_budget_ms === "number" && performance.latency_budget_ms > 0) recorder.pass("contracts.performance.latency_budget", "Performance contract includes latency budget", { areas: ["readiness"] });
+  else recorder.warn("contracts.performance.latency_budget_missing", "Performance contract should include latency budget", { areas: ["readiness"] });
+}
+function validateVerification(recorder: Recorder, verification: JsonObject, build: JsonObject) {
   const smokeCommands = uniqStrings(verification.smoke_commands);
   const fixtureTargets = uniqStrings(verification.fixture_targets);
   const integrationTargets = uniqStrings(verification.integration_targets);
@@ -941,13 +893,13 @@ function validateVerification(recorder, verification, build) {
   }
 
   if (integrationTargets.length > 0) {
-    recorder.pass("verification.integration_targets", `${integrationTargets.length} integration target(s) declared`, { areas: ["readiness"] });
+    recorder.pass("verification.integration_targets", `${String(integrationTargets.length)} integration target(s) declared`, { areas: ["readiness"] });
   } else {
     recorder.warn("verification.integration_targets_missing", "Build should declare integration targets", { areas: ["readiness"] });
   }
 
   if (evidence.length > 0) {
-    recorder.pass("verification.evidence.present", `${evidence.length} evidence record(s) declared`, { areas: ["readiness"] });
+    recorder.pass("verification.evidence.present", `${String(evidence.length)} evidence record(s) declared`, { areas: ["readiness"] });
   } else {
     recorder.warn("verification.evidence.missing", "Build should declare evidence records", { areas: ["readiness"] });
   }
@@ -959,7 +911,9 @@ function validateVerification(recorder, verification, build) {
   }
 }
 
-function validateCloneSurface(recorder, clone, { sourcePaths, requiredRefs, optionalRefs }) {
+function validateCloneSurface(recorder: Recorder, clone: JsonObject, { sourcePaths, requiredRefs, optionalRefs }: {
+  sourcePaths: string[]; requiredRefs: JsonObject[]; optionalRefs: JsonObject[];
+}) {
   const fileMap = safeArray(clone.file_map).filter(isObject);
   const fileMapSourcePaths = uniqStrings(fileMap.map((entry) => entry.source_path));
   const installSteps = uniqStrings(clone.install_steps);
@@ -967,22 +921,22 @@ function validateCloneSurface(recorder, clone, { sourcePaths, requiredRefs, opti
   const rollbackSteps = uniqStrings(clone.rollback_steps);
   const requiredPorts = uniqStrings(clone.required_ports);
 
-  if (safeString(clone.readiness)) recorder.pass("clone.readiness.present", `clone.readiness "${clone.readiness}" declared`, { areas: ["installability"] });
+  if (safeString(clone.readiness)) recorder.pass("clone.readiness.present", `clone.readiness "${String(clone.readiness)}" declared`, { areas: ["installability"] });
   else recorder.fail("clone.readiness.missing", "clone.readiness is required", { areas: ["installability"] });
 
-  if (fileMap.length > 0) recorder.pass("clone.file_map.present", `${fileMap.length} file_map entry(ies) declared`, { areas: ["installability", "updateability"] });
+  if (fileMap.length > 0) recorder.pass("clone.file_map.present", `${String(fileMap.length)} file_map entry(ies) declared`, { areas: ["installability", "updateability"] });
   else recorder.fail("clone.file_map.missing", "clone.file_map is required for installable build assets", { areas: ["installability", "updateability"] });
 
-  if (installSteps.length > 0) recorder.pass("clone.install_steps.present", `${installSteps.length} install step(s) declared`, { areas: ["installability"] });
+  if (installSteps.length > 0) recorder.pass("clone.install_steps.present", `${String(installSteps.length)} install step(s) declared`, { areas: ["installability"] });
   else recorder.fail("clone.install_steps.missing", "clone.install_steps are required", { areas: ["installability"] });
 
-  if (postCloneChecks.length > 0) recorder.pass("clone.post_clone_checks.present", `${postCloneChecks.length} post-clone check(s) declared`, { areas: ["installability"] });
+  if (postCloneChecks.length > 0) recorder.pass("clone.post_clone_checks.present", `${String(postCloneChecks.length)} post-clone check(s) declared`, { areas: ["installability"] });
   else recorder.fail("clone.post_clone_checks.missing", "clone.post_clone_checks are required", { areas: ["installability"] });
 
-  if (rollbackSteps.length > 0) recorder.pass("clone.rollback_steps.present", `${rollbackSteps.length} rollback step(s) declared`, { areas: ["updateability"] });
+  if (rollbackSteps.length > 0) recorder.pass("clone.rollback_steps.present", `${String(rollbackSteps.length)} rollback step(s) declared`, { areas: ["updateability"] });
   else recorder.fail("clone.rollback_steps.missing", "clone.rollback_steps are required for build updates", { areas: ["updateability"] });
 
-  if (requiredPorts.length > 0) recorder.pass("clone.required_ports.present", `${requiredPorts.length} required port(s) declared`, { areas: ["installability", "updateability"] });
+  if (requiredPorts.length > 0) recorder.pass("clone.required_ports.present", `${String(requiredPorts.length)} required port(s) declared`, { areas: ["installability", "updateability"] });
   else recorder.warn("clone.required_ports.missing", "clone.required_ports should be declared", { areas: ["installability", "updateability"] });
 
   let requiredMappingMissingCount = 0;
@@ -1017,10 +971,10 @@ function validateCloneSurface(recorder, clone, { sourcePaths, requiredRefs, opti
   return { requiredMappingMissingCount };
 }
 
-function validateUpgradeSurface(recorder, upgrade) {
+function validateUpgradeSurface(recorder: Recorder, upgrade: JsonObject) {
   let missingCriticalFields = 0;
 
-  if (safeString(upgrade.channel)) recorder.pass("upgrade.channel.present", `upgrade.channel "${upgrade.channel}" declared`, { areas: ["updateability"] });
+  if (safeString(upgrade.channel)) recorder.pass("upgrade.channel.present", `upgrade.channel "${String(upgrade.channel)}" declared`, { areas: ["updateability"] });
   else {
     missingCriticalFields += 1;
     recorder.fail("upgrade.channel.missing", "upgrade.channel is required", { areas: ["updateability"] });
@@ -1049,72 +1003,59 @@ function validateUpgradeSurface(recorder, upgrade) {
   return { missingCriticalFields };
 }
 
-function validatePublishingSurface(recorder, publishing, build) {
+function validatePublishingSurface(recorder: Recorder, publishing: JsonObject, build: JsonObject) {
   const publishable = publishing.publishable;
-  const visibility = safeString(publishing.visibility || build.visibility);
-  const exposedDocs = uniqStrings(publishing.exposed_docs);
-  const excludedAssets = uniqStrings(publishing.excluded_assets);
-
-  if (typeof publishable !== "boolean") {
-    recorder.fail("publishing.publishable.missing", "publishing.publishable must be true or false", { areas: ["publishability"] });
-  } else if (publishable) {
-    recorder.pass("publishing.publishable.enabled", "Build is marked publishable", { areas: ["publishability"] });
-  } else {
-    recorder.warn("publishing.publishable.disabled", "Build is explicitly not publishable outside the private pool", { areas: ["publishability"] });
-  }
-
-  if (isNonEmptyString(visibility)) {
-    recorder.pass("publishing.visibility.present", `publishing.visibility "${visibility}" declared`, { areas: ["publishability"] });
-  } else {
-    recorder.fail("publishing.visibility.missing", "publishing.visibility is required", { areas: ["publishability"] });
-  }
-
-  if (publishable === true && visibility === "private") {
-    recorder.fail("publishing.visibility_conflict", "Build cannot be publishable while publishing.visibility is private", { areas: ["publishability"] });
-  }
-
-  if (publishable === true && !isNonEmptyString(publishing.redaction_profile)) {
-    recorder.fail("publishing.redaction_profile.missing", "Publishable builds need publishing.redaction_profile", { areas: ["publishability"] });
-  } else if (isNonEmptyString(publishing.redaction_profile)) {
-    recorder.pass("publishing.redaction_profile.present", "publishing.redaction_profile declared", { areas: ["publishability"] });
-  }
-
-  if (publishable === true && exposedDocs.length === 0) {
-    recorder.warn("publishing.exposed_docs.missing", "Publishable builds should expose sanitized docs", { areas: ["publishability"] });
-  } else if (exposedDocs.length > 0) {
-    recorder.pass("publishing.exposed_docs.present", `${exposedDocs.length} exposed doc descriptor(s) declared`, { areas: ["publishability"] });
-  }
-
-  if (publishable === true && excludedAssets.length === 0) {
-    recorder.warn("publishing.excluded_assets.missing", "Publishable builds should declare excluded assets", { areas: ["publishability"] });
-  } else if (excludedAssets.length > 0) {
-    recorder.pass("publishing.excluded_assets.present", `${excludedAssets.length} excluded asset rule(s) declared`, { areas: ["publishability"] });
-  }
-
+  const visibility = safeString(publishing.visibility ?? build.visibility);
+  validatePublishableFlag(recorder, publishable);
+  validatePublishingVisibility(recorder, publishable, visibility);
+  validatePublishingProfile(recorder, publishable, publishing);
+  validatePublishingLists(recorder, publishable, uniqStrings(publishing.exposed_docs), uniqStrings(publishing.excluded_assets));
   if (publishable === true && (visibility === "community" || visibility === "public") && safeString(publishing.license) === "private") {
     recorder.fail("publishing.license_conflict", "Community/public publishable builds need a non-private license declaration", { areas: ["publishability"] });
   }
-
   return { publishable: publishable === true };
 }
 
-function validateEconomics(recorder, economics) {
-  if (Number(economics.estimated_prompt_token_savings || 0) > 0) recorder.pass("economics.token_savings.present", "economics.estimated_prompt_token_savings is positive", { areas: ["readiness"] });
-  else recorder.warn("economics.token_savings.missing", "economics.estimated_prompt_token_savings should be positive", { areas: ["readiness"] });
-
-  if (Number(economics.estimated_clone_time_minutes || 0) > 0) recorder.pass("economics.clone_time.present", "economics.estimated_clone_time_minutes is positive", { areas: ["installability"] });
-  else recorder.warn("economics.clone_time.missing", "economics.estimated_clone_time_minutes should be positive", { areas: ["installability"] });
-
-  if (Number(economics.estimated_update_time_minutes || 0) > 0) recorder.pass("economics.update_time.present", "economics.estimated_update_time_minutes is positive", { areas: ["updateability"] });
-  else recorder.warn("economics.update_time.missing", "economics.estimated_update_time_minutes should be positive", { areas: ["updateability"] });
-
-  const maintenanceScore = Number(economics.maintenance_score || 0);
-  if (maintenanceScore >= 70) recorder.pass("economics.maintenance_score.strong", `maintenance_score ${maintenanceScore} is strong`, { areas: ["readiness"] });
-  else if (maintenanceScore >= 50) recorder.warn("economics.maintenance_score.review", `maintenance_score ${maintenanceScore} needs review`, { areas: ["readiness"] });
-  else recorder.warn("economics.maintenance_score.low", `maintenance_score ${maintenanceScore} is low`, { areas: ["readiness"] });
+function validatePublishableFlag(recorder: Recorder, publishable: unknown) {
+  if (typeof publishable !== "boolean") recorder.fail("publishing.publishable.missing", "publishing.publishable must be true or false", { areas: ["publishability"] });
+  else if (publishable) recorder.pass("publishing.publishable.enabled", "Build is marked publishable", { areas: ["publishability"] });
+  else recorder.warn("publishing.publishable.disabled", "Build is explicitly not publishable outside the private pool", { areas: ["publishability"] });
 }
 
-function validateProvenance(recorder, provenance, compositionIds) {
+function validatePublishingVisibility(recorder: Recorder, publishable: unknown, visibility: string) {
+  if (visibility) recorder.pass("publishing.visibility.present", `publishing.visibility "${visibility}" declared`, { areas: ["publishability"] });
+  else recorder.fail("publishing.visibility.missing", "publishing.visibility is required", { areas: ["publishability"] });
+  if (publishable === true && visibility === "private") recorder.fail("publishing.visibility_conflict", "Build cannot be publishable while publishing.visibility is private", { areas: ["publishability"] });
+}
+
+function validatePublishingProfile(recorder: Recorder, publishable: unknown, publishing: JsonObject) {
+  if (publishable === true && !isNonEmptyString(publishing.redaction_profile)) recorder.fail("publishing.redaction_profile.missing", "Publishable builds need publishing.redaction_profile", { areas: ["publishability"] });
+  else if (isNonEmptyString(publishing.redaction_profile)) recorder.pass("publishing.redaction_profile.present", "publishing.redaction_profile declared", { areas: ["publishability"] });
+}
+
+function validatePublishingLists(recorder: Recorder, publishable: unknown, docs: string[], assets: string[]) {
+  if (publishable === true && docs.length === 0) recorder.warn("publishing.exposed_docs.missing", "Publishable builds should expose sanitized docs", { areas: ["publishability"] });
+  else if (docs.length > 0) recorder.pass("publishing.exposed_docs.present", `${String(docs.length)} exposed doc descriptor(s) declared`, { areas: ["publishability"] });
+  if (publishable === true && assets.length === 0) recorder.warn("publishing.excluded_assets.missing", "Publishable builds should declare excluded assets", { areas: ["publishability"] });
+  else if (assets.length > 0) recorder.pass("publishing.excluded_assets.present", `${String(assets.length)} excluded asset rule(s) declared`, { areas: ["publishability"] });
+}
+function validateEconomics(recorder: Recorder, economics: JsonObject) {
+  if (Number(economics.estimated_prompt_token_savings ?? 0) > 0) recorder.pass("economics.token_savings.present", "economics.estimated_prompt_token_savings is positive", { areas: ["readiness"] });
+  else recorder.warn("economics.token_savings.missing", "economics.estimated_prompt_token_savings should be positive", { areas: ["readiness"] });
+
+  if (Number(economics.estimated_clone_time_minutes ?? 0) > 0) recorder.pass("economics.clone_time.present", "economics.estimated_clone_time_minutes is positive", { areas: ["installability"] });
+  else recorder.warn("economics.clone_time.missing", "economics.estimated_clone_time_minutes should be positive", { areas: ["installability"] });
+
+  if (Number(economics.estimated_update_time_minutes ?? 0) > 0) recorder.pass("economics.update_time.present", "economics.estimated_update_time_minutes is positive", { areas: ["updateability"] });
+  else recorder.warn("economics.update_time.missing", "economics.estimated_update_time_minutes should be positive", { areas: ["updateability"] });
+
+  const maintenanceScore = Number(economics.maintenance_score ?? 0);
+  if (maintenanceScore >= 70) recorder.pass("economics.maintenance_score.strong", `maintenance_score ${String(maintenanceScore)} is strong`, { areas: ["readiness"] });
+  else if (maintenanceScore >= 50) recorder.warn("economics.maintenance_score.review", `maintenance_score ${String(maintenanceScore)} needs review`, { areas: ["readiness"] });
+  else recorder.warn("economics.maintenance_score.low", `maintenance_score ${String(maintenanceScore)} is low`, { areas: ["readiness"] });
+}
+
+function validateProvenance(recorder: Recorder, provenance: JsonObject, compositionIds: string[]) {
   if (isObject(provenance.created_by) && isNonEmptyString(provenance.created_by.actor_id) && isNonEmptyString(provenance.created_by.timestamp)) {
     recorder.pass("provenance.created_by.present", "provenance.created_by is recorded", { areas: ["readiness", "publishability"] });
   } else {
@@ -1122,7 +1063,7 @@ function validateProvenance(recorder, provenance, compositionIds) {
   }
 
   const touchedBy = safeArray(provenance.touched_by).filter(isObject);
-  if (touchedBy.length > 0) recorder.pass("provenance.touched_by.present", `${touchedBy.length} provenance.touched_by event(s) recorded`, { areas: ["readiness"] });
+  if (touchedBy.length > 0) recorder.pass("provenance.touched_by.present", `${String(touchedBy.length)} provenance.touched_by event(s) recorded`, { areas: ["readiness"] });
   else recorder.warn("provenance.touched_by.missing", "provenance.touched_by should record major edits", { areas: ["readiness"] });
 
   const sourceChain = safeArray(provenance.source_chain).filter(isObject);
@@ -1131,9 +1072,9 @@ function validateProvenance(recorder, provenance, compositionIds) {
     return;
   }
 
-  recorder.pass("provenance.source_chain.present", `${sourceChain.length} source-chain event(s) recorded`, { areas: ["readiness", "publishability"] });
+  recorder.pass("provenance.source_chain.present", `${String(sourceChain.length)} source-chain event(s) recorded`, { areas: ["readiness", "publishability"] });
   const sourceIds = new Set(uniqStrings(sourceChain.map((entry) => entry.artifact_id)));
-  const missingRefs = compositionIds.filter((brickId) => !sourceIds.has(brickId));
+  const missingRefs = compositionIds.filter((brickId: string) => !sourceIds.has(brickId));
   if (missingRefs.length > 0) {
     recorder.warn("provenance.source_chain.incomplete", "Some composition bricks are not represented in provenance.source_chain", {
       areas: ["readiness", "publishability"],
@@ -1142,121 +1083,95 @@ function validateProvenance(recorder, provenance, compositionIds) {
   }
 }
 
-function validateSweetspot(recorder, sweetspot, build) {
+function validateSweetspot(recorder: Recorder, sweetspot: JsonObject, build: JsonObject) {
   const gates = ["ssa_v2", "ssi", "sstf", "spe", "srs", "ssra", "sas", "sva", "srls", "sev", "ssc", "sai"];
-  let totalScore = 0;
-  let scoreCount = 0;
-  let missingCriticalGates = 0;
-
+  let totalScore = 0, scoreCount = 0, missingCriticalGates = 0;
   for (const gate of gates) {
-    const record = isObject(sweetspot[gate]) ? sweetspot[gate] : null;
-    if (!record) {
-      recorder.fail("sweetspot.gate.missing", `sweetspot.${gate} is required`, { areas: ["readiness"], detail: { gate } });
-      continue;
-    }
-    if (typeof record.score === "number") {
-      totalScore += record.score;
-      scoreCount += 1;
-    }
-    if (!isNonEmptyString(record.status)) {
-      recorder.fail("sweetspot.gate.status_missing", `sweetspot.${gate}.status is required`, { areas: ["readiness"], detail: { gate } });
-      continue;
-    }
-
-    const status = safeString(record.status);
-    if ((gate === "sstf" || gate === "srls" || gate === "sev" || gate === "sva") && (status === "missing" || status === "failing")) {
-      missingCriticalGates += 1;
-      const level = safeString(build.status) === "verified" || safeString(build.status) === "canonical" ? "fail" : "warn";
-      recorder[level]("sweetspot.gate.critical_weak", `Critical gate ${gate} is "${status}"`, { areas: ["readiness", "publishability"], detail: { gate, status } });
-    } else {
-      recorder.pass("sweetspot.gate.present", `sweetspot.${gate} recorded as "${status}"`, { areas: ["readiness"], detail: { gate, status } });
-    }
+    const result = validateSweetspotGate(recorder, gate, sweetspot[gate], safeString(build.status));
+    totalScore += result.score;
+    scoreCount += result.scored ? 1 : 0;
+    missingCriticalGates += result.criticalWeak ? 1 : 0;
   }
-
   const averageScore = scoreCount ? Math.round(totalScore / scoreCount) : 0;
-  if (averageScore >= 75) recorder.pass("sweetspot.average_score.strong", `Average sweetspot gate score is ${averageScore}`, { areas: ["readiness"] });
-  else if (averageScore >= 60) recorder.warn("sweetspot.average_score.review", `Average sweetspot gate score is ${averageScore}`, { areas: ["readiness"] });
-  else recorder.warn("sweetspot.average_score.low", `Average sweetspot gate score is ${averageScore}`, { areas: ["readiness"] });
-
-  if ((safeString(build.status) === "verified" || safeString(build.status) === "canonical") && missingCriticalGates > 0) {
-    recorder.fail("sweetspot.gate.verified_mismatch", "Verified/canonical builds cannot ship with missing critical Sweetspot gates", { areas: ["readiness", "publishability"] });
-  }
+  if (averageScore >= 75) recorder.pass("sweetspot.average_score.strong", `Average sweetspot gate score is ${String(averageScore)}`, { areas: ["readiness"] });
+  else if (averageScore >= 60) recorder.warn("sweetspot.average_score.review", `Average sweetspot gate score is ${String(averageScore)}`, { areas: ["readiness"] });
+  else recorder.warn("sweetspot.average_score.low", `Average sweetspot gate score is ${String(averageScore)}`, { areas: ["readiness"] });
+  if ((build.status === "verified" || build.status === "canonical") && missingCriticalGates > 0) recorder.fail("sweetspot.gate.verified_mismatch", "Verified/canonical builds cannot ship with missing critical Sweetspot gates", { areas: ["readiness", "publishability"] });
 }
 
-function validateReleaseLink(recorder, releaseArtifact, releaseContext, buildContext) {
+function validateSweetspotGate(recorder: Recorder, gate: string, value: unknown, buildStatus: string) {
+  if (!isObject(value)) {
+    recorder.fail("sweetspot.gate.missing", `sweetspot.${gate} is required`, { areas: ["readiness"], detail: { gate } });
+    return { score: 0, scored: false, criticalWeak: false };
+  }
+  const score = typeof value.score === "number" ? value.score : 0;
+  const status = safeString(value.status);
+  if (!status) {
+    recorder.fail("sweetspot.gate.status_missing", `sweetspot.${gate}.status is required`, { areas: ["readiness"], detail: { gate } });
+    return { score, scored: typeof value.score === "number", criticalWeak: false };
+  }
+  const criticalWeak = ["sstf", "srls", "sev", "sva"].includes(gate) && (status === "missing" || status === "failing");
+  if (criticalWeak) recorder[buildStatus === "verified" || buildStatus === "canonical" ? "fail" : "warn"]("sweetspot.gate.critical_weak", `Critical gate ${gate} is "${status}"`, { areas: ["readiness", "publishability"], detail: { gate, status } });
+  else recorder.pass("sweetspot.gate.present", `sweetspot.${gate} recorded as "${status}"`, { areas: ["readiness"], detail: { gate, status } });
+  return { score, scored: typeof value.score === "number", criticalWeak };
+}
+function validateReleaseLink(recorder: Recorder, releaseArtifact: JsonObject | null, releaseContext: Awaited<ReturnType<typeof loadReleaseContext>>, buildContext: JsonObject): ReleaseSummary {
   if (!releaseContext.available) {
     recorder.pass("release.index.optional", "Release index not loaded; release checks skipped", { areas: ["updateability"] });
     return { available: false, artifact_found: false };
   }
-
   if (!releaseArtifact) {
     recorder.warn("release.artifact.missing", "No build release artifact found in release index", { areas: ["readiness", "updateability"] });
     return { available: true, artifact_found: false };
   }
-
   recorder.pass("release.artifact.present", "Build release artifact found in release index", { areas: ["readiness", "updateability"] });
-
-  const latestRelease = isObject(releaseArtifact.latest_release) ? releaseArtifact.latest_release : releaseArtifact;
-  const trustSummary = isObject(latestRelease.trust_summary) ? latestRelease.trust_summary : isObject(releaseArtifact.trust_summary) ? releaseArtifact.trust_summary : {};
-  const latestVersion = safeString(latestRelease.version);
-  const latestStatus = safeString(latestRelease.status);
-  const latestVerification = safeString(trustSummary.verification_status || releaseArtifact.trust_summary?.latest_verification_status);
-  const latestTrustLevel = safeString(trustSummary.trust_level || releaseArtifact.trust_summary?.latest_trust_level);
-  const requiredEnvCount = Number(latestRelease.contract_summary?.required_env_count || 0);
-  const includedPathCount = Number(latestRelease.content_summary?.included_path_count || 0);
-
-  if (latestVersion === buildContext.buildVersion) {
-    recorder.pass("release.version.aligned", "Release version matches build.version", { areas: ["updateability"] });
-  } else {
-    recorder.warn("release.version.mismatch", `Release version "${latestVersion || "unknown"}" differs from build.version "${buildContext.buildVersion || "unknown"}"`, {
-      areas: ["updateability"],
-      detail: { release_version: latestVersion, build_version: buildContext.buildVersion },
-    });
-  }
-
-  if (latestStatus === "published") {
-    recorder.pass("release.status.published", "Latest release artifact is published", { areas: ["updateability", "publishability"] });
-  } else {
-    recorder.warn("release.status.unpublished", `Latest release artifact status is "${latestStatus || "unknown"}"`, { areas: ["updateability", "publishability"] });
-  }
-
-  if (requiredEnvCount > 0 && buildContext.requiredEnvCount !== requiredEnvCount) {
-    recorder.warn("release.contract_env.mismatch", "Release required_env count differs from manifest contracts.env.required count", {
-      areas: ["updateability"],
-      detail: { release_required_env_count: requiredEnvCount, manifest_required_env_count: buildContext.requiredEnvCount },
-    });
-  }
-
-  if (includedPathCount > 0 && buildContext.sourcePathCount > includedPathCount) {
-    recorder.warn("release.content.paths_thin", "Release included_path_count is smaller than manifest source.paths count", {
-      areas: ["updateability"],
-      detail: { release_included_path_count: includedPathCount, manifest_source_path_count: buildContext.sourcePathCount },
-    });
-  }
-
-  if ((buildContext.buildStatus === "verified" || buildContext.buildStatus === "canonical") && verificationRank(latestVerification) < VERIFICATION_RANK.candidate) {
-    recorder.fail("release.verification.too_weak", `Build status "${buildContext.buildStatus}" is stronger than latest release verification "${latestVerification || "unknown"}"`, {
-      areas: ["readiness", "publishability"],
-    });
-  }
-
-  return {
-    available: true,
-    artifact_found: true,
-    release_count: Number(releaseArtifact.release_count || 0),
-    latest_version: latestVersion || null,
-    latest_status: latestStatus || null,
-    latest_verification_status: latestVerification || null,
-    latest_trust_level: latestTrustLevel || null,
-    latest_channel: safeString(latestRelease.channel) || null,
-    published_release_count: Number(releaseArtifact.trust_summary?.published_release_count || 0),
-  };
+  const data = releaseLinkData(releaseArtifact);
+  validateReleaseIdentity(recorder, data, buildContext);
+  validateReleaseCoverage(recorder, data, buildContext);
+  return { available: true, artifact_found: true, release_count: Number(releaseArtifact.release_count ?? 0),
+    latest_version: data.latestVersion || null, latest_status: data.latestStatus || null,
+    latest_verification_status: data.latestVerification || null, latest_trust_level: data.latestTrustLevel || null,
+    latest_channel: safeString(data.latestRelease.channel) || null, published_release_count: Number(data.artifactTrust.published_release_count ?? 0) };
 }
 
-function buildSignal(area, checks, options: Record<string, any> = {}) {
+function releaseLinkData(releaseArtifact: JsonObject) {
+  const latestRelease = isObject(releaseArtifact.latest_release) ? releaseArtifact.latest_release : releaseArtifact;
+  const artifactTrust = isObject(releaseArtifact.trust_summary) ? releaseArtifact.trust_summary : {};
+  const trustSummary = isObject(latestRelease.trust_summary) ? latestRelease.trust_summary : artifactTrust;
+  const contractSummary = isObject(latestRelease.contract_summary) ? latestRelease.contract_summary : {};
+  const contentSummary = isObject(latestRelease.content_summary) ? latestRelease.content_summary : {};
+  return { latestRelease, artifactTrust, latestVersion: safeString(latestRelease.version), latestStatus: safeString(latestRelease.status),
+    latestVerification: safeString(trustSummary.verification_status ?? artifactTrust.latest_verification_status),
+    latestTrustLevel: safeString(trustSummary.trust_level ?? artifactTrust.latest_trust_level),
+    requiredEnvCount: Number(contractSummary.required_env_count ?? 0), includedPathCount: Number(contentSummary.included_path_count ?? 0) };
+}
+
+function validateReleaseIdentity(recorder: Recorder, data: ReturnType<typeof releaseLinkData>, buildContext: JsonObject) {
+  const buildVersion = safeString(buildContext.buildVersion);
+  if (data.latestVersion === buildVersion) recorder.pass("release.version.aligned", "Release version matches build.version", { areas: ["updateability"] });
+  else recorder.warn("release.version.mismatch", `Release version "${data.latestVersion || "unknown"}" differs from build.version "${buildVersion || "unknown"}"`, {
+    areas: ["updateability"], detail: { release_version: data.latestVersion, build_version: buildContext.buildVersion },
+  });
+  if (data.latestStatus === "published") recorder.pass("release.status.published", "Latest release artifact is published", { areas: ["updateability", "publishability"] });
+  else recorder.warn("release.status.unpublished", `Latest release artifact status is "${data.latestStatus || "unknown"}"`, { areas: ["updateability", "publishability"] });
+}
+
+function validateReleaseCoverage(recorder: Recorder, data: ReturnType<typeof releaseLinkData>, buildContext: JsonObject) {
+  if (data.requiredEnvCount > 0 && buildContext.requiredEnvCount !== data.requiredEnvCount) recorder.warn("release.contract_env.mismatch", "Release required_env count differs from manifest contracts.env.required count", {
+    areas: ["updateability"], detail: { release_required_env_count: data.requiredEnvCount, manifest_required_env_count: buildContext.requiredEnvCount },
+  });
+  if (data.includedPathCount > 0 && Number(buildContext.sourcePathCount ?? 0) > data.includedPathCount) recorder.warn("release.content.paths_thin", "Release included_path_count is smaller than manifest source.paths count", {
+    areas: ["updateability"], detail: { release_included_path_count: data.includedPathCount, manifest_source_path_count: buildContext.sourcePathCount },
+  });
+  const buildStatus = safeString(buildContext.buildStatus);
+  if ((buildStatus === "verified" || buildStatus === "canonical") && verificationRank(data.latestVerification) < VERIFICATION_RANK.candidate) recorder.fail("release.verification.too_weak", `Build status "${buildStatus}" is stronger than latest release verification "${data.latestVerification || "unknown"}"`, {
+    areas: ["readiness", "publishability"],
+  });
+}
+function buildSignal(area: string, checks: BuildCheck[], options: CheckOptions = {}): BuildSignal {
   const relevant = checks.filter((check) => safeArray(check.areas).includes(area) && check.level !== "pass");
-  const failCount = relevant.filter((check) => check.level === "fail").length;
-  const warnCount = relevant.filter((check) => check.level === "warn").length;
+  const failCount = relevant.filter((check: { level: string; }) => check.level === "fail").length;
+  const warnCount = relevant.filter((check: { level: string; }) => check.level === "warn").length;
   let score = Math.max(0, 100 - (failCount * 34) - (warnCount * 12));
   let status = score >= 85 ? "ready" : score >= 65 ? "review" : "blocked";
   if (failCount > 0 && score >= 65) status = "review";
@@ -1272,7 +1187,7 @@ function buildSignal(area, checks, options: Record<string, any> = {}) {
   };
 }
 
-function suggestVerificationStatus({ build, verification, provenance, recorder, releaseSummary, registrySummary, installabilitySignal, updateabilitySignal, readinessSignal }) {
+function suggestVerificationStatus({ build, verification, provenance, recorder, releaseSummary, registrySummary, installabilitySignal, updateabilitySignal, readinessSignal }: SuggestVerificationOptions): VerificationStatus {
   const smokeCommands = uniqStrings(verification.smoke_commands);
   const fixtureTargets = uniqStrings(verification.fixture_targets);
   const evidence = safeArray(verification.evidence).filter(isObject);
@@ -1282,46 +1197,45 @@ function suggestVerificationStatus({ build, verification, provenance, recorder, 
   const hasReleaseEvidence = verificationRank(releaseSummary.latest_verification_status) >= VERIFICATION_RANK.candidate;
   const declaredBuildStatus = safeString(build.status);
 
-  if (recorder.counts.fail > 0 || readinessSignal.status === "blocked" || installabilitySignal.status === "blocked") {
-    return "unverified";
-  }
-
-  if (
-    declaredBuildStatus === "canonical" &&
-    hasVerifiedEvidence &&
-    releaseSummary.latest_status === "published" &&
-    ["stable", "lts"].includes(safeString(releaseSummary.latest_channel)) &&
-    verificationRank(releaseSummary.latest_verification_status) >= VERIFICATION_RANK.canonical &&
-    updateabilitySignal.status === "ready" &&
-    recorder.counts.warn <= 3
-  ) {
-    return "canonical";
-  }
-
-  if (
-    (declaredBuildStatus === "verified" || hasVerifiedEvidence) &&
-    hasReleaseEvidence &&
-    smokeCommands.length > 0 &&
-    registrySummary.missing_brick_count === 0 &&
-    registrySummary.failing_member_count === 0 &&
-    updateabilitySignal.status !== "blocked" &&
-    recorder.counts.warn <= 8
-  ) {
-    return "verified";
-  }
-
-  if (
-    (smokeCommands.length > 0 || fixtureTargets.length > 0 || hasCandidateEvidence || hasReleaseEvidence) &&
-    registrySummary.missing_brick_count === 0 &&
-    installabilitySignal.status !== "blocked"
-  ) {
-    return "candidate";
-  }
+  const context = { declaredBuildStatus, hasVerifiedEvidence, hasCandidateEvidence, hasReleaseEvidence, smokeCommands,
+    fixtureTargets, recorder, releaseSummary, registrySummary, installabilitySignal, updateabilitySignal, readinessSignal };
+  if (isUnverifiedSuggestion(context)) return "unverified";
+  if (isCanonicalSuggestion(context)) return "canonical";
+  if (isVerifiedSuggestion(context)) return "verified";
+  if (isCandidateSuggestion(context)) return "candidate";
 
   return "unverified";
 }
 
-function suggestTrustLevel({ suggestedVerificationStatus, recorder, releaseSummary }) {
+interface SuggestionContext {
+  declaredBuildStatus: string; hasVerifiedEvidence: boolean; hasCandidateEvidence: boolean; hasReleaseEvidence: boolean;
+  smokeCommands: string[]; fixtureTargets: string[]; recorder: Recorder; releaseSummary: ReleaseSummary; registrySummary: RegistrySummary;
+  installabilitySignal: BuildSignal; updateabilitySignal: BuildSignal; readinessSignal: BuildSignal;
+}
+
+function isUnverifiedSuggestion(context: SuggestionContext) {
+  return context.recorder.counts.fail > 0 || context.readinessSignal.status === "blocked" || context.installabilitySignal.status === "blocked";
+}
+
+function isCanonicalSuggestion(context: SuggestionContext) {
+  return context.declaredBuildStatus === "canonical" && context.hasVerifiedEvidence && context.releaseSummary.latest_status === "published"
+    && ["stable", "lts"].includes(safeString(context.releaseSummary.latest_channel))
+    && verificationRank(context.releaseSummary.latest_verification_status) >= VERIFICATION_RANK.canonical
+    && context.updateabilitySignal.status === "ready" && context.recorder.counts.warn <= 3;
+}
+
+function isVerifiedSuggestion(context: SuggestionContext) {
+  return (context.declaredBuildStatus === "verified" || context.hasVerifiedEvidence) && context.hasReleaseEvidence && context.smokeCommands.length > 0
+    && context.registrySummary.missing_brick_count === 0 && context.registrySummary.failing_member_count === 0
+    && context.updateabilitySignal.status !== "blocked" && context.recorder.counts.warn <= 8;
+}
+
+function isCandidateSuggestion(context: SuggestionContext) {
+  return (context.smokeCommands.length > 0 || context.fixtureTargets.length > 0 || context.hasCandidateEvidence || context.hasReleaseEvidence)
+    && context.registrySummary.missing_brick_count === 0 && context.installabilitySignal.status !== "blocked";
+}
+
+function suggestTrustLevel({ suggestedVerificationStatus, recorder, releaseSummary }: SuggestTrustOptions): TrustLevel {
   if (suggestedVerificationStatus === "canonical") return "high";
   if (suggestedVerificationStatus === "verified") {
     return recorder.counts.warn <= 3 && releaseSummary.latest_status === "published" ? "high" : "strong";
@@ -1332,68 +1246,79 @@ function suggestTrustLevel({ suggestedVerificationStatus, recorder, releaseSumma
   return recorder.counts.fail > 0 ? "blocked" : "low";
 }
 
-function summarizeBuildReports(builds, skipped, releaseContext) {
-  const counts = { pass: 0, warn: 0, fail: 0 };
-  const verificationStatuses = {};
-  const trustLevels = {};
-  const signalCounts = {
+interface BuildSummaryAccumulator {
+  counts: Record<CheckLevel, number>;
+  verificationStatuses: Record<string, number>;
+  trustLevels: Record<string, number>;
+  signalCounts: Record<SignalArea, Record<string, number>>;
+  readyForAdoptionCount: number;
+  installableCount: number;
+  updateableCount: number;
+  publishableCount: number;
+  releaseLinkedCount: number;
+  blockerMap: Map<string, BlockerAggregate>;
+}
+
+function createBuildSummaryAccumulator(): BuildSummaryAccumulator {
+  return {
+    counts: { pass: 0, warn: 0, fail: 0 }, verificationStatuses: {}, trustLevels: {},
+    signalCounts: {
     readiness: {},
     installability: {},
     updateability: {},
     publishability: {},
+    },
+    readyForAdoptionCount: 0, installableCount: 0, updateableCount: 0,
+    publishableCount: 0, releaseLinkedCount: 0, blockerMap: new Map<string, BlockerAggregate>(),
   };
-  let readyForAdoptionCount = 0;
-  let installableCount = 0;
-  let updateableCount = 0;
-  let publishableCount = 0;
-  let releaseLinkedCount = 0;
-  const blockerMap = new Map();
+}
 
-  for (const build of builds) {
-    counts.pass += Number(build.counts?.pass || 0);
-    counts.warn += Number(build.counts?.warn || 0);
-    counts.fail += Number(build.counts?.fail || 0);
-    incrementCounter(verificationStatuses, build.verification?.suggested_status || "unverified");
-    incrementCounter(trustLevels, build.verification?.suggested_trust_level || "low");
-    for (const area of SIGNAL_AREAS) {
-      incrementCounter(signalCounts[area], build.signals?.[area]?.status || "blocked");
-    }
-    if (build.booleans?.ready_for_adoption) readyForAdoptionCount += 1;
-    if (build.booleans?.installable) installableCount += 1;
-    if (build.booleans?.updateable) updateableCount += 1;
-    if (build.booleans?.publishable) publishableCount += 1;
-    if (build.release?.artifact_found) releaseLinkedCount += 1;
-
-    for (const blocker of safeArray(build.top_blockers)) {
+function addBuildToSummary(summary: BuildSummaryAccumulator, build: VerifiedBuildReport) {
+  summary.counts.pass += build.counts.pass;
+  summary.counts.warn += build.counts.warn;
+  summary.counts.fail += build.counts.fail;
+  incrementCounter(summary.verificationStatuses, build.verification.suggested_status);
+  incrementCounter(summary.trustLevels, build.verification.suggested_trust_level);
+  for (const area of SIGNAL_AREAS) incrementCounter(summary.signalCounts[area], build.signals[area].status);
+  if (build.booleans.ready_for_adoption) summary.readyForAdoptionCount += 1;
+  if (build.booleans.installable) summary.installableCount += 1;
+  if (build.booleans.updateable) summary.updateableCount += 1;
+  if (build.booleans.publishable) summary.publishableCount += 1;
+  if (build.release.artifact_found) summary.releaseLinkedCount += 1;
+  for (const blocker of build.top_blockers) {
       if (!isNonEmptyString(blocker.code)) continue;
-      const current = blockerMap.get(blocker.code) || {
+      const current = summary.blockerMap.get(blocker.code) ?? {
         code: blocker.code,
-        level: blocker.level || "warn",
+        level: blocker.level,
         count: 0,
-        builds: new Set(),
-        message: blocker.message || "",
+        builds: new Set<string>(),
+        message: blocker.message,
       };
       current.count += 1;
-      current.builds.add(build.build_id || build.path);
+      current.builds.add(build.build_id ?? build.path);
       if (blocker.level === "fail") current.level = "fail";
-      blockerMap.set(blocker.code, current);
-    }
+      summary.blockerMap.set(blocker.code, current);
   }
+}
+
+function summarizeBuildReports(builds: VerifiedBuildReport[], skipped: SkippedBuild[], releaseContext: Awaited<ReturnType<typeof loadReleaseContext>>) {
+  const summary = createBuildSummaryAccumulator();
+  for (const build of builds) addBuildToSummary(summary, build);
 
   return {
     build_count: builds.length,
     skipped_count: skipped.length,
-    counts,
+    counts: summary.counts,
     release_index_available: releaseContext.available,
-    release_linked_build_count: releaseLinkedCount,
-    verification_status_suggestions: verificationStatuses,
-    trust_level_suggestions: trustLevels,
-    signal_counts: signalCounts,
-    ready_for_adoption_count: readyForAdoptionCount,
-    installable_count: installableCount,
-    updateable_count: updateableCount,
-    publishable_count: publishableCount,
-    top_blockers: [...blockerMap.values()]
+    release_linked_build_count: summary.releaseLinkedCount,
+    verification_status_suggestions: summary.verificationStatuses,
+    trust_level_suggestions: summary.trustLevels,
+    signal_counts: summary.signalCounts,
+    ready_for_adoption_count: summary.readyForAdoptionCount,
+    installable_count: summary.installableCount,
+    updateable_count: summary.updateableCount,
+    publishable_count: summary.publishableCount,
+    top_blockers: [...summary.blockerMap.values()]
       .sort((left, right) => severityRank(right.level) - severityRank(left.level) || right.count - left.count || compareStrings(left.code, right.code))
       .slice(0, 12)
       .map((entry) => ({
@@ -1406,9 +1331,9 @@ function summarizeBuildReports(builds, skipped, releaseContext) {
   };
 }
 
-function topIssues(checks, limit) {
+function topIssues(checks: BuildCheck[], limit: number) {
   return checks
-    .filter((check) => check.level !== "pass")
+    .filter((check: { level: string; }) => check.level !== "pass")
     .sort((left, right) => severityRank(right.level) - severityRank(left.level) || compareStrings(left.code, right.code))
     .slice(0, limit)
     .map((check) => ({
@@ -1416,11 +1341,11 @@ function topIssues(checks, limit) {
       code: check.code,
       message: check.message,
       areas: check.areas,
-      detail: check.detail || undefined,
+      detail: check.detail ?? undefined,
     }));
 }
 
-function verificationEvidenceRank(value) {
+function verificationEvidenceRank(value: unknown) {
   const normalized = safeString(value).toLowerCase();
   if (normalized === "canonical") return VERIFICATION_RANK.canonical;
   if (normalized === "verified" || normalized === "passing" || normalized === "passed") return VERIFICATION_RANK.verified;
@@ -1428,23 +1353,45 @@ function verificationEvidenceRank(value) {
   return VERIFICATION_RANK.unverified;
 }
 
-function verificationRank(value) {
-  return VERIFICATION_RANK[safeString(value).toLowerCase()] ?? -1;
+function verificationRank(value: unknown) {
+  return verificationEvidenceRank(value);
 }
 
-function buildProjectPrefix(buildId) {
+function buildStatusRank(value: string): number | null {
+  switch (value) {
+    case "experimental": return BUILD_STATUS_RANK.experimental;
+    case "candidate": return BUILD_STATUS_RANK.candidate;
+    case "verified": return BUILD_STATUS_RANK.verified;
+    case "canonical": return BUILD_STATUS_RANK.canonical;
+    case "deprecated": return BUILD_STATUS_RANK.deprecated;
+    case "unsafe": return BUILD_STATUS_RANK.unsafe;
+    default: return null;
+  }
+}
+
+function trustTierRank(value: string): number | null {
+  switch (value) {
+    case "experimental": return TRUST_TIER_RANK.experimental;
+    case "reviewed": return TRUST_TIER_RANK.reviewed;
+    case "verified": return TRUST_TIER_RANK.verified;
+    case "canonical": return TRUST_TIER_RANK.canonical;
+    default: return null;
+  }
+}
+
+function buildProjectPrefix(buildId: string) {
   if (!isNonEmptyString(buildId)) return "";
   const [prefix] = buildId.split(".build.");
   return prefix || "";
 }
 
-function severityRank(level) {
+function severityRank(level: string) {
   if (level === "fail") return 2;
   if (level === "warn") return 1;
   return 0;
 }
 
-function pathCoveredByFileMap(candidatePath, fileMapSourcePaths) {
+function pathCoveredByFileMap(candidatePath: string, fileMapSourcePaths: string[]) {
   const normalized = normalizePath(candidatePath);
   return fileMapSourcePaths.some((entry) => {
     const mapped = normalizePath(entry);
@@ -1452,7 +1399,7 @@ function pathCoveredByFileMap(candidatePath, fileMapSourcePaths) {
   });
 }
 
-function matchesSourcePath(manifestPathValue, registryPaths) {
+function matchesSourcePath(manifestPathValue: string, registryPaths: unknown) {
   const normalizedManifest = normalizePath(manifestPathValue);
   return uniqStrings(registryPaths).some((entry) => {
     const normalizedRegistry = normalizePath(entry);
@@ -1460,7 +1407,7 @@ function matchesSourcePath(manifestPathValue, registryPaths) {
   });
 }
 
-async function pathExists(filePath) {
+async function pathExists(filePath: string) {
   try {
     await fs.access(filePath);
     return true;
@@ -1469,38 +1416,38 @@ async function pathExists(filePath) {
   }
 }
 
-function relativeRepoPath(filePath) {
+function relativeRepoPath(filePath: string) {
   return normalizePath(path.relative(repoRoot, path.resolve(filePath)));
 }
 
-function incrementCounter(map, key) {
+function incrementCounter(map: Record<string, number>, key: string) {
   map[key] = (map[key] || 0) + 1;
 }
 
-function uniqStrings(values) {
+function uniqStrings(values: unknown) {
   return [...new Set(safeArray(values).map((value) => safeString(value)).filter(Boolean))];
 }
 
-function safeArray(value) {
+function safeArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function safeString(value) {
+function safeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function isNonEmptyString(value) {
+function isNonEmptyString(value: unknown): value is string {
   return safeString(value).length > 0;
 }
 
-function isObject(value) {
+function isObject(value: unknown): value is JsonObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function normalizePath(value) {
-  return String(value || "").split(path.sep).join("/");
+function normalizePath(value: string) {
+  return (value || "").split(path.sep).join("/");
 }
 
-function compareStrings(left, right) {
-  return String(left || "").localeCompare(String(right || ""));
+function compareStrings(left: string, right: string) {
+  return (left || "").localeCompare((right || ""));
 }

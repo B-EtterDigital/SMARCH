@@ -48,6 +48,15 @@ import {
   listBricksWithContext,
 } from './lib/context-log.ts';
 
+type ContextArgs = {
+  actor: string; actorKind: string; backlog: string; brick: string; commit: string;
+  decision: string; intent: string; kind: string; lease: string; model: string; n: string;
+  project: string; session: string; task: string; verifyCmd: string; verifyStatus: string;
+  file?: string[]; linkedBacklog?: string[]; rejected?: string[]; json: boolean;
+};
+type ContextScalarKey = Exclude<keyof ContextArgs, 'file' | 'linkedBacklog' | 'rejected' | 'json'>;
+const CONTEXT_SCALAR_KEYS: readonly ContextScalarKey[] = ['actor', 'actorKind', 'backlog', 'brick', 'commit', 'decision', 'intent', 'kind', 'lease', 'model', 'n', 'project', 'session', 'task', 'verifyCmd', 'verifyStatus'];
+
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
@@ -81,7 +90,7 @@ try {
       exit(2);
   }
 } catch (err) {
-  console.error(`sma-context: ${err.message}`);
+  console.error(`sma-context: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -165,8 +174,10 @@ function runSummarize() {
   const intents = uniq(events.map((e) => e.intent).filter(Boolean));
   const decisions = uniq(events.map((e) => e.decision_rationale).filter(Boolean));
   const rejected = events
-    .flatMap((e) => e.rejected_alternatives ?? [])
-    .map((a) => `${a.alternative} :: ${a.reason}`);
+    .flatMap((e) => Array.isArray(e.rejected_alternatives) ? e.rejected_alternatives : [])
+    .filter((value): value is { alternative: string; reason: string } =>
+      typeof value === 'object' && value !== null && 'alternative' in value && typeof value.alternative === 'string' && 'reason' in value && typeof value.reason === 'string')
+    .map((alternative) => `${alternative.alternative} :: ${alternative.reason}`);
   const backlog = uniq(events.flatMap((e) => e.linked_backlog ?? []));
   const summary = {
     project: args.project,
@@ -218,28 +229,35 @@ function runListBricks() {
   }
   for (const id of bricks) {
     const path = logPath(args.project, id);
-    const lines = readFileSync(path, 'utf8').split('\n').filter((l) => l.trim()).length;
+    const lines = readFileSync(path, 'utf8').split('\n').filter((l: string) => l.trim()).length;
     const sz = statSync(path).size;
     console.log(`${pad(id, 70)}  ${pad(String(lines), 6)} events  ${sz} bytes`);
   }
 }
 
-function uniq(arr) {
+function uniq(arr: Iterable<unknown>|null|undefined) {
   return [...new Set(arr)];
 }
 
-function requireArg(key, flag) {
+function requireArg(key: ContextScalarKey, flag: string) {
   if (args[key] === undefined || args[key] === null || args[key] === '') {
     throw new Error(`missing ${flag}`);
   }
 }
 
-function pad(s, n) {
+function pad(s: unknown, n: number) {
   return String(s ?? '').slice(0, n).padEnd(n);
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
+function isContextScalarKey(value: string): value is ContextScalarKey {
+  return (CONTEXT_SCALAR_KEYS as readonly string[]).includes(value);
+}
+
+function parseArgs(list: string[]): ContextArgs {
+  const out: ContextArgs = {
+    actor: '', actorKind: 'agent', backlog: '', brick: '', commit: '', decision: '', intent: '', kind: '',
+    lease: '', model: '', n: '20', project: '', session: '', task: '', verifyCmd: '', verifyStatus: '', json: false,
+  };
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (a === '-n') {
@@ -249,16 +267,16 @@ function parseArgs(list) {
     }
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || (next.startsWith('--') && next !== '--');
     if (isBool) {
-      out[camel] = true;
+      if (camel === 'json') out.json = true;
       continue;
     }
-    if (['rejected', 'linkedBacklog', 'file'].includes(camel)) {
-      out[camel] = out[camel] ? [...out[camel], next] : [next];
-    } else {
+    if (camel === 'rejected' || camel === 'linkedBacklog' || camel === 'file') {
+      out[camel] = [...(out[camel] ?? []), next];
+    } else if (isContextScalarKey(camel)) {
       out[camel] = next;
     }
     i += 1;

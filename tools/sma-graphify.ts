@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Manages project and module code graphs for structural retrieval.
  * WHY: Agents need bounded architectural context without repeatedly scanning entire repositories.
@@ -20,20 +22,24 @@ import { communitySummaryBlock, generateCommunitySummaries, selftestCommunitySum
 import { sourceFreshness } from "./lib/graph-staleness.ts";
 import { mergeNamespacedGraphs, namespaceGraph, resolveGraphNodeInput } from "./lib/graph-union.ts";
 
-type GraphifyOptions = {
-  command: string; rest: string[];
-  json: boolean; strict: boolean; staleOk: boolean; global: boolean;
-  noCluster: boolean; missingOnly: boolean; quiet: boolean; verbose: boolean;
-  semantic: boolean; semanticRank: boolean;
-  timeoutSeconds: number | null; budget: string; registry: string;
-  summaryJson?: boolean; limit?: number; help?: boolean;
-  project?: string; module?: string; projectRoot?: string;
-  as?: string; tags?: string;
-};
-type GraphifyRuntimeOptions = {
+interface GraphifyOptions {
+  command: string; rest: string[]; json: boolean; strict: boolean; staleOk: boolean; global: boolean; noCluster: boolean; missingOnly: boolean; quiet: boolean; verbose: boolean; semantic: boolean; semanticRank: boolean; timeoutSeconds: number | null; budget: string; registry: string; summaryJson?: boolean; limit?: number; help?: boolean; project?: string; module?: string; projectRoot?: string; as?: string; tags?: string; gen3Config?: Gen3Config | null;
+}
+interface GraphifyRuntimeOptions {
   cwd?: string; stdio?: "inherit" | "pipe";
   timeoutSeconds?: number | null; noCluster?: boolean; quiet?: boolean;
-};
+}
+interface RegistryProject { id?: string; project_id?: string; name?: string; root?: string; project_root?: string; path?: string }
+interface RegistryBrick { id?: string; name?: string; project?: string; kind?: string; brick_group?: string; manifest_path?: string; source_paths?: string[]; owned_paths?: string[] }
+interface RegistryDocument { projects?: RegistryProject[]; scanned_project_roots?: RegistryProject[]; bricks?: RegistryBrick[] }
+interface RegistrySource { path: string; registry: RegistryDocument }
+interface Gen3Module { id?: string; label?: string; paths?: string[] }
+interface Gen3Config { modules?: Gen3Module[]; [key: string]: unknown }
+interface ModuleTarget { id: string; name: string; project: string; root: string; scanRoot: string; sourceKind: string; sourcePath: string }
+interface GraphStatus {
+  ok: boolean; graphifyAvailable: boolean; graphify: string; projectRoot: string; sourceRoot: string; sourceExists: boolean; targetRoot: string; targetExists: boolean; targetCandidates: { path: string; score: number; reason: string }[]; graphRoot: string; module: ModuleTarget | null; projectTag: string; graphPath: string; graphExists: boolean; graphReady: boolean; graphFreshness: unknown; graphFresh: boolean | null; graphStale: boolean; sourceUpdatedAt: string | null; sourceGlobs: string[]; graphKnownEmpty: boolean; graphEmptyReason: string; graphReadable: boolean; nodeCount: number; edgeCount: number; graphUpdatedAt: string | null; reportPath: string; reportExists: boolean; reportUpdatedAt: string | null;
+}
+interface SpawnOutcome { status: number; stdout: string; stderr: string; signal: string; timedOut: boolean; message: string }
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRegistry = path.join(smaRoot, "registry", "global-modules.generated.json");
 const portfolioRegistry = path.join(smaRoot, "scans", "all-projects", "latest.registry.json");
@@ -41,21 +47,11 @@ const DEFAULT_GRAPHIFY_MAX_GRAPH_BYTES = 512 * 1024 * 1024;
 
 function parseArgs(argv: string[]): GraphifyOptions {
   const options: GraphifyOptions = {
-    command: "",
-    rest: [],
-    json: false,
-    strict: false,
-    staleOk: false,
-    global: false,
-    noCluster: false,
-    missingOnly: false,
-    quiet: false,
-    verbose: false,
-    semantic: false,
-    semanticRank: true,
-    timeoutSeconds: null,
-    budget: "2000",
-    registry: defaultRegistry,
+    command: "", rest: [],
+    json: false, strict: false, staleOk: false, global: false,
+    noCluster: false, missingOnly: false, quiet: false, verbose: false,
+    semantic: false, semanticRank: true,
+    timeoutSeconds: null, budget: "2000", registry: defaultRegistry,
   };
 
   const args = [...argv];
@@ -158,20 +154,14 @@ Refresh defaults to local code-only extraction. Pass --semantic to opt into
 Graphify's semantic extraction/enrichment path.`);
 }
 
-function readJson(filePath) {
-  return JSON.parse(readFileSync(filePath, "utf8"));
+// The caller supplies the schema-specific result type at each JSON boundary.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+function readJson<T>(filePath: string): T {
+  return JSON.parse(readFileSync(filePath, "utf8")) as T;
 }
 
-function readRegistry(options) {
-  const registryPath = path.resolve(options.registry);
-  if (!existsSync(registryPath)) {
-    throw new Error(`Missing SMA registry: ${registryPath}`);
-  }
-  return readJson(registryPath);
-}
-
-function knownRegistries(options) {
-  const registries = [];
+function knownRegistries(options: GraphifyOptions): RegistrySource[] {
+  const registries: RegistrySource[] = [];
   const primaryPath = path.resolve(options.registry);
   const scansRoot = path.join(smaRoot, "scans");
 
@@ -179,7 +169,7 @@ function knownRegistries(options) {
     const wanted = String(options.project).toLowerCase();
     const exactScanPath = path.join(scansRoot, wanted, "latest.registry.json");
     if (existsSync(exactScanPath)) {
-      return [{ path: exactScanPath, registry: readJson(exactScanPath) }];
+      return [{ path: exactScanPath, registry: readJson<RegistryDocument>(exactScanPath) }];
     }
 
     try {
@@ -188,7 +178,7 @@ function knownRegistries(options) {
         const scanName = entry.name.toLowerCase();
         if (scanName !== wanted && !scanName.includes(wanted) && !wanted.includes(scanName)) continue;
         const scanRegistryPath = path.join(scansRoot, entry.name, "latest.registry.json");
-        if (existsSync(scanRegistryPath)) registries.push({ path: scanRegistryPath, registry: readJson(scanRegistryPath) });
+        if (existsSync(scanRegistryPath)) registries.push({ path: scanRegistryPath, registry: readJson<RegistryDocument>(scanRegistryPath) });
       }
     } catch {
       // Fall through to the primary registry.
@@ -197,9 +187,9 @@ function knownRegistries(options) {
     if (registries.length) return registries;
   }
 
-  if (existsSync(primaryPath)) registries.push({ path: primaryPath, registry: readJson(primaryPath) });
+  if (existsSync(primaryPath)) registries.push({ path: primaryPath, registry: readJson<RegistryDocument>(primaryPath) });
   if (existsSync(portfolioRegistry) && portfolioRegistry !== primaryPath) {
-    registries.push({ path: portfolioRegistry, registry: readJson(portfolioRegistry) });
+    registries.push({ path: portfolioRegistry, registry: readJson<RegistryDocument>(portfolioRegistry) });
   }
 
   if (options.projectRoot) return registries;
@@ -209,7 +199,7 @@ function knownRegistries(options) {
       if (!entry.isDirectory()) continue;
       const scanRegistryPath = path.join(scansRoot, entry.name, "latest.registry.json");
       if (!existsSync(scanRegistryPath) || scanRegistryPath === primaryPath) continue;
-      registries.push({ path: scanRegistryPath, registry: readJson(scanRegistryPath) });
+      registries.push({ path: scanRegistryPath, registry: readJson<RegistryDocument>(scanRegistryPath) });
     }
   } catch {
     // The global registry is enough when scans/ is unavailable.
@@ -218,12 +208,12 @@ function knownRegistries(options) {
   return registries;
 }
 
-function graphifyBin() {
+function graphifyBin(): string {
   const result = spawnSync("which", ["graphify"], { encoding: "utf8" });
   return result.status === 0 ? result.stdout.trim() : "";
 }
 
-function resolveProjectRoot(options) {
+function resolveProjectRoot(options: GraphifyOptions): string {
   if (options.projectRoot) return path.resolve(options.projectRoot);
   if (!options.project) return process.cwd();
 
@@ -231,10 +221,10 @@ function resolveProjectRoot(options) {
   const absolute = PROJECT_ABSOLUTE_OVERRIDES[wanted];
   if (absolute && existsSync(absolute)) return path.resolve(absolute);
 
-  let found = null;
+  let found: RegistryProject | null = null;
   for (const item of knownRegistries(options)) {
     const candidates = [...(item.registry.projects || []), ...(item.registry.scanned_project_roots || [])];
-    found = candidates.find((project) => {
+    const match = candidates.find((project) => {
       const id = String(project.id || project.project_id || project.name || "").toLowerCase();
       const root = String(project.root || project.project_root || project.path || "");
       if (!root) return false;
@@ -242,6 +232,7 @@ function resolveProjectRoot(options) {
       const scanName = path.basename(path.dirname(item.path)).toLowerCase();
       return id === wanted || rootName === wanted || scanName === wanted || rootName.includes(wanted) || scanName.includes(wanted);
     });
+    found = match ?? null;
     if (found) break;
   }
 
@@ -250,9 +241,9 @@ function resolveProjectRoot(options) {
   return path.resolve(foundRoot);
 }
 
-function sourcePathCandidates(projectRoot, sourcePath) {
+function sourcePathCandidates(projectRoot: string, sourcePath: unknown): string[] {
   const raw = String(sourcePath || "");
-  const candidates = [];
+  const candidates: string[] = [];
   if (!raw) return candidates;
   if (path.isAbsolute(raw)) return [path.resolve(raw)];
 
@@ -271,7 +262,7 @@ function sourcePathCandidates(projectRoot, sourcePath) {
   return [...new Set(candidates)];
 }
 
-function resolveSourcePath(projectRoot, sourcePath) {
+function resolveSourcePath(projectRoot: string, sourcePath: string) {
   const candidates = sourcePathCandidates(projectRoot, sourcePath);
   const sourceRoot = candidates.find((candidate) => existsSync(candidate)) || candidates[0] || path.resolve(projectRoot);
   let scanRoot = sourceRoot;
@@ -290,7 +281,7 @@ function resolveSourcePath(projectRoot, sourcePath) {
   };
 }
 
-function moduleTargetFromBrick(brick, options, projectRoot, sourcePath) {
+function moduleTargetFromBrick(brick: RegistryBrick, options: GraphifyOptions, projectRoot: string, sourcePath: string): ModuleTarget {
   const resolved = resolveSourcePath(projectRoot, sourcePath);
   return {
     id: String(brick.id || options.module || brick.name || sourcePath),
@@ -303,7 +294,7 @@ function moduleTargetFromBrick(brick, options, projectRoot, sourcePath) {
   };
 }
 
-function normalizeGen3SourcePath(rawPath) {
+function normalizeGen3SourcePath(rawPath: unknown): string {
   let value = String(rawPath || "").trim().replace(/\\/g, "/");
   if (!value) return "";
   value = value.replace(/\/\*\*.*$/, "");
@@ -311,20 +302,20 @@ function normalizeGen3SourcePath(rawPath) {
   return value.replace(/\/+$/, "");
 }
 
-function gen3ModuleSourcePath(module) {
+function gen3ModuleSourcePath(module: Gen3Module): string {
   const paths = Array.isArray(module.paths) ? module.paths : [];
   const normalized = paths.map(normalizeGen3SourcePath).filter(Boolean);
   return normalized.find((item) => !item.includes("*")) || normalized[0] || "";
 }
 
-function gen3ModuleBricksForProject(options, projectRoot) {
+function gen3ModuleBricksForProject(options: GraphifyOptions, projectRoot: string): RegistryBrick[] {
   const configPath = path.join(projectRoot, "sma.gen3.json");
   if (!existsSync(configPath)) return [];
 
-  const config = readJson(configPath);
+  const config = readJson<Gen3Config>(configPath);
   const modules = Array.isArray(config.modules) ? config.modules : [];
   return modules
-    .map((module) => {
+    .map<RegistryBrick | null>((module) => {
       const sourcePath = gen3ModuleSourcePath(module);
       if (!sourcePath) return null;
       const id = String(module.id || module.label || sourcePath);
@@ -338,10 +329,10 @@ function gen3ModuleBricksForProject(options, projectRoot) {
         owned_paths: Array.isArray(module.paths) ? module.paths : [sourcePath],
       };
     })
-    .filter(Boolean);
+    .filter((brick): brick is RegistryBrick => brick !== null);
 }
 
-function moduleBrickMatches(brick, wanted) {
+function moduleBrickMatches(brick: RegistryBrick, wanted: string): boolean {
   const haystack = [
     brick.id,
     brick.name,
@@ -353,13 +344,13 @@ function moduleBrickMatches(brick, wanted) {
   return haystack.some((value) => value === wanted || value.includes(wanted));
 }
 
-function resolveModuleTarget(options, projectRoot) {
+function resolveModuleTarget(options: GraphifyOptions, projectRoot: string): ModuleTarget | null {
   if (!options.module) return null;
 
   const projectId = options.project ? String(options.project).toLowerCase() : "";
   const wanted = String(options.module).toLowerCase();
   const projectRootResolved = path.resolve(projectRoot);
-  const bricks = [];
+  const bricks: RegistryBrick[] = [];
   const gen3Bricks = gen3ModuleBricksForProject(options, projectRoot);
   const exactGen3Brick = gen3Bricks.find(
     (brick) => moduleBrickMatches(brick, wanted) && String(brick.id || "").toLowerCase() === wanted,
@@ -391,7 +382,7 @@ function resolveModuleTarget(options, projectRoot) {
   return moduleTargetFromBrick(brick, options, projectRoot, sourcePath);
 }
 
-function moduleTargetsForProject(options, projectRoot) {
+function moduleTargetsForProject(options: GraphifyOptions, projectRoot: string): ModuleTarget[] {
   const projectId = options.project ? String(options.project).toLowerCase() : "";
   const projectRootResolved = path.resolve(projectRoot);
   const bricks = gen3ModuleBricksForProject(options, projectRoot);
@@ -410,8 +401,8 @@ function moduleTargetsForProject(options, projectRoot) {
     }
   }
 
-  const seen = new Set();
-  const targets = [];
+  const seen = new Set<string>();
+  const targets: ModuleTarget[] = [];
   for (const brick of bricks) {
     const sourcePath = (brick.source_paths || brick.owned_paths || [])[0];
     const target = moduleTargetFromBrick(brick, options, projectRoot, sourcePath);
@@ -424,7 +415,7 @@ function moduleTargetsForProject(options, projectRoot) {
   return targets.sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function slug(value) {
+function slug(value: unknown): string {
   return String(value || "module")
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
@@ -432,17 +423,17 @@ function slug(value) {
     .slice(0, 120) || "module";
 }
 
-function projectTag(options, projectRoot) {
+function projectTag(options: GraphifyOptions, projectRoot: string): string {
   return options.as || options.project || path.basename(projectRoot).toLowerCase();
 }
 
-function countGraphItems(value) {
+function countGraphItems(value: unknown): number {
   if (Array.isArray(value)) return value.length;
   if (value && typeof value === "object") return Object.keys(value).length;
   return 0;
 }
 
-function readGraphCounts(graphPath) {
+function readGraphCounts(graphPath: string) {
   if (!existsSync(graphPath)) {
     return {
       graphReadable: false,
@@ -453,7 +444,7 @@ function readGraphCounts(graphPath) {
   }
 
   try {
-    const graph = readJson(graphPath);
+    const graph = readJson<{ nodes?: unknown; edges?: unknown; links?: unknown; elements?: { nodes?: unknown; edges?: unknown }; metadata?: { sma_status?: string; reason?: unknown } }>(graphPath);
     const nodes = graph.nodes ?? graph.elements?.nodes;
     const edges = graph.edges ?? graph.links ?? graph.elements?.edges;
     const metadata = graph.metadata && typeof graph.metadata === "object" ? graph.metadata : {};
@@ -473,12 +464,12 @@ function readGraphCounts(graphPath) {
   }
 }
 
-function readGen3Config(projectRoot) {
+function readGen3Config(projectRoot: string): Gen3Config | null {
   const configPath = path.join(projectRoot, "sma.gen3.json");
-  return existsSync(configPath) ? readJson(configPath) : null;
+  return existsSync(configPath) ? readJson<Gen3Config>(configPath) : null;
 }
 
-function graphStatusForTarget(options, projectRoot, moduleTarget = null, graphifyPath = null) {
+function graphStatusForTarget(options: GraphifyOptions, projectRoot: string, moduleTarget: ModuleTarget | null = null, graphifyPath: string | null = null): GraphStatus {
   const graphify = graphifyPath ?? graphifyBin();
   const graphRoot = moduleTarget
     ? path.join(projectRoot, "graphify-out", "modules", slug(moduleTarget.id))
@@ -529,7 +520,7 @@ function graphStatusForTarget(options, projectRoot, moduleTarget = null, graphif
   };
 }
 
-function missingTargetCandidates(projectRoot, targetRoot, sourcePath) {
+function missingTargetCandidates(projectRoot: string, targetRoot: string, sourcePath: string): GraphStatus['targetCandidates'] {
   const files = trackedProjectFiles(projectRoot);
   if (!files.length) return [];
 
@@ -547,7 +538,7 @@ function missingTargetCandidates(projectRoot, targetRoot, sourcePath) {
       const ext = path.extname(base);
       const stem = base.slice(0, base.length - ext.length) || base;
       let score = 0;
-      const reasons = [];
+      const reasons: string[] = [];
       if (base === targetBase) {
         score += 100;
         reasons.push("same filename");
@@ -577,12 +568,12 @@ function missingTargetCandidates(projectRoot, targetRoot, sourcePath) {
         reason: reasons.join(", "),
       };
     })
-    .filter((candidate) => candidate && candidate.score >= 40)
+    .filter((candidate): candidate is { path: string; score: number; reason: string } => candidate !== null && candidate.score >= 40)
     .sort((left, right) => right.score - left.score || left.path.localeCompare(right.path))
     .slice(0, 8);
 }
 
-function trackedProjectFiles(projectRoot) {
+function trackedProjectFiles(projectRoot: string): string[] {
   const tracked = spawnSync("git", ["-C", projectRoot, "ls-files"], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
@@ -595,15 +586,15 @@ function trackedProjectFiles(projectRoot) {
     .filter((line) => line && !isIgnoredCandidatePath(line));
 }
 
-function isIgnoredCandidatePath(relativePath) {
+function isIgnoredCandidatePath(relativePath: string): boolean {
   return /(^|\/)(\.git|node_modules|graphify-out|dist|build|coverage|\.next|out|tmp|temp)(\/|$)/.test(relativePath);
 }
 
-function graphTargetCacheKey(status) {
+function graphTargetCacheKey(status: GraphStatus): string {
   return path.resolve(status.targetRoot);
 }
 
-function copyGraphArtifacts(fromStatus, toStatus) {
+function copyGraphArtifacts(fromStatus: GraphStatus, toStatus: GraphStatus): void {
   mkdirSync(path.dirname(toStatus.graphPath), { recursive: true });
   copyFileSync(fromStatus.graphPath, toStatus.graphPath);
   if (fromStatus.reportExists) {
@@ -612,13 +603,13 @@ function copyGraphArtifacts(fromStatus, toStatus) {
   }
 }
 
-function graphStatus(options) {
+function graphStatus(options: GraphifyOptions): GraphStatus {
   const projectRoot = resolveProjectRoot(options);
   const moduleTarget = resolveModuleTarget(options, projectRoot);
   return graphStatusForTarget(options, projectRoot, moduleTarget);
 }
 
-function moduleGraphStatus(options) {
+function moduleGraphStatus(options: GraphifyOptions) {
   const projectRoot = resolveProjectRoot(options);
   const graphify = graphifyBin();
   const gen3Config = readGen3Config(projectRoot);
@@ -661,9 +652,9 @@ function moduleGraphStatus(options) {
   };
 }
 
-function uniqueStatuses(statuses) {
-  const seen = new Set();
-  const out = [];
+function uniqueStatuses(statuses: readonly GraphStatus[]): GraphStatus[] {
+  const seen = new Set<string>();
+  const out: GraphStatus[] = [];
   for (const status of statuses) {
     const key = status.module?.id || status.graphPath || status.targetRoot;
     if (seen.has(key)) continue;
@@ -684,45 +675,45 @@ function runGraphify(args: string[], options: GraphifyRuntimeOptions = {}) {
   return spawnResult(result, options);
 }
 
-function spawnTimeoutMs(options: GraphifyRuntimeOptions = {}) {
+function spawnTimeoutMs(options: GraphifyRuntimeOptions = {}): number | undefined {
   const seconds = Number(options.timeoutSeconds);
   return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds * 1000) : undefined;
 }
 
-function spawnResult(result, options: GraphifyRuntimeOptions = {}) {
-  const timedOut = result.error?.code === "ETIMEDOUT";
+function spawnResult(result: ReturnType<typeof spawnSync>, options: GraphifyRuntimeOptions = {}): SpawnOutcome {
+  const timedOut = (result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT";
   const message = timedOut
     ? `timed out after ${options.timeoutSeconds}s`
     : result.error?.message || "";
   return {
     status: timedOut ? 124 : result.status ?? 1,
-    stdout: result.stdout || "",
-    stderr: result.stderr || "",
+    stdout: String(result.stdout || ""),
+    stderr: String(result.stderr || ""),
     signal: result.signal || "",
     timedOut,
     message,
   };
 }
 
-function printSpawnDetails(result) {
+function printSpawnDetails(result: SpawnOutcome): void {
   if (result.message) console.log(result.message);
   if (result.stderr) console.log(result.stderr.trim());
   if (result.stdout) console.log(result.stdout.trim());
 }
 
-function isGraphifyOutIgnored(projectRoot) {
+function isGraphifyOutIgnored(projectRoot: string): boolean {
   return isIgnored(projectRoot, "graphify-out/.sma-probe")
     && isIgnored(projectRoot, "sma-nested-probe/graphify-out/.sma-probe");
 }
 
-function isIgnored(projectRoot, probePath) {
+function isIgnored(projectRoot: string, probePath: string): boolean {
   const result = spawnSync("git", ["-C", projectRoot, "check-ignore", "--quiet", probePath], {
     stdio: "ignore",
   });
   return result.status === 0;
 }
 
-function gitInfoExcludePath(projectRoot) {
+function gitInfoExcludePath(projectRoot: string): string | null {
   const result = spawnSync("git", ["-C", projectRoot, "rev-parse", "--git-path", "info/exclude"], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
@@ -733,7 +724,7 @@ function gitInfoExcludePath(projectRoot) {
   return path.isAbsolute(raw) ? raw : path.resolve(projectRoot, raw);
 }
 
-function ensureGraphifyOutLocalExclude(projectRoot) {
+function ensureGraphifyOutLocalExclude(projectRoot: string): void {
   if (isGraphifyOutIgnored(projectRoot)) return;
   const excludePath = gitInfoExcludePath(projectRoot);
   if (!excludePath) return;
@@ -759,7 +750,7 @@ function ensureGraphifyOutLocalExclude(projectRoot) {
   );
 }
 
-function graphifyPythonBin(graphifyPath) {
+function graphifyPythonBin(graphifyPath: string): string {
   if (graphifyPath && existsSync(graphifyPath)) {
     try {
       const firstLine = readFileSync(graphifyPath, "utf8").split(/\r?\n/, 1)[0] || "";
@@ -772,7 +763,7 @@ function graphifyPythonBin(graphifyPath) {
   return "python3";
 }
 
-function runCodeOnlyGraphify(status, options: GraphifyRuntimeOptions = {}) {
+function runCodeOnlyGraphify(status: GraphStatus, options: GraphifyRuntimeOptions = {}): SpawnOutcome {
   const python = graphifyPythonBin(status.graphify);
   const script = String.raw`
 import sys
@@ -946,16 +937,16 @@ print(f"local code-only graph: {graph.number_of_nodes()} nodes, {graph.number_of
   return spawnResult(result, options);
 }
 
-function graphifyGlobalCapMessage(result) {
+function graphifyGlobalCapMessage(result: Pick<SpawnOutcome, 'stderr' | 'stdout'>): string {
   const text = `${result.stderr || ""}\n${result.stdout || ""}`;
   if (!text.includes("exceeds") || !text.includes("GRAPHIFY_MAX_GRAPH_BYTES")) return "";
   return text.split(/\r?\n/).find((line) => line.includes("exceeds")) || "global graph size cap reached";
 }
 
-function parseByteLimit(value, fallback = DEFAULT_GRAPHIFY_MAX_GRAPH_BYTES) {
+function parseByteLimit(value: unknown, fallback = DEFAULT_GRAPHIFY_MAX_GRAPH_BYTES): number {
   const raw = String(value || "").trim().replace(/_/g, "");
   if (!raw) return fallback;
-  const match = raw.match(/^(\d+(?:\.\d+)?)\s*([kmgt]?b?)?$/i);
+  const match = /^(\d+(?:\.\d+)?)\s*([kmgt]?b?)?$/i.exec(raw);
   if (!match) return fallback;
   const amount = Number(match[1]);
   if (!Number.isFinite(amount) || amount <= 0) return fallback;
@@ -972,7 +963,7 @@ function parseByteLimit(value, fallback = DEFAULT_GRAPHIFY_MAX_GRAPH_BYTES) {
   return Math.floor(amount * multiplier);
 }
 
-function formatBytes(bytes) {
+function formatBytes(bytes: unknown): string {
   const value = Number(bytes);
   if (!Number.isFinite(value)) return "unknown size";
   if (value >= 1024 ** 3) return `${(value / (1024 ** 3)).toFixed(2)}GB`;
@@ -981,7 +972,7 @@ function formatBytes(bytes) {
   return `${value}B`;
 }
 
-function graphifyGlobalGraphPath() {
+function graphifyGlobalGraphPath(): string {
   const result = runGraphify(["global", "path"], { stdio: "pipe" });
   const stdout = String(result.stdout || "").trim();
   if (result.status === 0 && stdout) return stdout.split(/\r?\n/)[0].trim();
@@ -989,7 +980,7 @@ function graphifyGlobalGraphPath() {
   return home ? path.join(home, ".graphify", "global-graph.json") : "";
 }
 
-function graphifyGlobalAddPreflightReason() {
+function graphifyGlobalAddPreflightReason(): string {
   const graphPath = graphifyGlobalGraphPath();
   if (!graphPath || !existsSync(graphPath)) return "";
   const maxBytes = parseByteLimit(process.env.GRAPHIFY_MAX_GRAPH_BYTES);
@@ -998,9 +989,9 @@ function graphifyGlobalAddPreflightReason() {
   return `${graphPath} is ${formatBytes(size)}, above GRAPHIFY_MAX_GRAPH_BYTES ${formatBytes(maxBytes)}; set GRAPHIFY_MAX_GRAPH_BYTES=<N>GB to opt into larger local global graph updates`;
 }
 
-function walkJsonFiles(root) {
+function walkJsonFiles(root: string): string[] {
   if (!existsSync(root)) return [];
-  const out = [];
+  const out: string[] = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const entryPath = path.join(root, entry.name);
     if (entry.isDirectory()) {
@@ -1012,29 +1003,31 @@ function walkJsonFiles(root) {
   return out;
 }
 
-function normalizeLabel(value) {
+function normalizeLabel(value: unknown): string {
   return String(value ?? "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
-function shellArg(value) {
+function shellArg(value: unknown): string {
   return `'${String(value ?? "").replace(/'/g, `'\\''`)}'`;
 }
 
-function writeGraphFromAstCache(status, reason = "cache fallback") {
+function writeGraphFromAstCache(status: GraphStatus, reason = "cache fallback"): boolean {
   const astRoot = path.join(status.targetRoot, "graphify-out", "cache", "ast");
   const cacheFiles = walkJsonFiles(astRoot);
   if (!cacheFiles.length) return false;
 
-  const nodes = new Map();
-  const links = [];
+  type CacheNode = Record<string, unknown> & { id?: unknown; label?: unknown; file_type?: unknown; community?: unknown; norm_label?: unknown };
+  type CacheEdge = Record<string, unknown> & { source?: unknown; from?: unknown; target?: unknown; to?: unknown; relation?: unknown; confidence?: unknown; confidence_score?: unknown };
+  const nodes = new Map<string, CacheNode>();
+  const links: CacheEdge[] = [];
   let readFailures = 0;
   for (const filePath of cacheFiles) {
-    let payload = null;
+    let payload: { nodes?: CacheNode[]; edges?: CacheEdge[]; links?: CacheEdge[] };
     try {
-      payload = readJson(filePath);
+      payload = readJson<{ nodes?: CacheNode[]; edges?: CacheEdge[]; links?: CacheEdge[] }>(filePath);
     } catch {
       readFailures += 1;
       continue;
@@ -1108,7 +1101,7 @@ function writeGraphFromAstCache(status, reason = "cache fallback") {
   return true;
 }
 
-function outputStatus(status, options) {
+function outputStatus(status: GraphStatus, options: GraphifyOptions): void {
   if (options.json) {
     console.log(JSON.stringify(status, null, 2));
     return;
@@ -1128,24 +1121,24 @@ function outputStatus(status, options) {
   if (!status.targetExists) console.log(`target is missing: ${status.targetRoot}`);
 }
 
-function requireGraph(options) {
+function requireGraph(options: GraphifyOptions): GraphStatus {
   const status = graphStatus(options);
   if (!status.graphifyAvailable) throw new Error("graphify CLI is not on PATH");
   if (!status.graphReady) throw new Error(`Missing or empty graphify graph: ${status.graphPath}`);
   return status;
 }
 
-function commandCheck(options) {
+function commandCheck(options: GraphifyOptions): number {
   const status = graphStatus(options);
   outputStatus(status, options);
   return checkExitCode(options, status);
 }
 
-function checkExitCode(options, status) {
+function checkExitCode(options: GraphifyOptions, status: { ok: boolean }): number {
   return options.strict && !status.ok ? 1 : 0;
 }
 
-function commandCheckModules(options) {
+function commandCheckModules(options: GraphifyOptions): number {
   const status = moduleGraphStatus(options);
   if (options.summaryJson) {
     console.log(JSON.stringify(moduleGraphSummary(status), null, 2));
@@ -1166,9 +1159,10 @@ function commandCheckModules(options) {
     if (status.missingTargetCount) console.log(`missing targets: ${status.missingTargetCount}`);
     if (status.graphifyUnavailableCount) console.log(`graphify unavailable: ${status.graphifyUnavailableCount}`);
     const rows = options.verbose ? status.modules : status.actionableGaps;
+    const configuredLimit = options.limit;
     const rowLimit = options.verbose
       ? rows.length
-      : Number.isFinite(options.limit) && options.limit >= 0 ? options.limit : 20;
+      : typeof configuredLimit === 'number' && Number.isFinite(configuredLimit) && configuredLimit >= 0 ? configuredLimit : 20;
     for (const moduleStatus of rows.slice(0, rowLimit)) {
       const marker = !moduleStatus.graphifyAvailable
         ? "NO_GRAPHIFY"
@@ -1203,12 +1197,12 @@ function commandCheckModules(options) {
   return checkExitCode(options, status);
 }
 
-function moduleGraphSummary(status) {
+function moduleGraphSummary(status: ReturnType<typeof moduleGraphStatus>) {
   const readyModules = status.modules.filter((item) => item.graphReady);
   const knownEmptyModules = status.modules.filter((item) => item.graphKnownEmpty);
   const updatedTimes = status.modules
     .map((item) => item.graphUpdatedAt)
-    .filter(Boolean)
+    .filter((value): value is string => typeof value === 'string')
     .sort();
   return {
     ok: status.ok,
@@ -1251,7 +1245,7 @@ function moduleGraphSummary(status) {
   };
 }
 
-function moduleTargetFixes(status) {
+function moduleTargetFixes(status: ReturnType<typeof moduleGraphStatus>) {
   return status.actionableGaps
     .filter((item) => !item.targetExists)
     .map((item) => ({
@@ -1268,7 +1262,7 @@ function moduleTargetFixes(status) {
     }));
 }
 
-function commandTargetFixes(options) {
+function commandTargetFixes(options: GraphifyOptions): number {
   const status = moduleGraphStatus(options);
   const fixes = moduleTargetFixes(status);
   const payload = {
@@ -1315,12 +1309,12 @@ function commandTargetFixes(options) {
   return 0;
 }
 
-async function summarizeSemanticGraph(status, options) {
+async function summarizeSemanticGraph(status: GraphStatus, options: GraphifyOptions): Promise<void> {
   if (!options.semantic || options.noCluster || !status.graphReady) return;
   const summaries = await generateCommunitySummaries({ graphPath: status.graphPath, semantic: true });
   if (summaries.summaryCount && !options.quiet) console.log(`community summaries: ${summaries.summaryCount} (${summaries.generated} generated, ${summaries.reused} cached)`);
 }
-async function commandRefresh(options) {
+async function commandRefresh(options: GraphifyOptions): Promise<number> {
   const status = graphStatus(options);
   if (!status.graphifyAvailable) throw new Error("graphify CLI is not on PATH");
   if (!status.targetExists) throw new Error(`Graphify target is missing: ${status.targetRoot}`);
@@ -1376,13 +1370,13 @@ async function commandRefresh(options) {
   return commandCheck({ ...options, strict: false });
 }
 
-async function commandRefreshModules(options) {
+async function commandRefreshModules(options: GraphifyOptions): Promise<number> {
   const projectRoot = resolveProjectRoot(options);
   ensureGraphifyOutLocalExclude(projectRoot);
   const graphify = graphifyBin();
   const allModules = moduleTargetsForProject(options, projectRoot);
   const allStatuses = allModules.map((module) => graphStatusForTarget(options, projectRoot, module, graphify));
-  const readyByTargetRoot = new Map();
+  const readyByTargetRoot = new Map<string, GraphStatus>();
   if (options.missingOnly) {
     for (const status of allStatuses) {
       if (status.targetExists && status.graphReady) readyByTargetRoot.set(graphTargetCacheKey(status), status);
@@ -1393,7 +1387,7 @@ async function commandRefreshModules(options) {
   if (options.missingOnly) {
     modules = modules.filter((status) => !status.graphReady && !status.graphKnownEmpty);
   }
-  if (Number.isFinite(options.limit) && options.limit >= 0) {
+  if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit >= 0) {
     modules = modules.slice(0, options.limit);
   }
   if (!modules.length) {
@@ -1414,7 +1408,7 @@ async function commandRefreshModules(options) {
     console.log(`WARN graphify global add disabled for this batch: ${globalDisabledReason}`);
   }
 
-  const addToGlobal = (refreshed, module) => {
+  const addToGlobal = (refreshed: GraphStatus, module: ModuleTarget) => {
     if (!options.global) return;
     if (globalDisabledReason) {
       globalSkipped += 1;
@@ -1443,6 +1437,7 @@ async function commandRefreshModules(options) {
 
   for (const status of modules) {
     const module = status.module;
+    if (!module) continue;
     console.log(`\n== graphify module ${module.id} ==`);
     if (!status.targetExists) {
       skipped += 1;
@@ -1550,9 +1545,9 @@ async function commandRefreshModules(options) {
   return commandCheckModules({ ...options, strict: false, projectRoot });
 }
 
-function runGlobalGraphAdd(graphPath, tag, options) {
+function runGlobalGraphAdd(graphPath: string, tag: string, options: GraphifyRuntimeOptions): SpawnOutcome {
   const unionPath = path.join(path.dirname(graphPath), `.sma-global-union-${slug(tag)}.json`);
-  const graph = namespaceGraph(readJson(graphPath), tag);
+  const graph = namespaceGraph(readJson<Parameters<typeof namespaceGraph>[0]>(graphPath), tag);
   writeFileSync(unionPath, JSON.stringify(graph, null, 2) + "\n");
   try {
     return runGraphify(["global", "add", unionPath, "--as", tag], options);
@@ -1561,7 +1556,7 @@ function runGlobalGraphAdd(graphPath, tag, options) {
   }
 }
 
-function commandProjectFromModules(options) {
+function commandProjectFromModules(options: GraphifyOptions): number {
   const projectRoot = resolveProjectRoot(options);
   ensureGraphifyOutLocalExclude(projectRoot);
   const graphify = graphifyBin();
@@ -1569,7 +1564,7 @@ function commandProjectFromModules(options) {
     .map((module) => graphStatusForTarget(options, projectRoot, module, graphify));
   let readyStatuses = moduleStatuses.filter((status) => status.graphReady);
   const readyStatusCount = readyStatuses.length;
-  if (Number.isFinite(options.limit) && options.limit >= 0) {
+  if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit >= 0) {
     if (options.limit < readyStatusCount) {
       throw new Error(`refusing to write a partial project graph from ${options.limit}/${readyStatusCount} module graphs; omit --limit for the canonical project graph`);
     }
@@ -1579,16 +1574,16 @@ function commandProjectFromModules(options) {
     throw new Error(`No ready module graphs found for ${projectRoot}`);
   }
 
-  const graphEntries = [];
+  const graphEntries: { graph: Parameters<typeof mergeNamespacedGraphs>[0][number]['graph']; namespace: string }[] = [];
   let readFailures = 0;
 
   for (const status of readyStatuses) {
     try {
-      const graph = readJson(status.graphPath);
+      const graph = readJson<Parameters<typeof mergeNamespacedGraphs>[0][number]['graph']>(status.graphPath);
       graphEntries.push({ graph, namespace: status.projectTag });
-    } catch (err) {
+    } catch (error: unknown) {
       readFailures += 1;
-      console.log(`WARN could not read module graph ${status.graphPath}: ${err.message}`);
+      console.log(`WARN could not read module graph ${status.graphPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -1664,7 +1659,7 @@ function commandProjectFromModules(options) {
   return commandCheck({ ...options, strict: false, projectRoot });
 }
 
-async function commandEmbeddingIndex(options) {
+async function commandEmbeddingIndex(options: GraphifyOptions): Promise<number> {
   const status = requireGraph(options);
   const result = await buildEmbeddingIndex({ graphPath: status.graphPath });
   if (!result.built || !("count" in result)) return 0;
@@ -1672,7 +1667,7 @@ async function commandEmbeddingIndex(options) {
   return 0;
 }
 
-async function commandQuery(options) {
+async function commandQuery(options: GraphifyOptions): Promise<number> {
   const status = requireGraph(options);
   const question = options.rest.join(" ").trim();
   if (!question) throw new Error("query requires a question after --");
@@ -1688,7 +1683,7 @@ async function commandQuery(options) {
   const communityBlock = communitySummaryBlock({
     graphPath: status.graphPath,
     question,
-    hits: ranked.hits,
+    hits: 'hits' in ranked ? ranked.hits : undefined,
     traversalOutput: result.stdout,
   });
   if (communityBlock) {
@@ -1700,34 +1695,34 @@ async function commandQuery(options) {
   return result.status;
 }
 
-function commandPath(options) {
+function commandPath(options: GraphifyOptions): number {
   const status = requireGraph(options);
   if (options.rest.length < 2) throw new Error("path requires two node labels after --");
-  const graph = readJson(status.graphPath);
+  const graph = readJson<Parameters<typeof resolveGraphNodeInput>[0]>(status.graphPath);
   const source = resolveGraphNodeInput(graph, options.rest[0]);
   const target = resolveGraphNodeInput(graph, options.rest[1]);
   const result = runGraphify(["path", source, target, "--graph", status.graphPath]);
   return result.status;
 }
 
-function commandExplain(options) {
+function commandExplain(options: GraphifyOptions): number {
   const status = requireGraph(options);
   const label = options.rest.join(" ").trim();
   if (!label) throw new Error("explain requires a node label after --");
-  const resolved = resolveGraphNodeInput(readJson(status.graphPath), label);
+  const resolved = resolveGraphNodeInput(readJson<Parameters<typeof resolveGraphNodeInput>[0]>(status.graphPath), label);
   const result = runGraphify(["explain", resolved, "--graph", status.graphPath]);
   return result.status;
 }
 
-function commandGlobalList() {
+function commandGlobalList(): number {
   return runGraphify(["global", "list"]).status;
 }
 
-function commandGlobalPath() {
+function commandGlobalPath(): number {
   return runGraphify(["global", "path"]).status;
 }
 
-async function commandGlobal(options) {
+async function commandGlobal(options: GraphifyOptions): Promise<number> {
   const [subcommand, ...rest] = options.rest;
   if (subcommand === "list") return commandGlobalList();
   if (subcommand === "path") return commandGlobalPath();
@@ -1777,23 +1772,26 @@ async function commandSelftest() {
   assertSelftest(collisionUnion.nodes.some((node) => node.id === "module-a::shared" && node.original_id === "shared"), "module A node must retain its original id");
   assertSelftest(collisionUnion.nodes.some((node) => node.id === "module-b::shared" && node.original_id === "shared"), "module B node must retain its original id");
   assertSelftest(collisionUnion.edges.some((edge) => edge.source === "module-a::shared" && edge.target === "module-a::only-a"), "edge endpoints must follow namespaced node ids");
-  assertSelftest(collisionUnion.hyperedges[0]?.nodes?.includes("module-a::shared"), "hyperedge members must follow namespaced node ids");
+  const hyperedgeNodes = collisionUnion.hyperedges[0]?.nodes;
+  assertSelftest(Array.isArray(hyperedgeNodes) && hyperedgeNodes.includes("module-a::shared"), "hyperedge members must follow namespaced node ids");
   assertSelftest(resolveGraphNodeInput(collisionUnion, "module-a::shared") === "module-a::shared", "qualified node ids must resolve directly");
   assertSelftest(resolveGraphNodeInput(collisionUnion, "only-a") === "module-a::only-a", "unique original node ids must resolve to their qualified form");
   let ambiguousOriginalRejected = false;
   try {
     resolveGraphNodeInput(collisionUnion, "shared");
-  } catch (error) {
-    ambiguousOriginalRejected = error.message.includes("module-a::shared") && error.message.includes("module-b::shared");
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    ambiguousOriginalRejected = message.includes("module-a::shared") && message.includes("module-b::shared");
   }
   assertSelftest(ambiguousOriginalRejected, "ambiguous original node ids must require a qualified form");
 
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), "sma-graphify-staleness-"));
   try {
     const sourceRoot = path.join(fixtureRoot, "src", "fixture");
-    const moduleTarget = {
+    const moduleTarget: ModuleTarget = {
       id: "fixture-module",
       name: "Fixture module",
+      project: "fixture",
       root: sourceRoot,
       scanRoot: sourceRoot,
       sourceKind: "directory",
@@ -1851,7 +1849,7 @@ async function commandSelftest() {
     assertSelftest(emptyStatus.graphKnownEmpty && !emptyStatus.graphStale, "known-empty graphs must keep existing semantics");
 
     await selftestEmbeddingContentAddress({ fixtureRoot, assert: assertSelftest });
-    assertSelftest(parseArgs(["query", "--no-semantic-rank", "--", "question"]).semanticRank === false, "query should allow semantic ranking opt-out");
+    assertSelftest(!parseArgs(["query", "--no-semantic-rank", "--", "question"]).semanticRank, "query should allow semantic ranking opt-out");
 
     await selftestCommunitySummaries({ fixtureRoot, assert: assertSelftest });
   } finally {
@@ -1862,7 +1860,7 @@ async function commandSelftest() {
   return 0;
 }
 
-function assertSelftest(condition, message) {
+function assertSelftest(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }
 

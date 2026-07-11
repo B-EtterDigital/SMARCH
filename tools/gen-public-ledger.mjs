@@ -23,6 +23,7 @@ const FILES = [
   'tools/lib/provenance-seal.ts',
   'tools/lib/license-lattice.ts',
 ];
+/** @param {import('node:crypto').BinaryLike} buf */
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 const args = process.argv.slice(2);
@@ -31,6 +32,7 @@ if (args.length > 1 || args.some((arg) => arg !== '--verify' && arg !== '--selft
   process.exit(2);
 }
 
+/** @param {string} path */
 function gitEvents(path) {
   const raw = execSync(
     `git log --follow --reverse --format='%H%x1f%aI%x1f%ae%x1f%s' -- "${path}"`,
@@ -53,7 +55,7 @@ function gitEvents(path) {
 function buildBundle(generatedAt = new Date().toISOString()) {
   const bricks = FILES.map((path) => {
     const content_hash = sha256(readFileSync(path));
-    const brick_id = 'smarch.tools.' + path.split('/').pop().replace(/\.mjs$/, '');
+    const brick_id = 'smarch.tools.' + (path.split('/').pop() ?? path).replace(/\.mjs$/, '');
     const events = gitEvents(path);
     const seal = computeSeal({ brick_id, content_hash, events });
     return { brick_id, path, content_hash, anchor: seal.anchor, head: seal.head, chain_length: seal.chain_length, events };
@@ -78,7 +80,7 @@ function verifyLedger() {
   try {
     current = JSON.parse(readFileSync(LEDGER_PATH, 'utf8'));
   } catch (error) {
-    console.error(`public ledger verify: invalid ${LEDGER_PATH}: ${error.message}`);
+    console.error(`public ledger verify: invalid ${LEDGER_PATH}: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
   const mismatch = ledgerMismatch(current);
@@ -89,6 +91,7 @@ function verifyLedger() {
   printSummary('verified', current.bricks);
 }
 
+/** @param {ReturnType<typeof buildBundle>} current */
 function ledgerMismatch(current) {
   if (
     typeof current?.generated_at !== 'string'
@@ -118,6 +121,7 @@ function runSelftest() {
   console.log('public ledger selftest: passed');
 }
 
+/** @param {string} action @param {ReturnType<typeof buildBundle>['bricks']} bricks */
 function printSummary(action, bricks) {
   console.log(`public ledger ${action}:`, bricks.length, 'bricks,', bricks.reduce((sum, brick) => sum + brick.chain_length, 0), 'events');
 }

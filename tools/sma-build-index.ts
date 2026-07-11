@@ -50,6 +50,15 @@ const defaults = {
   out: path.resolve(repoRoot, "builds/build-index.generated.json"),
 };
 
+type JsonRecord = Record<string, unknown>;
+interface CliOptions { dryRun: boolean; help: boolean; out: string; releases: string; root: string; stdout: boolean; verificationRoot: string }
+interface Issue { code: string; dimension: string; message: string; severity: string }
+interface BlockerCount extends Issue { count: number; sample_build_ids: string[] }
+interface VerificationReport extends JsonRecord { check_counts?: unknown; evidence_count?: number; issues?: Issue[]; path?: string; status?: string; trust_level?: string }
+interface BasicBuild { id: string; project?: string; slug?: string }
+interface ScoredDimension { issues: Issue[]; label: string; ready: boolean; score: number }
+interface IndexedBuild { build_id: string; brick_count: number; file?: string; flow_count?: number; installability: ScoredDimension; kind?: string | null; name: string; optional_brick_count: number; project: string | null; publishability: ScoredDimension; release_summary: { canonical_release_count: number; published_release_count: number; release_count: number }; required_brick_count: number; slug?: string | null; status: string | null; summary?: string | null; sweetspot?: JsonRecord; top_blockers: Issue[]; trust_tier: string | null; updateability: ScoredDimension; verification_health: ScoredDimension & { primary_status: string }; visibility: string | null; [key: string]: unknown }
+
 const HELP_TEXT = `SMARCH curated build index generator
 
 Usage:
@@ -66,7 +75,7 @@ Options:
   --help                     Show this help text
 `;
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
@@ -81,8 +90,8 @@ async function main() {
   const manifests = await collectBuildManifests(options.root);
   const releaseLookup = await loadReleaseLookup(options.releases);
   const verificationLookup = await loadVerificationLookup(options.verificationRoot);
-  const builds = [];
-  const skipped = [];
+  const builds: IndexedBuild[] = [];
+  const skipped: { error?: string; path: string; reason: string }[] = [];
 
   for (const filePath of manifests) {
     const parsed = await readJson(filePath);
@@ -130,8 +139,8 @@ async function main() {
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+function parseArgs(argv: string[]): CliOptions {
+  const options: CliOptions = {
     ...defaults,
     stdout: false,
     dryRun: false,
@@ -175,7 +184,7 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function requireValue(argv, index, flag) {
+function requireValue(argv: string[], index: number, flag: string): string {
   const value = argv[index];
   if (!value || value.startsWith("--")) {
     throw new Error(`Missing value for ${flag}`);
@@ -183,17 +192,17 @@ function requireValue(argv, index, flag) {
   return value;
 }
 
-async function collectBuildManifests(root) {
+async function collectBuildManifests(root: string): Promise<string[]> {
   const stat = await fs.stat(root).catch(() => null);
-  if (!stat || !stat.isDirectory()) {
+  if (!stat?.isDirectory()) {
     return [];
   }
-  const files = [];
+  const files: string[] = [];
   await walkDirectory(root, files);
   return files.sort(compareStrings);
 }
 
-async function walkDirectory(directory, files) {
+async function walkDirectory(directory: string, files: string[]): Promise<void> {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   entries.sort((left, right) => compareStrings(left.name, right.name));
   for (const entry of entries) {
@@ -208,22 +217,22 @@ async function walkDirectory(directory, files) {
   }
 }
 
-async function readJson(filePath) {
+async function readJson(filePath: string): Promise<{ ok: true; value: unknown } | { ok: false; error: string }> {
   try {
     const text = await fs.readFile(filePath, "utf8");
     return { ok: true, value: JSON.parse(text) };
   } catch (error) {
-    return { ok: false, error: error?.message || String(error) };
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
-async function loadReleaseLookup(filePath) {
+async function loadReleaseLookup(filePath: string): Promise<Map<string, JsonRecord>> {
   const parsed = await readJson(filePath);
   if (!parsed.ok || !isObject(parsed.value)) {
     return new Map();
   }
   const artifacts = collectBuildArtifacts(parsed.value.artifacts);
-  const lookup = new Map();
+  const lookup = new Map<string, JsonRecord>();
   for (const artifact of artifacts) {
     if (!isObject(artifact) || artifact.artifact_type !== "build" || typeof artifact.artifact_id !== "string") {
       continue;
@@ -233,7 +242,7 @@ async function loadReleaseLookup(filePath) {
   return lookup;
 }
 
-function collectBuildArtifacts(artifacts) {
+function collectBuildArtifacts(artifacts: unknown): unknown[] {
   if (Array.isArray(artifacts)) {
     return artifacts;
   }
@@ -246,15 +255,15 @@ function collectBuildArtifacts(artifacts) {
   return Object.values(artifacts);
 }
 
-async function loadVerificationLookup(root) {
+async function loadVerificationLookup(root: string): Promise<Map<string, VerificationReport>> {
   const stat = await fs.stat(root).catch(() => null);
-  if (!stat || !stat.isDirectory()) {
+  if (!stat?.isDirectory()) {
     return new Map();
   }
 
-  const files = [];
+  const files: string[] = [];
   await walkVerificationTree(root, files);
-  const lookup = new Map();
+  const lookup = new Map<string, VerificationReport>();
 
   for (const filePath of files) {
     const parsed = await readJson(filePath);
@@ -275,7 +284,7 @@ async function loadVerificationLookup(root) {
   return lookup;
 }
 
-async function walkVerificationTree(directory, files) {
+async function walkVerificationTree(directory: string, files: string[]): Promise<void> {
   const entries = await fs.readdir(directory, { withFileTypes: true });
   entries.sort((left, right) => compareStrings(left.name, right.name));
   for (const entry of entries) {
@@ -290,60 +299,63 @@ async function walkVerificationTree(directory, files) {
   }
 }
 
-function summarizeVerificationReport(document, filePath) {
-  const keys = new Set();
+function summarizeVerificationReport(document: JsonRecord, filePath: string): { keys: Set<string>; report: VerificationReport } | null {
+  const keys = new Set<string>();
+  const build = isObject(document.build) ? document.build : {};
+  const target = isObject(document.target) ? document.target : {};
+  const summary = isObject(document.summary) ? document.summary : {};
+  const verification = isObject(document.verification) ? document.verification : {};
+  const health = isObject(document.health) ? document.health : {};
   addLookupKey(keys, document.artifact_id);
   addLookupKey(keys, document.build_id);
   addLookupKey(keys, document.slug);
-  addLookupKey(keys, document?.build?.id);
-  addLookupKey(keys, document?.build?.slug);
-  addLookupKey(keys, document?.target?.artifact_id);
-  addLookupKey(keys, document?.target?.build_id);
-  addLookupKey(keys, document?.target?.slug);
+  addLookupKey(keys, build.id);
+  addLookupKey(keys, build.slug);
+  addLookupKey(keys, target.artifact_id);
+  addLookupKey(keys, target.build_id);
+  addLookupKey(keys, target.slug);
 
   if (keys.size === 0) {
     return null;
   }
 
-  const report: Record<string, any> = {
+  const report: VerificationReport = {
     path: normalizePath(path.relative(repoRoot, filePath)),
     status: normalizeVerificationStatus(
       firstString(
         document.verification_status,
         document.status,
-        document?.summary?.verification_status,
-        document?.verification?.status,
-        document?.health?.status,
+        summary.verification_status,
+        verification.status,
+        health.status,
       ),
     ),
     trust_level: normalizeTrustLevel(
       firstString(
         document.trust_level,
-        document?.summary?.trust_level,
-        document?.verification?.trust_level,
-        document?.health?.trust_level,
+        summary.trust_level,
+        verification.trust_level,
+        health.trust_level,
       ),
     ),
     check_counts: normalizeCheckCounts(
-      document.check_counts ||
-        document?.summary?.check_counts ||
-        document?.verification?.check_counts ||
-        document?.health?.check_counts,
+      document.check_counts ??
+      ((summary.check_counts ?? verification.check_counts) ?? health.check_counts),
     ),
-    evidence_count: countEntries(document.evidence) || countEntries(document?.verification?.evidence) || countEntries(document?.checks),
-    issues: normalizeIssueList(document.blockers || document.findings || document?.summary?.blockers || document?.verification?.blockers || []),
+    evidence_count: countEntries(document.evidence) || countEntries(verification.evidence) || countEntries(document.checks),
+    issues: normalizeIssueList(((document.blockers ?? (document.findings ?? summary.blockers)) ?? verification.blockers) ?? []),
   };
 
   return { keys, report };
 }
 
-function addLookupKey(keys, value) {
+function addLookupKey(keys: Set<string>, value: unknown): void {
   if (!value) return;
   const normalized = normalizeLookupKey(value);
   if (normalized) keys.add(normalized);
 }
 
-async function loadBuildVerification(build, filePath, verificationLookup) {
+async function loadBuildVerification(build: BasicBuild, filePath: string, verificationLookup: Map<string, VerificationReport>): Promise<VerificationReport | null> {
   const sidecarPaths = candidateVerificationSidecars(filePath);
   for (const sidecarPath of sidecarPaths) {
     const parsed = await readJson(sidecarPath);
@@ -359,7 +371,7 @@ async function loadBuildVerification(build, filePath, verificationLookup) {
   const keys = [
     build.id,
     build.slug,
-    `${build.project || ""}/${build.slug || ""}`,
+    `${build.project ?? ""}/${build.slug ?? ""}`,
     path.basename(filePath, ".build.sweetspot.json"),
   ];
 
@@ -373,7 +385,7 @@ async function loadBuildVerification(build, filePath, verificationLookup) {
   return null;
 }
 
-function candidateVerificationSidecars(filePath) {
+function candidateVerificationSidecars(filePath: string) {
   const base = filePath.replace(/\.build\.sweetspot\.json$/u, "");
   return [
     `${base}.verification.json`,
@@ -382,7 +394,7 @@ function candidateVerificationSidecars(filePath) {
   ];
 }
 
-async function summarizeBuildManifest(document, filePath, releaseLookup, verificationLookup) {
+async function summarizeBuildManifest(document: unknown, filePath: string, releaseLookup: Map<string, JsonRecord>, verificationLookup: Map<string, VerificationReport>): Promise<{ ok: false; reason: string } | { ok: true; value: IndexedBuild }> {
   if (!isObject(document) || !isObject(document.build)) {
     return { ok: false, reason: "missing_build_block" };
   }
@@ -396,7 +408,7 @@ async function summarizeBuildManifest(document, filePath, releaseLookup, verific
   const composition = isObject(document.composition) ? document.composition : {};
   const contracts = isObject(document.contracts) ? document.contracts : {};
   const sweetspot = isObject(document.sweetspot) ? document.sweetspot : {};
-  const release = releaseLookup.get(build.id) || null;
+  const release = releaseLookup.get(build.id) ?? null;
   const verificationReport = await loadBuildVerification(
     {
       id: build.id,
@@ -407,8 +419,8 @@ async function summarizeBuildManifest(document, filePath, releaseLookup, verific
     verificationLookup,
   );
   const brickRefs = Array.isArray(composition.brick_refs) ? composition.brick_refs : [];
-  const requiredBrickRefs = brickRefs.filter((entry) => entry && entry.required !== false);
-  const optionalBrickRefs = brickRefs.filter((entry) => entry && entry.required === false);
+  const requiredBrickRefs = brickRefs.filter((entry: { required: boolean; }) => entry.required);
+  const optionalBrickRefs = brickRefs.filter((entry: { required: boolean; }) => entry && !entry.required);
   const flows = Array.isArray(composition.flows) ? composition.flows : [];
   const sourcePaths = Array.isArray(source.paths) ? source.paths : [];
   const releaseSummary = summarizeRelease(release);
@@ -463,7 +475,7 @@ async function summarizeBuildManifest(document, filePath, releaseLookup, verific
   };
 }
 
-function summarizeRelease(release) {
+function summarizeRelease(release: unknown) {
   if (!isObject(release)) {
     return {
       release_count: 0,
@@ -485,6 +497,7 @@ function summarizeRelease(release) {
   const latest = isObject(release.latest_release) ? release.latest_release : {};
   const versions = Array.isArray(release.versions) ? release.versions : [];
   const trustSummary = isObject(release.trust_summary) ? release.trust_summary : {};
+  const latestTrust = isObject(latest.trust_summary) ? latest.trust_summary : {};
 
   return {
     release_count: versions.length,
@@ -494,24 +507,24 @@ function summarizeRelease(release) {
     latest_verification_status: normalizeVerificationStatus(
       typeof latest.verification_status === "string"
         ? latest.verification_status
-        : latest?.trust_summary?.verification_status,
+        : latestTrust.verification_status,
     ),
     best_verification_status: normalizeVerificationStatus(trustSummary.best_verification_status),
     latest_trust_level: normalizeTrustLevel(
-      typeof latest?.trust_summary?.trust_level === "string"
-        ? latest.trust_summary.trust_level
+      typeof latestTrust.trust_level === "string"
+        ? latestTrust.trust_level
         : trustSummary.latest_trust_level,
     ),
-    published_release_count: versions.filter((entry) => entry && entry.status === "published").length,
-    canonical_release_count: versions.filter((entry) => entry && normalizeVerificationStatus(entry.verification_status || entry?.trust_summary?.verification_status) === "canonical").length,
-    rollback_supported_release_count: Number(trustSummary.rollback_supported_release_count || 0),
-    breaking_release_count: Number(trustSummary.breaking_release_count || 0),
-    failing_release_count: Number(trustSummary.failing_release_count || 0),
-    latest_check_counts: normalizeCheckCounts(latest?.trust_summary?.check_counts),
+    published_release_count: versions.filter((entry) => isObject(entry) && entry.status === "published").length,
+    canonical_release_count: versions.filter((entry) => isObject(entry) && normalizeVerificationStatus(entry.verification_status ?? (isObject(entry.trust_summary) ? entry.trust_summary.verification_status : undefined)) === "canonical").length,
+    rollback_supported_release_count: Number(trustSummary.rollback_supported_release_count ?? 0),
+    breaking_release_count: Number(trustSummary.breaking_release_count ?? 0),
+    failing_release_count: Number(trustSummary.failing_release_count ?? 0),
+    latest_check_counts: normalizeCheckCounts(latestTrust.check_counts),
   };
 }
 
-function summarizeVerificationHealth(document, release, verificationReport) {
+function summarizeVerificationHealth(document: JsonRecord, release: JsonRecord | null, verificationReport: VerificationReport | null) {
   const manifestVerification = isObject(document.verification) ? document.verification : {};
   const latestRelease = isObject(release?.latest_release) ? release.latest_release : {};
   const releaseTrust = isObject(latestRelease.trust_summary) ? latestRelease.trust_summary : {};
@@ -519,7 +532,7 @@ function summarizeVerificationHealth(document, release, verificationReport) {
 
   const manifestStatus = normalizeVerificationStatus(manifestVerification.status);
   const releaseStatus = normalizeVerificationStatus(
-    releaseTrust.verification_status || releaseAggregateTrust.latest_verification_status,
+    releaseTrust.verification_status ?? releaseAggregateTrust.latest_verification_status,
   );
   const reportStatus = normalizeVerificationStatus(verificationReport?.status);
   const primarySource = reportStatus !== "missing"
@@ -538,8 +551,8 @@ function summarizeVerificationHealth(document, release, verificationReport) {
         : "missing";
   const bestStatus = highestVerificationStatus([manifestStatus, releaseStatus, reportStatus]);
   const trustLevel = normalizeTrustLevel(
-    verificationReport?.trust_level ||
-      releaseTrust.trust_level ||
+    (verificationReport?.trust_level ??
+      releaseTrust.trust_level) ??
       releaseAggregateTrust.latest_trust_level,
   );
   const checkCounts = mergeCheckCounts(
@@ -549,7 +562,7 @@ function summarizeVerificationHealth(document, release, verificationReport) {
   );
   const smokeCommands = asStringArray(manifestVerification.smoke_commands);
   const integrationTargets = asStringArray(manifestVerification.integration_targets);
-  const evidenceCount = countEntries(manifestVerification.evidence) + Number(verificationReport?.evidence_count || 0);
+  const evidenceCount = countEntries(manifestVerification.evidence) + (verificationReport?.evidence_count ?? 0);
 
   let score = verificationScoreFor(primaryStatus);
   const bestScore = verificationScoreFor(bestStatus);
@@ -558,15 +571,15 @@ function summarizeVerificationHealth(document, release, verificationReport) {
   if (trustScore) {
     score = Math.round((score * 4 + trustScore) / 5);
   }
-  score += Math.min(12, Number(checkCounts.passed || 0) * 4);
-  score -= Math.min(30, Number(checkCounts.failed || 0) * 15);
-  if (Number(checkCounts.total || 0) === 0) score -= 8;
+  score += Math.min(12, (checkCounts.passed || 0) * 4);
+  score -= Math.min(30, (checkCounts.failed || 0) * 15);
+  if ((checkCounts.total || 0) === 0) score -= 8;
   if (smokeCommands.length > 0) score += 6;
   if (integrationTargets.length > 0) score += 4;
   if (evidenceCount > 0) score += Math.min(8, evidenceCount * 2);
   score = clampScore(score);
 
-  const issues = [];
+  const issues: Issue[] = [];
   if (primaryStatus === "failed" || primaryStatus === "blocked") {
     issues.push(issue("verification", "blocker", "verification_failed", "Verification evidence is failing or explicitly blocked."));
   } else if (primaryStatus === "unverified" || primaryStatus === "missing") {
@@ -574,10 +587,10 @@ function summarizeVerificationHealth(document, release, verificationReport) {
   } else if (primaryStatus === "partial" || primaryStatus === "planned") {
     issues.push(issue("verification", "warning", "verification_partial", "Verification evidence exists, but it is still partial or only planned."));
   }
-  if (Number(checkCounts.failed || 0) > 0) {
-    issues.push(issue("verification", "blocker", "failing_checks", `${checkCounts.failed} verification check${checkCounts.failed === 1 ? "" : "s"} are failing.`));
+  if ((checkCounts.failed || 0) > 0) {
+    issues.push(issue("verification", "blocker", "failing_checks", `${String(checkCounts.failed)} verification check${checkCounts.failed === 1 ? "" : "s"} are failing.`));
   }
-  if (Number(checkCounts.total || 0) === 0) {
+  if ((checkCounts.total || 0) === 0) {
     issues.push(issue("verification", "warning", "missing_check_counts", "No executed verification checks are recorded yet."));
   }
   if (smokeCommands.length === 0) {
@@ -606,7 +619,7 @@ function summarizeVerificationHealth(document, release, verificationReport) {
   };
 }
 
-function summarizePublishability(document, release, releaseSummary, verificationHealth) {
+function summarizePublishability(document: JsonRecord, release: JsonRecord | null, releaseSummary: ReturnType<typeof summarizeRelease>, verificationHealth: ReturnType<typeof summarizeVerificationHealth>): ScoredDimension & Record<string, unknown> {
   const publishing = isObject(document.publishing) ? document.publishing : {};
   const build = isObject(document.build) ? document.build : {};
   const classification = isObject(document.classification) ? document.classification : {};
@@ -616,7 +629,9 @@ function summarizePublishability(document, release, releaseSummary, verification
   const license = firstString(publishing.license, "private");
   const redactionProfile = firstString(publishing.redaction_profile, "");
   const publishable = publishing.publishable === true;
-  const portableDocCount = Number(release?.latest_release?.content_summary?.portable_doc_count || 0);
+  const latestRelease = release && isObject(release.latest_release) ? release.latest_release : {};
+  const contentSummary = isObject(latestRelease.content_summary) ? latestRelease.content_summary : {};
+  const portableDocCount = Number(contentSummary.portable_doc_count ?? 0);
 
   let score = 22;
   if (publishable) score += 32;
@@ -631,7 +646,7 @@ function summarizePublishability(document, release, releaseSummary, verification
   score += Math.min(8, excludedAssets.length * 2);
   if (portableDocCount > 0) score += 6;
   if (verificationHealth.score >= 70) score += 5;
-  if (["high", "critical"].includes(String(classification.risk || "").toLowerCase()) && excludedAssets.length === 0) {
+  if (["high", "critical"].includes(String(classification.risk ?? "").toLowerCase()) && excludedAssets.length === 0) {
     score -= 10;
   }
   if (releaseSummary.published_release_count > 0) {
@@ -639,7 +654,7 @@ function summarizePublishability(document, release, releaseSummary, verification
   }
   score = clampScore(score);
 
-  const issues = [];
+  const issues: Issue[] = [];
   if (!publishable) {
     issues.push(issue("publishability", "blocker", "not_marked_publishable", "Manifest explicitly marks this build as not publishable."));
   }
@@ -655,7 +670,7 @@ function summarizePublishability(document, release, releaseSummary, verification
   if (exposedDocs.length === 0 && portableDocCount === 0) {
     issues.push(issue("publishability", "warning", "missing_export_docs", "No exposed docs or portable docs are recorded for community publishing."));
   }
-  if (["high", "critical"].includes(String(classification.risk || "").toLowerCase()) && excludedAssets.length === 0) {
+  if (["high", "critical"].includes(String(classification.risk ?? "").toLowerCase()) && excludedAssets.length === 0) {
     issues.push(issue("publishability", "warning", "sensitive_assets_not_excluded", "High-risk build has no excluded asset guidance for publish-safe export."));
   }
 
@@ -673,7 +688,7 @@ function summarizePublishability(document, release, releaseSummary, verification
   };
 }
 
-function summarizeInstallability(document, release, releaseSummary, verificationHealth) {
+function summarizeInstallability(document: JsonRecord, release: JsonRecord | null, releaseSummary: ReturnType<typeof summarizeRelease>, verificationHealth: ReturnType<typeof summarizeVerificationHealth>): ScoredDimension & Record<string, unknown> {
   const clone = isObject(document.clone) ? document.clone : {};
   const contracts = isObject(document.contracts) ? document.contracts : {};
   const readiness = normalizeReadiness(clone.readiness);
@@ -681,7 +696,8 @@ function summarizeInstallability(document, release, releaseSummary, verification
   const postCloneChecks = asStringArray(clone.post_clone_checks);
   const requiredPorts = asStringArray(clone.required_ports);
   const fileMap = Array.isArray(clone.file_map) ? clone.file_map : [];
-  const requiredEnv = Array.isArray(contracts?.env?.required) ? contracts.env.required : [];
+  const env = isObject(contracts.env) ? contracts.env : {};
+  const requiredEnv = Array.isArray(env.required) ? env.required : [];
 
   let score = readinessScoreFor(readiness);
   if (releaseSummary.release_count > 0) score += 10;
@@ -696,7 +712,7 @@ function summarizeInstallability(document, release, releaseSummary, verification
   if (verificationHealth.score < 55) score -= 6;
   score = clampScore(score);
 
-  const issues = [];
+  const issues: Issue[] = [];
   if (releaseSummary.release_count === 0) {
     issues.push(issue("installability", "blocker", "no_release_artifact", "No release artifact exists yet, so install flow is not release-backed."));
   }
@@ -712,7 +728,7 @@ function summarizeInstallability(document, release, releaseSummary, verification
     issues.push(issue("installability", "warning", "missing_post_clone_checks", "No post-clone checks are recorded."));
   }
   if (requiredPorts.length > 0) {
-    issues.push(issue("installability", "warning", "adapter_ports_required", `${requiredPorts.length} required port${requiredPorts.length === 1 ? "" : "s"} still need target-side adaptation.`));
+    issues.push(issue("installability", "warning", "adapter_ports_required", `${String(requiredPorts.length)} required port${requiredPorts.length === 1 ? "" : "s"} still need target-side adaptation.`));
   }
 
   return {
@@ -732,12 +748,14 @@ function summarizeInstallability(document, release, releaseSummary, verification
   };
 }
 
-function summarizeUpdateability(document, release, releaseSummary, verificationHealth) {
+function summarizeUpdateability(document: JsonRecord, release: JsonRecord | null, releaseSummary: ReturnType<typeof summarizeRelease>, verificationHealth: ReturnType<typeof summarizeVerificationHealth>): ScoredDimension & Record<string, unknown> {
   const upgrade = isObject(document.upgrade) ? document.upgrade : {};
   const clone = isObject(document.clone) ? document.clone : {};
   const migrationHooks = asStringArray(upgrade.migration_hooks);
   const rollbackSteps = asStringArray(clone.rollback_steps);
-  const rollbackSupported = Boolean(upgrade.rollback_supported || release?.latest_release?.trust_summary?.rollback_supported);
+  const latestRelease = release && isObject(release.latest_release) ? release.latest_release : {};
+  const trustSummary = isObject(latestRelease.trust_summary) ? latestRelease.trust_summary : {};
+  const rollbackSupported = Boolean(upgrade.rollback_supported ?? trustSummary.rollback_supported);
   const compatibilityPolicy = firstString(upgrade.compatibility_policy, "");
 
   let score = releaseSummary.release_count > 0 ? 35 : 15;
@@ -747,11 +765,11 @@ function summarizeUpdateability(document, release, releaseSummary, verificationH
   score += Math.min(8, rollbackSteps.length * 2);
   score += Math.min(6, Math.max(0, releaseSummary.release_count - 1) * 2);
   if (verificationHealth.score >= 70) score += 6;
-  score -= Math.min(20, Number(releaseSummary.breaking_release_count || 0) * 10);
-  score -= Math.min(30, Number(releaseSummary.failing_release_count || 0) * 15);
+  score -= Math.min(20, (releaseSummary.breaking_release_count || 0) * 10);
+  score -= Math.min(30, (releaseSummary.failing_release_count || 0) * 15);
   score = clampScore(score);
 
-  const issues = [];
+  const issues: Issue[] = [];
   if (releaseSummary.release_count === 0) {
     issues.push(issue("updateability", "blocker", "no_release_history", "No release history exists yet for upgrade planning."));
   }
@@ -764,10 +782,10 @@ function summarizeUpdateability(document, release, releaseSummary, verificationH
   if (migrationHooks.length === 0) {
     issues.push(issue("updateability", "warning", "missing_migration_hooks", "No migration hooks are recorded for upgrade handling."));
   }
-  if (Number(releaseSummary.breaking_release_count || 0) > 0) {
+  if ((releaseSummary.breaking_release_count || 0) > 0) {
     issues.push(issue("updateability", "warning", "breaking_release_history", "Breaking releases exist in the current release history."));
   }
-  if (Number(releaseSummary.failing_release_count || 0) > 0) {
+  if ((releaseSummary.failing_release_count || 0) > 0) {
     issues.push(issue("updateability", "blocker", "failing_release_history", "Failing releases exist in the current release history."));
   }
 
@@ -786,47 +804,48 @@ function summarizeUpdateability(document, release, releaseSummary, verificationH
   };
 }
 
-function summarizeTopIssues(issues, limit = 5) {
+function summarizeTopIssues(issues: Issue[], limit = 5): Issue[] {
   return [...issues]
     .sort(compareIssues)
     .slice(0, limit)
-    .map((entry) => pick(entry, ["dimension", "severity", "code", "message"]));
+    .map((entry) => ({ dimension: entry.dimension, severity: entry.severity, code: entry.code, message: entry.message }));
 }
 
-function compareIssues(left, right) {
+function compareIssues(left: Issue, right: Issue): number {
   return severityRank(right.severity) - severityRank(left.severity)
     || compareStrings(left.dimension || "", right.dimension || "")
     || compareStrings(left.code || "", right.code || "");
 }
 
-function severityRank(value) {
+function severityRank(value: string) {
   if (value === "blocker") return 3;
   if (value === "warning") return 2;
   return 1;
 }
 
-function issue(dimension, severity, code, message) {
+function issue(dimension: string, severity: string, code: string, message: string) {
   return { dimension, severity, code, message };
 }
 
-function summarizeSweetspot(sweetspot) {
+function summarizeSweetspot(sweetspot: JsonRecord): Record<string, { score: number | null; status: string | null }> {
   const keys = Object.keys(sweetspot)
     .filter((key) => isObject(sweetspot[key]))
     .sort(compareStrings);
 
-  const summary: Record<string, any> = {};
+  const summary: Record<string, { score: number | null; status: string | null }> = {};
   for (const key of keys) {
     const block = sweetspot[key];
+    if (!isObject(block)) continue;
     summary[key] = {
       status: typeof block.status === "string" ? block.status : null,
-      score: Number.isFinite(block.score) ? block.score : null,
+      score: typeof block.score === 'number' && Number.isFinite(block.score) ? block.score : null,
     };
   }
   return summary;
 }
 
-function summarizeBuildIndex(builds) {
-  const summary: Record<string, any> = {
+function summarizeBuildIndex(builds: IndexedBuild[]) {
+  const summary = {
     build_count: builds.length,
     by_project: {},
     by_status: {},
@@ -836,50 +855,50 @@ function summarizeBuildIndex(builds) {
     published_build_count: 0,
     canonical_release_build_count: 0,
     verification: {
-      average_score: average(builds.map((build) => build.verification_health?.score)),
+      average_score: average(builds.map((build) => build.verification_health.score)),
       ready_count: 0,
       by_status: {},
       by_label: {},
     },
     publishability: {
-      average_score: average(builds.map((build) => build.publishability?.score)),
+      average_score: average(builds.map((build) => build.publishability.score)),
       ready_count: 0,
       by_label: {},
     },
     installability: {
-      average_score: average(builds.map((build) => build.installability?.score)),
+      average_score: average(builds.map((build) => build.installability.score)),
       ready_count: 0,
       by_label: {},
     },
     updateability: {
-      average_score: average(builds.map((build) => build.updateability?.score)),
+      average_score: average(builds.map((build) => build.updateability.score)),
       ready_count: 0,
       by_label: {},
     },
-    top_blockers: [],
+    top_blockers: [] as BlockerCount[],
   };
 
-  const blockerCounts = new Map();
+  const blockerCounts = new Map<string, BlockerCount>();
 
   for (const build of builds) {
-    increment(summary.by_project, build.project || "unknown");
-    increment(summary.by_status, build.status || "unknown");
-    increment(summary.by_visibility, build.visibility || "unknown");
-    increment(summary.by_trust_tier, build.trust_tier || "unknown");
-    if ((build.release_summary?.release_count || 0) > 0) summary.released_build_count += 1;
-    if ((build.release_summary?.published_release_count || 0) > 0) summary.published_build_count += 1;
-    if ((build.release_summary?.canonical_release_count || 0) > 0) summary.canonical_release_build_count += 1;
+    increment(summary.by_project, build.project ?? "unknown");
+    increment(summary.by_status, build.status ?? "unknown");
+    increment(summary.by_visibility, build.visibility ?? "unknown");
+    increment(summary.by_trust_tier, build.trust_tier ?? "unknown");
+    if ((build.release_summary.release_count || 0) > 0) summary.released_build_count += 1;
+    if ((build.release_summary.published_release_count || 0) > 0) summary.published_build_count += 1;
+    if ((build.release_summary.canonical_release_count || 0) > 0) summary.canonical_release_build_count += 1;
 
-    increment(summary.verification.by_status, build.verification_health?.primary_status || "missing");
-    increment(summary.verification.by_label, build.verification_health?.label || "blocked");
-    increment(summary.publishability.by_label, build.publishability?.label || "blocked");
-    increment(summary.installability.by_label, build.installability?.label || "blocked");
-    increment(summary.updateability.by_label, build.updateability?.label || "blocked");
+    increment(summary.verification.by_status, build.verification_health.primary_status || "missing");
+    increment(summary.verification.by_label, build.verification_health.label || "blocked");
+    increment(summary.publishability.by_label, build.publishability.label || "blocked");
+    increment(summary.installability.by_label, build.installability.label || "blocked");
+    increment(summary.updateability.by_label, build.updateability.label || "blocked");
 
-    if (build.verification_health?.ready) summary.verification.ready_count += 1;
-    if (build.publishability?.ready) summary.publishability.ready_count += 1;
-    if (build.installability?.ready) summary.installability.ready_count += 1;
-    if (build.updateability?.ready) summary.updateability.ready_count += 1;
+    if (build.verification_health.ready) summary.verification.ready_count += 1;
+    if (build.publishability.ready) summary.publishability.ready_count += 1;
+    if (build.installability.ready) summary.installability.ready_count += 1;
+    if (build.updateability.ready) summary.updateability.ready_count += 1;
 
     for (const blocker of build.top_blockers || []) {
       const key = `${blocker.dimension}:${blocker.code}`;
@@ -894,6 +913,7 @@ function summarizeBuildIndex(builds) {
         });
       }
       const row = blockerCounts.get(key);
+      if (!row) continue;
       row.count += 1;
       if (row.sample_build_ids.length < 4) {
         row.sample_build_ids.push(build.build_id);
@@ -908,18 +928,18 @@ function summarizeBuildIndex(builds) {
   return summary;
 }
 
-function countContractEnv(contracts, key) {
+function countContractEnv(contracts: JsonRecord, key: string): number {
   const env = isObject(contracts.env) ? contracts.env : {};
   const entries = Array.isArray(env[key]) ? env[key] : [];
   return entries.length;
 }
 
-function asStringArray(value) {
-  return Array.isArray(value) ? value.filter((entry) => typeof entry === "string") : [];
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
-function normalizeVerificationStatus(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+function normalizeVerificationStatus(value: unknown): string {
+  const normalized = String(value ?? "").trim().toLowerCase();
   if (!normalized) return "missing";
   if (["failed", "fail", "error", "errors"].includes(normalized)) return "failed";
   if (["blocked", "deny"].includes(normalized)) return "blocked";
@@ -934,8 +954,8 @@ function normalizeVerificationStatus(value) {
   return normalized;
 }
 
-function normalizeTrustLevel(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+function normalizeTrustLevel(value: unknown): string {
+  const normalized = String(value ?? "").trim().toLowerCase();
   if (!normalized) return "unknown";
   if (["blocked", "deny"].includes(normalized)) return "blocked";
   if (["low"].includes(normalized)) return "low";
@@ -945,8 +965,8 @@ function normalizeTrustLevel(value) {
   return normalized;
 }
 
-function normalizeReadiness(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+function normalizeReadiness(value: unknown): keyof typeof READINESS_SCORES {
+  const normalized = String(value ?? "").trim().toLowerCase();
   if (!normalized) return "manual";
   if (["copy_ready", "copy-ready", "copy ready"].includes(normalized)) return "copy_ready";
   if (["ready"].includes(normalized)) return "ready";
@@ -955,15 +975,15 @@ function normalizeReadiness(value) {
   return "manual";
 }
 
-function normalizeVisibility(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+function normalizeVisibility(value: unknown): string {
+  const normalized = String(value ?? "").trim().toLowerCase();
   if (!normalized) return "private";
   if (["public", "open"].includes(normalized)) return "public";
   if (["community", "shared"].includes(normalized)) return "community";
   return "private";
 }
 
-function normalizeIssueList(items) {
+function normalizeIssueList(items: unknown): Issue[] {
   if (!Array.isArray(items)) return [];
   return items
     .map((entry) => {
@@ -974,14 +994,14 @@ function normalizeIssueList(items) {
       return issue(
         typeof entry.dimension === "string" ? entry.dimension : "verification",
         typeof entry.severity === "string" ? entry.severity : "warning",
-        typeof entry.code === "string" ? entry.code : slugify(entry.message || entry.notes || entry.title || "issue"),
+        typeof entry.code === "string" ? entry.code : slugify((entry.message ?? (entry.notes ?? entry.title)) ?? "issue"),
         typeof entry.message === "string" ? entry.message : typeof entry.notes === "string" ? entry.notes : "Verification issue recorded.",
       );
     })
-    .filter(Boolean);
+    .filter((entry): entry is Issue => entry !== null);
 }
 
-function normalizeCheckCounts(value) {
+function normalizeCheckCounts(value: unknown): { passed: number; failed: number; skipped: number; total: number } {
   if (!isObject(value)) {
     return { passed: 0, failed: 0, skipped: 0, total: 0 };
   }
@@ -992,28 +1012,30 @@ function normalizeCheckCounts(value) {
   return { passed, failed, skipped, total };
 }
 
-function mergeCheckCounts(...counts) {
+function mergeCheckCounts(...counts: { passed: number; failed: number; skipped: number; total: number; }[]) {
   return counts.reduce((acc, entry) => ({
-    passed: Math.max(acc.passed, toNumber(entry?.passed)),
-    failed: Math.max(acc.failed, toNumber(entry?.failed)),
-    skipped: Math.max(acc.skipped, toNumber(entry?.skipped)),
-    total: Math.max(acc.total, toNumber(entry?.total)),
+    passed: Math.max(acc.passed, toNumber(entry.passed)),
+    failed: Math.max(acc.failed, toNumber(entry.failed)),
+    skipped: Math.max(acc.skipped, toNumber(entry.skipped)),
+    total: Math.max(acc.total, toNumber(entry.total)),
   }), { passed: 0, failed: 0, skipped: 0, total: 0 });
 }
 
-function verificationScoreFor(status) {
-  return STATUS_SCORES[normalizeVerificationStatus(status)] || 30;
+function verificationScoreFor(status: string): number {
+  const normalized = normalizeVerificationStatus(status);
+  return normalized in STATUS_SCORES ? STATUS_SCORES[normalized as keyof typeof STATUS_SCORES] : 30;
 }
 
-function trustScoreFor(level) {
-  return TRUST_SCORES[normalizeTrustLevel(level)] || 0;
+function trustScoreFor(level: string): number {
+  const normalized = normalizeTrustLevel(level);
+  return normalized in TRUST_SCORES ? TRUST_SCORES[normalized as keyof typeof TRUST_SCORES] : 0;
 }
 
-function readinessScoreFor(readiness) {
+function readinessScoreFor(readiness: string) {
   return READINESS_SCORES[normalizeReadiness(readiness)] || READINESS_SCORES.manual;
 }
 
-function highestVerificationStatus(statuses) {
+function highestVerificationStatus(statuses: string[]) {
   let bestStatus = "missing";
   let bestScore = -1;
   for (const status of statuses) {
@@ -1027,7 +1049,7 @@ function highestVerificationStatus(statuses) {
   return bestStatus;
 }
 
-function scoreLabel(score) {
+function scoreLabel(score: number): string {
   if (!Number.isFinite(score)) return "blocked";
   if (score >= 85) return "strong";
   if (score >= 70) return "workable";
@@ -1035,25 +1057,25 @@ function scoreLabel(score) {
   return "blocked";
 }
 
-function average(values) {
-  const filtered = values.filter((value) => Number.isFinite(value));
+function average(values: (number | null | undefined)[]): number {
+  const filtered = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   if (filtered.length === 0) return 0;
   return Math.round(filtered.reduce((sum, value) => sum + value, 0) / filtered.length);
 }
 
-function hasSeverity(issues, severity) {
+function hasSeverity(issues: Issue[], severity: string): boolean {
   return issues.some((entry) => entry.severity === severity);
 }
 
-function clampScore(value) {
+function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-function countEntries(value) {
+function countEntries(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
 
-function firstString(...values) {
+function firstString(...values: unknown[]): string {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) {
       return value.trim();
@@ -1062,50 +1084,50 @@ function firstString(...values) {
   return "";
 }
 
-function toNumber(value) {
+function toNumber(value: unknown): number {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
 
-function pick(obj, keys) {
-  const out: Record<string, any> = {};
+function pick(obj: JsonRecord, keys: string[]): JsonRecord {
+  const out: JsonRecord = {};
   for (const key of keys) {
-    if (obj && obj[key] !== undefined) out[key] = obj[key];
+    if (obj[key] !== undefined) out[key] = obj[key];
   }
   return out;
 }
 
-function increment(record, key) {
+function increment(record: Record<string, number>, key: string): void {
   record[key] = (record[key] || 0) + 1;
 }
 
-function normalizeLookupKey(value) {
-  return String(value || "").trim().toLowerCase();
+function normalizeLookupKey(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase();
 }
 
-function normalizePath(value) {
+function normalizePath(value: unknown): string {
   return String(value).split(path.sep).join("/");
 }
 
-function slugify(value) {
-  return String(value || "")
+function slugify(value: unknown): string {
+  return String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
-function compareBuilds(left, right) {
+function compareBuilds(left: IndexedBuild, right: IndexedBuild): number {
   return (
-    compareStrings(left.project || "", right.project || "") ||
+    compareStrings(left.project ?? "", right.project ?? "") ||
     compareStrings(left.name || "", right.name || "") ||
     compareStrings(left.build_id || "", right.build_id || "")
   );
 }
 
-function compareStrings(left, right) {
-  return String(left).localeCompare(String(right));
+function compareStrings(left: string, right: string) {
+  return left.localeCompare(right);
 }
 
-function isObject(value) {
+function isObject(value: unknown): value is JsonRecord {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }

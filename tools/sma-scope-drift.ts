@@ -18,12 +18,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import os from "node:os";
 import { resolveProjectRoot as canonicalResolveProjectRoot, PROJECTS_ROOT } from "./lib/project-paths.ts";
+import type { BuildManifest } from './lib/schema-types/build.manifest.schema.d.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
 const DEFAULTS = {
-  projectsRoot: process.env.SMA_PROJECTS_ROOT || PROJECTS_ROOT,
+  projectsRoot: process.env.SMA_PROJECTS_ROOT ?? PROJECTS_ROOT,
 };
 
 const HELP = `sma-scope-drift — declared-vs-realized diff for curated builds.
@@ -67,8 +68,8 @@ async function main() {
     status: reports.length === 0 ? "warn" : "checked",
     manifests: reports.length,
     total_missing: reports.reduce((a, r) => a + r.summary.missing, 0),
-    total_blocking: reports.reduce((a, r) => a + (r.summary.blocking || 0), 0),
-    total_warning: reports.reduce((a, r) => a + (r.summary.warning || 0), 0),
+    total_blocking: reports.reduce((a, r) => a + (r.summary.blocking ?? 0), 0),
+    total_warning: reports.reduce((a, r) => a + (r.summary.warning ?? 0), 0),
     total_extra: reports.reduce((a, r) => a + r.summary.extra, 0),
     warnings: reports.length === 0
       ? ["nothing to check; run npm run scan to discover manifests, then rerun this gate"]
@@ -103,17 +104,24 @@ const BUCKET_SEVERITY = {
   ui_surfaces: "warn",
 };
 
-type DriftCheck = {
-  declared: any[];
-  realized: any[];
-  missing: any[];
+type DeepPartial<T> = T extends readonly unknown[] ? DeepPartial<T[number]>[] : T extends object ? { [Key in keyof T]?: DeepPartial<T[Key]> } : T;
+type ManifestInput = DeepPartial<BuildManifest>;
+type CheckBucket = 'declared' | 'missing' | 'realized';
+interface DriftCheck {
+  declared: unknown[];
+  realized: unknown[];
+  missing: unknown[];
   note?: string;
   severity?: string;
-};
+}
+interface DriftOptions { all?: boolean; help?: boolean; json?: boolean; manifest?: string; projectsRoot: string; report?: string; warnOnly?: boolean }
+interface DriftSummary { blocking?: number; declared: number; extra: number; missing: number; realized: number; warning?: number }
+interface DriftReport { build_id?: string; checks: Record<string, DriftCheck>; manifest: string; project?: string; projectRoot: string | null; reason?: string; status: string; summary: DriftSummary }
+interface CombinedReport { manifests: number; reports: DriftReport[]; status: string; total_blocking: number; total_extra: number; total_missing: number; total_warning: number }
 
-async function driftOne(manifestPath, opts) {
-  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
-  const projectRoot = await resolveProjectRoot(manifest, opts.projectsRoot);
+async function driftOne(manifestPath: string, opts: DriftOptions): Promise<DriftReport> {
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ManifestInput;
+  const projectRoot =  resolveProjectRoot(manifest, opts.projectsRoot);
   const checks: Record<string, DriftCheck> = {
     source_paths: { declared: [], realized: [], missing: [] },
     brick_refs: { declared: [], realized: [], missing: [] },
@@ -145,7 +153,7 @@ async function driftOne(manifestPath, opts) {
 
   // composition.brick_refs[]
   for (const ref of manifest.composition?.brick_refs ?? []) {
-    const key = ref.brick_id || ref.path;
+    const key = ref.brick_id ?? ref.path;
     checks.brick_refs.declared.push(key);
     const p = ref.path;
     if (p && existsSync(path.join(projectRoot, p))) checks.brick_refs.realized.push(key);
@@ -154,7 +162,7 @@ async function driftOne(manifestPath, opts) {
 
   // interfaces.entrypoints + api_endpoints — for "POST /functions/v1/X" patterns
   // we check supabase/functions/X exists; for "GET /api/Y" patterns we just record.
-  const verifyRoute = (route) => {
+  const verifyRoute = (route: string) => {
     const m = /\/functions\/v1\/([a-z0-9-]+)/.exec(route);
     if (!m) return null;
     return existsSync(path.join(projectRoot, "supabase/functions", m[1]));
@@ -201,9 +209,9 @@ async function driftOne(manifestPath, opts) {
   for (const [bucket, c] of Object.entries(checks)) {
     const n = (c.missing || []).length;
     if (n === 0) continue;
-    if (BUCKET_SEVERITY[bucket] === "warn") warning += n;
+    if (BUCKET_SEVERITY[bucket as keyof typeof BUCKET_SEVERITY] === "warn") warning += n;
     else blocking += n;
-    c.severity = BUCKET_SEVERITY[bucket] || "block";
+    c.severity = BUCKET_SEVERITY[bucket as keyof typeof BUCKET_SEVERITY] ?? "block";
   }
   const status = blocking > 0 ? "drift" : warning > 0 ? "warn" : "pass";
 
@@ -218,23 +226,23 @@ async function driftOne(manifestPath, opts) {
   };
 }
 
-function sum(checks, key) {
+function sum(checks: Record<string, DriftCheck>, key: CheckBucket): number {
   let n = 0;
-  for (const k of Object.keys(checks)) n += (checks[k][key] || []).length;
+  for (const check of Object.values(checks)) n += check[key].length;
   return n;
 }
 
-function surfaceTokens(s) {
+function surfaceTokens(s: string) {
   return [
     s,
     s.replace(/-/g, ""),
     s.replace(/-/g, "_"),
-    s.replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
-    s.replace(/(^|-)([a-z])/g, (_, _d, c) => c.toUpperCase()),
+    s.replace(/-([a-z])/g, (_: string, character: string) => character.toUpperCase()),
+    s.replace(/(^|-)([a-z])/g, (_: string, _delimiter: string, character: string) => character.toUpperCase()),
   ];
 }
 
-async function readSourceCorpus(projectRoot, declared) {
+async function readSourceCorpus(projectRoot: string, declared: string[]): Promise<string> {
   const exts = new Set([".ts", ".tsx", ".js", ".mjs", ".jsx"]);
   let corpus = "";
   for (const decl of declared) {
@@ -255,7 +263,7 @@ async function readSourceCorpus(projectRoot, declared) {
   return corpus;
 }
 
-async function walkDir(dir, onFile) {
+async function walkDir(dir: string, onFile: (file: string) => Promise<void>): Promise<void> {
   let entries;
   try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
   for (const e of entries) {
@@ -266,12 +274,12 @@ async function walkDir(dir, onFile) {
   }
 }
 
-async function safeRead(file) {
+async function safeRead(file: string): Promise<string> {
   try { return await fs.readFile(file, "utf8"); } catch { return ""; }
 }
 
-function parseArgs(argv: string[]): Record<string, any> {
-  const out: Record<string, any> = { projectsRoot: DEFAULTS.projectsRoot };
+function parseArgs(argv: string[]): DriftOptions {
+  const out: DriftOptions = { projectsRoot: DEFAULTS.projectsRoot };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i], n = argv[i + 1];
     if (a === "--manifest") { out.manifest = n; i += 1; }
@@ -285,7 +293,7 @@ function parseArgs(argv: string[]): Record<string, any> {
   return out;
 }
 
-async function resolveManifests(opts: Record<string, any>): Promise<string[]> {
+async function resolveManifests(opts: DriftOptions): Promise<string[]> {
   if (opts.manifest) return [path.resolve(opts.manifest)];
   if (opts.all) {
     const root = path.resolve(repoRoot, "builds");
@@ -294,9 +302,9 @@ async function resolveManifests(opts: Record<string, any>): Promise<string[]> {
   return [];
 }
 
-async function walkManifests(root) {
-  const out = [];
-  async function walk(dir) {
+async function walkManifests(root: string): Promise<string[]> {
+  const out: string[] = [];
+  async function walk(dir: string): Promise<void> {
     let entries;
     try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
@@ -309,38 +317,38 @@ async function walkManifests(root) {
   return out;
 }
 
-async function resolveProjectRoot(manifest, _projectsRoot) {
+function resolveProjectRoot(manifest: ManifestInput, _projectsRoot: string): string | null {
   // Delegated to tools/lib/project-paths.ts — see same swap in sma-rule-gate.ts.
   return canonicalResolveProjectRoot(manifest.source?.project);
 }
 
-function printSummary(combined) {
+function printSummary(combined: CombinedReport): void {
   if (combined.status === "warn") {
     console.log("[scope-drift] WARN — nothing to check; run npm run scan to discover manifests, then rerun this gate");
     return;
   }
   const verdict = combined.total_blocking === 0 ? "PASS" : "DRIFT";
-  console.log(`[scope-drift] ${verdict} — ${combined.manifests} manifest(s), ${combined.total_blocking} blocking, ${combined.total_warning} warning`);
+  console.log(`[scope-drift] ${verdict} — ${String(combined.manifests)} manifest(s), ${String(combined.total_blocking)} blocking, ${String(combined.total_warning)} warning`);
   for (const r of combined.reports) {
     const v = r.status === "pass" ? "✓" : r.status === "warn" ? "⚠" : r.status === "skipped" ? "⊘" : "✗";
-    console.log(`  ${v} ${r.build_id || r.manifest}  (${r.summary.realized}/${r.summary.declared} realized)`);
+    console.log(`  ${v} ${r.build_id ?? r.manifest}  (${String(r.summary.realized)}/${String(r.summary.declared)} realized)`);
     if (r.status === "skipped") {
-      console.log(`      skipped: ${r.reason}`);
+      console.log(`      skipped: ${String(r.reason)}`);
       continue;
     }
-    for (const [bucket, c] of Object.entries(r.checks) as [string, DriftCheck][]) {
+    for (const [bucket, c] of Object.entries(r.checks)) {
       if (!c.missing || c.missing.length === 0) continue;
-      const sev = c.severity || "block";
-      console.log(`      ${bucket} (${sev}): ${c.missing.length} missing`);
+      const sev = c.severity ?? "block";
+      console.log(`      ${bucket} (${sev}): ${String(c.missing.length)} missing`);
       for (const m of c.missing.slice(0, 5)) {
         console.log(`        - ${typeof m === "string" ? m : JSON.stringify(m)}`);
       }
-      if (c.missing.length > 5) console.log(`        ... and ${c.missing.length - 5} more`);
+      if (c.missing.length > 5) console.log(`        ... and ${String(c.missing.length - 5)} more`);
     }
   }
 }
 
-main().catch((err) => {
-  console.error("[scope-drift] error:", err.message);
+main().catch((err: unknown) => {
+  console.error("[scope-drift] error:", err instanceof Error ? err.message : String(err));
   process.exit(2);
 });

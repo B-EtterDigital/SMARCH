@@ -43,14 +43,54 @@ const FINGERPRINT_LEDGER = resolve(SMA_ROOT, 'security/brick-fingerprints.genera
 const DEFAULT_REGISTRY = 'scans/all-projects/latest.registry.json';
 const KEY_DIR = resolve(SMA_ROOT, 'security/keys');
 
-type CliArgs = Record<string, any>;
+type CliArgs = { registry?: string; json?: boolean; recheckSource?: boolean; coverage?: boolean; requireSigned?: boolean; gate?: boolean };
+type StoredSeal = Parameters<typeof verifySeal>[0] & { signature?: string };
+type ProvenanceEvent = NonNullable<Parameters<typeof verifySeal>[1]['events']>[number];
+type LedgerEntry = { brick_id: string; project?: string; created_by?: ProvenanceEvent; touched_by: ProvenanceEvent[]; seal: StoredSeal };
+type ProvenanceLedger = { signed: boolean; signing_key_id: string | null; provenance: LedgerEntry[] };
+type RegistryBrick = { id: string; project: string; manifest_path?: string; source_paths?: string[] };
+type RegistryEntry = { brick: RegistryBrick; projectAbs: string | null };
+type VerifyFailure = { brick_id: string; project: string | null; reasons: string[] };
+type Coverage = { registry_bricks: number; ledgered: number; missing: number; missing_sample: string[] };
+type VerifyReport = { status: string; warning?: string; total: number; verified: number; failed: number; signed: boolean; signature_checked: number; source_rechecked: number; coverage: Coverage | null; trust_notes: string[]; failures: VerifyFailure[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseLedger(value: unknown): ProvenanceLedger {
+  if (!isRecord(value)) throw new Error('provenance ledger must be an object');
+  const provenance: LedgerEntry[] = [];
+  for (const raw of Array.isArray(value.provenance) ? value.provenance : []) {
+    if (!isRecord(raw) || typeof raw.brick_id !== 'string' || !isRecord(raw.seal)) continue;
+    const seal: StoredSeal = {
+      anchor: typeof raw.seal.anchor === 'string' ? raw.seal.anchor : undefined,
+      head: typeof raw.seal.head === 'string' ? raw.seal.head : undefined,
+      chain_length: typeof raw.seal.chain_length === 'number' ? raw.seal.chain_length : undefined,
+      signature: typeof raw.seal.signature === 'string' ? raw.seal.signature : undefined,
+    };
+    const touchedBy = Array.isArray(raw.touched_by) ? raw.touched_by.filter(isRecord) as ProvenanceEvent[] : [];
+    provenance.push({
+      brick_id: raw.brick_id,
+      project: typeof raw.project === 'string' ? raw.project : undefined,
+      created_by: isRecord(raw.created_by) ? raw.created_by as ProvenanceEvent : undefined,
+      touched_by: touchedBy,
+      seal,
+    });
+  }
+  return {
+    signed: value.signed === true,
+    signing_key_id: typeof value.signing_key_id === 'string' ? value.signing_key_id : null,
+    provenance,
+  };
+}
 
 const args = parseArgs(process.argv.slice(2));
 
 try {
   main();
 } catch (err) {
-  console.error(`sma-provenance-verify: ${err.message}`);
+  console.error(`sma-provenance-verify: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(1);
 }
 
@@ -66,12 +106,12 @@ function main() {
     }
     throw new Error(`provenance ledger not found: ${relative(SMA_ROOT, PROV_LEDGER)}. Run: node tools/sma-provenance-ledger.ts`);
   }
-  const ledger = JSON.parse(readFileSync(PROV_LEDGER, 'utf8'));
+  const ledger = parseLedger(JSON.parse(readFileSync(PROV_LEDGER, 'utf8')) as unknown);
   const fpMap = loadFingerprints();
   const publicPem = ledger.signed ? loadPublicKey(ledger.signing_key_id) : null;
   const brickMap = (args.recheckSource || args.coverage) ? discoveredBricks : null;
 
-  const failures = [];
+  const failures: VerifyFailure[] = [];
   let signatureChecked = 0;
   let sourceChecked = 0;
 
@@ -86,7 +126,7 @@ function main() {
     const reasons = [...check.reasons];
 
     // signature check
-    if (ledger.signed && seal?.signature) {
+    if (ledger.signed && seal?.signature && seal.head) {
       signatureChecked += 1;
       if (!publicPem) {
         reasons.push('ledger is signed but the public key is unavailable');
@@ -105,7 +145,7 @@ function main() {
     }
 
     if (reasons.length) {
-      failures.push({ brick_id: entry.brick_id, project: entry.project, reasons });
+      failures.push({ brick_id: entry.brick_id, project: entry.project ?? null, reasons });
     }
   }
 
@@ -158,13 +198,16 @@ function main() {
   const revPath = resolve(SMA_ROOT, 'security/revocations.json');
   if (existsSync(revPath)) {
     try {
-      const rev = JSON.parse(readFileSync(revPath, 'utf8'));
-      if (ledger.signing_key_id && (rev.revoked_key_ids || []).includes(ledger.signing_key_id)) {
+      const rev: unknown = JSON.parse(readFileSync(revPath, 'utf8'));
+      if (!isRecord(rev)) throw new Error('revocation list must be an object');
+      const revokedKeyIds = Array.isArray(rev.revoked_key_ids) ? rev.revoked_key_ids.filter((id): id is string => typeof id === 'string') : [];
+      if (ledger.signing_key_id && revokedKeyIds.includes(ledger.signing_key_id)) {
         failures.push({ brick_id: '(ledger)', project: null, reasons: [`signing key ${ledger.signing_key_id} is REVOKED — signatures are no longer trusted`] });
       }
-      const revokedBricks = new Set((rev.revoked_bricks || []).map((r) => (typeof r === 'string' ? r : r.brick_id)));
+      const revokedBricks = new Set((Array.isArray(rev.revoked_bricks) ? rev.revoked_bricks : []).flatMap((entry) =>
+        typeof entry === 'string' ? [entry] : isRecord(entry) && typeof entry.brick_id === 'string' ? [entry.brick_id] : []));
       if (revokedBricks.size) {
-        const hit = (ledger.provenance || []).filter((e) => revokedBricks.has(e.brick_id)).map((e) => e.brick_id);
+        const hit = ledger.provenance.filter((entry) => revokedBricks.has(entry.brick_id)).map((entry) => entry.brick_id);
         for (const id of hit) trustNotes.push(`brick ${id} is REVOKED`);
       }
     } catch { /* ignore malformed revocation list */ }
@@ -210,7 +253,7 @@ function emptyReport() {
   };
 }
 
-function recheckSource(brickId: string, brickMap: Map<string, any>, seal: any): string | null {
+function recheckSource(brickId: string, brickMap: Map<string, RegistryEntry>, seal: StoredSeal): string | null {
   const brick = brickMap.get(brickId);
   if (!brick?.projectAbs) return null;
   const resolved = resolveBrickPath(brick.brick, brick.projectAbs);
@@ -226,22 +269,36 @@ function recheckSource(brickId: string, brickMap: Map<string, any>, seal: any): 
   return null;
 }
 
-function loadFingerprints() {
-  const map = new Map();
+function loadFingerprints(): Map<string, string> {
+  const map = new Map<string, string>();
   if (!existsSync(FINGERPRINT_LEDGER)) return map;
   try {
-    const data = JSON.parse(readFileSync(FINGERPRINT_LEDGER, 'utf8'));
-    for (const fp of data.fingerprints || []) map.set(fp.brick_id, fp.content_hash);
+    const data: unknown = JSON.parse(readFileSync(FINGERPRINT_LEDGER, 'utf8'));
+    if (!isRecord(data) || !Array.isArray(data.fingerprints)) return map;
+    for (const fp of data.fingerprints) {
+      if (isRecord(fp) && typeof fp.brick_id === 'string' && typeof fp.content_hash === 'string') map.set(fp.brick_id, fp.content_hash);
+    }
   } catch { /* ignore */ }
   return map;
 }
 
-function loadRegistry(registryPath: string): Map<string, any> {
-  const map = new Map();
+function loadRegistry(registryPath: string): Map<string, RegistryEntry> {
+  const map = new Map<string, RegistryEntry>();
   if (!existsSync(registryPath)) return map;
-  const reg = JSON.parse(readFileSync(registryPath, 'utf8'));
-  const roots = new Map((reg.scanned_project_roots || []).map((r) => [r.id, r.root]));
-  for (const brick of reg.bricks || []) {
+  const reg: unknown = JSON.parse(readFileSync(registryPath, 'utf8'));
+  if (!isRecord(reg)) return map;
+  const roots = new Map<string, string>();
+  for (const root of Array.isArray(reg.scanned_project_roots) ? reg.scanned_project_roots : []) {
+    if (isRecord(root) && typeof root.id === 'string' && typeof root.root === 'string') roots.set(root.id, root.root);
+  }
+  for (const raw of Array.isArray(reg.bricks) ? reg.bricks : []) {
+    if (!isRecord(raw) || typeof raw.id !== 'string' || typeof raw.project !== 'string') continue;
+    const brick: RegistryBrick = {
+      id: raw.id,
+      project: raw.project,
+      manifest_path: typeof raw.manifest_path === 'string' ? raw.manifest_path : undefined,
+      source_paths: Array.isArray(raw.source_paths) ? raw.source_paths.filter((path): path is string => typeof path === 'string') : undefined,
+    };
     map.set(brick.id, { brick, projectAbs: roots.get(brick.project) || null });
   }
   return map;
@@ -254,7 +311,7 @@ function loadPublicKey(keyId: string | null): string | null {
   try { return readFileSync(p, 'utf8'); } catch { return null; }
 }
 
-function printReport(report: any): void {
+function printReport(report: VerifyReport): void {
   console.log(`SMA provenance-verify: ${report.status}`);
   if (report.warning) console.log(`  WARN — ${report.warning}`);
   console.log(`  seals: ${report.verified}/${report.total} verified` + (report.failed ? `, ${report.failed} FAILED` : ''));
@@ -276,10 +333,14 @@ function parseArgs(list: string[]): CliArgs {
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase());
     const next = list[i + 1];
-    if (next === undefined || next.startsWith('--')) { out[key] = true; continue; }
-    out[key] = next; i += 1;
+    if (key === 'registry' && next !== undefined && !next.startsWith('--')) {
+      out.registry = next;
+      i += 1;
+      continue;
+    }
+    if (key === 'json' || key === 'recheckSource' || key === 'coverage' || key === 'requireSigned' || key === 'gate') out[key] = true;
   }
   return out;
 }

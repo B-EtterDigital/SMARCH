@@ -17,13 +17,33 @@ import { agentPacketDescriptor, agentPacketPayload, writeAgentPackets } from './
 import { latestObservationForDispatch } from './lib/module-work-observations.ts';
 import { formatExternalActiveLeases, moduleConflictCommand, moduleObservationBigPicture, modulePrompt, moduleWatchBigPicture, renderDispatchMarkdown, renderModuleWatchConsole, renderObservationMarkdown } from './lib/module-work-renderers.ts';
 import { runModuleWorkSelfTest } from './lib/module-work-selftest.ts';
+import {
+  PLACEHOLDER_MODULE_TASK,
+  blockedReasonCounts,
+  blockedReasonSuffix,
+  dashCase,
+  externalActiveModuleLeaseGroups,
+  formatDuration,
+  formatPercent,
+  hasConcreteModuleTask,
+  isPathLike,
+  number,
+  parseArgs,
+  percent,
+  positiveInt,
+  projectDashboardCommand,
+  safeId,
+  shellArg,
+  sleepSync,
+  timestampSlug,
+  type ModulePacketArgs,
+} from './lib/module-work-utils.ts';
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const START_EDIT = resolve(TOOLS_DIR, 'sma-start-edit.ts');
 const LEASE = resolve(TOOLS_DIR, 'sma-lease.ts');
 const DEFAULT_DISPATCH_DIR = resolve(SMA_ROOT, 'handoffs/module-waves');
 const DEFAULT_OBSERVATION_DIR = resolve(DEFAULT_DISPATCH_DIR, 'observations');
-const PLACEHOLDER_MODULE_TASK = '<describe module task>';
 const DEFAULT_STALE_UNCLAIMED_DISPATCH_MS = 8 * 60 * 60 * 1000;
 const CLAIM_KINDS = new Set(['lease_acquired', 'lease_force_acquired', 'edit_planned']);
 const COMPLETE_KINDS = new Set(['edit_applied']);
@@ -64,7 +84,7 @@ try {
   }));
   throw new Error(`unknown command: ${command}`);
 } catch (err) {
-  console.error(`sma-module-work-packets: ${err.message}`);
+  console.error(`sma-module-work-packets: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 function usage() {
@@ -92,7 +112,7 @@ module-owned paths only, and conflict reporting before shared-hot-path work.
 }
 
 function runPlan() {
-  const plan: Record<string, any> = buildPlan();
+  const plan = buildPlan();
   const dispatchManifest = args.writeDispatch ? maybeWriteDispatchManifest(plan) : null;
   if (dispatchManifest) plan.dispatch_manifest = dispatchManifest;
   if (args.json) {
@@ -441,7 +461,7 @@ function releaseClaimNextLease(lease) {
 
 function runObserve() {
   const dispatch = loadDispatch(args.dispatch || 'latest');
-  const observation: Record<string, any> = observeDispatch(dispatch);
+  const observation = observeDispatch(dispatch);
   if (args.write) observation.observation_manifest = writeObservation(observation);
   if (args.json) {
     console.log(JSON.stringify(observation, null, 2));
@@ -1733,167 +1753,14 @@ function moduleIterationGates(config, module) {
   return [...new Set(gates)];
 }
 
-function requireArg(name, label) {
+function requireArg(name: keyof ModulePacketArgs, label: string): void {
   if (!args[name]) throw new Error(`missing ${label}`);
 }
 
-function positiveInt(value, fallback) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.floor(parsed);
-}
-
-function safeId(value) {
-  return String(value || 'module').replace(/[^a-z0-9._-]/gi, '-').replace(/-+/g, '-');
-}
-
-function isPathLike(value) {
-  const raw = String(value || '');
-  return raw.includes('/') || raw.startsWith('.');
-}
-
-function timestampSlug(date) {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-}
-
-function relativeToSma(filePath) {
+function relativeToSma(filePath: string): string {
   return filePath.startsWith(`${SMA_ROOT}/`) ? filePath.slice(SMA_ROOT.length + 1) : filePath;
 }
 
 function readJsonFile(filePath) {
   return JSON.parse(readFileSync(filePath, 'utf8'));
-}
-
-function number(value) {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function blockedReasonCounts(assignments) {
-  const counts = { held: 0, dirtyScope: 0, other: 0 };
-  for (const item of assignments || []) {
-    if (!item?.launch_blocked || item.claimed) continue;
-    if (item.launch_blocked_reason === 'held') counts.held += 1;
-    else if (item.launch_blocked_reason === 'dirty-scope') counts.dirtyScope += 1;
-    else counts.other += 1;
-  }
-  return counts;
-}
-
-function externalActiveModuleLeaseGroups(assignments) {
-  const groups = new Map();
-  for (const item of assignments || []) {
-    if (!item?.launch_blocked || item.claimed) continue;
-    if (item.held_match !== 'module-related-active-lease') continue;
-    const key = [
-      item.module_id || '',
-      item.held_lease_id || '',
-      item.held_resource || '',
-      item.held_by || '',
-    ].join('\u0000');
-    if (!groups.has(key)) {
-      groups.set(key, {
-        module_id: item.module_id || null,
-        held_resource: item.held_resource || null,
-        held_lease_id: item.held_lease_id || null,
-        held_by: item.held_by || null,
-        held_match: item.held_match || null,
-        slot_count: 0,
-        agent_slots: [],
-        dispatch_bricks: [],
-      });
-    }
-    const group = groups.get(key);
-    group.slot_count += 1;
-    if (item.agent_slot !== null && item.agent_slot !== undefined) group.agent_slots.push(item.agent_slot);
-    if (item.brick) group.dispatch_bricks.push(item.brick);
-  }
-  return [...groups.values()].map((group) => ({
-    ...group,
-    agent_slots: [...new Set(group.agent_slots)].sort((left, right) => number(left) - number(right)),
-    dispatch_bricks: [...new Set(group.dispatch_bricks)],
-  }));
-}
-
-function blockedReasonSuffix(summary) {
-  const parts = [];
-  const held = number(summary?.held_blocked_unclaimed);
-  const dirtyScope = number(summary?.dirty_scope_blocked_unclaimed);
-  const other = number(summary?.other_blocked_unclaimed);
-  if (held) parts.push(blockedCountLabel(held, 'active lease'));
-  if (dirtyScope) parts.push(`${dirtyScope} dirty scope`);
-  if (other) parts.push(blockedCountLabel(other, 'other guard'));
-  return parts.length ? ` (${parts.join(', ')})` : '';
-}
-
-function blockedCountLabel(count, singular) {
-  return `${count} ${count === 1 ? singular : `${singular}s`}`;
-}
-
-function hasConcreteModuleTask(task) {
-  const value = String(task || '').trim();
-  return Boolean(value && value !== PLACEHOLDER_MODULE_TASK && !/^<[^>]+>$/.test(value));
-}
-
-function projectDashboardCommand(plan) {
-  const maxAgents = number(plan.summary?.requested_agents) || plan.launch_plan?.length || 12;
-  return `npm run gen3:dashboard -- --project ${shellArg(plan.project)} --task ${shellArg(plan.task)} --max-agents ${maxAgents}`;
-}
-
-function percent(part, total) {
-  if (!total) return 0;
-  return Math.round((part / total) * 1000) / 10;
-}
-
-function formatPercent(value) {
-  if (value === null || value === undefined || value === '') return 'n/a';
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 'n/a';
-  return `${parsed}%`;
-}
-
-function formatDuration(ms) {
-  const seconds = Math.max(0, Math.floor(number(ms) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-}
-
-function shellArg(value) {
-  return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
-}
-
-function dashCase(value) {
-  return String(value).replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
-}
-
-function sleepSync(ms) {
-  const end = Date.now() + ms;
-  while (Date.now() < end) {
-  }
-}
-
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
-  for (let i = 0; i < list.length; i += 1) {
-    const arg = list[i];
-    if (arg === '--help' || arg === '-h') {
-      out.help = true;
-      continue;
-    }
-    if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[i + 1];
-    const isBool = next === undefined || next.startsWith('--');
-    if (isBool) {
-      out[key] = true;
-      continue;
-    }
-    out[key] = next;
-    i += 1;
-  }
-  return out;
 }

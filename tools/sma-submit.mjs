@@ -38,21 +38,32 @@ const BUNDLE_KIND = 'sma.community-submission-bundle';
 const BUNDLE_SCHEMA = 'https://sweetspot.local/schemas/submission-bundle/1.0.0-inline';
 const OMIT_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.tmp', 'tmp', 'submissions']);
 
+/** @typedef {{ brick?: string, root?: string, manifest?: string, out?: string, verify?: string, json: boolean, quiet: boolean, verbose: boolean, selftest: boolean, help: boolean }} SubmitArgs */
+/** @typedef {{ path: string, role: string, bytes: number, sha256: string }} BundleFile */
+/** @typedef {{ command: string, status: number | null, stdout_sha256: string, stderr_sha256: string }} GateResult */
+/** @typedef {{ schema_version: string, schema: string, kind: string, brick: { id: string, name?: string, version: string, status?: string }, files: BundleFile[], verification: { gates: GateResult[], [key: string]: unknown }, [key: string]: unknown }} SubmissionBundle */
+/** @typedef {{ root?: string, brick: string, manifest?: string, out?: string }} SubmissionOptions */
+/** @typedef {{ ok: boolean, archive: string, archive_sha256: string, brick_id: string, version: string, file_count: number, gates: GateResult[], checklist?: string }} SubmissionResult */
+/** @typedef {{ brick: { id: string, name: string, version: string, status?: string }, owner?: { primary?: string }, source?: { repository?: string }, license?: { spdx?: string } }} BrickManifest */
+
+/** @param {string[]} argv @returns {SubmitArgs} */
 function parseArgs(argv) {
-  const args = {};
+  /** @type {SubmitArgs} */
+  const args = { json: false, quiet: false, verbose: false, selftest: false, help: false };
   const valueFlags = new Set(['brick', 'root', 'manifest', 'out', 'verify']);
   const booleanFlags = new Set(['json', 'quiet', 'verbose', 'selftest', 'help']);
   for (let index = 0; index < argv.length; index += 1) {
     let arg = argv[index];
     if (arg === '-h') arg = '--help';
     if (!arg.startsWith('--')) throw new CliError('USAGE_ERROR', `Unexpected argument: ${arg}`, { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match, char) => char.toUpperCase());
     if (!valueFlags.has(key) && !booleanFlags.has(key)) throw new CliError('USAGE_ERROR', `Unknown option: ${arg}`, { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
     const next = argv[index + 1];
     if (valueFlags.has(key)) {
       if (next === undefined || next.startsWith('--')) throw new CliError('USAGE_ERROR', `${arg} requires a value.`, { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
-      args[key] = next; index += 1;
-    } else args[key] = true;
+      if (key === 'brick' || key === 'root' || key === 'manifest' || key === 'out' || key === 'verify') args[key] = next;
+      index += 1;
+    } else if (key === 'json' || key === 'quiet' || key === 'verbose' || key === 'selftest' || key === 'help') args[key] = true;
   }
   if (args.quiet && args.verbose) throw new CliError('USAGE_ERROR', '--quiet and --verbose cannot be combined.', { exitCode: 2, nextCommand: 'Choose one output mode and retry.' });
   return args;
@@ -78,33 +89,40 @@ Exit codes: 0 success; 2 usage; 3 missing input; 4 validation/gate failure; 1 ru
 Known limitation: packaging requires git, tar, and the root project's gate scripts.`;
 }
 
+/** @param {string} value */
 function normalizePath(value) {
   return value.split(sep).join('/').replace(/^\.\//, '');
 }
 
+/** @param {unknown} value */
 function safeSlug(value) {
   const slug = String(value || '').toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
   if (!slug) throw new Error(`cannot create a safe archive name from: ${value}`);
   return slug;
 }
 
+/** @param {string} parent @param {string} child */
 function isWithin(parent, child) {
   const rel = relative(parent, child);
   return rel === '' || (!rel.startsWith('..') && !rel.startsWith(`..${sep}`));
 }
 
+/** @param {import('node:crypto').BinaryLike} buffer */
 function sha256Buffer(buffer) {
   return createHash('sha256').update(buffer).digest('hex');
 }
 
+/** @param {string} filePath */
 function sha256File(filePath) {
   return sha256Buffer(readFileSync(filePath));
 }
 
+/** @param {string} filePath @param {unknown} value */
 function writeJson(filePath, value) {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+/** @param {string} command @param {string[]} args @param {{ cwd?: string }} [options] */
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
@@ -119,6 +137,7 @@ function npmCommand() {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm';
 }
 
+/** @param {string} root @param {string} script @returns {GateResult} */
 function runGate(root, script) {
   const command = `npm run ${script}`;
   const result = run(npmCommand(), ['run', script], { cwd: root });
@@ -134,6 +153,7 @@ function runGate(root, script) {
   };
 }
 
+/** @param {string} brickDir @param {string | null | undefined} explicitManifest */
 function findManifest(brickDir, explicitManifest) {
   if (explicitManifest) {
     const candidate = resolve(explicitManifest);
@@ -151,8 +171,11 @@ function findManifest(brickDir, explicitManifest) {
   return candidates[0];
 }
 
+/** @param {string} brickDir @param {string} manifestPath */
 function collectSourceFiles(brickDir, manifestPath) {
+  /** @type {string[]} */
   const files = [];
+  /** @param {string} dir */
   function visit(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (OMIT_DIRS.has(entry.name)) continue;
@@ -169,6 +192,7 @@ function collectSourceFiles(brickDir, manifestPath) {
   return files;
 }
 
+/** @param {string} stagingRoot @param {string} destination @param {string} source @param {string} role @param {BundleFile[]} entries */
 function addFile(stagingRoot, destination, source, role, entries) {
   const target = resolve(stagingRoot, destination);
   mkdirSync(dirname(target), { recursive: true });
@@ -177,6 +201,7 @@ function addFile(stagingRoot, destination, source, role, entries) {
   entries.push({ path: normalizePath(destination), role, bytes, sha256: sha256File(target) });
 }
 
+/** @param {string} stagingRoot @param {string} destination @param {string} content @param {string} role @param {BundleFile[]} entries */
 function addGeneratedFile(stagingRoot, destination, content, role, entries) {
   const target = resolve(stagingRoot, destination);
   mkdirSync(dirname(target), { recursive: true });
@@ -189,6 +214,7 @@ function addGeneratedFile(stagingRoot, destination, content, role, entries) {
   });
 }
 
+/** @param {BrickManifest} manifest */
 function curatorChecklist(manifest) {
   return `# Curator checklist: ${manifest.brick.id}\n\n`
     + `Bundle version: ${manifest.brick.version}\n\n`
@@ -203,7 +229,9 @@ function curatorChecklist(manifest) {
     + `- [ ] Promotion gates pass before candidate/canonical status changes.\n`;
 }
 
+/** @param {SubmissionBundle | null | undefined} bundle */
 function validateInlineBundle(bundle) {
+  /** @type {string[]} */
   const errors = [];
   if (!bundle || typeof bundle !== 'object' || Array.isArray(bundle)) errors.push('bundle must be an object');
   if (bundle?.schema_version !== '1.0.0') errors.push('schema_version must be 1.0.0');
@@ -244,6 +272,7 @@ function validateInlineBundle(bundle) {
   return errors;
 }
 
+/** @param {string} archivePath */
 function ensureSafeArchive(archivePath) {
   const namesResult = run('tar', ['-tzf', archivePath]);
   if (namesResult.status !== 0) throw new Error(`cannot list archive: ${namesResult.stderr.trim()}`);
@@ -271,8 +300,11 @@ function ensureSafeArchive(archivePath) {
   return [...roots][0];
 }
 
+/** @param {string} root */
 function allFiles(root) {
+  /** @type {string[]} */
   const result = [];
+  /** @param {string} dir */
   function visit(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const absolute = resolve(dir, entry.name);
@@ -286,6 +318,7 @@ function allFiles(root) {
   return result.sort();
 }
 
+/** @param {string} archive @returns {SubmissionResult} */
 export function verifyArchive(archive) {
   const archivePath = resolve(archive);
   if (!existsSync(archivePath) || !lstatSync(archivePath).isFile()) throw new Error(`archive not found: ${archivePath}`);
@@ -297,6 +330,7 @@ export function verifyArchive(archive) {
     const bundleRoot = resolve(temp, rootName);
     const bundlePath = resolve(bundleRoot, 'bundle.json');
     if (!existsSync(bundlePath)) throw new Error('bundle.json is missing');
+    /** @type {SubmissionBundle} */
     const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'));
     const shapeErrors = validateInlineBundle(bundle);
     if (shapeErrors.length) throw new Error(`bundle shape invalid: ${shapeErrors.join('; ')}`);
@@ -329,6 +363,7 @@ export function verifyArchive(archive) {
   }
 }
 
+/** @param {SubmissionOptions} options @returns {SubmissionResult} */
 export function createSubmission(options) {
   const root = resolve(options.root || process.cwd());
   const brickDir = resolve(root, options.brick);
@@ -351,12 +386,15 @@ export function createSubmission(options) {
   const staging = resolve(temp, name);
   mkdirSync(staging, { recursive: true });
   try {
+    /** @type {BundleFile[]} */
     const entries = [];
     addFile(staging, 'manifest.json', manifestPath, 'manifest', entries);
     for (const source of sources) {
       addFile(staging, `files/${normalizePath(relative(brickDir, source))}`, source, 'source', entries);
     }
     const sourceEntries = entries.filter((entry) => entry.role === 'source');
+    const manifestEntry = entries.find((entry) => entry.role === 'manifest');
+    if (!manifestEntry) throw new Error('internal bundle is missing its manifest entry');
     const attestation = {
       schema_version: '1.0.0',
       predicate_type: 'sma.community-submission/v1',
@@ -364,7 +402,7 @@ export function createSubmission(options) {
       subject: {
         brick_id: manifest.brick.id,
         version: manifest.brick.version,
-        manifest_sha256: entries.find((entry) => entry.role === 'manifest').sha256,
+        manifest_sha256: manifestEntry.sha256,
         source_tree_sha256: sha256Buffer(Buffer.from(sourceEntries.map((entry) => `${entry.path}:${entry.sha256}`).join('\n'))),
       },
       submitter: {
@@ -457,13 +495,14 @@ function runSelftest() {
     }
     if (!existsSync(resolve(fixtureRoot, '.gate-all-ran'))) throw new Error('selftest gate:all did not execute');
     if (!existsSync(resolve(fixtureRoot, '.gate-leaks-ran'))) throw new Error('selftest gate:leaks did not execute');
-    if (!existsSync(result.archive) || !existsSync(result.checklist)) throw new Error('selftest outputs were not emitted');
+    if (!existsSync(result.archive) || !result.checklist || !existsSync(result.checklist)) throw new Error('selftest outputs were not emitted');
     console.log(`sma-submit selftest: passed (${basename(result.archive)})`);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
 }
 
+/** @param {SubmissionResult} result @param {boolean} json @param {boolean} [quiet] */
 function printResult(result, json, quiet = false) {
   if (json) console.log(JSON.stringify(result, null, 2));
   else if (!quiet) {
@@ -483,8 +522,9 @@ function main() {
   }
   if (args.selftest) return runSelftest();
   if (args.verify) return printResult(verifyArchive(args.verify), args.json, args.quiet);
-  if (!args.brick) throw new CliError('USAGE_ERROR', '--brick <directory> is required.', { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
-  const result = createSubmission(args);
+  const brick = args.brick;
+  if (!brick) throw new CliError('USAGE_ERROR', '--brick <directory> is required.', { exitCode: 2, nextCommand: 'Run `sma submit --help`.' });
+  const result = createSubmission({ brick, root: args.root, manifest: args.manifest, out: args.out });
   printResult(result, args.json, args.quiet);
   if (args.verbose) process.stderr.write(`sma-submit: packaged ${result.file_count} source files\n`);
 }

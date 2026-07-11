@@ -36,6 +36,28 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { readContextLog } from './lib/context-log.ts';
 
+interface ReplayArgs { help?: boolean; project?: string; brick?: string; since?: string; out?: string; format?: string }
+interface ReplayEvent {
+  timestamp: string;
+  kind: string;
+  intent?: string;
+  session_id?: string;
+  actor_id?: string;
+  actor_kind?: string;
+  model?: string;
+  decision_rationale?: string;
+  rejected_alternatives?: { alternative?: string; reason?: string }[];
+  files_touched?: string[];
+  verification?: { status?: string; command?: string };
+  linked_backlog?: string[];
+  commit?: string;
+  lease_id?: string;
+}
+interface ReplaySession {
+  label: string; session_id?: string; agent_id?: string; actor_kind?: string; model?: string;
+  started_at: string; ended_at: string; events: ReplayEvent[];
+}
+
 const args = parseArgs(argv.slice(2));
 
 if (args.help || !args.project || !args.brick) {
@@ -44,7 +66,7 @@ if (args.help || !args.project || !args.brick) {
 }
 
 try {
-  const events = readContextLog(args.project, args.brick);
+  const events = readContextLog(args.project, args.brick).filter(isReplayEvent);
   const cutoff = parseSince(args.since);
   const filtered = cutoff ? events.filter((e) => Date.parse(e.timestamp) >= cutoff) : events;
 
@@ -65,7 +87,7 @@ try {
     process.stdout.write(out + '\n');
   }
 } catch (err) {
-  console.error(`sma-context-replay: ${err.message}`);
+  console.error(`sma-context-replay: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -76,126 +98,94 @@ function usage() {
 `);
 }
 
-function renderTimeline({ project, brick, events, format }) {
+function renderTimeline({ project, brick, events, format }: { project: string; brick: string; events: ReplayEvent[]; format: string }) {
   const sessions = groupBySession(events);
   const isMd = format !== 'text';
-  const lines = [];
-
-  if (isMd) {
-    lines.push(`# Replay — \`${brick}\``);
-    lines.push('');
-    lines.push(`Project: \`${project}\``);
-    lines.push(`Total events: ${events.length}`);
-    if (events.length) {
-      const first = events[0]?.timestamp;
-      const last = events[events.length - 1]?.timestamp;
-      lines.push(`Window: \`${first}\` → \`${last}\``);
-    }
-    lines.push('');
-    if (!events.length) {
-      lines.push('_(no events for this brick)_');
-      return lines.join('\n');
-    }
-  } else {
-    lines.push(`Replay — ${brick}`);
-    lines.push(`Project: ${project}`);
-    lines.push(`Total events: ${events.length}`);
-    lines.push('');
-    if (!events.length) {
-      lines.push('(no events for this brick)');
-      return lines.join('\n');
-    }
-  }
+  const lines = renderReplayHeader({ project, brick, events, isMd });
+  if (events.length === 0) return lines.join('\n');
 
   for (const session of sessions) {
-    if (isMd) {
-      lines.push(`## Session — ${session.label}`);
-      lines.push('');
-      lines.push(`- Agent: \`${session.agent_id}\` (${session.actor_kind ?? 'unknown'})`);
-      if (session.model) lines.push(`- Model: \`${session.model}\``);
-      if (session.session_id) lines.push(`- Session id: \`${session.session_id}\``);
-      lines.push(`- Window: \`${session.started_at}\` → \`${session.ended_at}\``);
-      lines.push(`- Events: ${session.events.length}`);
-      lines.push('');
-    } else {
-      lines.push(`-- Session ${session.label} --`);
-      lines.push(`agent: ${session.agent_id} (${session.actor_kind ?? 'unknown'})`);
-      if (session.model) lines.push(`model: ${session.model}`);
-      lines.push(`window: ${session.started_at} → ${session.ended_at}`);
-      lines.push(`events: ${session.events.length}`);
-      lines.push('');
-    }
-
-    for (const e of session.events) {
-      const head = isMd
-        ? `**${e.timestamp}** · \`${e.kind}\` — ${e.intent}`
-        : `${e.timestamp}  [${e.kind}]  ${e.intent}`;
-      lines.push(head);
-      if (e.decision_rationale) {
-        lines.push(isMd ? `  - decision: ${e.decision_rationale}` : `  decision: ${e.decision_rationale}`);
-      }
-      if (e.rejected_alternatives?.length) {
-        for (const r of e.rejected_alternatives) {
-          lines.push(isMd
-            ? `  - rejected: \`${r.alternative}\` — ${r.reason}`
-            : `  rejected: ${r.alternative} :: ${r.reason}`);
-        }
-      }
-      if (e.files_touched?.length) {
-        const files = e.files_touched.slice(0, 6).join(', ');
-        const more = e.files_touched.length > 6 ? ` (+${e.files_touched.length - 6} more)` : '';
-        lines.push(isMd ? `  - files: ${files}${more}` : `  files: ${files}${more}`);
-      }
-      if (e.verification?.status) {
-        lines.push(isMd
-          ? `  - verification: \`${e.verification.command || '(no cmd)'}\` → ${e.verification.status}`
-          : `  verify: ${e.verification.command || '(no cmd)'} → ${e.verification.status}`);
-      }
-      if (e.linked_backlog?.length) {
-        lines.push(isMd
-          ? `  - backlog: ${e.linked_backlog.map((b) => `\`${b}\``).join(', ')}`
-          : `  backlog: ${e.linked_backlog.join(', ')}`);
-      }
-      if (e.commit) {
-        lines.push(isMd ? `  - commit: \`${e.commit}\`` : `  commit: ${e.commit}`);
-      }
-      if (e.lease_id) {
-        lines.push(isMd ? `  - lease: \`${e.lease_id}\`` : `  lease: ${e.lease_id}`);
-      }
-      lines.push('');
-    }
+    lines.push(...renderSessionHeader(session, isMd));
+    for (const event of session.events) lines.push(...renderEvent(event, isMd));
   }
-
-  // Summary footer
-  const allIntents = uniq(events.map((e) => e.intent).filter(Boolean));
-  const allDecisions = uniq(events.map((e) => e.decision_rationale).filter(Boolean));
-  const allBacklog = uniq(events.flatMap((e) => e.linked_backlog ?? []));
-  if (isMd) {
-    lines.push(`## Summary`);
-    lines.push('');
-    lines.push(`- Distinct intents: ${allIntents.length}`);
-    lines.push(`- Distinct decisions: ${allDecisions.length}`);
-    if (allBacklog.length) lines.push(`- Linked backlog: ${allBacklog.map((b) => `\`${b}\``).join(', ')}`);
-  } else {
-    lines.push(`Summary`);
-    lines.push(`distinct intents: ${allIntents.length}`);
-    lines.push(`distinct decisions: ${allDecisions.length}`);
-    if (allBacklog.length) lines.push(`linked backlog: ${allBacklog.join(', ')}`);
-  }
-
+  lines.push(...renderReplaySummary(events, isMd));
   return lines.join('\n');
 }
 
-function groupBySession(events) {
-  const buckets = new Map();
-  for (const e of events) {
-    const key = e.session_id || `agent:${e.actor_id || 'unknown'}`;
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push(e);
+function renderReplayHeader({ project, brick, events, isMd }: { project: string; brick: string; events: ReplayEvent[]; isMd: boolean }) {
+  const lines = isMd
+    ? [`# Replay — \`${brick}\``, '', `Project: \`${project}\``, `Total events: ${String(events.length)}`]
+    : [`Replay — ${brick}`, `Project: ${project}`, `Total events: ${String(events.length)}`, ''];
+  if (isMd && events.length > 0) lines.push(`Window: \`${events[0].timestamp}\` → \`${String(events.at(-1)?.timestamp)}\``);
+  if (isMd) lines.push('');
+  if (events.length === 0) lines.push(isMd ? '_(no events for this brick)_' : '(no events for this brick)');
+  return lines;
+}
+
+function renderSessionHeader(session: ReplaySession, isMd: boolean) {
+  if (!isMd) {
+    return [`-- Session ${session.label} --`, `agent: ${String(session.agent_id)} (${session.actor_kind ?? 'unknown'})`,
+      ...(session.model ? [`model: ${session.model}`] : []), `window: ${session.started_at} → ${session.ended_at}`,
+      `events: ${String(session.events.length)}`, ''];
   }
-  const sessions = [];
+  return [`## Session — ${session.label}`, '', `- Agent: \`${String(session.agent_id)}\` (${session.actor_kind ?? 'unknown'})`,
+    ...(session.model ? [`- Model: \`${session.model}\``] : []), ...(session.session_id ? [`- Session id: \`${session.session_id}\``] : []),
+    `- Window: \`${session.started_at}\` → \`${session.ended_at}\``, `- Events: ${String(session.events.length)}`, ''];
+}
+
+function renderEvent(event: ReplayEvent, isMd: boolean) {
+  const lines = [selectFormat(isMd, `**${event.timestamp}** · \`${event.kind}\` — ${String(event.intent)}`, `${event.timestamp}  [${event.kind}]  ${String(event.intent)}`)];
+  if (event.decision_rationale) lines.push(selectFormat(isMd, `  - decision: ${event.decision_rationale}`, `  decision: ${event.decision_rationale}`));
+  for (const rejected of event.rejected_alternatives ?? []) {
+    lines.push(selectFormat(isMd, `  - rejected: \`${String(rejected.alternative)}\` — ${String(rejected.reason)}`, `  rejected: ${String(rejected.alternative)} :: ${String(rejected.reason)}`));
+  }
+  if (event.files_touched?.length) {
+    const files = event.files_touched.slice(0, 6).join(', ');
+    const more = event.files_touched.length > 6 ? ` (+${String(event.files_touched.length - 6)} more)` : '';
+    lines.push(selectFormat(isMd, `  - files: ${files}${more}`, `  files: ${files}${more}`));
+  }
+  if (event.verification?.status) lines.push(selectFormat(isMd, `  - verification: \`${event.verification.command ?? '(no cmd)'}\` → ${event.verification.status}`, `  verify: ${event.verification.command ?? '(no cmd)'} → ${event.verification.status}`));
+  if (event.linked_backlog?.length) lines.push(selectFormat(isMd, `  - backlog: ${event.linked_backlog.map((item) => `\`${item}\``).join(', ')}`, `  backlog: ${event.linked_backlog.join(', ')}`));
+  if (event.commit) lines.push(selectFormat(isMd, `  - commit: \`${event.commit}\``, `  commit: ${event.commit}`));
+  if (event.lease_id) lines.push(selectFormat(isMd, `  - lease: \`${event.lease_id}\``, `  lease: ${event.lease_id}`));
+  lines.push('');
+  return lines;
+}
+
+function selectFormat(isMarkdown: boolean, markdown: string, text: string) {
+  return isMarkdown ? markdown : text;
+}
+
+function renderReplaySummary(events: ReplayEvent[], isMd: boolean) {
+  const intentCount = uniq(events.map((event) => event.intent).filter(Boolean)).length;
+  const decisionCount = uniq(events.map((event) => event.decision_rationale).filter(Boolean)).length;
+  const backlog = uniq(events.flatMap((event) => event.linked_backlog ?? []));
+  const lines = isMd ? ['## Summary', '', `- Distinct intents: ${String(intentCount)}`, `- Distinct decisions: ${String(decisionCount)}`]
+    : ['Summary', `distinct intents: ${String(intentCount)}`, `distinct decisions: ${String(decisionCount)}`];
+  if (backlog.length > 0) lines.push(isMd ? `- Linked backlog: ${backlog.map((item) => `\`${item}\``).join(', ')}` : `linked backlog: ${backlog.join(', ')}`);
+  return lines;
+}
+
+function groupBySession(events: ReplayEvent[]) {
+  const buckets = new Map<string, ReplayEvent[]>();
+  for (const e of events) {
+    const key = e.session_id ?? `agent:${e.actor_id ?? 'unknown'}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(e);
+    else buckets.set(key, [e]);
+  }
+  const sessions: {
+    label: string;
+    session_id?: string;
+    agent_id?: string;
+    actor_kind?: string;
+    model?: string;
+    started_at: string;
+    ended_at: string;
+    events: ReplayEvent[];
+  }[] = [];
   for (const [key, evs] of buckets) {
-    evs.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+    evs.sort((a: { timestamp: string; }, b: { timestamp: string; }) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
     const head = evs[0];
     sessions.push({
       label: key,
@@ -212,33 +202,40 @@ function groupBySession(events) {
   return sessions;
 }
 
-function parseSince(raw) {
+function parseSince(raw: string | undefined) {
   if (!raw) return null;
   // Number of days form: "30d", "365d"
-  const dm = String(raw).match(/^(\d+)d$/);
+  const dm = /^(\d+)d$/.exec(raw);
   if (dm) return Date.now() - Number(dm[1]) * 24 * 60 * 60 * 1000;
   const t = Date.parse(raw);
   if (!Number.isNaN(t)) return t;
   throw new Error(`could not parse --since: ${raw}`);
 }
 
-function uniq(arr) {
+function uniq<T>(arr: Iterable<T> | null | undefined) {
   return [...new Set(arr)];
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): ReplayArgs {
+  const out: ReplayArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (a === '--help' || a === '-h') { out.help = true; continue; }
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[i + 1];
+    const camel = key.replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
+    const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
-    if (isBool) { out[camel] = true; continue; }
-    out[camel] = next;
+    if (isBool) {
+      if (camel === 'help') out.help = true;
+      continue;
+    }
+    if (camel === 'project' || camel === 'brick' || camel === 'since' || camel === 'out' || camel === 'format') out[camel] = next;
     i += 1;
   }
   return out;
+}
+
+function isReplayEvent(value: Record<string, unknown>): value is Record<string, unknown> & ReplayEvent {
+  return typeof value.timestamp === 'string' && typeof value.kind === 'string';
 }
