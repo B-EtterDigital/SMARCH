@@ -38,24 +38,41 @@ const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LICENSE_LEDGER = resolve(SMA_ROOT, 'registry/license-ledger.generated.json');
 const AUDIT_LOG = resolve(SMA_ROOT, 'security/export-audit.generated.ndjson');
 
-export class ExportBlockedError extends Error {
-  evaluation: any;
+type Openness = 'closed' | 'source-available' | 'open';
+type Visibility = 'private' | 'internal' | 'community' | 'public';
+type ExportComponent = { brick_id: string; spdx?: string | null; openness: Openness; visibility: Visibility; resolved: boolean };
+type ExportViolation = { code: string; message: string };
+type ExportEvaluation = {
+  ok: boolean; target: Visibility; meet_openness: Openness; meet_visibility: Visibility;
+  components: ExportComponent[]; ledger_missing: boolean; violations: ExportViolation[];
+};
+type ExportIndex = {
+  resolve(brickId: string, projectHint?: string): { row: { spdx?: unknown; openness?: unknown; visibility?: unknown } } | null;
+  _missing?: boolean;
+};
+type ExportEvaluationOptions = { brickIds?: string[]; project?: string | null; targetVisibility?: Visibility; index?: ExportIndex };
+type ExportAssertionOptions = ExportEvaluationOptions & {
+  operation: string; allowClosed?: boolean; requireOwner?: boolean; actor?: string;
+};
 
-  constructor(message: string, evaluation: any) {
+export class ExportBlockedError extends Error {
+  evaluation: ExportEvaluation;
+
+  constructor(message: string, evaluation: ExportEvaluation) {
     super(message);
     this.name = 'ExportBlockedError';
     this.evaluation = evaluation;
   }
 }
 
-let _index = null;
+let _index: ExportIndex | null = null;
 
 /**
  * @typedef {object} ExportEvaluationOptions
- * @property {any[]} [brickIds]
+ * @property {unknown[]} [brickIds]
  * @property {string | null} [project]
  * @property {string} [targetVisibility]
- * @property {any} [index]
+ * @property {unknown} [index]
  */
 
 /**
@@ -67,26 +84,32 @@ let _index = null;
  * }} ExportAssertionOptions
  */
 
-export function loadLicenseIndex() {
+export function loadLicenseIndex(): ExportIndex {
   if (_index) return _index;
-  if (!existsSync(LICENSE_LEDGER)) { _index = buildLicenseIndex([]); _index._missing = true; return _index; }
+  if (!existsSync(LICENSE_LEDGER)) { _index = buildLicenseIndex([]) as ExportIndex; _index._missing = true; return _index; }
   try {
-    const data = JSON.parse(readFileSync(LICENSE_LEDGER, 'utf8'));
-    _index = buildLicenseIndex(data.licenses || []);
+    const data = JSON.parse(readFileSync(LICENSE_LEDGER, 'utf8')) as { licenses?: Array<{ brick_id: string; project?: string }> };
+    _index = buildLicenseIndex(data.licenses || []) as ExportIndex;
   } catch (error) {
     console.error(JSON.stringify({ area: 'export-guard.license-ledger', severity: 'warning', hint: 'Repair or regenerate the license ledger; exports remain fail-closed.', error: error instanceof Error ? error.message : String(error) }));
-    _index = buildLicenseIndex([]);
+    _index = buildLicenseIndex([]) as ExportIndex;
     _index._missing = true;
   }
   return _index;
 }
 
 /** Resolve each brick id to its openness/visibility; unknown => closed/private. */
-export function resolveComponents(brickIds, project, index = loadLicenseIndex()) {
+export function resolveComponents(brickIds: readonly string[], project: string | null, index: ExportIndex = loadLicenseIndex()): ExportComponent[] {
   return (brickIds || []).map((id) => {
-    const row = index.resolve(id, project)?.row;
+    const row = index.resolve(id, project ?? undefined)?.row;
+    const openness: Openness = row?.openness === 'open' || row?.openness === 'source-available' || row?.openness === 'closed'
+      ? row.openness
+      : 'closed';
+    const visibility: Visibility = row?.visibility === 'public' || row?.visibility === 'community' || row?.visibility === 'internal' || row?.visibility === 'private'
+      ? row.visibility
+      : 'private';
     return row
-      ? { brick_id: id, spdx: row.spdx, openness: row.openness, visibility: row.visibility, resolved: true }
+      ? { brick_id: id, spdx: typeof row.spdx === 'string' ? row.spdx : null, openness, visibility, resolved: true }
       : { brick_id: id, spdx: null, openness: 'closed', visibility: 'private', resolved: false };
   });
 }
@@ -96,12 +119,12 @@ export function resolveComponents(brickIds, project, index = loadLicenseIndex())
  * Returns { ok, meet_openness, meet_visibility, components, violations, ledger_missing }.
  * @param {ExportEvaluationOptions} options
  */
-export function evaluateExport({ brickIds = [], project = null, targetVisibility = 'community', index }: any) {
+export function evaluateExport({ brickIds = [], project = null, targetVisibility = 'community', index }: ExportEvaluationOptions): ExportEvaluation {
   const idx = index || loadLicenseIndex();
   const components = resolveComponents(brickIds, project, idx);
   const meetOpen = meetOpenness(components.map((c) => c.openness));
   const meetVis = meetVisibility(components.map((c) => c.visibility));
-  const violations = [];
+  const violations: ExportViolation[] = [];
 
   if (components.length && visibilityRank(targetVisibility) > visibilityRank(meetVis)) {
     violations.push({
@@ -133,7 +156,7 @@ export function evaluateExport({ brickIds = [], project = null, targetVisibility
  * an authorized operator export closed source anyway.
  * @param {ExportAssertionOptions} options
  */
-export function assertExportAllowed({ operation, brickIds = [], project = null, targetVisibility = 'community', allowClosed = false, requireOwner = false, actor, index }: any) {
+export function assertExportAllowed({ operation, brickIds = [], project = null, targetVisibility = 'community', allowClosed = false, requireOwner = false, actor, index }: ExportAssertionOptions): ExportEvaluation {
   const who = actor || process.env.SMA_ACTOR_ID || process.env.USER || 'unknown';
   const evaluation = evaluateExport({ brickIds, project, targetVisibility, index });
   // Owner check: who owns the primary brick, and is the actor that owner?
@@ -164,7 +187,11 @@ export function assertExportAllowed({ operation, brickIds = [], project = null, 
   return evaluation;
 }
 
-function audit(entry) {
+function audit(entry: {
+  operation: string; actor: string; targetVisibility: Visibility; brickIds: string[];
+  evaluation: ExportEvaluation; allowClosed: boolean; allowed: boolean;
+  owner: string | null; actor_is_owner: boolean;
+}): void {
   if (process.env.SMA_EXPORT_AUDIT_DISABLE) return; // tests must not pollute the real log
   try {
     mkdirSync(dirname(AUDIT_LOG), { recursive: true });

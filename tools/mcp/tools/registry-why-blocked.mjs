@@ -14,6 +14,11 @@ import {
   readOnlyAuthorization,
 } from "../contract.mjs";
 
+/** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
+/** @typedef {NonNullable<ReturnType<typeof getBrick>>} Brick */
+/** @typedef {NonNullable<ReturnType<typeof getBuild>>} Build */
+/** @typedef {Record<string, unknown>} ToolInput */
+
 export const name = "registry-why-blocked";
 export const description = "Explain recorded readiness blockers for a brick, build, or project.";
 export const inputSchema = {
@@ -29,16 +34,19 @@ export const annotations = readOnlyAnnotations;
 export const authorization = readOnlyAuthorization;
 export const timeoutMs = 500;
 
+/** @param {Brick} brick */
 function brickBlockers(brick) {
   const reasons = [];
   if (brick?.health?.status && brick.health.status !== "ok") reasons.push("health_not_ok");
   if (Number(brick?.health?.error_count || 0) > 0) reasons.push("validation_errors");
-  if (["blocked", "manual_review"].includes(brick?.clone_readiness)) reasons.push("clone_not_ready");
+  if (typeof brick?.clone_readiness === "string"
+    && ["blocked", "manual_review"].includes(brick.clone_readiness)) reasons.push("clone_not_ready");
   if (brick?.env_contract?.required && brick.env_contract.status !== "complete") reasons.push("env_contract_incomplete");
   if (brick?.rls_contract?.required && brick.rls_contract.status !== "complete") reasons.push("rls_contract_incomplete");
   return [...new Set(reasons)];
 }
 
+/** @param {Build} build */
 function buildBlockers(build) {
   const explicit = [
     ...(build?.top_blockers || []),
@@ -51,6 +59,10 @@ function buildBlockers(build) {
   return [...new Set(explicit)];
 }
 
+/**
+ * @param {ToolInput} args
+ * @param {RegistryContext} context
+ */
 export async function explainWhyBlocked(args, context) {
   const query = requireString(args.query, "query");
   const requestedType = args.type || "auto";
@@ -107,6 +119,7 @@ export async function explainWhyBlocked(args, context) {
   );
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

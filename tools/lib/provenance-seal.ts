@@ -33,7 +33,7 @@
  * fields and POSIX paths cannot contain NUL, so field framing is injective.
  */
 
-import { createHash, sign as edSign, verify as edVerify, generateKeyPairSync, createPrivateKey, createPublicKey } from 'node:crypto';
+import { createHash, sign as edSign, verify as edVerify, generateKeyPairSync, createPrivateKey, createPublicKey, type BinaryLike } from 'node:crypto';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { resolve, relative, sep } from 'node:path';
 
@@ -41,6 +41,37 @@ const FINGERPRINT_ALGO = 'sha256-tree-v2';
 const SEAL_ALGO = 'sha256-chain-v2';
 const SEP = '\u0000';                       // explicit NUL — never a raw byte in source
 const SIGN_CONTEXT = `sma-provenance-seal-v1${SEP}`; // domain-tag signed messages
+
+type ProvenanceEvent = {
+  actor_kind?: unknown;
+  actor_id?: unknown;
+  role?: unknown;
+  timestamp?: unknown;
+  commit?: unknown;
+  summary?: unknown;
+};
+
+type SealInput = { brick_id?: string | null; content_hash?: string | null; events?: ProvenanceEvent[] };
+type ProvenanceSeal = {
+  algo: string;
+  brick_id: string | null;
+  anchor: string;
+  head: string;
+  chain_length: number;
+  events_digest: string;
+};
+
+type StoredSeal = Partial<Pick<ProvenanceSeal, 'anchor' | 'head' | 'chain_length'>> | null | undefined;
+type FingerprintedFile = { path: string; sha256: string; bytes: number };
+type SourceFingerprint = {
+  algo: string;
+  content_hash: string | null;
+  resolved: boolean;
+  file_count: number;
+  byte_count: number;
+  truncated: boolean;
+  files?: FingerprintedFile[];
+};
 
 const IGNORE_DIRS = new Set([
   '.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '.turbo',
@@ -52,12 +83,12 @@ const IGNORE_DIRS = new Set([
 // pivot, and that must change the brick's identity.
 const IGNORE_FILE = /(\.png|\.jpe?g|\.gif|\.webp|\.ico|\.svg|\.bmp|\.avif|\.woff2?|\.ttf|\.otf|\.eot|\.mp4|\.mov|\.webm|\.mp3|\.wav|\.flac|\.pdf|\.zip|\.gz|\.tar|\.tgz|\.7z|\.rar|\.jar)$/i;
 
-function sha256(buf) {
+function sha256(buf: BinaryLike): string {
   return createHash('sha256').update(buf).digest('hex');
 }
 
 /** Hash a single file's content with line endings normalized to LF. */
-export function hashFileContent(absPath) {
+export function hashFileContent(absPath: string): string {
   const buf = readFileSync(absPath);
   // Normalize CRLF/CR -> LF so a pure line-ending change is not a new identity.
   const normalized = buf.includes(0x00)
@@ -70,11 +101,12 @@ export function hashFileContent(absPath) {
  *  the LAST files in sorted order — deterministic, not filesystem-traversal
  *  dependent, so an attacker cannot flood an early directory to push a target
  *  file out of the hashed set. */
-function walkFiles(root, { maxFiles = 20000 } = {}) {
-  const out = [];
-  const stack = [root];
+function walkFiles(root: string, { maxFiles = 20000 }: { maxFiles?: number } = {}): { files: string[]; truncated: boolean } {
+  const out: string[] = [];
+  const stack: string[] = [root];
   while (stack.length) {
     const dir = stack.pop();
+    if (!dir) continue;
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
@@ -105,12 +137,12 @@ function walkFiles(root, { maxFiles = 20000 } = {}) {
  * `truncated` MUST be treated as a hard error by verifiers — a truncated
  * fingerprint only covers part of the source.
  */
-export function fingerprintSource(absPath, { includeFiles = false, maxFiles = 20000 } = {}) {
+export function fingerprintSource(absPath: string, { includeFiles = false, maxFiles = 20000 }: { includeFiles?: boolean; maxFiles?: number } = {}): SourceFingerprint {
   if (!absPath || !existsSync(absPath)) {
     return { algo: FINGERPRINT_ALGO, content_hash: null, resolved: false, file_count: 0, byte_count: 0, truncated: false };
   }
   const st = statSync(absPath);
-  let fileList;
+  let fileList: string[];
   let truncated = false;
   if (st.isFile()) {
     fileList = [absPath];
@@ -121,7 +153,7 @@ export function fingerprintSource(absPath, { includeFiles = false, maxFiles = 20
   }
 
   const base = st.isFile() ? resolve(absPath, '..') : absPath;
-  const perFile = [];
+  const perFile: FingerprintedFile[] = [];
   let byteCount = 0;
   const hasher = createHash('sha256');
   hasher.update(`${FINGERPRINT_ALGO}${SEP}`);
@@ -141,7 +173,7 @@ export function fingerprintSource(absPath, { includeFiles = false, maxFiles = 20
     if (includeFiles) perFile.push({ path: rel, sha256: fileHash, bytes });
   }
 
-  const result: Record<string, any> = {
+  const result: SourceFingerprint = {
     algo: FINGERPRINT_ALGO,
     content_hash: hasher.digest('hex'),
     resolved: true,
@@ -157,7 +189,7 @@ export function fingerprintSource(absPath, { includeFiles = false, maxFiles = 20
 
 /** Canonicalize a touch/provenance event into the stable subset we chain over.
  *  NUL-separated so field boundaries are unambiguous. */
-export function canonicalEvent(ev) {
+export function canonicalEvent(ev: ProvenanceEvent | null | undefined): string {
   if (!ev || typeof ev !== 'object') return '';
   const parts = [
     ev.actor_kind || '',
@@ -165,7 +197,7 @@ export function canonicalEvent(ev) {
     ev.role || '',
     ev.timestamp || '',
     ev.commit || '',
-    (ev.summary || '').trim(),
+    typeof ev.summary === 'string' ? ev.summary.trim() : '',
   ];
   return parts.join(SEP);
 }
@@ -175,7 +207,7 @@ export function canonicalEvent(ev) {
  * fingerprint. events is the ordered list [created_by, ...touched_by, ...reviewed_by].
  * Returns { algo, brick_id, anchor, head, chain_length, events_digest }.
  */
-export function computeSeal({ brick_id, content_hash, events }: Record<string, any>): Record<string, any> {
+export function computeSeal({ brick_id, content_hash, events }: SealInput): ProvenanceSeal {
   const anchor = sha256(`${SEAL_ALGO}${SEP}${brick_id || ''}${SEP}${content_hash || 'unresolved'}`);
   let head = anchor;
   const list = Array.isArray(events) ? events : [];
@@ -196,8 +228,8 @@ export function computeSeal({ brick_id, content_hash, events }: Record<string, a
  * Verify a stored seal against freshly-recomputed events + fingerprint.
  * Returns { ok, reasons:[] } where reasons explains any tamper detected.
  */
-export function verifySeal(stored, { brick_id, content_hash, events }) {
-  const reasons = [];
+export function verifySeal(stored: StoredSeal, { brick_id, content_hash, events }: SealInput) {
+  const reasons: string[] = [];
   if (!stored || typeof stored !== 'object') {
     return { ok: false, reasons: ['no seal recorded'] };
   }
@@ -226,13 +258,13 @@ export function generateSealKeypair() {
 }
 
 /** Sign a seal head (domain-tagged) with an ed25519 private key PEM. Returns hex. */
-export function signSealHead(head, privatePem) {
+export function signSealHead(head: string, privatePem: string): string {
   const keyObj = createPrivateKey(privatePem);
   return edSign(null, Buffer.from(`${SIGN_CONTEXT}${head}`, 'utf8'), keyObj).toString('hex');
 }
 
 /** Verify a hex signature over a domain-tagged seal head with an ed25519 public PEM. */
-export function verifySealSignature(head, signatureHex, publicPem) {
+export function verifySealSignature(head: string, signatureHex: string, publicPem: string): boolean {
   try {
     const keyObj = createPublicKey(publicPem);
     return edVerify(null, Buffer.from(`${SIGN_CONTEXT}${head}`, 'utf8'), keyObj, Buffer.from(signatureHex, 'hex'));
@@ -243,7 +275,7 @@ export function verifySealSignature(head, signatureHex, publicPem) {
 }
 
 /** Short, stable id for a public key PEM (matches generateSealKeypair). */
-export function publicKeyId(publicPem) {
+export function publicKeyId(publicPem: string): string {
   return sha256(String(publicPem)).slice(0, 16);
 }
 

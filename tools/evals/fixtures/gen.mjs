@@ -30,6 +30,31 @@ const FIXED_SEED = "smarch-public-eval-fixtures-v1";
 const FIXED_TIMESTAMP = "2026-01-15T00:00:00.000Z";
 const MAX_PORTFOLIO_BYTES = 2 * 1024 * 1024;
 
+/** @typedef {{ id: string, description: string, bricks: string[] }} FixtureProject */
+/** @typedef {{ path: string, kind: "directory" | "file", bytes?: number, sha256?: string }} TreeEntry */
+/** @typedef {{ schemaVersion: number, algorithm: string, root: string, digest: string, fileCount: number, totalBytes: number }} FixtureSnapshot */
+/**
+ * @typedef {object} JsonSchema
+ * @property {string} [$ref]
+ * @property {string} [type]
+ * @property {unknown} [const]
+ * @property {unknown[]} [enum]
+ * @property {number} [minLength]
+ * @property {string} [pattern]
+ * @property {string} [format]
+ * @property {number} [minimum]
+ * @property {number} [maximum]
+ * @property {number} [minItems]
+ * @property {boolean} [uniqueItems]
+ * @property {JsonSchema} [items]
+ * @property {string[]} [required]
+ * @property {boolean | JsonSchema} [additionalProperties]
+ * @property {Record<string, JsonSchema>} [properties]
+ */
+/** @typedef {{ count: number, projects: string[], bricks: Array<{ id: string }> }} DuplicateCluster */
+/** @typedef {{ bricks: unknown[], validation_error_count: number, refactor_report: { oversized_file_count: number, severity_counts: { critical: number } }, scanner_report: { env_contract_report: { bricks_with_undeclared_refs: number, undeclared_reference_count: number }, code_quality_report: { by_type: { empty_catch: number } }, duplicate_clusters: DuplicateCluster[] } }} EvalScanReport */
+
+/** @type {FixtureProject[]} */
 const PROJECTS = [
   {
     id: "acme-desktop",
@@ -96,6 +121,53 @@ const DUPLICATE_PAIR = [
   "acme-studio.timeline-core"
 ];
 
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** @param {unknown} value @returns {value is JsonSchema} */
+function isJsonSchema(value) {
+  return isRecord(value);
+}
+
+/** @param {unknown} value @returns {value is FixtureSnapshot} */
+function isFixtureSnapshot(value) {
+  return isRecord(value)
+    && value.schemaVersion === 1
+    && value.algorithm === "sha256"
+    && typeof value.root === "string"
+    && typeof value.digest === "string"
+    && typeof value.fileCount === "number"
+    && typeof value.totalBytes === "number";
+}
+
+/** @param {unknown} value @returns {value is EvalScanReport} */
+function isEvalScanReport(value) {
+  if (!isRecord(value) || !Array.isArray(value.bricks) || typeof value.validation_error_count !== "number") return false;
+  const refactor = value.refactor_report;
+  const scanner = value.scanner_report;
+  if (!isRecord(refactor) || typeof refactor.oversized_file_count !== "number" || !isRecord(refactor.severity_counts)) return false;
+  if (typeof refactor.severity_counts.critical !== "number" || !isRecord(scanner)) return false;
+  const env = scanner.env_contract_report;
+  const quality = scanner.code_quality_report;
+  const clusters = scanner.duplicate_clusters;
+  return isRecord(env)
+    && typeof env.bricks_with_undeclared_refs === "number"
+    && typeof env.undeclared_reference_count === "number"
+    && isRecord(quality)
+    && isRecord(quality.by_type)
+    && typeof quality.by_type.empty_catch === "number"
+    && Array.isArray(clusters)
+    && clusters.every((cluster) => isRecord(cluster)
+      && typeof cluster.count === "number"
+      && Array.isArray(cluster.projects)
+      && cluster.projects.every((project) => typeof project === "string")
+      && Array.isArray(cluster.bricks)
+      && cluster.bricks.every((brick) => isRecord(brick) && typeof brick.id === "string"));
+}
+
+/** @param {string[]} argv */
 function parseArgs(argv) {
   const options = { output: DEFAULT_OUTPUT, selftest: false, updateSnapshot: false };
 
@@ -127,14 +199,17 @@ Usage:
   return options;
 }
 
+/** @param {unknown} value */
 function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+/** @param {string} value */
 function seedHash(value) {
   return createHash("sha256").update(`${FIXED_SEED}:${value}`).digest("hex");
 }
 
+/** @param {string} slug */
 function titleCase(slug) {
   return slug
     .split("-")
@@ -142,11 +217,13 @@ function titleCase(slug) {
     .join(" ");
 }
 
+/** @param {string} slug */
 function symbolName(slug) {
   const title = titleCase(slug).replace(/\s+/g, "");
   return `${title[0].toLowerCase()}${title.slice(1)}`;
 }
 
+/** @param {string} projectId @param {string} slug */
 function normalSource(projectId, slug) {
   const symbol = symbolName(slug);
   const token = seedHash(`${projectId}:${slug}`).slice(0, 12);
@@ -154,11 +231,11 @@ function normalSource(projectId, slug) {
   return [
     `const fixtureToken = "${token}";`,
     "",
-    `export function ${symbol}Record(input = {}) {`,
+    `/** @param {{ enabled?: boolean }} [input] */ export function ${symbol}Record(input = {}) {`,
     `  return { fixtureToken, kind: "${slug}", enabled: input.enabled !== false };`,
     "}",
     "",
-    `export function ${symbol}Summary(items = []) {`,
+    `/** @param {Array<{ label?: unknown }>} [items] */ export function ${symbol}Summary(items = []) {`,
     "  return items.map((item, index) => ({ index, label: String(item.label || \"untitled\") }));",
     "}",
     ""
@@ -179,7 +256,7 @@ function oversizedSource() {
   lines.push(
     "];",
     "",
-    "export function catalogEntryAt(index) {",
+    "/** @param {number} index */ export function catalogEntryAt(index) {",
     "  return generatedCatalog[index] || null;",
     "}",
     ""
@@ -201,7 +278,7 @@ function envGapSource() {
 
 function silentCatchSource() {
   return [
-    "export function parseFixturePayload(value) {",
+    "/** @param {string} value */ export function parseFixturePayload(value) {",
     "  try {",
     "    return JSON.parse(value);",
     "  } catch {}",
@@ -212,8 +289,9 @@ function silentCatchSource() {
   ].join("\n");
 }
 
+/** @param {boolean} spaced */
 function duplicateSource(spaced) {
-  const lines = ["export const timelineTransforms = ["];
+  const lines = ["/** @type {Array<(value: number) => number>} */ export const timelineTransforms = ["];
 
   for (let index = 0; index < 124; index += 1) {
     const suffix = String(index).padStart(3, "0");
@@ -224,7 +302,7 @@ function duplicateSource(spaced) {
 
   lines.push(
     "];",
-    "export function applyTimelineTransform(index, value) {",
+    "/** @param {number} index @param {number} value */ export function applyTimelineTransform(index, value) {",
     "  return timelineTransforms[index](value);",
     "}",
     ""
@@ -233,6 +311,7 @@ function duplicateSource(spaced) {
   return lines.join("\n");
 }
 
+/** @param {string} projectId @param {string} slug */
 function sourceFor(projectId, slug) {
   if (projectId === "acme-desktop" && slug === "oversized-catalog") {
     return oversizedSource();
@@ -257,6 +336,7 @@ function gateScore() {
   return { status: "passing", score: 92, evidence: ["deterministic fixture generation"] };
 }
 
+/** @param {string} projectId @param {string} slug */
 function touchEvent(projectId, slug) {
   return {
     actor_kind: "automation",
@@ -267,6 +347,7 @@ function touchEvent(projectId, slug) {
   };
 }
 
+/** @param {string} projectId @param {string} slug @param {string} sourceText */
 function manifestFor(projectId, slug, sourceText) {
   const sourcePath = `src/modules/${slug}`;
   const lineCount = sourceText.split(/\r?\n/).length;
@@ -390,18 +471,22 @@ function manifestFor(projectId, slug, sourceText) {
   };
 }
 
+/** @param {JsonSchema} rootSchema @param {string} reference @returns {unknown} */
 function resolvePointer(rootSchema, reference) {
   if (!reference.startsWith("#/")) {
     throw new Error(`Unsupported schema reference: ${reference}`);
   }
 
-  return reference
-    .slice(2)
-    .split("/")
-    .map((part) => part.replace(/~1/g, "/").replace(/~0/g, "~"))
-    .reduce((current, part) => current?.[part], rootSchema);
+  /** @type {unknown} */
+  let current = rootSchema;
+  for (const part of reference.slice(2).split("/").map((token) => token.replace(/~1/g, "/").replace(/~0/g, "~"))) {
+    if (!isRecord(current)) return undefined;
+    current = current[part];
+  }
+  return current;
 }
 
+/** @param {unknown} value @param {string} type */
 function matchesType(value, type) {
   if (type === "array") return Array.isArray(value);
   if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -410,11 +495,13 @@ function matchesType(value, type) {
   return typeof value === type;
 }
 
+/** @param {unknown} value @param {JsonSchema} schema @param {JsonSchema} rootSchema @param {string} [location] @returns {string[]} */
 function validateAgainstSchema(value, schema, rootSchema, location = "$") {
+  /** @type {string[]} */
   const errors = [];
   const resolved = schema.$ref ? resolvePointer(rootSchema, schema.$ref) : schema;
 
-  if (!resolved) {
+  if (!isJsonSchema(resolved)) {
     return [`${location}: unresolved schema reference ${schema.$ref}`];
   }
 
@@ -474,14 +561,15 @@ function validateAgainstSchema(value, schema, rootSchema, location = "$") {
       }
     }
 
-    if (resolved.items) {
+    const itemSchema = resolved.items;
+    if (itemSchema) {
       value.forEach((entry, index) => {
-        errors.push(...validateAgainstSchema(entry, resolved.items, rootSchema, `${location}[${index}]`));
+        errors.push(...validateAgainstSchema(entry, itemSchema, rootSchema, `${location}[${index}]`));
       });
     }
   }
 
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+  if (isRecord(value)) {
     for (const requiredKey of resolved.required || []) {
       if (!Object.hasOwn(value, requiredKey)) {
         errors.push(`${location}: missing required property ${requiredKey}`);
@@ -506,6 +594,7 @@ function validateAgainstSchema(value, schema, rootSchema, location = "$") {
   return errors;
 }
 
+/** @param {string} manifestPath @param {ReturnType<typeof manifestFor>} manifest @param {JsonSchema} schema */
 function assertManifestValid(manifestPath, manifest, schema) {
   const schemaErrors = validateAgainstSchema(manifest, schema, schema);
   assert.equal(schemaErrors.length, 0, `${manifestPath} failed JSON schema validation:\n${schemaErrors.join("\n")}`);
@@ -514,10 +603,14 @@ function assertManifestValid(manifestPath, manifest, schema) {
   assert.equal(
     semanticReport.errors.length,
     0,
-    `${manifestPath} failed SMA validation:\n${semanticReport.errors.map((entry) => `${entry.code}: ${entry.message}`).join("\n")}`
+    `${manifestPath} failed SMA validation:\n${semanticReport.errors.map(
+      /** @param {{ code: string, message: string }} entry */
+      (entry) => `${entry.code}: ${entry.message}`
+    ).join("\n")}`
   );
 }
 
+/** @param {string} outputRoot @param {FixtureProject} project @param {JsonSchema} schema */
 async function writeProject(outputRoot, project, schema) {
   const projectRoot = path.join(outputRoot, project.id);
   await fs.mkdir(path.join(projectRoot, ".smarch"), { recursive: true });
@@ -547,8 +640,12 @@ async function writeProject(outputRoot, project, schema) {
   }
 }
 
+/** @param {string} outputRoot */
 async function generatePortfolio(outputRoot) {
-  const schema = JSON.parse(await fs.readFile(SCHEMA_PATH, "utf8"));
+  /** @type {unknown} */
+  const parsedSchema = JSON.parse(await fs.readFile(SCHEMA_PATH, "utf8"));
+  if (!isJsonSchema(parsedSchema)) throw new Error("brick manifest schema must be a JSON object");
+  const schema = parsedSchema;
   await fs.rm(outputRoot, { recursive: true, force: true });
   await fs.mkdir(outputRoot, { recursive: true });
 
@@ -559,9 +656,12 @@ async function generatePortfolio(outputRoot) {
   return outputRoot;
 }
 
+/** @param {string} root @returns {Promise<TreeEntry[]>} */
 async function treeSnapshot(root) {
+  /** @type {TreeEntry[]} */
   const entries = [];
 
+  /** @param {string} current */
   async function walk(current) {
     const children = await fs.readdir(current, { withFileTypes: true });
     children.sort((left, right) => left.name.localeCompare(right.name));
@@ -589,10 +689,12 @@ async function treeSnapshot(root) {
   return entries;
 }
 
+/** @param {TreeEntry[]} snapshot */
 function snapshotBytes(snapshot) {
   return snapshot.reduce((sum, entry) => sum + Number(entry.bytes || 0), 0);
 }
 
+/** @param {TreeEntry[]} snapshot @returns {FixtureSnapshot} */
 function snapshotSummary(snapshot) {
   const files = snapshot.filter((entry) => entry.kind === "file");
   return {
@@ -606,13 +708,17 @@ function snapshotSummary(snapshot) {
 }
 
 async function readCommittedSnapshot() {
-  const snapshot = JSON.parse(await fs.readFile(SNAPSHOT_PATH, "utf8"));
+  /** @type {unknown} */
+  const parsed = JSON.parse(await fs.readFile(SNAPSHOT_PATH, "utf8"));
+  if (!isFixtureSnapshot(parsed)) throw new Error("fixture snapshot has an invalid shape");
+  const snapshot = parsed;
   assert.equal(snapshot.schemaVersion, 1, "fixture snapshot schemaVersion must be 1");
   assert.equal(snapshot.algorithm, "sha256", "fixture snapshot algorithm must be sha256");
   assert.equal(snapshot.root, SNAPSHOT_ROOT, `fixture snapshot root must be ${SNAPSHOT_ROOT}`);
   return snapshot;
 }
 
+/** @param {FixtureSnapshot} actual @param {FixtureSnapshot} expected @param {string} label */
 function assertSnapshotMatches(actual, expected, label) {
   assert.deepEqual(
     actual,
@@ -621,6 +727,7 @@ function assertSnapshotMatches(actual, expected, label) {
   );
 }
 
+/** @param {string} portfolioRoot @param {string} reportPath @returns {Promise<EvalScanReport>} */
 async function scanPortfolio(portfolioRoot, reportPath) {
   const { stdout, stderr } = await execFileAsync(process.execPath, [
     SCANNER_PATH,
@@ -634,9 +741,13 @@ async function scanPortfolio(portfolioRoot, reportPath) {
 
   assert.equal(stderr.trim(), "", `scanner wrote to stderr:\n${stderr}`);
   JSON.parse(stdout);
-  return JSON.parse(await fs.readFile(reportPath, "utf8"));
+  /** @type {unknown} */
+  const parsed = JSON.parse(await fs.readFile(reportPath, "utf8"));
+  if (!isEvalScanReport(parsed)) throw new Error("scanner report has an invalid evaluation shape");
+  return parsed;
 }
 
+/** @param {EvalScanReport} report */
 function assertPlantedFindings(report) {
   assert.equal(report.bricks.length, 40, "expected exactly 40 fixture bricks");
   assert.equal(report.validation_error_count, 0, "all fixture manifests must pass scanner validation");

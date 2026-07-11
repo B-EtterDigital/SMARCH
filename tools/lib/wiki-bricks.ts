@@ -6,11 +6,21 @@ import { featureClusterForBrick as featureClusterFor } from "./feature-clusters.
 
 import { countBy, escapeHtml, mdTableRow, slugify } from "./wiki-utils.ts";
 import type { LooseRecord } from "./wiki-utils.ts";
+import type { BrickManifest } from "./schema-types/brick.manifest.schema.d.ts";
+import type { GlobalRegistry } from "./schema-types/global.registry.schema.d.ts";
+import type { CompactBrick } from "./scan-discovery.ts";
+
+type GateView = { status?: string; score?: number; notes?: string; evidence?: string[] };
+type ManifestView = BrickManifest & {
+  sweetspot?: Record<string, GateView>;
+  supply_chain?: { dependencies?: Array<{ name: string; version?: string; license?: string; risk?: string; purpose?: string }> };
+};
+type FeatureClusterView = { id: string; name: string; description: string; bricks: CompactBrick[]; warning_count: number; error_count: number; score_total: number; risk_counts: Record<string, number>; status_counts: Record<string, number>; kind_counts: Record<string, number>; project_counts: Record<string, number>; count: number; average_score: number };
 
 
 
-export async function readManifest(brick: LooseRecord): Promise<any | null> {
-  if (!brick.manifest_path) {
+export async function readManifest(brick: LooseRecord): Promise<ManifestView | null> {
+  if (typeof brick.manifest_path !== "string" || !brick.manifest_path) {
     return null;
   }
 
@@ -22,7 +32,7 @@ export async function readManifest(brick: LooseRecord): Promise<any | null> {
   }
 }
 
-export async function maybeReadJson(filePath: string): Promise<any | null> {
+export async function maybeReadJson(filePath: string): Promise<unknown | null> {
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
   } catch {
@@ -31,8 +41,8 @@ export async function maybeReadJson(filePath: string): Promise<any | null> {
   }
 }
 
-export function gateRows(manifest) {
-  const gates: LooseRecord = manifest?.sweetspot || {};
+export function gateRows(manifest: ManifestView | null | undefined): string {
+  const gates: Record<string, GateView> = manifest?.sweetspot || {};
   return Object.entries(gates).map(([name, gate]) => mdTableRow([
     name,
     gate.status || "",
@@ -42,7 +52,7 @@ export function gateRows(manifest) {
   ])).join("\n");
 }
 
-export function listLines(items) {
+export function listLines(items: unknown): string {
   if (!Array.isArray(items) || items.length === 0) {
     return "- Not declared";
   }
@@ -50,12 +60,12 @@ export function listLines(items) {
   return items.map((item) => `- ${item}`).join("\n");
 }
 
-export function provenanceLines(manifest) {
+export function provenanceLines(manifest: ManifestView | null | undefined): string {
   const events = [
     manifest?.provenance?.created_by,
     ...(manifest?.provenance?.touched_by || []),
     ...(manifest?.provenance?.reviewed_by || [])
-  ].filter(Boolean);
+  ].filter((event): event is NonNullable<typeof event> => Boolean(event));
 
   if (events.length === 0) {
     return "- Not recorded";
@@ -67,7 +77,7 @@ export function provenanceLines(manifest) {
   }).join("\n");
 }
 
-export function envRows(manifest) {
+export function envRows(manifest: ManifestView | null | undefined): string {
   const vars = manifest?.security?.env?.variables || [];
 
   if (vars.length === 0) {
@@ -82,7 +92,7 @@ export function envRows(manifest) {
   ])).join("\n");
 }
 
-export function dependencyRows(manifest) {
+export function dependencyRows(manifest: ManifestView | null | undefined): string {
   const dependencies = manifest?.supply_chain?.dependencies || [];
 
   if (dependencies.length === 0) {
@@ -98,11 +108,11 @@ export function dependencyRows(manifest) {
   ])).join("\n");
 }
 
-export function brickMarkdown(brick, manifest) {
+export function brickMarkdown(brick: CompactBrick, manifest: ManifestView | null): string {
   const models = brick.models?.length ? brick.models.join(", ") : "Not recorded";
   const dataClasses = brick.data_classes?.length ? brick.data_classes.join(", ") : "Not declared";
-  const findings = manifest?.security?.vulnerability_findings || {};
-  const codeBudget = manifest?.quality?.code_budget || {};
+  const findings = manifest?.security?.vulnerability_findings;
+  const codeBudget = manifest?.quality?.code_budget;
 
   return `# ${brick.name}
 
@@ -133,11 +143,11 @@ ${brick.id} is a ${brick.kind || "brick"} from ${brick.project || "unknown proje
 
 | Field | Value |
 |-------|-------|
-| Status | ${codeBudget.status || "Not declared"} |
-| Feature lines | ${codeBudget.feature_lines ?? "Not declared"} |
-| File count | ${codeBudget.file_count ?? "Not declared"} |
-| Dependency count | ${codeBudget.dependency_count ?? "Not declared"} |
-| Notes | ${codeBudget.notes || "Not declared"} |
+| Status | ${codeBudget?.status || "Not declared"} |
+| Feature lines | ${codeBudget?.feature_lines ?? "Not declared"} |
+| File count | ${codeBudget?.file_count ?? "Not declared"} |
+| Dependency count | ${codeBudget?.dependency_count ?? "Not declared"} |
+| Notes | ${codeBudget?.notes || "Not declared"} |
 
 ## Source
 
@@ -202,10 +212,10 @@ ${envRows(manifest)}
 
 | Severity | Count |
 |----------|-------|
-| Critical | ${findings.critical ?? 0} |
-| High | ${findings.high ?? 0} |
-| Medium | ${findings.medium ?? 0} |
-| Low | ${findings.low ?? 0} |
+| Critical | ${findings?.critical ?? 0} |
+| High | ${findings?.high ?? 0} |
+| Medium | ${findings?.medium ?? 0} |
+| Low | ${findings?.low ?? 0} |
 
 ## Provenance
 
@@ -226,7 +236,7 @@ If this page is thin, the manifest needs more detail. The wiki is only as good a
 `;
 }
 
-export function catalogMarkdown(bricks) {
+export function catalogMarkdown(bricks: CompactBrick[]): string {
   const rows = bricks.map((brick) => {
     const slug = slugify(brick.id);
     return mdTableRow([
@@ -259,16 +269,16 @@ ${rows.join("\n")}
 `;
 }
 
-export function optionList(values) {
+export function optionList(values: Array<[string, number]>): string {
   return values.map(([value]) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
 }
 
-export function shortPath(brick) {
+export function shortPath(brick: CompactBrick): string {
   const [first] = brick.source_paths || [];
   return first || brick.manifest_path || "";
 }
 
-export function brickTone(brick) {
+export function brickTone(brick: CompactBrick): string {
   if (brick.health?.status === "fail" || brick.risk === "critical") {
     return "danger";
   }
@@ -284,14 +294,24 @@ export function brickTone(brick) {
   return "steady";
 }
 
-export function featureClusters(bricks) {
-  const byId = new Map();
+export function featureClusters(bricks: CompactBrick[]): FeatureClusterView[] {
+  const byId = new Map<string, Omit<FeatureClusterView, "count" | "average_score">>();
 
   for (const brick of bricks) {
-    const cluster = brick.feature_cluster || featureClusterFor(brick);
+    const cluster = brick.feature_cluster || featureClusterFor({
+      id: brick.id,
+      name: brick.name,
+      kind: brick.kind,
+      status: brick.status,
+      risk: brick.risk,
+      brick_group: brick.brick_group || undefined,
+      manifest_path: brick.manifest_path,
+      source_paths: brick.source_paths,
+      domain: brick.domain,
+    });
     const current = byId.get(cluster.id) || {
       ...cluster,
-      bricks: [],
+      bricks: [] as CompactBrick[],
       warning_count: 0,
       error_count: 0,
       score_total: 0,
@@ -326,7 +346,7 @@ export function countsLine(counts: Record<string, number> | null | undefined): s
     .join(", ");
 }
 
-export function brickWallHtml(registry, bricks) {
+export function brickWallHtml(registry: GlobalRegistry, bricks: CompactBrick[]): string {
   const projects = registry.projects || [];
   const totalWarnings = projects.reduce((sum, project) => sum + (project.warning_count || 0), 0);
   const totalErrors = projects.reduce((sum, project) => sum + (project.error_count || 0), 0);
@@ -337,7 +357,7 @@ export function brickWallHtml(registry, bricks) {
   const byRisk = countBy(bricks, (brick) => brick.risk);
   const byCluster = countBy(bricks, (brick) => brick.feature_cluster?.name);
   const byProject = countBy(bricks, (brick) => brick.project);
-  const projectName = projects.length === 1 ? projects[0].id : "SMA Registry";
+  const projectName = projects.length === 1 ? projects[0]?.id || "SMA Registry" : "SMA Registry";
   const dominantStatus = byStatus[0]?.[0] || "unknown";
   const wallRows = bricks.map((brick) => {
     const slug = slugify(brick.id);
@@ -765,9 +785,9 @@ ${wallRows || '      <div class="empty" style="display:block">No bricks indexed 
 `;
 }
 
-export function featureClustersHtml(registry, bricks) {
+export function featureClustersHtml(registry: GlobalRegistry, bricks: CompactBrick[]): string {
   const clusters = featureClusters(bricks);
-  const projectName = (registry.projects || []).length === 1 ? registry.projects[0].id : "SMA Registry";
+  const projectName = (registry.projects || []).length === 1 ? registry.projects[0]?.id || "SMA Registry" : "SMA Registry";
   const largest = Math.max(1, ...clusters.map((cluster) => cluster.count));
   const cards = clusters.map((cluster) => {
     const width = Math.max(5, Math.round((cluster.count / largest) * 100));
@@ -1036,4 +1056,3 @@ ${cards || '      <article class="cluster"><h2>No feature clusters yet</h2><p>Ad
 </html>
 `;
 }
-

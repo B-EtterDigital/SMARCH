@@ -111,11 +111,19 @@ const featureClusterRules = [
   }
 ];
 
-function textTokens(value) {
+type FeatureCluster = { id: string; name: string; description: string };
+type FeatureBrick = {
+  id?: string; name?: string; kind?: string; status?: string; risk?: string;
+  brick_group?: string; manifest_path?: string; source_paths?: string[];
+  domain?: string[]; feature_cluster?: FeatureCluster;
+};
+type FeatureManifest = { brick?: { domain?: string[] } };
+
+function textTokens(value: unknown): Set<string> {
   return new Set(String(value || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
 }
 
-function hasClusterKeyword(tokens, keyword) {
+function hasClusterKeyword(tokens: Set<string>, keyword: string): boolean {
   const keywordTokens = String(keyword || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 
   if (keywordTokens.length === 0) {
@@ -125,12 +133,12 @@ function hasClusterKeyword(tokens, keyword) {
   return keywordTokens.every((token) => tokens.has(token));
 }
 
-function shortPath(brick) {
+function shortPath(brick: FeatureBrick): string {
   const [first] = brick.source_paths || [];
   return first || brick.manifest_path || "";
 }
 
-export function featureClusterForBrick(brick) {
+export function featureClusterForBrick(brick: FeatureBrick): FeatureCluster {
   const pathLabel = shortPath(brick);
   const searchText = [
     brick.id,
@@ -165,7 +173,7 @@ export function featureClusterForBrick(brick) {
   };
 }
 
-export function attachFeatureCluster(brick, manifest) {
+export function attachFeatureCluster<T extends FeatureBrick>(brick: T, manifest?: FeatureManifest | null): T {
   brick.domain = manifest?.brick?.domain || brick.domain || [];
   brick.feature_cluster = featureClusterForBrick(brick);
   return brick;

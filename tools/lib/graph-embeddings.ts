@@ -9,18 +9,24 @@ const OLLAMA_MODEL = "nomic-embed-text";
 const TRANSFORMERS_MODEL = "Xenova/all-MiniLM-L6-v2";
 const DEFAULT_TOP_K = 50;
 
-type GraphNode = Record<string, any>;
-type Graph = Record<string, any> & { nodes?: GraphNode[]; elements?: { nodes?: GraphNode[] } };
+type GraphNode = Record<string, unknown>;
+type Graph = Record<string, unknown> & { nodes?: GraphNode[]; elements?: { nodes?: GraphNode[] } };
 type Embedder = { backend: string; model: string; embed(texts: string[]): Promise<number[][]> };
+type TensorLike = { tolist?: () => unknown; data?: Iterable<unknown> | ArrayLike<unknown> };
+type TransformerModule = {
+  pipeline?: (task: string, model: string) => Promise<(text: string, options: { pooling: string; normalize: boolean }) => Promise<unknown>>;
+  default?: TransformerModule;
+};
 type EmbedderOptions = {
   embedder?: Embedder;
   backend?: string;
   fetchImpl?: typeof globalThis.fetch;
   timeoutMs?: number;
-  importTransformers?: () => Promise<any>;
+  importTransformers?: () => Promise<TransformerModule>;
 };
 type IndexPaths = { root: string; vectorsPath: string; idsPath: string; metaPath: string };
-type EmbeddingIndex = { meta: Record<string, any>; ids: string[]; buffer: Buffer };
+type EmbeddingMeta = { graphContentHash: string; dims: number; backend: string; [key: string]: unknown };
+type EmbeddingIndex = { meta: EmbeddingMeta; ids: string[]; buffer: Buffer };
 type LexicalHit = { id: string; label: string; lexicalScore: number; index: number };
 type SemanticHit = { id: string; semanticScore: number };
 type RankedHit = { id: string; label: string; lexicalScore: number; semanticScore: number; score: number };
@@ -32,10 +38,14 @@ function graphNodes(graph: Graph): GraphNode[] {
   return Array.isArray(nodes) ? nodes : [];
 }
 
-function canonicalize(value: any): any {
+function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
-  if (!value || typeof value !== "object") return value;
+  if (!isRecord(value)) return value;
   return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 export function graphNodeContentHash(graph: Graph): string {
@@ -126,17 +136,18 @@ async function createOllamaEmbedder({ fetchImpl = globalThis.fetch, timeoutMs = 
   };
 }
 
-function tensorVector(output: any): number[] {
-  if (typeof output?.tolist === "function") {
-    const listed = output.tolist();
-    return Array.isArray(listed?.[0]) ? listed[0] : listed;
+function tensorVector(output: unknown): number[] {
+  if (isRecord(output) && typeof (output as TensorLike).tolist === "function") {
+    const listed = (output as TensorLike).tolist?.();
+    const vector = Array.isArray(listed) && Array.isArray(listed[0]) ? listed[0] : listed;
+    return normalizeVector(Array.isArray(vector) ? vector : []);
   }
-  if (output?.data) return Array.from(output.data);
-  if (Array.isArray(output)) return Array.isArray(output[0]) ? output[0] : output;
+  if (isRecord(output) && (output as TensorLike).data) return normalizeVector((output as TensorLike).data);
+  if (Array.isArray(output)) return normalizeVector(Array.isArray(output[0]) ? output[0] : output);
   throw new Error("transformers embedder returned an unsupported tensor");
 }
 
-async function createTransformersEmbedder(importTransformers?: () => Promise<any>): Promise<Embedder> {
+async function createTransformersEmbedder(importTransformers?: () => Promise<TransformerModule>): Promise<Embedder> {
   const packageName = "@xenova/transformers";
   const loadTransformers = importTransformers ?? (() => import(packageName));
   const transformers = await loadTransformers();
@@ -282,7 +293,7 @@ export function substringIdfHits(graph: Graph, question: string): LexicalHit[] {
     const source = String(node?.source_file ?? "").toLowerCase();
     let lexicalScore = 0;
     for (const term of terms) {
-      const weight = idf.get(term);
+      const weight = idf.get(term) ?? 1;
       if (term === label || term === id) lexicalScore += 100 * weight;
       else if (label.startsWith(term) || id.startsWith(term)) lexicalScore += 10 * weight;
       else if (label.includes(term) || id.includes(term)) lexicalScore += weight;
@@ -297,7 +308,8 @@ function reciprocalRankMerge(nodesById: Map<string, { id: string; label: string 
   const merged = new Map<string, RankedHit>();
   const add = (hit: LexicalHit | SemanticHit, rank: number, field: 'lexicalScore' | 'semanticScore') => {
     const prior = merged.get(hit.id) ?? { id: hit.id, label: nodesById.get(hit.id)?.label ?? hit.id, lexicalScore: 0, semanticScore: -1, score: 0 };
-    prior[field] = hit[field];
+    if (field === 'lexicalScore' && 'lexicalScore' in hit) prior.lexicalScore = hit.lexicalScore;
+    if (field === 'semanticScore' && 'semanticScore' in hit) prior.semanticScore = hit.semanticScore;
     prior.score += 1 / (60 + rank + 1);
     merged.set(hit.id, prior);
   };
@@ -309,7 +321,7 @@ function reciprocalRankMerge(nodesById: Map<string, { id: string; label: string 
     || left.id.localeCompare(right.id)).slice(0, limit);
 }
 
-export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, allowedNodeIds = undefined, onWarning = console.warn, ...embedderOptions }: { graphPath: string; question: string; embedder?: Embedder; topK?: number; allowedNodeIds?: Iterable<string>; onWarning?: (warning: string) => void } & EmbedderOptions): Promise<any> {
+export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, allowedNodeIds = undefined, onWarning = console.warn, ...embedderOptions }: { graphPath: string; question: string; embedder?: Embedder; topK?: number; allowedNodeIds?: Iterable<string>; onWarning?: (warning: string) => void } & EmbedderOptions): Promise<SemanticQueryResult> {
   const absoluteGraphPath = path.resolve(graphPath);
   const graph = JSON.parse(readFileSync(absoluteGraphPath, "utf8"));
   const allowed = allowedNodeIds ? new Set([...allowedNodeIds].map(String)) : null;
@@ -339,7 +351,7 @@ export async function semanticRerankQuery({ graphPath, question, embedder = unde
 function hashString(value: string): number {
   let hash = 2166136261;
   for (const char of value) {
-    hash ^= char.codePointAt(0);
+    hash ^= char.codePointAt(0) ?? 0;
     hash = Math.imul(hash, 16777619) >>> 0;
   }
   return hash;

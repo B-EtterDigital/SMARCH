@@ -25,7 +25,7 @@ const index = buildLicenseIndex([
 ]);
 
 let n = 0;
-const ok = (name, fn) => { fn(); n += 1; };
+const ok = (name: string, fn: () => void): void => { fn(); n += 1; };
 
 ok('closed brick blocked to community', () => {
   const r = evaluateExport({ brickIds: ['closed-1'], project: 'p', targetVisibility: 'community', index });

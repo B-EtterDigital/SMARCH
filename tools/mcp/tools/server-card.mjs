@@ -42,6 +42,7 @@ export function getServerCard() {
   };
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

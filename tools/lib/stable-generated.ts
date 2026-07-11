@@ -12,7 +12,9 @@ import fs from 'node:fs/promises';
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-type JsonRecord = Record<string, any>;
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonRecord | JsonValue[];
+type JsonRecord = { [key: string]: JsonValue | undefined };
 type WriteResult = { written: boolean; path: string };
 type Normalizer<T> = (item: T) => unknown;
 
@@ -58,14 +60,12 @@ export function writeTextIfChanged(filePath: string, text: string): WriteResult 
 
 export function normalizeSmaStateSnapshot(snapshot: JsonRecord): JsonRecord {
   const clone = jsonClone(snapshot);
-  if (clone && typeof clone === 'object') {
-    clone.generated_at = '<generated_at>';
-    if (clone.gen3?.leases) {
+  clone.generated_at = '<generated_at>';
+  if (isJsonRecord(clone.gen3) && isJsonRecord(clone.gen3.leases)) {
       clone.gen3.leases.generated_at = '<lease_registry_generated_at>';
       if (Array.isArray(clone.gen3.leases.sample)) {
-        clone.gen3.leases.sample = clone.gen3.leases.sample.map(stableLease);
+        clone.gen3.leases.sample = clone.gen3.leases.sample.map((lease) => isJsonRecord(lease) ? stableLease(lease) : lease);
       }
-    }
   }
   return clone;
 }
@@ -79,11 +79,14 @@ export function normalizeRegistrySnapshot(snapshot: JsonRecord): JsonRecord {
 }
 
 export function stableLease(lease: JsonRecord): JsonRecord {
-  if (!lease || typeof lease !== 'object') return lease;
   const clone = { ...lease };
   delete clone.expires_at;
   delete clone.ttl_remaining_seconds;
   return clone;
+}
+
+function isJsonRecord(value: JsonValue | undefined): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function comparableJson(value: unknown): string | undefined {

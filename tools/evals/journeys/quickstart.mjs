@@ -12,6 +12,8 @@ const QUICKSTART_PATH = path.join(REPO_ROOT, "docs", "QUICKSTART.md");
 const BLOCK_TIMEOUT_MS = 5 * 60 * 1000;
 const FAILURE_OUTPUT_LIMIT = 4_000;
 
+/** @typedef {{ code: string, line: number }} BashBlock */
+
 function usage() {
   console.log(`SMARCH quickstart journey
 
@@ -24,6 +26,7 @@ Both forms execute every fenced bash block in docs/QUICKSTART.md. The
 `);
 }
 
+/** @param {string[]} argv */
 function parseArgs(argv) {
   for (const arg of argv) {
     if (arg === "--selftest") continue;
@@ -35,7 +38,9 @@ function parseArgs(argv) {
   }
 }
 
+/** @param {string} markdown @returns {BashBlock[]} */
 function parseBashBlocks(markdown) {
+  /** @type {BashBlock[]} */
   const blocks = [];
   const pattern = /```bash[ \t]*\r?\n([\s\S]*?)\r?\n```/g;
   let match;
@@ -52,6 +57,7 @@ function parseBashBlocks(markdown) {
   return blocks;
 }
 
+/** @param {unknown} value */
 function tail(value) {
   const text = String(value || "").trim();
   return text.length <= FAILURE_OUTPUT_LIMIT
@@ -59,6 +65,7 @@ function tail(value) {
     : text.slice(text.length - FAILURE_OUTPUT_LIMIT);
 }
 
+/** @param {BashBlock} block @param {number} index @param {number} total @param {string} tempRoot @param {NodeJS.ProcessEnv} env */
 function executeBlock(block, index, total, tempRoot, env) {
   const result = spawnSync(
     "bash",

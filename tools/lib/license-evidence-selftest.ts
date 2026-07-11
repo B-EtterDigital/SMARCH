@@ -23,10 +23,10 @@ import { join } from 'node:path';
 import { scanText, scanDirectory, evaluateDeclarationMismatch } from './license-evidence.ts';
 
 let n = 0;
-const ok = (name, fn) => { fn(); n += 1; };
+const ok = (name: string, fn: () => void): void => { fn(); n += 1; };
 
-const roots = [];
-function tmp(prefix) {
+const roots: string[] = [];
+function tmp(prefix: string): string {
   const d = mkdtempSync(join(tmpdir(), `lic-ev-${prefix}-`));
   roots.push(d);
   return d;

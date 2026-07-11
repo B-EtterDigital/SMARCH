@@ -19,7 +19,7 @@ import { leafHash, buildMerkle, inclusionProof, verifyProof, verifyBrickInclusio
 
 let n = 0;
 
-const mk = (count) => Array.from({ length: count }, (_, i) => leafHash(`brick-${i}`, `head-${i}`));
+const mk = (count: number): string[] => Array.from({ length: count }, (_, i) => leafHash(`brick-${i}`, `head-${i}`));
 
 // determinism
 for (const count of [1, 2, 3, 5, 8, 17, 100]) {

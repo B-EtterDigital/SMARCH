@@ -26,12 +26,71 @@ const EXPECTED_TOOLS = [
   "server-card",
 ].sort();
 
+/** @typedef {Awaited<ReturnType<typeof loadToolModules>>[number]} ToolModule */
+/** @typedef {Record<string, unknown>} JsonObject */
+/** @typedef {JsonObject & { id: string, project?: string }} FixtureBrick */
+/** @typedef {JsonObject & { id?: string, project?: string }} FixtureProject */
+/** @typedef {JsonObject & { generated_at?: string, projects?: FixtureProject[], bricks: FixtureBrick[] }} FixtureRegistry */
+
+/**
+ * @param {string} text
+ * @returns {unknown}
+ */
+function parseJson(text) {
+  return JSON.parse(text);
+}
+
+/**
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {JsonObject}
+ */
+function requireObject(value, label) {
+  assert.ok(value && typeof value === "object" && !Array.isArray(value), `${label} must be an object`);
+  return /** @type {JsonObject} */ (value);
+}
+
+/**
+ * @param {unknown} result
+ * @returns {JsonObject}
+ */
+function parsedTextContent(result) {
+  const resultObject = requireObject(result, "tool result");
+  assert.ok(Array.isArray(resultObject.content) && resultObject.content.length > 0, "tool result must contain content");
+  const first = requireObject(resultObject.content[0], "tool content item");
+  assert.equal(first.type, "text");
+  assert.equal(typeof first.text, "string");
+  return requireObject(parseJson(/** @type {string} */ (first.text)), "tool text payload");
+}
+
+/** @param {unknown} result */
+function parsedErrorCode(result) {
+  const error = requireObject(parsedTextContent(result).error, "tool error payload");
+  assert.equal(typeof error.code, "string");
+  return /** @type {string} */ (error.code);
+}
+
+/**
+ * @param {ToolModule[]} tools
+ * @param {string} name
+ * @returns {ToolModule}
+ */
+function requireTool(tools, name) {
+  const tool = tools.find((candidate) => candidate.name === name);
+  assert.ok(tool, `missing tool: ${name}`);
+  return tool;
+}
+
+/** @returns {Promise<FixtureRegistry>} */
 async function fixtureRegistry() {
   try {
-    const registry = JSON.parse(await readFile(
+    const parsed = parseJson(await readFile(
       path.resolve(repoRoot, "registry/global-modules.generated.json"),
       "utf8",
     ));
+    const registryObject = requireObject(parsed, "fixture registry");
+    if (!Array.isArray(registryObject.bricks)) throw new Error("fixture registry bricks must be an array");
+    const registry = /** @type {FixtureRegistry} */ (registryObject);
     const fixtureBricks = (registry.bricks || []).filter((brick) => String(brick.project || "").startsWith("acme-"));
     if (fixtureBricks.length > 0) return { ...registry, bricks: fixtureBricks };
   } catch {
@@ -57,6 +116,12 @@ async function fixtureRegistry() {
   };
 }
 
+/**
+ * @param {string} root
+ * @param {string} brick
+ * @param {string} version
+ * @param {string} artifactPath
+ */
 async function writeReleaseFixture(root, brick, version, artifactPath) {
   const releaseDirectory = path.join(root, "releases", brick);
   await mkdir(releaseDirectory, { recursive: true });
@@ -80,6 +145,7 @@ async function writeReleaseFixture(root, brick, version, artifactPath) {
   );
 }
 
+/** @param {string} root */
 async function writeCloneFixture(root) {
   const toolsDirectory = path.join(root, "tools");
   await mkdir(toolsDirectory, { recursive: true });
@@ -113,6 +179,12 @@ console.log(JSON.stringify({
   );
 }
 
+/**
+ * @param {ToolModule} install
+ * @param {JsonObject} input
+ * @param {string} reason
+ * @param {string} artifactPath
+ */
 async function assertInstallRefused(install, input, reason, artifactPath) {
   await assert.rejects(
     install.handler(input),
@@ -126,6 +198,10 @@ async function assertInstallRefused(install, input, reason, artifactPath) {
   );
 }
 
+/**
+ * @param {Promise<unknown>} promise
+ * @param {string} code
+ */
 async function assertCode(promise, code) {
   await assert.rejects(promise, (error) => {
     const structured = /** @type {{ code?: string }} */ (error);
@@ -134,7 +210,14 @@ async function assertCode(promise, code) {
   });
 }
 
+/**
+ * @param {string} label
+ * @param {() => Promise<unknown>} operation
+ * @param {number} [samples]
+ * @param {number} [budgetMs]
+ */
 async function assertP95UnderBudget(label, operation, samples = 10, budgetMs = 500) {
+  /** @type {number[]} */
   const durations = [];
   for (let index = 0; index < samples; index += 1) {
     const started = performance.now();
@@ -146,7 +229,9 @@ async function assertP95UnderBudget(label, operation, samples = 10, budgetMs = 5
   assert.ok(p95 < budgetMs, `${label} P95 was ${p95.toFixed(1)}ms (budget ${budgetMs}ms)`);
 }
 
+/** @param {string} root */
 async function assertStdioIntegration(root) {
+  /** @type {string[]} */
   const telemetry = [];
   const transport = new StdioClientTransport({
     command: process.execPath,
@@ -181,23 +266,26 @@ async function assertStdioIntegration(root) {
       arguments: { query: "approval", limit: 1 },
     });
     assert.equal(search.isError, undefined);
-    assert.equal(JSON.parse(search.content[0].text).count, 1);
-    const brickId = JSON.parse(search.content[0].text).results[0].id;
+    const searchPayload = parsedTextContent(search);
+    assert.equal(searchPayload.count, 1);
+    assert.ok(Array.isArray(searchPayload.results) && searchPayload.results.length > 0);
+    const brickId = requireObject(searchPayload.results[0], "brick search result").id;
+    assert.equal(typeof brickId, "string");
     const brick = await client.callTool({ name: "brick-get", arguments: { brick: brickId } });
-    assert.equal(JSON.parse(brick.content[0].text).id, brickId);
+    assert.equal(parsedTextContent(brick).id, brickId);
     const trust = await client.callTool({ name: "brick-trust", arguments: { brick: brickId } });
-    assert.equal(JSON.parse(trust.content[0].text).brick, brickId);
+    assert.equal(parsedTextContent(trust).brick, brickId);
     const builds = await client.callTool({ name: "build-list", arguments: { limit: 1 } });
-    assert.equal(JSON.parse(builds.content[0].text).count, 1);
+    assert.equal(parsedTextContent(builds).count, 1);
 
     const doctor = await client.callTool({ name: "registry-doctor", arguments: {} });
     assert.equal(doctor.isError, undefined);
-    assert.equal(JSON.parse(doctor.content[0].text).healthy, true);
+    assert.equal(parsedTextContent(doctor).healthy, true);
 
     const deniedInstall = await client.callTool({ name: "release-install", arguments: {} });
     assert.equal(deniedInstall.isError, true);
     assert.equal(
-      JSON.parse(deniedInstall.content[0].text).error.code,
+      parsedErrorCode(deniedInstall),
       "MCP_CAPABILITY_REQUIRED",
       "stdio server must enforce capability declarations before handler input validation",
     );
@@ -215,7 +303,7 @@ async function assertStdioIntegration(root) {
       ]) {
         const missing = await client.callTool(request);
         assert.equal(missing.isError, true);
-        assert.equal(JSON.parse(missing.content[0].text).error.code, "MCP_REGISTRY_MISSING");
+        assert.equal(parsedErrorCode(missing), "MCP_REGISTRY_MISSING");
       }
     } finally {
       await rename(hiddenRegistryPath, registryPath);
@@ -226,21 +314,21 @@ async function assertStdioIntegration(root) {
       arguments: { brick: "does-not-exist" },
     });
     assert.equal(missingBrick.isError, true);
-    assert.equal(JSON.parse(missingBrick.content[0].text).error.code, "MCP_BRICK_NOT_FOUND");
+    assert.equal(parsedErrorCode(missingBrick), "MCP_BRICK_NOT_FOUND");
 
     const blocked = await client.callTool({
       name: "registry-why-blocked",
       arguments: { query: "does-not-exist", type: "brick" },
     });
     assert.equal(blocked.isError, true);
-    assert.equal(JSON.parse(blocked.content[0].text).error.code, "MCP_TARGET_NOT_FOUND");
+    assert.equal(parsedErrorCode(blocked), "MCP_TARGET_NOT_FOUND");
     await new Promise((resolve) => setTimeout(resolve, 20));
     const event = telemetry
       .join("")
       .trim()
       .split(/\r?\n/)
       .filter(Boolean)
-      .map((line) => JSON.parse(line))
+      .map((line) => requireObject(parseJson(line), "telemetry event"))
       .find((entry) => entry.event === "tool_failed" && entry.code === "MCP_TARGET_NOT_FOUND");
     assert.equal(event?.area, "mcp:registry-why-blocked");
     assert.equal(event?.severity, "error");
@@ -250,7 +338,7 @@ async function assertStdioIntegration(root) {
       .trim()
       .split(/\r?\n/)
       .filter(Boolean)
-      .map((line) => JSON.parse(line))
+      .map((line) => requireObject(parseJson(line), "telemetry event"))
       .find((entry) => entry.event === "tool_denied" && entry.code === "MCP_CAPABILITY_REQUIRED");
     assert.equal(deniedEvent?.area, "mcp:release-install");
     assert.equal(deniedEvent?.required_capability, "release:install");
@@ -259,7 +347,7 @@ async function assertStdioIntegration(root) {
       .trim()
       .split(/\r?\n/)
       .filter(Boolean)
-      .map((line) => JSON.parse(line))
+      .map((line) => requireObject(parseJson(line), "telemetry event"))
       .find((entry) => entry.event === "tool_failed" && entry.code === "MCP_BRICK_NOT_FOUND");
     assert.equal(brickEvent?.area, "mcp:brick-get");
     assert.equal(brickEvent?.severity, "error");
@@ -273,7 +361,7 @@ async function run() {
   assert.deepEqual(tools.map((tool) => tool.name).sort(), EXPECTED_TOOLS);
   for (const tool of tools) {
     assert.equal(typeof tool.description, "string");
-    assert.equal(tool.inputSchema?.type, "object");
+    assert.equal(requireObject(tool.inputSchema, `${tool.name} input schema`).type, "object");
     assert.equal(typeof tool.handler, "function");
   }
   const apiDocs = await readFile(path.resolve(repoRoot, "docs/MCP_SERVER.md"), "utf8");
@@ -335,21 +423,26 @@ async function run() {
     );
     process.env.SMA_ROOT = root;
 
-    const search = tools.find((tool) => tool.name === "brick-search");
-    const response = await search.handler({ query: "approval", limit: 10 });
-    assert.ok(response.results.length > 0, "brick-search should return fixture bricks");
-    assert.ok(response.results.every((brick) => Number.isFinite(brick.trust.score)));
-    assert.ok(response.results.every((brick) => Object.hasOwn(brick.trust, "health_status")));
-    assert.ok(response.results.every((brick) => Object.hasOwn(brick.trust, "clone_readiness")));
-    assert.equal(response.results.length, 1, "brick-search must honor its bounded limit");
+    const search = requireTool(tools, "brick-search");
+    const response = requireObject(
+      await search.handler({ query: "approval", limit: 10 }),
+      "brick-search response",
+    );
+    assert.ok(Array.isArray(response.results), "brick-search results must be an array");
+    const responseBricks = response.results.map((brick) => requireObject(brick, "brick-search result"));
+    assert.ok(responseBricks.length > 0, "brick-search should return fixture bricks");
+    assert.ok(responseBricks.every((brick) => Number.isFinite(Number(requireObject(brick.trust, "brick trust").score))));
+    assert.ok(responseBricks.every((brick) => Object.hasOwn(requireObject(brick.trust, "brick trust"), "health_status")));
+    assert.ok(responseBricks.every((brick) => Object.hasOwn(requireObject(brick.trust, "brick trust"), "clone_readiness")));
+    assert.equal(responseBricks.length, 1, "brick-search must honor its bounded limit");
 
-    const brickGet = tools.find((tool) => tool.name === "brick-get");
-    const brickTrust = tools.find((tool) => tool.name === "brick-trust");
-    const buildList = tools.find((tool) => tool.name === "build-list");
+    const brickGet = requireTool(tools, "brick-get");
+    const brickTrust = requireTool(tools, "brick-trust");
+    const buildList = requireTool(tools, "build-list");
     const brickId = registry.bricks[0].id;
-    assert.equal((await brickGet.handler({ brick: brickId })).id, brickId);
-    assert.equal((await brickTrust.handler({ brick: brickId })).brick, brickId);
-    assert.equal((await buildList.handler({ project: "acme-cms", limit: 1 })).count, 1);
+    assert.equal(requireObject(await brickGet.handler({ brick: brickId }), "brick-get response").id, brickId);
+    assert.equal(requireObject(await brickTrust.handler({ brick: brickId }), "brick-trust response").brick, brickId);
+    assert.equal(requireObject(await buildList.handler({ project: "acme-cms", limit: 1 }), "build-list response").count, 1);
     assert.deepEqual(
       await brickGet.handler({ brick: brickId }),
       await brickGet.handler({ brick: brickId }),
@@ -358,7 +451,7 @@ async function run() {
     await assertCode(brickGet.handler({ brick: "does-not-exist" }), "MCP_BRICK_NOT_FOUND");
     await assertCode(brickTrust.handler({ brick: "does-not-exist" }), "MCP_BRICK_NOT_FOUND");
 
-    const selected = Object.fromEntries(tools
+    const selected = /** @type {Record<string, ToolModule>} */ (Object.fromEntries(tools
       .filter((tool) => [
         "brick-get",
         "brick-search",
@@ -369,7 +462,7 @@ async function run() {
         "release-install",
         "server-card",
       ].includes(tool.name))
-      .map((tool) => [tool.name, tool]));
+      .map((tool) => [tool.name, tool])));
     for (const tool of Object.values(selected)) {
       assert.equal(tool.authorization?.boundary, "stdio-parent-process");
       assert.equal(typeof tool.authorization?.required_capability, "string");
@@ -378,7 +471,7 @@ async function run() {
     }
     assert.equal(selected["release-install"].authorization.effect, "filesystem-write");
     assert.equal(selected["release-install"].authorization.enforcement, "target-containment");
-    assert.equal(selected["release-install"].annotations.destructiveHint, true);
+    assert.equal(selected["release-install"].annotations?.destructiveHint, true);
     for (const toolName of [
       "brick-get",
       "brick-search",
@@ -389,7 +482,7 @@ async function run() {
       "server-card",
     ]) {
       assert.equal(selected[toolName].authorization.effect, "read");
-      assert.equal(selected[toolName].annotations.readOnlyHint, true);
+      assert.equal(selected[toolName].annotations?.readOnlyHint, true);
     }
 
     assert.deepEqual([...parseGrantedCapabilities(undefined)], ["registry:read"]);
@@ -407,7 +500,7 @@ async function run() {
 
     const serverCard = await selected["server-card"].handler({});
     assert.deepEqual(
-      JSON.parse(await readFile(path.join(repoRoot, ".well-known/mcp/server-card.json"), "utf8")),
+      parseJson(await readFile(path.join(repoRoot, ".well-known/mcp/server-card.json"), "utf8")),
       serverCard,
       "published server card must match the in-memory discovery response",
     );
@@ -463,7 +556,7 @@ async function run() {
     );
     await assertP95UnderBudget("server-card", () => selected["server-card"].handler({}));
 
-    const install = tools.find((tool) => tool.name === "release-install");
+    const install = requireTool(tools, "release-install");
     const target = path.join(root, "target-project");
     const outside = path.join(root, "outside-target");
     await mkdir(target, { recursive: true });
@@ -569,6 +662,7 @@ async function run() {
 }
 
 run().catch((error) => {
-  console.error(`mcp selftest: ${error.stack || error.message}`);
+  const message = error instanceof Error ? (error.stack || error.message) : String(error);
+  console.error(`mcp selftest: ${message}`);
   process.exitCode = 1;
 });

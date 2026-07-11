@@ -20,14 +20,19 @@ const FIXTURE_GEN = path.join(REPO_ROOT, "tools", "evals", "fixtures", "gen.mjs"
 const SCAN = path.join(REPO_ROOT, "tools", "sma-scan.ts");
 const BUDGET_MS = 8_000;
 
-/** @param {unknown} error */
-function isTraversalRefusal(error) {
-  if (!error || typeof error !== "object") return false;
-  const candidate = /** @type {{ code?: string, details?: { reason?: string } }} */ (error);
-  return candidate.code === "MCP_RELEASE_INSTALL_REFUSED"
-    && candidate.details?.reason === "artifact-path-traversal";
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** @param {unknown} error */
+function isTraversalRefusal(error) {
+  if (!isRecord(error) || !isRecord(error.details)) return false;
+  return error.code === "MCP_RELEASE_INSTALL_REFUSED"
+    && error.details.reason === "artifact-path-traversal";
+}
+
+/** @param {string} root @param {string} brick @param {string} version @param {string} artifactPath */
 async function writeRelease(root, brick, version, artifactPath) {
   const directory = path.join(root, "releases", brick);
   await fs.mkdir(directory, { recursive: true });
@@ -59,10 +64,18 @@ export async function runJourney() {
     const previousRoot = process.env.SMA_ROOT;
     process.env.SMA_ROOT = root;
     try {
-      const search = await byName.get("brick-search").handler({ query: "activity feed", limit: 1 });
+      const searchTool = byName.get("brick-search");
+      const releaseTool = byName.get("release-install");
+      assert(searchTool, "brick-search tool must be loaded");
+      assert(releaseTool, "release-install tool must be loaded");
+      const search = await searchTool.handler({ query: "activity feed", limit: 1 });
+      assert(isRecord(search) && typeof search.count === "number" && Array.isArray(search.results));
       assert.equal(search.count, 1);
-      assert.equal(search.results[0].id, "acme-desktop.activity-feed");
-      const noMatch = await byName.get("brick-search").handler({ query: "no-such-journey-brick-zzzz", limit: 1 });
+      const firstResult = search.results[0];
+      assert(isRecord(firstResult));
+      assert.equal(firstResult.id, "acme-desktop.activity-feed");
+      const noMatch = await searchTool.handler({ query: "no-such-journey-brick-zzzz", limit: 1 });
+      assert(isRecord(noMatch) && typeof noMatch.count === "number");
       assert.equal(noMatch.count, 0);
 
       await fs.mkdir(path.join(root, "tools"), { recursive: true });
@@ -89,7 +102,7 @@ export async function runJourney() {
       try {
         installed = await installRelease({ brick, version, target, write: true });
       } catch (error) {
-        throw error?.cause || error;
+        throw error instanceof Error && error.cause ? error.cause : error;
       }
       assert.equal(installed.ok, true);
       assert.equal(installed.write, true);

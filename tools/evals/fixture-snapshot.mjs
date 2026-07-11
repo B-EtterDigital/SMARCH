@@ -15,6 +15,35 @@ const INTRO_DIR = path.join(REPO_ROOT, "docs", "intro");
 const LESSON_REGISTRY_PATH = path.join(SCRIPT_DIR, "journeys", "lessons.mjs");
 const SNAPSHOT_ROOT = "tools/evals/fixtures/portfolio";
 
+/** @typedef {{ path: string, bytes: number, sha256: string }} SnapshotFile */
+/** @typedef {{ schemaVersion: number, algorithm: string, root: string, digest: string, fileCount: number, totalBytes: number, files: SnapshotFile[] }} FixtureSnapshot */
+
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** @param {unknown} value @returns {value is SnapshotFile} */
+function isSnapshotFile(value) {
+  return isRecord(value)
+    && typeof value.path === "string"
+    && typeof value.bytes === "number"
+    && typeof value.sha256 === "string";
+}
+
+/** @param {unknown} value @returns {value is FixtureSnapshot} */
+function isFixtureSnapshot(value) {
+  return isRecord(value)
+    && typeof value.schemaVersion === "number"
+    && typeof value.algorithm === "string"
+    && typeof value.root === "string"
+    && typeof value.digest === "string"
+    && typeof value.fileCount === "number"
+    && typeof value.totalBytes === "number"
+    && Array.isArray(value.files)
+    && value.files.every(isSnapshotFile);
+}
+
 function usage() {
   console.log(`SMARCH fixture snapshot gate
 
@@ -25,6 +54,7 @@ Usage:
 `);
 }
 
+/** @param {string[]} argv */
 function parseArgs(argv) {
   if (argv.length === 1 && ["--write", "--check", "--selftest"].includes(argv[0])) {
     return argv[0].slice(2);
@@ -36,17 +66,22 @@ function parseArgs(argv) {
   throw new Error("Expected exactly one of --write, --check, or --selftest");
 }
 
+/** @param {import("node:crypto").BinaryLike} value */
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+/** @param {string} left @param {string} right */
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+/** @param {string} root @returns {Promise<SnapshotFile[]>} */
 async function collectFiles(root) {
+  /** @type {SnapshotFile[]} */
   const files = [];
 
+  /** @param {string} directory */
   async function walk(directory) {
     const entries = await fs.readdir(directory, { withFileTypes: true });
     entries.sort((left, right) => compareText(left.name, right.name));
@@ -71,6 +106,7 @@ async function collectFiles(root) {
   return files;
 }
 
+/** @param {SnapshotFile[]} files @param {string} [root] @returns {FixtureSnapshot} */
 function buildSnapshot(files, root = SNAPSHOT_ROOT) {
   return {
     schemaVersion: 2,
@@ -83,10 +119,12 @@ function buildSnapshot(files, root = SNAPSHOT_ROOT) {
   };
 }
 
+/** @param {string} [root] */
 async function snapshotTree(root = FIXTURE_ROOT) {
   return buildSnapshot(await collectFiles(root));
 }
 
+/** @param {FixtureSnapshot} snapshot */
 function validateSnapshot(snapshot) {
   assert.equal(snapshot.schemaVersion, 2, "snapshot schemaVersion must be 2; run --write");
   assert.equal(snapshot.algorithm, "sha256", "snapshot algorithm must be sha256");
@@ -95,6 +133,7 @@ function validateSnapshot(snapshot) {
   assert.deepEqual(snapshot, buildSnapshot(snapshot.files), "snapshot metadata does not match its file manifest");
 }
 
+/** @param {FixtureSnapshot} expected @param {FixtureSnapshot} actual */
 function diffSnapshots(expected, actual) {
   const expectedByPath = new Map(expected.files.map((file) => [file.path, file]));
   const actualByPath = new Map(actual.files.map((file) => [file.path, file]));
@@ -104,8 +143,10 @@ function diffSnapshots(expected, actual) {
     const before = expectedByPath.get(filePath);
     const after = actualByPath.get(filePath);
     if (!before) {
-      diffs.push(`ADDED ${filePath} (${after.bytes} bytes, sha256 ${after.sha256})`);
-    } else if (!after) {
+      if (after) diffs.push(`ADDED ${filePath} (${after.bytes} bytes, sha256 ${after.sha256})`);
+      continue;
+    }
+    if (!after) {
       diffs.push(`REMOVED ${filePath} (${before.bytes} bytes, sha256 ${before.sha256})`);
     } else if (before.sha256 !== after.sha256 || before.bytes !== after.bytes) {
       diffs.push(
@@ -117,6 +158,7 @@ function diffSnapshots(expected, actual) {
   return diffs;
 }
 
+/** @param {string} source @returns {Set<string>} */
 function registeredLessonsFromSource(source) {
   const match = source.match(/const\s+REGISTERED_LESSONS\s*=\s*new Set\(\[([\s\S]*?)\]\);/);
   assert(match, "could not find REGISTERED_LESSONS in tools/evals/journeys/lessons.mjs");
@@ -126,10 +168,12 @@ function registeredLessonsFromSource(source) {
   return new Set(entries);
 }
 
+/** @param {string[]} discovered @param {Set<string>} registered */
 function lessonCoverageDiff(discovered, registered) {
   return discovered.filter((filename) => !registered.has(filename)).sort();
 }
 
+/** @param {string[]} discovered @param {Set<string>} registered */
 function assertLessonCoverage(discovered, registered) {
   const missing = lessonCoverageDiff(discovered, registered);
   if (missing.length > 0) {
@@ -146,6 +190,7 @@ async function checkLessonCoverage() {
   return discovered.length;
 }
 
+/** @param {string} [snapshotPath] @param {string} [fixtureRoot] */
 async function writeSnapshot(snapshotPath = SNAPSHOT_PATH, fixtureRoot = FIXTURE_ROOT) {
   const snapshot = await snapshotTree(fixtureRoot);
   const temporaryPath = `${snapshotPath}.${process.pid}.tmp`;
@@ -154,8 +199,12 @@ async function writeSnapshot(snapshotPath = SNAPSHOT_PATH, fixtureRoot = FIXTURE
   return snapshot;
 }
 
+/** @param {string} [snapshotPath] @param {string} [fixtureRoot] */
 async function checkSnapshot(snapshotPath = SNAPSHOT_PATH, fixtureRoot = FIXTURE_ROOT) {
-  const expected = JSON.parse(await fs.readFile(snapshotPath, "utf8"));
+  /** @type {unknown} */
+  const parsed = JSON.parse(await fs.readFile(snapshotPath, "utf8"));
+  if (!isFixtureSnapshot(parsed)) throw new Error("fixture snapshot has an invalid shape; run --write");
+  const expected = parsed;
   validateSnapshot(expected);
   const actual = await snapshotTree(fixtureRoot);
   const diffs = diffSnapshots(expected, actual);
@@ -223,6 +272,7 @@ try {
       errors.push(error instanceof Error ? error.message : String(error));
     }
     if (errors.length > 0) throw new Error(errors.join("\n\n"));
+    if (!snapshot || lessonCount === undefined) throw new Error("fixture snapshot check produced no result");
     console.log(`PASS fixture snapshot: ${snapshot.fileCount} file(s), ${snapshot.totalBytes} bytes, ${snapshot.digest}; ${lessonCount} lesson(s) registered.`);
   } else {
     await selftest();

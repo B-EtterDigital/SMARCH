@@ -28,16 +28,16 @@ import { PROJECTS_ROOT } from './sma-paths.ts';
 
 // Inverted from registry/portfolio.config.json::overrides.
 export const PROJECT_PATH_OVERRIDES = Object.fromEntries(
-  Object.entries(loadPortfolioConfig().overrides).map(([relativePath, entry]: [string, any]) => [
+  Object.entries(loadPortfolioConfig().overrides).map(([relativePath, entry]) => [
     entry?.id ?? relativePath,
     relativePath,
   ]),
 );
 
-let dirCache = null;
-function buildCache() {
+let dirCache: Map<string, string> | null = null;
+function buildCache(): Map<string, string> {
   if (dirCache) return dirCache;
-  dirCache = new Map();
+  dirCache = new Map<string, string>();
   try {
     for (const ent of readdirSync(PROJECTS_ROOT)) {
       dirCache.set(ent.toLowerCase(), ent);
@@ -57,7 +57,7 @@ function buildCache() {
  * case-insensitive prefix with the real project (e.g. /Projects/acme-desktop
  * stub vs /Projects/Acme-Desktop real) would otherwise win the direct check.
  */
-export function resolveProjectRoot(projectId) {
+export function resolveProjectRoot(projectId: string | null | undefined): string | null {
   if (!projectId) return null;
   const overridden = PROJECT_PATH_OVERRIDES[projectId];
   if (overridden) {
@@ -79,6 +79,6 @@ export function resolveProjectRoot(projectId) {
  * For ids known via the override map, returns the relative path under
  * PROJECTS_ROOT. Useful for log lines and debug output.
  */
-export function projectRelativeRoot(projectId) {
+export function projectRelativeRoot(projectId: string): string {
   return PROJECT_PATH_OVERRIDES[projectId] ?? projectId;
 }

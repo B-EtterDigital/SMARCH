@@ -40,7 +40,7 @@
 /* ------------------------------------------------------------------ hashing */
 
 // FNV-1a 32-bit (integer math) — fingerprints for winnowing.
-function hash32(str) {
+function hash32(str: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i += 1) {
     h ^= str.charCodeAt(i) & 0xff;
@@ -54,7 +54,7 @@ const FNV64_PRIME = 0x100000001b3n;
 const MASK64 = 0xffffffffffffffffn;
 
 // FNV-1a 64-bit (BigInt) — feeds the simhash bit vote.
-function hash64(str) {
+function hash64(str: string): bigint {
   let h = FNV64_OFFSET;
   for (let i = 0; i < str.length; i += 1) {
     const c = str.charCodeAt(i);
@@ -81,11 +81,11 @@ const KEYWORDS = new Set([
   'undefined', 'lambda', 'with', 'match', 'when', 'where', 'select', 'end',
 ]);
 
-const isWordStart = (c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_' || c === '$';
-const isWordPart = (c) => isWordStart(c) || (c >= '0' && c <= '9');
-const isDigit = (c) => c >= '0' && c <= '9';
-const isSpace = (c) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
-const isNumPart = (c) => isDigit(c) || c === '.' || c === '_'
+const isWordStart = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_' || c === '$';
+const isWordPart = (c: string) => isWordStart(c) || (c >= '0' && c <= '9');
+const isDigit = (c: string) => c >= '0' && c <= '9';
+const isSpace = (c: string) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
+const isNumPart = (c: string) => isDigit(c) || c === '.' || c === '_'
   || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || c === 'x' || c === 'X';
 
 /**
@@ -94,11 +94,11 @@ const isNumPart = (c) => isDigit(c) || c === '.' || c === '_'
  * string and number literals to `str` / `num`; folds identifiers to `v` while
  * preserving a generic keyword set and single-character punctuation/operators.
  */
-export function normalizeSource(text) {
+export function normalizeSource(text: unknown): string[] {
   if (typeof text !== 'string') return [];
   const src = text;
   const n = src.length;
-  const out = [];
+  const out: string[] = [];
   let i = 0;
   while (i < n) {
     const ch = src[i];
@@ -149,8 +149,8 @@ export function normalizeSource(text) {
 /* ------------------------------------------------------------- shingles */
 
 /** kGramShingles(tokens, k=5) -> array of k-gram strings. */
-export function kGramShingles(tokens, k = 5) {
-  const out = [];
+export function kGramShingles(tokens: unknown, k = 5): string[] {
+  const out: string[] = [];
   if (!Array.isArray(tokens) || tokens.length === 0) return out;
   const kk = Math.max(1, k | 0);
   if (tokens.length < kk) { out.push(tokens.join(' ')); return out; }
@@ -168,12 +168,12 @@ export function kGramShingles(tokens, k = 5) {
  * `window`, select the (rightmost) minimum hash in each window. The rightmost
  * rule minimizes redundant selections across overlapping windows.
  */
-export function winnow(shingles, window = 4) {
-  const out = new Set();
+export function winnow(shingles: unknown, window = 4): Set<string> {
+  const out = new Set<string>();
   if (!Array.isArray(shingles) || shingles.length === 0) return out;
-  const hashes = shingles.map(hash32);
+  const hashes = shingles.filter((item): item is string => typeof item === 'string').map(hash32);
   const w = Math.max(1, window | 0);
-  const asHex = (h) => (h >>> 0).toString(16).padStart(8, '0');
+  const asHex = (h: number) => (h >>> 0).toString(16).padStart(8, '0');
   if (hashes.length < w) {
     let m = 0;
     for (let j = 1; j < hashes.length; j += 1) if (hashes[j] <= hashes[m]) m = j;
@@ -192,10 +192,10 @@ export function winnow(shingles, window = 4) {
 /* ------------------------------------------------------------- simhash */
 
 /** simhash(shingles) -> 64-bit simhash as a 16-char hex string. */
-export function simhash(shingles) {
+export function simhash(shingles: unknown): string {
   const bits = new Array(64).fill(0);
   if (Array.isArray(shingles)) {
-    for (const s of shingles) {
+    for (const s of shingles.filter((item): item is string => typeof item === 'string')) {
       const h = hash64(s);
       for (let b = 0; b < 64; b += 1) {
         bits[b] += ((h >> BigInt(b)) & 1n) === 1n ? 1 : -1;
@@ -208,7 +208,7 @@ export function simhash(shingles) {
 }
 
 /** hamming(aHex, bHex) -> bit distance between two hex simhashes. */
-export function hamming(aHex, bHex) {
+export function hamming(aHex: string, bHex: string): number {
   let x = BigInt(`0x${aHex}`) ^ BigInt(`0x${bHex}`);
   let c = 0;
   while (x > 0n) { c += Number(x & 1n); x >>= 1n; }
@@ -218,7 +218,7 @@ export function hamming(aHex, bHex) {
 /* ------------------------------------------------------------- jaccard */
 
 /** jaccard(setA, setB) -> |A∩B| / |A∪B|. Two empty sets are defined as 1. */
-export function jaccard(setA, setB) {
+export function jaccard<T>(setA: Set<T>, setB: Set<T>): number {
   if (!(setA instanceof Set) || !(setB instanceof Set)) return 0;
   if (setA.size === 0 && setB.size === 0) return 1;
   const [small, large] = setA.size <= setB.size ? [setA, setB] : [setB, setA];
@@ -242,7 +242,7 @@ const W_SIMHASH = 0.2;
  * reformats, and consistent renames). Otherwise a blend of winnowing-Jaccard
  * (primary) and simhash-Hamming (secondary). Symmetric in its arguments.
  */
-export function similarity(textA, textB) {
+export function similarity(textA: unknown, textB: unknown): number {
   const ta = normalizeSource(textA);
   const tb = normalizeSource(textB);
   if (ta.length === tb.length && ta.join(' ') === tb.join(' ')) return 1;
@@ -265,12 +265,18 @@ export function similarity(textA, textB) {
  * whereas per-file best-match still surfaces the stolen files. Averaging both
  * directions keeps the result symmetric.
  */
-export function fileSetSimilarity(filesA, filesB) {
-  const A = (Array.isArray(filesA) ? filesA : []).filter((f) => f && typeof f.text === 'string');
-  const B = (Array.isArray(filesB) ? filesB : []).filter((f) => f && typeof f.text === 'string');
+type SourceFile = { path?: string; text: string };
+
+function isSourceFile(value: unknown): value is SourceFile {
+  return typeof value === 'object' && value !== null && 'text' in value && typeof value.text === 'string';
+}
+
+export function fileSetSimilarity(filesA: unknown, filesB: unknown): number {
+  const A = (Array.isArray(filesA) ? filesA : []).filter(isSourceFile);
+  const B = (Array.isArray(filesB) ? filesB : []).filter(isSourceFile);
   if (A.length === 0 && B.length === 0) return 1;
   if (A.length === 0 || B.length === 0) return 0;
-  const direction = (X, Y) => {
+  const direction = (X: SourceFile[], Y: SourceFile[]): number => {
     let wsum = 0;
     let acc = 0;
     for (const x of X) {

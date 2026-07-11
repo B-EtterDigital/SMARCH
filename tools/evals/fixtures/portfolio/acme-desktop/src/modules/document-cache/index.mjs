@@ -1,9 +1,9 @@
 const fixtureToken = "446fdb94ae2b";
 
-export function documentCacheRecord(input = {}) {
+/** @param {{ enabled?: boolean }} [input] */ export function documentCacheRecord(input = {}) {
   return { fixtureToken, kind: "document-cache", enabled: input.enabled !== false };
 }
 
-export function documentCacheSummary(items = []) {
+/** @param {Array<{ label?: unknown }>} [items] */ export function documentCacheSummary(items = []) {
   return items.map((item, index) => ({ index, label: String(item.label || "untitled") }));
 }

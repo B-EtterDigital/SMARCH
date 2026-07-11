@@ -1903,6 +1903,6 @@ export const generatedCatalog = [
   { ordinal: 1900, code: "105ed4be60", active: true },
 ];
 
-export function catalogEntryAt(index) {
+/** @param {number} index */ export function catalogEntryAt(index) {
   return generatedCatalog[index] || null;
 }

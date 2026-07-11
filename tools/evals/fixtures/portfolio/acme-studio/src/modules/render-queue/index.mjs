@@ -1,9 +1,9 @@
 const fixtureToken = "80fa475df9e9";
 
-export function renderQueueRecord(input = {}) {
+/** @param {{ enabled?: boolean }} [input] */ export function renderQueueRecord(input = {}) {
   return { fixtureToken, kind: "render-queue", enabled: input.enabled !== false };
 }
 
-export function renderQueueSummary(items = []) {
+/** @param {Array<{ label?: unknown }>} [items] */ export function renderQueueSummary(items = []) {
   return items.map((item, index) => ({ index, label: String(item.label || "untitled") }));
 }

@@ -6,6 +6,9 @@ import {
   readOnlyAuthorization,
 } from "../contract.mjs";
 
+/** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
+/** @typedef {Record<string, unknown>} ToolInput */
+
 export const name = "build-list";
 export const description = "List curated builds from the build index or generated state snapshot.";
 export const inputSchema = {
@@ -20,6 +23,10 @@ export const annotations = readOnlyAnnotations;
 export const authorization = readOnlyAuthorization;
 export const timeoutMs = 500;
 
+/**
+ * @param {ToolInput} args
+ * @param {RegistryContext} context
+ */
 export function listRegistryBuilds(args, context) {
   const project = String(args.project || "").trim();
   const limit = normalizeLimit(args.limit, 20);
@@ -34,6 +41,7 @@ export function listRegistryBuilds(args, context) {
   return boundedDiagnosticValue({ count: results.length, results });
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

@@ -37,7 +37,7 @@ type Brick = {
   content_hash?: string;
   file_count?: number;
   byte_count?: number;
-  spdx?: string;
+  spdx?: string | null;
   license_class?: string;
   openness?: string;
   visibility?: string;
@@ -47,8 +47,13 @@ type Brick = {
   contributors?: Contributor[];
 };
 type Component = { name?: string; brick_id?: string; content_hash?: string; spdx?: string; version?: string | number; uri?: string };
-type JsonDocument = Record<string, any>;
-type CdxComponent = { type: string; 'bom-ref': string; name: string; version?: string; licenses?: JsonDocument[]; hashes?: JsonDocument[] };
+type IntotoDependency = {
+  uri: string; name: string; digest?: { sha1?: string; sha256?: string };
+  annotations?: Record<string, string | number | null>;
+};
+type CdxLicense = { license: { name?: string; id?: string } } | { expression: string };
+type CdxHash = { alg: string; content: string };
+type CdxComponent = { type: string; 'bom-ref': string; name: string; version?: string; licenses?: CdxLicense[]; hashes?: CdxHash[] };
 type SpdxPackage = {
   SPDXID: string;
   name: string;
@@ -97,14 +102,14 @@ function supplierOf(brick: Brick): string {
  * builder, records the provenance seal head (as invocationId), and lists the
  * component + contributor inputs as resolvedDependencies (materials).
  */
-export function intotoStatement(brick: Brick, components: Component[] = [], timestamp: string | null = null): JsonDocument {
+export function intotoStatement(brick: Brick, components: Component[] = [], timestamp: string | null = null) {
   const contentHash = brick.content_hash || null;
   const subject = [{
     name: brick.brick_id,
     digest: contentHash ? { sha256: contentHash } : {},
   }];
 
-  const resolvedDependencies: JsonDocument[] = [];
+  const resolvedDependencies: IntotoDependency[] = [];
   if (brick.created_by?.commit) {
     resolvedDependencies.push({
       uri: `git+commit:${brick.created_by.commit}`,
@@ -125,7 +130,7 @@ export function intotoStatement(brick: Brick, components: Component[] = [], time
     });
   }
   (components || []).forEach((comp, i) => {
-    const dep: JsonDocument = {
+    const dep: IntotoDependency = {
       uri: comp.uri || `component:${comp.brick_id || comp.name || `c${i}`}`,
       name: comp.name || comp.brick_id || `component-${i}`,
     };
@@ -184,7 +189,7 @@ export function intotoStatement(brick: Brick, components: Component[] = [], time
 // --- SPDX 2.3 --------------------------------------------------------------
 
 /** Minimal, valid SPDX 2.3 JSON SBOM: one package for the brick + one per component. */
-export function spdxDocument(brick: Brick, components: Component[] = [], timestamp: string | null = null): JsonDocument {
+export function spdxDocument(brick: Brick, components: Component[] = [], timestamp: string | null = null) {
   const contentHash = brick.content_hash || null;
   const created = timestamp || EPOCH;
   const brickTag = sanitizeSpdxId(brick.brick_id);
@@ -242,14 +247,14 @@ export function spdxDocument(brick: Brick, components: Component[] = [], timesta
 
 // --- CycloneDX 1.5 ---------------------------------------------------------
 
-function cdxLicenses(spdx?: string): JsonDocument[] {
+function cdxLicenses(spdx?: string | null): CdxLicense[] {
   if (!spdx) return [{ license: { name: NOASSERTION } }];
   // SPDX license EXPRESSIONS (operators/spaces) go in `expression`; single ids in `license.id`.
   if (/\s|\bOR\b|\bAND\b|\bWITH\b/.test(spdx)) return [{ expression: spdx }];
   return [{ license: { id: spdx } }];
 }
 
-function cdxComponent(name: unknown, spdx?: string, contentHash?: string | null, version?: string | number): CdxComponent {
+function cdxComponent(name: unknown, spdx?: string | null, contentHash?: string | null, version?: string | number): CdxComponent {
   const comp: CdxComponent = {
     type: 'library',
     'bom-ref': `component:${name}`,
@@ -262,7 +267,7 @@ function cdxComponent(name: unknown, spdx?: string, contentHash?: string | null,
 }
 
 /** Minimal, valid CycloneDX 1.5 JSON SBOM. The brick is components[0]. */
-export function cyclonedxDocument(brick: Brick, components: Component[] = [], timestamp: string | null = null): JsonDocument {
+export function cyclonedxDocument(brick: Brick, components: Component[] = [], timestamp: string | null = null) {
   const contentHash = brick.content_hash || null;
   const serialSeed = contentHash || sha256Hex(brick.brick_id);
 

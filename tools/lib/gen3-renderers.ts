@@ -29,6 +29,9 @@ import { resolve } from 'node:path';
 const DIFFS_CDN = 'https://unpkg.com/diffs.com/dist/diffs.min.js';
 const TREES_CDN = 'https://unpkg.com/trees.software/dist/trees.min.js';
 
+type ReleaseData = { release?: { content_hash?: string }; content?: { included_paths?: string[] } };
+interface TreeNode { [key: string]: TreeNode }
+
 /**
  * Render a side-by-side brick-release diff page.
  * Inputs are the two release JSON paths from releases/<brick>/<version>.json.
@@ -41,7 +44,10 @@ export function renderBrickDiffPage({
   releaseAPath,
   releaseBPath,
   cdn = DIFFS_CDN,
-}) {
+}: {
+  brickId: string; versionA: string; versionB: string;
+  releaseAPath: string; releaseBPath: string; cdn?: string;
+}): string {
   const a = readReleaseSafe(releaseAPath);
   const b = readReleaseSafe(releaseBPath);
   const title = `${escape(brickId)} · ${escape(versionA)} → ${escape(versionB)}`;
@@ -97,7 +103,7 @@ export function renderBrickTreePage({
   brickId,
   paths = [],
   cdn = TREES_CDN,
-}) {
+}: { brickId: string; paths?: string[]; cdn?: string }): string {
   const fallback = nestedUlFallback(paths);
   return `<!doctype html>
 <html lang="en">
@@ -138,30 +144,30 @@ export function renderBrickTreePage({
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function readReleaseSafe(p) {
+function readReleaseSafe(p: string): ReleaseData | null {
   if (!p || !existsSync(p)) return null;
-  try { return JSON.parse(readFileSync(p, 'utf8')); } catch (error) {
+  try { return JSON.parse(readFileSync(p, 'utf8')) as ReleaseData; } catch (error) {
     console.error(JSON.stringify({ area: 'gen3-renderers.release-read', severity: 'warning', hint: 'Regenerate or repair the release JSON.', error: error instanceof Error ? error.message : String(error) }));
     return null;
   }
 }
 
-function staticUnifiedDiffFallback(a, b) {
+function staticUnifiedDiffFallback(a: ReleaseData | null, b: ReleaseData | null): string {
   if (!a && !b) return '(no release data)';
   const aPaths = (a?.content?.included_paths ?? []).slice().sort();
   const bPaths = (b?.content?.included_paths ?? []).slice().sort();
   const setA = new Set(aPaths);
   const setB = new Set(bPaths);
-  const lines = [];
+  const lines: string[] = [];
   for (const p of aPaths) if (!setB.has(p)) lines.push(`- ${p}`);
   for (const p of bPaths) if (!setA.has(p)) lines.push(`+ ${p}`);
   return lines.length ? lines.join('\n') : '(no path-level differences; check content_hash)';
 }
 
-function nestedUlFallback(paths) {
+function nestedUlFallback(paths: readonly string[]): string {
   if (!paths.length) return '<em>no paths</em>';
   // build a tree object
-  const root = {};
+  const root: TreeNode = {};
   for (const p of paths) {
     const parts = p.split('/').filter(Boolean);
     let node = root;
@@ -170,7 +176,7 @@ function nestedUlFallback(paths) {
       node = node[part];
     }
   }
-  const render = (node) => {
+  const render = (node: TreeNode): string => {
     const keys = Object.keys(node).sort();
     if (!keys.length) return '';
     return '<ul>' + keys.map((k) => `<li>${escape(k)}${render(node[k])}</li>`).join('') + '</ul>';
@@ -178,7 +184,7 @@ function nestedUlFallback(paths) {
   return render(root);
 }
 
-function escape(s) {
+function escape(s: unknown): string {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

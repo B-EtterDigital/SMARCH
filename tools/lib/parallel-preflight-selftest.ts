@@ -9,7 +9,27 @@
  */
 /** Selftest harness for sma-parallel-preflight.ts. */
 
-type SelftestHarness = Record<string, any>;
+type CommandGuidance = { active_lane: string; launchable_agents: number; module_dispatch_required?: boolean; stale_context_actionable?: boolean };
+type ModuleLaunchItem = { module_id: string; claim_command: string; agent_packet_markdown_path: string; graph_query_command: string; conflict_command: string; paths: string[]; required_gates: string[]; prompt: string };
+type LaneStatuses = { active_status: string; integration: { status: string; cleanup_required: boolean }; [key: string]: unknown };
+type LaunchDecision = { allowed: boolean; agents: number; integration_blocked: boolean; release_allowed: boolean };
+type BlockerPacket = { kind: string; uncovered_dirty_count?: number; conflict_command: string; parallel_claim_count?: number; prompt: string; command?: string; [key: string]: unknown };
+type MergedAssignment = { active: boolean; paths: string[]; [key: string]: unknown };
+type SelftestHarness = {
+  buildBigPicture: (input: unknown) => { tldr: string; [key: string]: unknown };
+  buildControllerBlockerPackets: (input: unknown) => BlockerPacket[];
+  buildLaunchDecision: (input: unknown) => LaunchDecision;
+  buildLaneStatuses: (input: unknown) => LaneStatuses;
+  buildModuleLaunchPlan: (dispatch: unknown, limit: number) => ModuleLaunchItem[];
+  buildStaleContextLaunchPlan: (packets: BlockerPacket[], limit: number, project: string) => Array<{ command: string; conflict_command: string }>;
+  formatDispatchBlocked: (dispatch: unknown) => string;
+  mergeDispatchAssignments: (observed: unknown[], assignments: unknown[]) => MergedAssignment[];
+  moduleProgressCommand: (input: unknown) => string;
+  primaryNext: (input: unknown) => string;
+  scopedControllerIsClean: (input: unknown) => boolean;
+  shouldUseControllerCleanupFallback: (packet: unknown, fallback: unknown) => boolean;
+  summarizeCommandGuidance: (input: unknown) => CommandGuidance;
+};
 
 export function runParallelPreflightSelftest(harness: SelftestHarness): void {
   const {
@@ -91,7 +111,7 @@ export function runParallelPreflightSelftest(harness: SelftestHarness): void {
   assertSelftest(moduleGuidance.launchable_agents === 11, 'open dispatch should expose only claim-ready module agents');
   const moduleLaunchPlan = buildModuleLaunchPlan(moduleDispatch, moduleGuidance.launchable_agents);
   assertSelftest(moduleLaunchPlan.length === 11, 'module launch plan should exclude launch-blocked dispatch slots');
-  assertSelftest(!moduleLaunchPlan.some((item) => item.module_id === 'module-4'), 'module launch plan should skip held/stale module slots');
+  assertSelftest(!moduleLaunchPlan.some((item: { module_id: string }) => item.module_id === 'module-4'), 'module launch plan should skip held/stale module slots');
   assertSelftest(moduleLaunchPlan[0].claim_command.includes('module:claim'), 'module launch plan should carry dispatch-pinned claim command');
   assertSelftest(moduleLaunchPlan[0].agent_packet_markdown_path.endsWith('01-module-1.md'), 'module launch plan should carry first-read packet path');
   assertSelftest(moduleLaunchPlan[0].graph_query_command.includes('graphify:query'), 'module launch plan should carry module graph query command');

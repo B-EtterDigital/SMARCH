@@ -6,12 +6,22 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { McpToolError, normalizeError } from "./contract.mjs";
 
+/** @typedef {{ required_capability: string, boundary?: string, effect?: string, enforcement?: string }} ToolAuthorization */
+/** @typedef {{ readOnlyHint?: boolean, destructiveHint?: boolean, idempotentHint?: boolean, openWorldHint?: boolean }} ToolAnnotations */
+/** @typedef {{ name: string, handler: (args?: unknown) => Promise<unknown>, authorization: ToolAuthorization }} InvocableTool */
+/** @typedef {InvocableTool & { description: string, inputSchema: unknown, annotations?: ToolAnnotations, timeoutMs?: number }} ToolModule */
+/** @typedef {{ grantedCapabilities?: Set<string> | string }} ServerOptions */
+
 const SERVER_NAME = "smarch-registry";
 const SERVER_VERSION = "0.1.0";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const toolsDirectory = path.resolve(__dirname, "tools");
 const DEFAULT_CAPABILITIES = Object.freeze(["registry:read"]);
 
+/**
+ * @param {unknown} [value]
+ * @returns {Set<string>}
+ */
 export function parseGrantedCapabilities(value = process.env.SMARCH_MCP_CAPABILITIES) {
   if (value === undefined) return new Set(DEFAULT_CAPABILITIES);
   return new Set(String(value)
@@ -20,6 +30,11 @@ export function parseGrantedCapabilities(value = process.env.SMARCH_MCP_CAPABILI
     .filter(Boolean));
 }
 
+/**
+ * @param {InvocableTool} tool
+ * @param {unknown} args
+ * @param {Set<string>} grantedCapabilities
+ */
 export async function invokeTool(tool, args, grantedCapabilities) {
   const requiredCapability = tool?.authorization?.required_capability;
   if (typeof requiredCapability !== "string" || !requiredCapability) {
@@ -47,6 +62,7 @@ export async function invokeTool(tool, args, grantedCapabilities) {
   return tool.handler(args);
 }
 
+/** @param {unknown} error */
 function sdkInstallError(error) {
   const wrapped = new Error(
     "MCP_SDK_MISSING: install optional MCP support with `npm install --include=optional` "
@@ -70,37 +86,62 @@ export async function loadSdk() {
       ListToolsRequestSchema: typesModule.ListToolsRequestSchema,
     };
   } catch (error) {
-    if (error?.code === "ERR_MODULE_NOT_FOUND") throw sdkInstallError(error);
+    if (error && typeof error === "object" && "code" in error
+      && error.code === "ERR_MODULE_NOT_FOUND") throw sdkInstallError(error);
     throw error;
   }
 }
 
+/**
+ * @param {unknown} value
+ * @returns {value is ToolModule}
+ */
+function isToolModule(value) {
+  if (!value || typeof value !== "object") return false;
+  const authorization = "authorization" in value ? value.authorization : null;
+  return "name" in value && typeof value.name === "string" && Boolean(value.name)
+    && "description" in value && typeof value.description === "string" && Boolean(value.description)
+    && "inputSchema" in value && Boolean(value.inputSchema)
+    && "handler" in value && typeof value.handler === "function"
+    && authorization !== null && typeof authorization === "object"
+    && "required_capability" in authorization
+    && typeof authorization.required_capability === "string";
+}
+
+/**
+ * @param {string} [directory]
+ * @returns {Promise<ToolModule[]>}
+ */
 export async function loadToolModules(directory = toolsDirectory) {
   const entries = (await readdir(directory, { withFileTypes: true }))
     .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
     .sort((left, right) => left.name.localeCompare(right.name));
-  const modules = await Promise.all(entries.map((entry) => (
+  const loadedModules = await Promise.all(entries.map((entry) => (
     import(pathToFileURL(path.resolve(directory, entry.name)).href)
   )));
 
   const seen = new Set();
-  for (const tool of modules) {
-    if (!tool.name || !tool.description || !tool.inputSchema || typeof tool.handler !== "function"
-      || typeof tool.authorization?.required_capability !== "string") {
+  /** @type {ToolModule[]} */
+  const modules = [];
+  for (const tool of loadedModules) {
+    if (!isToolModule(tool)) {
       throw new Error("MCP_TOOL_INVALID: every tool module must export name, description, inputSchema, handler, and authorization.required_capability");
     }
     if (seen.has(tool.name)) throw new Error(`MCP_TOOL_DUPLICATE: ${tool.name}`);
     seen.add(tool.name);
+    modules.push(tool);
   }
   return modules;
 }
 
+/** @param {unknown} value */
 function toolResult(value) {
   return {
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
   };
 }
 
+/** @param {unknown} error */
 function toolError(error) {
   const safe = normalizeError(error);
   const structured = {
@@ -114,6 +155,7 @@ function toolError(error) {
   };
 }
 
+/** @param {ServerOptions} [options] */
 export async function createServer(options = {}) {
   const {
     Server,

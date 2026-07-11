@@ -1,6 +1,6 @@
 const NAMESPACE_SEPARATOR = "::";
 
-type GraphRecord = Record<string, any>;
+type GraphRecord = Record<string, unknown>;
 type Graph = GraphRecord & {
   nodes?: GraphRecord[];
   edges?: GraphRecord[];
@@ -9,6 +9,7 @@ type Graph = GraphRecord & {
   elements?: { nodes?: GraphRecord[]; edges?: GraphRecord[] };
 };
 type GraphEntry = { graph: Graph; namespace: string };
+type NamespacedGraph = Graph & { nodes: GraphRecord[]; edges: GraphRecord[]; hyperedges: GraphRecord[] };
 
 function graphArray(value: unknown): GraphRecord[] {
   return Array.isArray(value) ? value : [];
@@ -45,7 +46,7 @@ function hyperedgeKey(edge: GraphRecord): string {
   return JSON.stringify(edge);
 }
 
-export function namespaceGraph(graph: Graph, namespace: string): Graph {
+export function namespaceGraph(graph: Graph, namespace: string): NamespacedGraph {
   const normalizedNamespace = String(namespace || "").trim();
   if (!normalizedNamespace) throw new Error("graph union namespace must not be empty");
 

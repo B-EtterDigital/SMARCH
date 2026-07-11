@@ -19,7 +19,7 @@ import {
 } from './license-lattice.ts';
 
 let n = 0;
-const ok = (name, fn) => { fn(); n += 1; };
+const ok = (name: string, fn: () => void): void => { fn(); n += 1; };
 
 ok('classify: permissive/copyleft/proprietary/unknown', () => {
   assert.equal(classifyLicense('MIT').openness, 'open');

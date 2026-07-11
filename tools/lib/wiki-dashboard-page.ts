@@ -1,10 +1,20 @@
 import { boundaryRows, buildCandidateCards, buildFamilyRows, cloneRiskCards, complianceDimensionRows, complianceGapCards, complianceProjectCards, curatedBuildCards, duplicateCards, envContractCards, formatNumber, installEvidenceCards, projectStatus, projectTone, proofSurfaceCards, qualityProjectCards, qualityQueueCards, releaseArtifactCards, remediationActionCards, remediationProjectPlans, scannerQueueCards, scannerReadinessCards, tokenCards } from "./wiki-dashboard-helpers.ts";
 
 import { countBy, escapeHtml, slugify } from "./wiki-utils.ts";
+import type { GlobalRegistry } from "./schema-types/global.registry.schema.d.ts";
+import type { CompactBrick } from "./scan-discovery.ts";
+import type { QueueEntry, RegistryProject, ScannerView, StateSnapshot } from "./wiki-dashboard-helpers.ts";
+
+type DashboardRegistry = Omit<GlobalRegistry, "projects"> & {
+  projects: RegistryProject[];
+  scanner_report?: ScannerView;
+  refactor_report?: { refactor_queue?: QueueEntry[] };
+};
+type ProjectMeta = NonNullable<Parameters<typeof projectStatus>[1]>;
 
 
 
-export function dashboardHtml(registry, bricks, metadata, stateSnapshot = null) {
+export function dashboardHtml(registry: DashboardRegistry, bricks: CompactBrick[], metadata: Map<string, ProjectMeta>, stateSnapshot: StateSnapshot | null = null): string {
   const projects = registry.projects || [];
   const scanner = registry.scanner_report || {};
   const refactor = registry.refactor_report || {};
@@ -1472,5 +1482,4 @@ ${projectRows || '      <div class="project"><h3>No projects indexed</h3><p>Run 
 </html>
 `;
 }
-
 

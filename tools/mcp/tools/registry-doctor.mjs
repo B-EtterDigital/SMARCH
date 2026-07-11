@@ -6,6 +6,8 @@ import {
   readOnlyAuthorization,
 } from "../contract.mjs";
 
+/** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
+
 export const name = "registry-doctor";
 export const description = "Summarize registry health, validation pressure, trust, and snapshot freshness.";
 export const inputSchema = {
@@ -17,6 +19,7 @@ export const annotations = readOnlyAnnotations;
 export const authorization = readOnlyAuthorization;
 export const timeoutMs = 500;
 
+/** @param {RegistryContext} context */
 export function summarizeRegistryDoctor({ registry, state, paths }) {
   const validationErrors = Number(registry.validation_error_count || 0);
   const scanFailures = Number(registry.failure_count || registry.failures?.length || 0);
@@ -43,6 +46,7 @@ export function summarizeRegistryDoctor({ registry, state, paths }) {
   };
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

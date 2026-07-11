@@ -13,10 +13,27 @@ import { SMA_ROOT } from "./sma-paths.ts";
 
 type PortfolioConfig = {
   priority_project_ids: string[];
-  overrides: Record<string, any>;
+  overrides: Record<string, PortfolioOverride>;
   ignored_top_level_dirs: string[];
   ignored_name_fragments: string[];
 };
+
+export type PortfolioOverride = { id?: string; name?: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeOverrides(value: unknown): Record<string, PortfolioOverride> {
+  if (!isRecord(value)) return DEFAULT_CONFIG.overrides;
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
+    if (!isRecord(entry)) return [key, {}];
+    return [key, {
+      ...(typeof entry.id === "string" ? { id: entry.id } : {}),
+      ...(typeof entry.name === "string" ? { name: entry.name } : {}),
+    }];
+  }));
+}
 
 const DEFAULT_CONFIG: PortfolioConfig = {
   priority_project_ids: [],
@@ -49,7 +66,7 @@ export function loadPortfolioConfig() {
     priority_project_ids: Array.isArray(raw.priority_project_ids)
       ? raw.priority_project_ids.map(String)
       : DEFAULT_CONFIG.priority_project_ids,
-    overrides: raw.overrides && typeof raw.overrides === "object" ? raw.overrides as Record<string, any> : DEFAULT_CONFIG.overrides,
+    overrides: normalizeOverrides(raw.overrides),
     ignored_top_level_dirs: Array.isArray(raw.ignored_top_level_dirs)
       ? raw.ignored_top_level_dirs.map(String)
       : DEFAULT_CONFIG.ignored_top_level_dirs,

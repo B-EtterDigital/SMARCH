@@ -6,6 +6,31 @@
 import path from "node:path";
 import { gradeForScore } from "./scan-refactor.ts";
 
+type BuildSignalType = "feature" | "domain" | "path" | "group";
+type BuildSignal = { type: BuildSignalType; value: string; group_size?: number };
+export type ScanBrick = {
+  id: string; name: string; kind: string; status?: string; score?: number; source_paths?: string[]; domain?: unknown[];
+  feature_cluster?: string | { id?: string; name?: string } | null; brick_group?: string | null;
+};
+type BuildCandidate = {
+  candidate_key: string; recurrence_key: string; project: string; name: string; confidence_score: number; confidence_label: string;
+  brick_count: number; average_brick_score: number; detection_sources: BuildSignalType[]; dominant_feature_cluster: string | null;
+  dominant_domain: string | null; dominant_path_root: string | null; dominant_group: string | null;
+  signal_type_counts: Record<string, number>; kind_counts: Record<string, number>; status_counts: Record<string, number>;
+  sample_paths: string[]; brick_ids: string[]; sample_bricks: Array<{ id: string; name: string; kind: string; status?: string; score?: number; feature_cluster: string | null; source_path: string }>;
+  recurrent_projects: string[]; recurrent_project_count: number; why: string;
+};
+type CandidateSignature = Pick<BuildCandidate, "candidate_key" | "recurrence_key" | "project" | "confidence_score" | "brick_count" | "detection_sources" | "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">;
+type BuildProjectSummary = { project?: string; candidate_count?: number; average_confidence_score?: number; recurrent_candidate_count?: number; candidate_signatures?: CandidateSignature[]; [key: string]: unknown };
+type ProjectBuildReport = {
+  project?: string; candidate_count: number; detected_brick_count: number; recurrent_candidate_count: number; recurrent_family_count: number;
+  average_confidence_score: number; signal_type_counts: Record<BuildSignalType, number>; top_candidates: BuildCandidate[];
+  candidate_signatures: CandidateSignature[]; projects: BuildProjectSummary[];
+};
+type ComplianceDimension = { label: string; weight: number; ready_count: number; coverage_units: number; total_count: number; coverage_rate: number };
+type GapBrick = { missing_count: number; raw_source_tokens: number; path: string; [key: string]: unknown };
+type ComplianceReport = { project?: string; trackable_brick_count: number; score: number; grade: string; dimensions: Record<string, Partial<ComplianceDimension>>; weakest_dimensions: Array<Partial<ComplianceDimension> & { key?: string }>; highest_gap_bricks: GapBrick[] };
+
 export const complianceDimensionDefinitions = [
   { key: "boundary_clean", label: "Boundary clean", weight: 22 },
   { key: "env_contract", label: "Env contract", weight: 18 },
@@ -80,7 +105,7 @@ export const genericBuildTokens = new Set([
   "views",
   "web"
 ]);
-export function emptyComplianceReport(project = null) {
+export function emptyComplianceReport(project: string | null = null): ComplianceReport {
   return {
     ...(project ? { project } : {}),
     trackable_brick_count: 0,
@@ -99,7 +124,7 @@ export function emptyComplianceReport(project = null) {
   };
 }
 
-export function emptyBuildReport(project = null) {
+export function emptyBuildReport(project: string | null = null): ProjectBuildReport {
   return {
     ...(project ? { project } : {}),
     candidate_count: 0,
@@ -119,7 +144,7 @@ export function emptyBuildReport(project = null) {
   };
 }
 
-export function contractStatusScore(status) {
+export function contractStatusScore(status: unknown): number {
   const normalized = String(status || "").toLowerCase();
 
   if (["pass", "complete", "ready"].includes(normalized)) {
@@ -137,7 +162,7 @@ export function contractStatusScore(status) {
   return 0;
 }
 
-export function finalizeComplianceReport(report) {
+export function finalizeComplianceReport(report: ComplianceReport) {
   const dimensions = Object.fromEntries(complianceDimensionDefinitions.map((definition) => {
     const current = report.dimensions?.[definition.key] || {};
     const totalCount = Number(current.total_count || 0);
@@ -181,7 +206,7 @@ export function finalizeComplianceReport(report) {
   };
 }
 
-export function normalizeBuildToken(value) {
+export function normalizeBuildToken(value: unknown): string {
   return String(value || "")
     .toLowerCase()
     .replace(/\.(ts|tsx|js|jsx|mjs|cjs|py|rb|go|rs|java|kt|swift|php|cs|sql|json|md|mdx)$/i, "")
@@ -190,7 +215,7 @@ export function normalizeBuildToken(value) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function isMeaningfulBuildToken(value) {
+export function isMeaningfulBuildToken(value: unknown): boolean {
   const token = normalizeBuildToken(value);
 
   if (!token || token.length < 3) {
@@ -204,7 +229,7 @@ export function isMeaningfulBuildToken(value) {
   return !genericBuildTokens.has(token);
 }
 
-export function titleCaseBuildToken(value) {
+export function titleCaseBuildToken(value: unknown): string {
   return String(value || "")
     .split(/[-_/]+/)
     .filter(Boolean)
@@ -212,16 +237,16 @@ export function titleCaseBuildToken(value) {
     .join(" ");
 }
 
-export function normalizedKindFamily(kind) {
+export function normalizedKindFamily(kind: unknown): string {
   return String(kind || "unknown").replace(/_(module|file)$/, "");
 }
 
-export function primarySourcePath(brick) {
+export function primarySourcePath(brick: ScanBrick): string {
   return String((brick.source_paths || [])[0] || "");
 }
 
-export function meaningfulDomainTokens(brick) {
-  const tokens = [];
+export function meaningfulDomainTokens(brick: ScanBrick): string[] {
+  const tokens: string[] = [];
 
   for (const entry of brick.domain || []) {
     for (const part of String(entry || "").split(/[^a-zA-Z0-9]+/)) {
@@ -236,7 +261,7 @@ export function meaningfulDomainTokens(brick) {
   return tokens.slice(0, 3);
 }
 
-export function featureTokenForBrick(brick) {
+export function featureTokenForBrick(brick: ScanBrick): string {
   const cluster = brick.feature_cluster;
 
   if (cluster && typeof cluster === "object") {
@@ -246,7 +271,7 @@ export function featureTokenForBrick(brick) {
   return normalizeBuildToken(cluster);
 }
 
-export function pathSignalTokensForBrick(brick) {
+export function pathSignalTokensForBrick(brick: ScanBrick): string[] {
   const sourcePath = primarySourcePath(brick);
 
   if (!sourcePath) {
@@ -260,7 +285,7 @@ export function pathSignalTokensForBrick(brick) {
     .map((segment) => normalizeBuildToken(segment))
     .filter((segment) => isMeaningfulBuildToken(segment));
   const meaningfulSegments = [...new Set(segmentTokens)];
-  const signals = [];
+  const signals: string[] = [];
 
   if (meaningfulSegments.length > 0) {
     signals.push(meaningfulSegments[meaningfulSegments.length - 1]);
@@ -281,10 +306,10 @@ export function pathSignalTokensForBrick(brick) {
   return [...new Set(signals.filter((signal) => isMeaningfulBuildToken(signal) || signal.includes("-")))].slice(0, 3);
 }
 
-export function buildSignalsForBrick(brick) {
-  const signals = [];
-  const seen = new Set();
-  const pushSignal = (type, value) => {
+export function buildSignalsForBrick(brick: ScanBrick): BuildSignal[] {
+  const signals: BuildSignal[] = [];
+  const seen = new Set<string>();
+  const pushSignal = (type: BuildSignalType, value: unknown) => {
     const normalized = normalizeBuildToken(value);
 
     if (!isMeaningfulBuildToken(normalized)) {
@@ -324,7 +349,7 @@ export function buildSignalsForBrick(brick) {
   return signals;
 }
 
-export function buildSignalWeight(type, groupSize) {
+export function buildSignalWeight(type: BuildSignalType, groupSize: number): number {
   const base = {
     group: 5,
     feature: 4,
@@ -335,7 +360,7 @@ export function buildSignalWeight(type, groupSize) {
   return Math.max(1, base - Math.floor(Math.max(0, groupSize - 2) / 5));
 }
 
-export function buildSignalGroupLimit(type) {
+export function buildSignalGroupLimit(type: BuildSignalType): number {
   return {
     group: 18,
     feature: 12,
@@ -344,11 +369,11 @@ export function buildSignalGroupLimit(type) {
   }[type] || 10;
 }
 
-export function buildPairKey(leftId, rightId) {
+export function buildPairKey(leftId: string, rightId: string): string {
   return leftId < rightId ? `${leftId}\0${rightId}` : `${rightId}\0${leftId}`;
 }
 
-export function buildCandidateName(candidate) {
+export function buildCandidateName(candidate: Pick<BuildCandidate, "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">): string {
   const primary = candidate.dominant_feature_cluster
     || candidate.dominant_domain
     || candidate.dominant_path_root
@@ -361,13 +386,13 @@ export function buildCandidateName(candidate) {
   return `${label} Build Candidate`;
 }
 
-export function confidenceLabel(score) {
+export function confidenceLabel(score: number): string {
   if (score >= 80) return "high";
   if (score >= 60) return "medium";
   return "low";
 }
 
-export function candidateRecurrenceKey(candidate) {
+export function candidateRecurrenceKey(candidate: Pick<BuildCandidate, "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">): string {
   const ordered = [
     candidate.dominant_feature_cluster,
     candidate.dominant_domain,
@@ -378,15 +403,15 @@ export function candidateRecurrenceKey(candidate) {
   return unique.slice(0, 2).join("::") || "capability";
 }
 
-export function summarizeBuildCandidate(projectIdValue, bricks, sharedSignals) {
-  const featureCounts = new Map();
-  const domainCounts = new Map();
-  const pathCounts = new Map();
-  const groupCounts = new Map();
-  const signalTypeCounts = new Map();
-  const kindCounts = new Map();
-  const statusCounts = new Map();
-  const sharedSignalTypes = new Set();
+export function summarizeBuildCandidate(projectIdValue: string, bricks: ScanBrick[], sharedSignals: BuildSignal[]): BuildCandidate {
+  const featureCounts = new Map<string, number>();
+  const domainCounts = new Map<string, number>();
+  const pathCounts = new Map<string, number>();
+  const groupCounts = new Map<string, number>();
+  const signalTypeCounts = new Map<BuildSignalType, number>();
+  const kindCounts = new Map<string, number>();
+  const statusCounts = new Map<string, number>();
+  const sharedSignalTypes = new Set<BuildSignalType>();
 
   for (const brick of bricks) {
     const kindFamily = normalizedKindFamily(brick.kind);
@@ -411,7 +436,7 @@ export function summarizeBuildCandidate(projectIdValue, bricks, sharedSignals) {
     signalTypeCounts.set(signal.type, (signalTypeCounts.get(signal.type) || 0) + 1);
   }
 
-  const sortCounts = (entries) => [...entries.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const sortCounts = (entries: Map<string, number>) => [...entries.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const dominantFeatureCluster = sortCounts(featureCounts)[0]?.[0] || null;
   const dominantDomain = sortCounts(domainCounts)[0]?.[0] || null;
   const dominantPathRoot = sortCounts(pathCounts)[0]?.[0] || null;
@@ -481,7 +506,7 @@ export function summarizeBuildCandidate(projectIdValue, bricks, sharedSignals) {
   return candidate;
 }
 
-export function buildProjectBuildReport(projectIdValue, candidates) {
+export function buildProjectBuildReport(projectIdValue: string, candidates: BuildCandidate[]): ProjectBuildReport {
   const report = emptyBuildReport(projectIdValue);
   const detectedBrickIds = new Set();
 
@@ -518,13 +543,13 @@ export function buildProjectBuildReport(projectIdValue, candidates) {
   return report;
 }
 
-export function detectProjectBuildCandidates(projectIdValue, bricks: any[]) {
+export function detectProjectBuildCandidates(projectIdValue: string, bricks: ScanBrick[]): BuildCandidate[] {
   if (bricks.length < 2) {
     return [];
   }
 
-  const signalsByBrick = new Map();
-  const signalBuckets = new Map();
+  const signalsByBrick = new Map<string, BuildSignal[]>();
+  const signalBuckets = new Map<string, { type: BuildSignalType; value: string; brick_ids: string[] }>();
 
   for (const brick of bricks) {
     const signals = buildSignalsForBrick(brick);
@@ -538,7 +563,7 @@ export function detectProjectBuildCandidates(projectIdValue, bricks: any[]) {
     }
   }
 
-  const pairScores = new Map();
+  const pairScores = new Map<string, { score: number; shared_signals: Array<BuildSignal & { group_size: number }> }>();
 
   for (const bucket of signalBuckets.values()) {
     const brickIds = [...new Set(bucket.brick_ids)].sort();
@@ -566,10 +591,10 @@ export function detectProjectBuildCandidates(projectIdValue, bricks: any[]) {
     }
   }
 
-  const adjacency = new Map();
-  const addEdge = (leftId, rightId) => {
-    const left = adjacency.get(leftId) || new Set();
-    const right = adjacency.get(rightId) || new Set();
+  const adjacency = new Map<string, Set<string>>();
+  const addEdge = (leftId: string, rightId: string) => {
+    const left = adjacency.get(leftId) || new Set<string>();
+    const right = adjacency.get(rightId) || new Set<string>();
     left.add(rightId);
     right.add(leftId);
     adjacency.set(leftId, left);
@@ -589,17 +614,17 @@ export function detectProjectBuildCandidates(projectIdValue, bricks: any[]) {
     }
   }
 
-  const brickById = new Map<string, any>(bricks.map((brick) => [brick.id, brick]));
-  const visited = new Set();
-  const candidates = [];
+  const brickById = new Map<string, ScanBrick>(bricks.map((brick) => [brick.id, brick]));
+  const visited = new Set<string>();
+  const candidates: BuildCandidate[] = [];
 
   for (const brick of bricks) {
     if (visited.has(brick.id) || !adjacency.has(brick.id)) {
       continue;
     }
 
-    const stack = [brick.id];
-    const componentIds = [];
+    const stack: string[] = [brick.id];
+    const componentIds: string[] = [];
 
     while (stack.length > 0) {
       const currentId = stack.pop();
@@ -620,14 +645,14 @@ export function detectProjectBuildCandidates(projectIdValue, bricks: any[]) {
 
     const componentBricks = componentIds
       .map((id) => brickById.get(id))
-      .filter(Boolean);
+      .filter((entry): entry is ScanBrick => entry !== undefined);
 
     if (componentBricks.length < 2) {
       continue;
     }
 
-    const sharedSignals = [];
-    const sharedSignalKeys = new Set();
+    const sharedSignals: BuildSignal[] = [];
+    const sharedSignalKeys = new Set<string>();
 
     for (const candidateBrick of componentBricks) {
       for (const signal of signalsByBrick.get(candidateBrick.id) || []) {
@@ -660,7 +685,7 @@ export function detectProjectBuildCandidates(projectIdValue, bricks: any[]) {
     .slice(0, 60);
 }
 
-export function finalizeMergedBuildReport(report) {
+export function finalizeMergedBuildReport(report: Partial<ProjectBuildReport>): ProjectBuildReport {
   const finalized = {
     ...emptyBuildReport(),
     ...report,
@@ -671,7 +696,7 @@ export function finalizeMergedBuildReport(report) {
       group: report.signal_type_counts?.group || 0
     }
   };
-  const recurrence = new Map();
+  const recurrence = new Map<string, { projects: Set<string>; candidate_count: number; max_confidence_score: number }>();
 
   for (const signature of finalized.candidate_signatures || []) {
     const key = signature.recurrence_key || "capability";

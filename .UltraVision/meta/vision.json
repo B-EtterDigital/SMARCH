@@ -4,7 +4,8 @@
   "rounds": {
     "missing_vision": "user added three pillars: monetization lane (V-16), community layer (V-17), hosted dashboard (V-18)",
     "ballot": "V-04+V-05 both approved; V-06,V-09,V-10,V-11,V-12,V-14 all approved; language strategy = full TypeScript migration (phased, erasable-syntax, zero-build) + Rust smarch-core kernel (M3)",
-    "goal_extension": "user /goal 2026-07-10: +500 improvement tasks, new-coder lane, full attribution, open-source love"
+    "goal_extension": "user /goal 2026-07-10: +500 improvement tasks, new-coder lane, full attribution, open-source love",
+    "future-of-coding": "user goal 2026-07-11: make SMA/SMARCH the future of coding; gen3 version control 10 years ahead"
   },
   "pillars": [
     {
@@ -112,6 +113,18 @@
       "status": "approved",
       "origin": "user",
       "note": "literate, lovingly-explained open source: WHY headers in every tool, explained doc intros, first-contribution path, code of conduct, made-with-love identity"
+    },
+    {
+      "id": "V-21",
+      "status": "approved",
+      "origin": "user",
+      "note": "code-quality dogma: strict TS, type-aware lint (strictTypeChecked), knip/jscpd, coverage floor, typed errors universal \u2014 enforced by gates, written as doctrine (docs/CODE_QUALITY.md)"
+    },
+    {
+      "id": "V-22",
+      "status": "approved",
+      "origin": "user",
+      "note": "Gen3 as version control 10 years ahead: the unit of change is intent+evidence+trust, not bytes \u2014 intent commits, evidence-attached history, agent-native merge, trust-weighted blame (docs/GEN3_VERSION_CONTROL.md)"
     }
   ],
   "non_goals": [

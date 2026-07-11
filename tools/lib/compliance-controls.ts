@@ -32,7 +32,25 @@
  * `ctx` provides repo helpers: { repoRoot, fileExists, readFile, grep, hasScript }.
  */
 
-export const COMPLIANCE_CONTROLS = [
+type ComplianceHit = { file: string; line: string };
+type ComplianceContext = {
+  fileExists(path: string): boolean;
+  readFile(path: string): string;
+  grep(paths: string[], pattern: RegExp): ComplianceHit[];
+  hasScript?(name: string): boolean;
+};
+type ComplianceStatus = 'covered' | 'partial' | 'missing';
+type ComplianceResult = { status: ComplianceStatus; evidence?: string; note?: string };
+type ComplianceControl = {
+  id: string;
+  regulation: string[];
+  title: string;
+  severity: 'blocker' | 'required' | 'advisory';
+  remediation: string;
+  detect(ctx: ComplianceContext): ComplianceResult;
+};
+
+export const COMPLIANCE_CONTROLS: ComplianceControl[] = [
   // ── Data-subject rights (GDPR Ch.III + Swiss nFADP) ──────────────────────
   {
     id: 'dsr-export',

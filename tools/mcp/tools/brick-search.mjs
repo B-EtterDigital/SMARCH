@@ -10,6 +10,9 @@ import {
   readOnlyAuthorization,
 } from "../contract.mjs";
 
+/** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
+/** @typedef {Record<string, unknown>} ToolInput */
+
 export const name = "brick-search";
 export const description = "Search the SMA registry for reusable bricks and return normalized trust fields.";
 export const inputSchema = {
@@ -27,6 +30,10 @@ export const annotations = readOnlyAnnotations;
 export const authorization = readOnlyAuthorization;
 export const timeoutMs = 500;
 
+/**
+ * @param {ToolInput} args
+ * @param {RegistryContext} context
+ */
 export function searchRegistryBricks(args, context) {
   const results = searchBricks(context, {
     ...args,
@@ -40,6 +47,7 @@ export function searchRegistryBricks(args, context) {
   });
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

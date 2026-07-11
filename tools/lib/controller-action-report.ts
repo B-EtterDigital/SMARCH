@@ -15,10 +15,91 @@ const DIRTY_GROUP_SAMPLE_LIMIT = 5;
 const CLEANUP_PACKETS_BASENAME = 'cleanup-packets.generated';
 const GRAPH_PACKETS_BASENAME = 'graph-packets.generated';
 
-export function buildActionReport(snapshot) {
-  const bySeverity = {};
-  const byKind = {};
-  const byProject = {};
+type LeaseInput = Parameters<typeof packetLeaseFingerprint>[0];
+type LeaseFingerprint = ReturnType<typeof packetLeaseFingerprint>;
+type ParallelClaim = {
+  group?: string;
+  count?: number;
+  brick?: string | null;
+  command?: string;
+  conflict?: string | null;
+  sample_paths?: string[];
+};
+type ControllerActionItem = {
+  severity: string;
+  kind: string;
+  project: string;
+  title: string;
+  detail?: string;
+  command?: string;
+  impact_score?: number;
+  brick?: string | null;
+  dirty_count?: number;
+  uncovered_dirty_count?: number;
+  top_dirty_group?: string;
+  top_dirty_group_count?: number;
+  top_dirty_group_sample_paths?: string[];
+  parallel_claims?: ParallelClaim[];
+  next_commands?: Record<string, string | null | undefined>;
+  module_graph_gap_count?: number;
+  missing_graph_count?: number;
+  missing_target_count?: number;
+  repair_kind?: string;
+  target_fixes?: unknown[];
+};
+type CleanupWaveCommand = {
+  rank: number;
+  project: string;
+  group: string;
+  count: number;
+  parent_dirty_count?: number;
+  brick?: string | null;
+  command: string;
+  inspect?: string | null;
+  conflict?: string | null;
+  sample_paths?: string[];
+  wave_gain_percent?: number | null;
+  project_gain_percent?: number | null;
+};
+type ParallelWave = {
+  commands?: CleanupWaveCommand[];
+  recommended_agent_count?: number;
+  total_candidate_count?: number;
+  overflow_count?: number;
+  selection_rule?: string;
+  total_impact?: number;
+  limit?: number;
+};
+type ControllerSnapshot = {
+  generated_at: string;
+  leases: LeaseInput;
+  projects: Array<{ id?: string }>;
+  summary: Record<string, unknown> & {
+    projects?: number;
+    active_leases?: number;
+    open_conflicts?: number;
+    dirty_unleased_projects?: number;
+    active_dirty_scope_projects?: number;
+    active_dirty_scope_paths?: number;
+    stale_agent_process_projects?: number;
+    stale_agent_processes?: number;
+    agent_process_scan_error_projects?: number;
+    graph_gaps?: number;
+    module_graph_gaps?: number;
+    controller_actions?: number;
+  };
+  parallel_wave?: ParallelWave;
+  action_items: ControllerActionItem[];
+};
+type CleanupPacketInput = CleanupWaveCommand & {
+  packet_type?: string;
+  claim_intent?: string;
+};
+
+export function buildActionReport(snapshot: ControllerSnapshot) {
+  const bySeverity: Record<string, number> = {};
+  const byKind: Record<string, number> = {};
+  const byProject: Record<string, number> = {};
   for (const item of snapshot.action_items) {
     bySeverity[item.severity] = (bySeverity[item.severity] || 0) + 1;
     byKind[item.kind] = (byKind[item.kind] || 0) + 1;
@@ -53,7 +134,7 @@ export function buildActionReport(snapshot) {
   };
 }
 
-export function buildCleanupPacketReport(report) {
+export function buildCleanupPacketReport(report: ReturnType<typeof buildActionReport>) {
   const wavePackets = (report.parallel_wave?.commands || []).map((item) => cleanupPacket({
     ...item,
     packet_type: 'dirty-unleased',
@@ -96,8 +177,8 @@ export function buildCleanupPacketReport(report) {
   };
 }
 
-function buildActiveScopeCleanupPackets(report, startIndex) {
-  const packets = [];
+function buildActiveScopeCleanupPackets(report: ReturnType<typeof buildActionReport>, startIndex: number): ReturnType<typeof cleanupPacket>[] {
+  const packets: ReturnType<typeof cleanupPacket>[] = [];
   for (const item of report.action_items || []) {
     if (item.kind !== 'active-dirty-scope') continue;
     const claims = Array.isArray(item.parallel_claims) && item.parallel_claims.length
@@ -133,7 +214,7 @@ function buildActiveScopeCleanupPackets(report, startIndex) {
   return packets;
 }
 
-export function buildGraphPacketReport(report) {
+export function buildGraphPacketReport(report: ReturnType<typeof buildActionReport>) {
   const graphItems = report.action_items.filter((item) => item.kind === 'graph-gap' || item.kind === 'module-graph-gap');
   const packets = graphItems.map((item, index) => graphPacket(item, index + 1));
   for (const packet of packets) {
@@ -164,7 +245,7 @@ export function buildGraphPacketReport(report) {
   };
 }
 
-function graphPacket(item, rank) {
+function graphPacket(item: ControllerActionItem, rank: number) {
   const moduleGapCount = Number(item.module_graph_gap_count ?? item.impact_score ?? 0);
   const brick = graphPacketBrick(item);
   const targetDrift = item.repair_kind === 'target-drift';
@@ -187,6 +268,7 @@ function graphPacket(item, rank) {
     missing_target_count: Number(item.missing_target_count ?? 0),
     repair_kind: item.repair_kind || (item.kind === 'module-graph-gap' ? 'module-graph' : 'project-graph'),
     target_fixes: Array.isArray(item.target_fixes) ? item.target_fixes : [],
+    lease_fingerprint: null as LeaseFingerprint | null,
     claim_packet_command: claimPacketCommand,
     claim_command: `npm run start:edit -- --project ${shellArg(item.project)} --brick ${shellArg(brick)} --intent ${shellArg(claimIntent)}`,
     claim_intent: claimIntent,
@@ -207,18 +289,18 @@ function graphPacket(item, rank) {
   };
 }
 
-function graphPacketBrick(item) {
+function graphPacketBrick(item: ControllerActionItem): string {
   return item.kind === 'module-graph-gap' ? 'graphify-modules' : 'graphify-project';
 }
 
-function graphPacketVerifyCommand(item) {
+function graphPacketVerifyCommand(item: ControllerActionItem): string {
   if (item.kind === 'module-graph-gap') {
     return `npm run graphify:check:modules -- --project ${shellArg(item.project)} --strict --summary-json`;
   }
   return `npm run graphify:check -- --project ${shellArg(item.project)} --strict`;
 }
 
-function cleanupPacket(item) {
+function cleanupPacket(item: CleanupPacketInput) {
   const claimPacketCommand = `npm run cleanup:claim -- --rank ${item.rank}`;
   const packetType = item.packet_type || 'dirty-unleased';
   return {
@@ -232,6 +314,7 @@ function cleanupPacket(item) {
     wave_gain_percent: item.wave_gain_percent ?? null,
     project_gain_percent: item.project_gain_percent ?? null,
     sample_paths: normalizeSamplePaths(item.sample_paths),
+    lease_fingerprint: null as LeaseFingerprint | null,
     claim_packet_command: claimPacketCommand,
     claim_command: item.command,
     claim_intent: item.claim_intent || `claim dirty group ${item.group} (${Number(item.count || 0)} path${Number(item.count || 0) === 1 ? '' : 's'})`,
@@ -252,8 +335,8 @@ function cleanupPacket(item) {
   };
 }
 
-export function renderCleanupPacketMarkdown(report) {
-  const lines = [
+export function renderCleanupPacketMarkdown(report: ReturnType<typeof buildCleanupPacketReport>): string {
+  const lines: string[] = [
     '# SMA Gen3 Cleanup Packets',
     '',
     `Generated: ${report.generated_at}`,
@@ -304,8 +387,8 @@ export function renderCleanupPacketMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
-export function renderGraphPacketMarkdown(report) {
-  const lines = [
+export function renderGraphPacketMarkdown(report: ReturnType<typeof buildGraphPacketReport>): string {
+  const lines: string[] = [
     '# SMA Gen3 Graph Packets',
     '',
     `Generated: ${report.generated_at}`,
@@ -350,8 +433,8 @@ export function renderGraphPacketMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
-export function renderActionReportMarkdown(report) {
-  const lines = [
+export function renderActionReportMarkdown(report: ReturnType<typeof buildActionReport>): string {
+  const lines: string[] = [
     '# SMA Gen3 Controller Actions',
     '',
     `Generated: ${report.generated_at}`,
@@ -412,9 +495,10 @@ export function renderActionReportMarkdown(report) {
           if (command && command !== item.command) lines.push(`  - ${name}: \`${command}\``);
         }
       }
-      if (item.parallel_claims?.length > 1) {
+      const parallelClaims = item.parallel_claims;
+      if (parallelClaims && parallelClaims.length > 1) {
         lines.push('  - parallel_claims:');
-        for (const claim of item.parallel_claims) {
+        for (const claim of parallelClaims) {
           lines.push(`    - ${claim.group} (${claim.count}): \`${claim.command}\``);
         }
       }
@@ -428,13 +512,13 @@ export function renderActionReportMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
-function formatLeaseFingerprint(fingerprint) {
+function formatLeaseFingerprint(fingerprint: LeaseFingerprint | null | undefined): string {
   if (!fingerprint?.hash) return 'n/a';
   return `${String(fingerprint.hash).slice(0, 12)} (${fingerprint.lease_count ?? 0} active leases)`;
 }
 
-function projectLeaseFingerprints(projects, leases) {
-  const out = {};
+function projectLeaseFingerprints(projects: Array<{ id?: string }>, leases: LeaseInput): Record<string, LeaseFingerprint> {
+  const out: Record<string, LeaseFingerprint> = {};
   for (const project of projects || []) {
     if (!project?.id) continue;
     out[project.id] = packetLeaseFingerprint(leases, { project: project.id });
@@ -442,8 +526,8 @@ function projectLeaseFingerprints(projects, leases) {
   return out;
 }
 
-function normalizeSamplePaths(paths, limit = DIRTY_GROUP_SAMPLE_LIMIT) {
-  const out = [];
+function normalizeSamplePaths(paths: readonly unknown[] | null | undefined, limit = DIRTY_GROUP_SAMPLE_LIMIT): string[] {
+  const out: string[] = [];
   for (const value of Array.isArray(paths) ? paths : []) {
     const file = String(value || '').trim();
     if (!file || out.includes(file)) continue;
@@ -453,11 +537,11 @@ function normalizeSamplePaths(paths, limit = DIRTY_GROUP_SAMPLE_LIMIT) {
   return out;
 }
 
-function formatNullablePercent(value) {
+function formatNullablePercent(value: unknown): string {
   if (value === null || value === undefined || value === '') return 'n/a';
   return String(value) + '%';
 }
 
-function shellArg(value) {
+function shellArg(value: unknown): string {
   return "'" + String(value ?? '').replace(/'/g, "'\\''") + "'";
 }

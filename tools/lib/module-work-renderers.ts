@@ -9,7 +9,60 @@
  */
 /** Markdown and prompt renderers for sma-module-work-packets.mjs. */
 
-export function renderDispatchMarkdown(manifest) {
+export type BigPicture = { tldr: string; current_slice: string; outlook: string[]; eta: string; horizon: string };
+type PathPair = { left: string; right: string };
+type DispatchAssignment = {
+  agent_slot: number; module_id: string; slot: number; partition_id?: string | null; partition_label?: string | null;
+  brick: string; graph_query_command: string; claim_command: string; iteration_gates?: string[]; required_gates: string[]; prompt: string;
+  agent_packet?: { markdown_path?: string | null };
+};
+type BlockedSlot = {
+  module_id: string; slot: number; blocked_reason: string; held_resource?: string | null; path_overlap_warning?: string | null;
+  dirty_scope_command?: string | null; dirty_scope_conflict_command?: string | null; overlap_path_pairs?: PathPair[];
+};
+type DispatchManifest = {
+  dispatch_id: string; project: string; task: string; created_at: string; assignments: DispatchAssignment[]; blocked_slots: BlockedSlot[];
+  controller_commands: Record<'observe' | 'observe_write' | 'claim_next' | 'project_preflight' | 'project_dashboard' | 'conflict_summary', string>;
+};
+type SharedScopeItem = string | { id?: string; path?: string };
+type AgentPacket = {
+  dispatch_id: string; agent_slot: number; project: string; module_id: string; slot: number; partition_id?: string | null; task: string; brick: string;
+  gains: { graph_first_token_reduction_percent_estimate: number; collision_reduction_percent_estimate: number };
+  commands: { graph_query: string; claim: string; observe: string };
+  scope: { paths?: string[]; exclude_paths?: string[]; shared_hot_paths?: SharedScopeItem[] };
+  gates: { iteration?: string[]; required?: string[] }; rules?: string[]; prompt?: string;
+  links: { dispatch_markdown?: string | null; dispatch_json?: string | null; agent_packet_json?: string | null };
+};
+type ProgressSummary = {
+  assignment_count: number; claimed: number; active: number; completed: number; unclaimed: number; claimable_unclaimed: number;
+  launch_blocked_unclaimed: number; external_active_slot_count: number; external_active_lease_count: number;
+  external_active_module_count: number; open_conflicts: number; graph_ready: number;
+  [key: string]: unknown;
+};
+type ObservationAssignment = {
+  agent_slot: number; module_id: string; slot: number; status: string; claim_event_count: number; completion_event_count: number;
+  active_lease_count?: number; open_conflicts?: number; context_error?: string | null; dirty_scope_count?: number; held_resource?: string | null;
+  agent_packet_markdown_path?: string | null; conflict_command?: string | null; dirty_scope_command?: string | null; dirty_scope_conflict_command?: string | null;
+};
+type ExternalLeaseGroup = { module_id?: string; held_resource?: string; held_by?: string | null; slot_count: number; agent_slots: number[] };
+export type ModuleObservation = {
+  schema_version?: string; kind?: string; big_picture?: BigPicture; status: string; generated_at: string; dispatch: { dispatch_id: string; project?: string; task?: string; assignment_count?: number; predicted_launch_ready_slots?: number; predicted_requested_agents?: number };
+  summary: ProgressSummary; gains: Record<'predicted_graph_first_token_reduction_percent' | 'observed_claimed_percent' | 'observed_completed_percent', number>;
+  comparison: Record<'predicted_requested_agents' | 'predicted_launch_ready_slots' | 'dispatched_slots' | 'observed_claimed_slots' | 'observed_active_slots' | 'observed_completed_slots' | 'observed_claimable_unclaimed_slots' | 'observed_launch_blocked_unclaimed_slots' | 'observed_external_active_slots' | 'observed_external_active_leases' | 'observed_open_conflicts', number>;
+  next: string; blockers: string[]; warnings: string[]; external_active_module_leases?: ExternalLeaseGroup[]; assignments: ObservationAssignment[];
+};
+type LatestObservation = { json_path?: string | null; markdown_path?: string | null };
+type HeldModule = { module_id?: string; slot?: number | string; held_resource?: string; held_by?: string | null };
+type ModuleWatch = {
+  big_picture?: BigPicture; status: string; project: string; task: string; active_lane: string; launchable_agents: number; blockers?: string[]; warnings?: string[]; next: string;
+  capacity: { launch_ready_slots: number; requested_agents: number; graph_ready_modules: number; modules_total: number; held_slots?: number; graph_blocked_modules?: number; path_overlap_blocked_slots?: number; held_modules?: HeldModule[] };
+  dispatch: { available: boolean; dispatch_id?: string; assignment_count?: number; latest_observation?: LatestObservation };
+  progress: ProgressSummary & { dispatch_age_ms?: number; dispatch_stale?: boolean; dispatch_max_age_ms?: number };
+  gains: Record<'predicted_graph_first_token_reduction_percent' | 'predicted_dirty_status_token_reduction_percent' | 'predicted_collision_reduction_percent' | 'observed_claimed_percent' | 'observed_completed_percent', number>;
+};
+type RendererDeps = { blockedReasonSuffix: (summary: ProgressSummary) => string; formatPercent: (value: number) => string };
+
+export function renderDispatchMarkdown(manifest: DispatchManifest): string {
   const lines = [
     `# ${manifest.dispatch_id}`,
     '',
@@ -38,7 +91,7 @@ export function renderDispatchMarkdown(manifest) {
     lines.push(`- Graph: \`${item.graph_query_command}\``);
     lines.push(`- Claim: \`${item.claim_command}\``);
     if (item.agent_packet?.markdown_path) lines.push(`- Agent packet: \`${item.agent_packet.markdown_path}\``);
-    if ((item.iteration_gates || []).length) lines.push(`- Iteration gates: ${item.iteration_gates.map((gate) => `\`${gate}\``).join(', ')}`);
+    if ((item.iteration_gates || []).length) lines.push(`- Iteration gates: ${(item.iteration_gates || []).map((gate) => `\`${gate}\``).join(', ')}`);
     lines.push(`- Gates: ${item.required_gates.map((gate) => `\`${gate}\``).join(', ') || 'project defaults'}`);
     lines.push(`- Prompt: ${item.prompt}`);
     lines.push('');
@@ -59,7 +112,7 @@ export function renderDispatchMarkdown(manifest) {
 }
 
 
-export function renderAgentPacketMarkdown(packet) {
+export function renderAgentPacketMarkdown(packet: AgentPacket): string {
   const lines = [
     `# SMA Gen3 Agent Packet ${packet.dispatch_id} / ${packet.agent_slot}`,
     '',
@@ -79,7 +132,7 @@ export function renderAgentPacketMarkdown(packet) {
     '',
     `- Paths: ${(packet.scope.paths || []).map((item) => `\`${item}\``).join(', ') || 'configured module paths'}`,
     `- Exclude: ${(packet.scope.exclude_paths || []).map((item) => `\`${item}\``).join(', ') || 'none'}`,
-    `- Shared hot paths: ${(packet.scope.shared_hot_paths || []).map((item) => `\`${item.id || item.path || item}\``).join(', ') || 'none listed'}`,
+    `- Shared hot paths: ${(packet.scope.shared_hot_paths || []).map((item) => `\`${typeof item === 'string' ? item : item.id || item.path || 'unknown'}\``).join(', ') || 'none listed'}`,
     '',
     '## Gates',
     '',
@@ -104,7 +157,7 @@ export function renderAgentPacketMarkdown(packet) {
 
 
 
-export function renderObservationMarkdown(observation, { blockedReasonSuffix, formatPercent }) {
+export function renderObservationMarkdown(observation: ModuleObservation, { blockedReasonSuffix, formatPercent }: RendererDeps): string {
   const bigPicture = observation.big_picture || moduleObservationBigPicture(observation);
   const lines = [
     '# SMA Gen3 Module Work Observation',
@@ -176,7 +229,7 @@ export function renderObservationMarkdown(observation, { blockedReasonSuffix, fo
 }
 
 
-export function moduleObservationBigPicture(observation) {
+export function moduleObservationBigPicture(observation: ModuleObservation): BigPicture {
   const summary = observation?.summary || {};
   const dispatch = observation?.dispatch || {};
   const assignmentCount = numeric(summary.assignment_count || dispatch.assignment_count);
@@ -230,7 +283,7 @@ export function moduleObservationBigPicture(observation) {
 }
 
 
-export function moduleWatchBigPicture(watch) {
+export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
   const capacity = watch?.capacity || {};
   const progress = watch?.progress || {};
   const dispatch = watch?.dispatch || {};
@@ -305,7 +358,7 @@ export function moduleWatchBigPicture(watch) {
 }
 
 
-export function renderModuleWatchConsole(watch, { blockedReasonSuffix, formatPercent }) {
+export function renderModuleWatchConsole(watch: ModuleWatch, { blockedReasonSuffix, formatPercent }: RendererDeps): string {
   const bigPicture = watch.big_picture || moduleWatchBigPicture(watch);
   const capacityBlocked = [];
   if (watch.capacity.held_slots) capacityBlocked.push(`${watch.capacity.held_slots} held`);
@@ -322,7 +375,7 @@ export function renderModuleWatchConsole(watch, { blockedReasonSuffix, formatPer
     `capacity:        ${watch.capacity.launch_ready_slots}/${watch.capacity.requested_agents} slots, ${watch.capacity.graph_ready_modules}/${watch.capacity.modules_total} graphs ready`,
   ];
   if (capacityBlocked.length) lines.push(`capacity-blocked: ${capacityBlocked.join(', ')} currently blocked outside this dispatch`);
-  if ((watch.capacity.held_modules || []).length) lines.push(`held-modules:     ${formatHeldModuleSummary(watch.capacity.held_modules)}`);
+  if ((watch.capacity.held_modules || []).length) lines.push(`held-modules:     ${formatHeldModuleSummary(watch.capacity.held_modules || [])}`);
 
   if (watch.dispatch.available) {
     lines.push(`dispatch:        ${watch.dispatch.dispatch_id} (${watch.dispatch.assignment_count} slots)`);
@@ -345,15 +398,15 @@ export function renderModuleWatchConsole(watch, { blockedReasonSuffix, formatPer
   });
   lines.push(`eta:             ${bigPicture.eta}`);
   lines.push(`horizon:         ${bigPicture.horizon}`);
-  if ((watch.blockers || []).length) lines.push(`blockers:        ${watch.blockers.join('; ')}`);
-  if ((watch.warnings || []).length) lines.push(`warnings:        ${watch.warnings.join('; ')}`);
+  if ((watch.blockers || []).length) lines.push(`blockers:        ${(watch.blockers || []).join('; ')}`);
+  if ((watch.warnings || []).length) lines.push(`warnings:        ${(watch.warnings || []).join('; ')}`);
   lines.push(`next:            ${watch.next}`);
   return lines.join('\n');
 }
 
 
 
-export function formatExternalActiveLeases(groups, limit = 4) {
+export function formatExternalActiveLeases(groups: ExternalLeaseGroup[], limit = 4): string {
   const items = Array.isArray(groups) ? groups : [];
   if (!items.length) return 'none';
   const rendered = items.slice(0, limit).map((item) => (
@@ -364,23 +417,23 @@ export function formatExternalActiveLeases(groups, limit = 4) {
   return rendered.join(', ');
 }
 
-function numeric(value) {
+function numeric(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-function watchPercent(formatPercent, value) {
+function watchPercent(formatPercent: ((value: number) => string) | undefined, value: number): string {
   return typeof formatPercent === 'function' ? formatPercent(value) : `${numeric(value)}%`;
 }
 
-function formatHeldModuleSummary(items) {
+function formatHeldModuleSummary(items: HeldModule[]): string {
   const rendered = (Array.isArray(items) ? items : []).slice(0, 5).map((item) => `${item.module_id || 'module'}#${item.slot || '?'}:${item.held_resource || 'held'}${item.held_by ? ` by ${item.held_by}` : ''}`);
   const remaining = (Array.isArray(items) ? items.length : 0) - rendered.length;
   if (remaining > 0) rendered.push(`+${remaining} more`);
   return rendered.join(', ');
 }
 
-function observationAgeSuffix(observation) {
+function observationAgeSuffix(observation: LatestObservation): string {
   const match = String(observation?.json_path || '').match(/observed-(\d{8}T\d{6}Z)\.json$/);
   if (!match) return '';
   const stamp = match[1].replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, '$1-$2-$3T$4:$5:$6Z');
@@ -388,7 +441,7 @@ function observationAgeSuffix(observation) {
   return Number.isFinite(age) && age >= 0 ? ` · observed ${formatWatchDuration(age)} ago` : '';
 }
 
-function formatWatchDuration(ms) {
+function formatWatchDuration(ms: unknown): string {
   const totalMinutes = Math.max(0, Math.round(numeric(ms) / 60000));
   if (totalMinutes < 60) return `${totalMinutes}m`;
   const hours = Math.floor(totalMinutes / 60);
@@ -396,7 +449,7 @@ function formatWatchDuration(ms) {
   return minutes ? `${hours}h${minutes}m` : `${hours}h`;
 }
 
-export function moduleConflictCommand({ project, moduleId, slot, task, moduleWorkBrick, shellArg }) {
+export function moduleConflictCommand({ project, moduleId, slot, task, moduleWorkBrick, shellArg }: { project: string; moduleId: string; slot: number; task: string; moduleWorkBrick: (moduleId: string, slot: number) => string; shellArg: (value: string) => string }): string {
   const brick = moduleWorkBrick(moduleId, slot);
   return [
     'npm run conflict -- report --project',
@@ -423,7 +476,20 @@ export function modulePrompt({
   claimCommand = '',
   moduleWorkBrick,
   shellArg,
-}) {
+}: {
+  config: { project: string };
+  module: { id: string; paths: string[]; excludePaths?: string[] };
+  partition?: { id: string; description?: string; label?: string } | null;
+  slot: number;
+  task: string;
+  graphCommand: string;
+  iterationGates: string[];
+  gates: string[];
+  sharedWarnings: Array<{ id: string }>;
+  claimCommand?: string;
+  moduleWorkBrick: (moduleId: string, slot: number) => string;
+  shellArg: (value: string) => string;
+}): string {
   const conflict = moduleConflictCommand({ project: config.project, moduleId: module.id, slot, task, moduleWorkBrick, shellArg });
   const pathLimit = partition ? module.paths : (module.paths || []).slice(0, 4);
   return [

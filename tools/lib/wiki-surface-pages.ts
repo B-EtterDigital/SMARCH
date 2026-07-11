@@ -1,10 +1,15 @@
 import { buildCandidateCards, canonicalTargetCards, canonicalizationReasonList, canonicalizationState, capabilityFamilies, capabilityFamilyCards, curatedBuildCards, formatNumber, privatePublishCards, projectCanonicalizationCards, proofSurfaceCards, qualityQueueCards, releaseArtifactCards, surfaceMetricGrid, surfaceNav } from "./wiki-dashboard-helpers.ts";
 
 import { escapeHtml } from "./wiki-utils.ts";
+import type { GlobalRegistry } from "./schema-types/global.registry.schema.d.ts";
+import type { ScannerView, StateSnapshot } from "./wiki-dashboard-helpers.ts";
+
+type SurfaceRegistry = GlobalRegistry & { scanner_report?: ScannerView };
+type SurfaceSection = string;
 
 
 
-export function surfacePageHtml({ title, lead, activeHref, metrics, sections }) {
+export function surfacePageHtml({ title, lead, activeHref, metrics, sections }: { title: string; lead: string; activeHref: string; metrics: Array<{ label: string; value: unknown; note?: string }>; sections: SurfaceSection[] }): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -300,7 +305,7 @@ ${sections.join("\n")}
 `;
 }
 
-export function proofSurfaceHtml(registry, stateSnapshot = null) {
+export function proofSurfaceHtml(registry: SurfaceRegistry, stateSnapshot: StateSnapshot | null = null): string {
   const scanner = registry.scanner_report || {};
   const totals = stateSnapshot?.totals || {};
   const trust = stateSnapshot?.trust || {};
@@ -424,7 +429,7 @@ ${qualityDeck || "              <article class='plan-card'><h3>No quality hotspo
   });
 }
 
-export function buildRegistryHtml(registry, stateSnapshot = null) {
+export function buildRegistryHtml(registry: SurfaceRegistry, stateSnapshot: StateSnapshot | null = null): string {
   const scanner = registry.scanner_report || {};
   const buildPlane = stateSnapshot?.build_plane || {};
   const promotionPlane = stateSnapshot?.promotion_plane || {};
@@ -504,7 +509,7 @@ ${buildCandidateCards(scanner, 24) || "          <article class='build-card'><h3
   });
 }
 
-export function capabilitiesHtml(registry, stateSnapshot = null) {
+export function capabilitiesHtml(registry: SurfaceRegistry, stateSnapshot: StateSnapshot | null = null): string {
   const scanner = registry.scanner_report || {};
   const families = capabilityFamilies(stateSnapshot, scanner);
   const buildPlane = stateSnapshot?.build_plane || {};
@@ -576,7 +581,7 @@ ${curatedBuildCards(stateSnapshot, 8) || "              <article class='build-ca
   });
 }
 
-export function canonicalizationHtml(registry, stateSnapshot = null) {
+export function canonicalizationHtml(registry: SurfaceRegistry, stateSnapshot: StateSnapshot | null = null): string {
   const scanner = registry.scanner_report || {};
   const canonicalization = canonicalizationState(stateSnapshot, scanner);
 
@@ -648,5 +653,4 @@ ${projectCanonicalizationCards(stateSnapshot, 10) || "          <article class='
     ]
   });
 }
-
 

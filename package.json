@@ -180,15 +180,20 @@
     "plugin:check": "node tools/sma-plugin-sync.mjs --check",
     "evals:bench": "node tools/evals/bench.mjs"
   },
-  "description": "SMARCH \u2014 Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
+  "description": "SMARCH — Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/B-EtterDigital/SMARCH.git"
   },
   "devDependencies": {
+    "@types/node": "^24.0.0",
+    "c8": "^11.0.0",
+    "eslint": "^10.7.0",
+    "jscpd": "^5.0.12",
+    "knip": "^6.26.0",
     "typescript": "^5.7.2",
-    "@types/node": "^24.0.0"
+    "typescript-eslint": "^8.63.0"
   },
   "optionalDependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0"

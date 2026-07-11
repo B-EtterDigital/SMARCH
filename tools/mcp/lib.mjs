@@ -14,6 +14,22 @@ import {
 import { SMA_ROOT } from "../lib/sma-paths.ts";
 import { McpToolError } from "./contract.mjs";
 
+/** @typedef {Record<string, unknown> & { status?: string | null, calculated_score?: number | string | null, error_count?: number | string | null, warning_count?: number | string | null }} Health */
+/** @typedef {Record<string, unknown> & { status?: string | null }} Verification */
+/** @typedef {Record<string, unknown> & { target_id?: string | null, project?: string | null, name?: string | null, promotion_stage?: string | null, priority_score?: number | null }} CanonicalTarget */
+/** @typedef {Record<string, unknown> & { top_targets?: CanonicalTarget[] }} Canonicalization */
+/** @typedef {Record<string, unknown> & { id?: string | null, name?: string | null, project?: string | null, kind?: string | null, path?: string | null, manifest_path?: string | null, domain?: string[], domains?: string[], source_paths?: string[], status?: string | null, risk?: string | null, score?: number | string | null, health?: Health, verification?: Verification[], clone_readiness?: string | null, data_classes?: string[], env_contract?: ContractStatus, rls_contract?: ContractStatus }} Brick */
+/** @typedef {Record<string, unknown> & { required?: unknown, status?: unknown }} ContractStatus */
+/** @typedef {Record<string, unknown> & { project?: unknown, canonicalization?: Canonicalization, top_actions?: Action[], quality_queue?: Action[] }} Project */
+/** @typedef {Record<string, unknown> & { code?: unknown, reason?: unknown, name?: unknown }} Action */
+/** @typedef {Record<string, unknown> & { build_id?: unknown, artifact_id?: unknown, name?: unknown, project?: unknown, source_project?: unknown, readiness_score?: unknown, installable?: boolean, verified_ready?: boolean, publish_ready?: boolean, top_blockers?: Blocker[], verification_top_blockers?: Blocker[], promotion_blockers?: Blocker[] }} Build */
+/** @typedef {string | (Record<string, unknown> & { code?: unknown })} Blocker */
+/** @typedef {Record<string, unknown> & { bricks?: Brick[], projects?: Project[], generated_at?: unknown, validation_error_count?: unknown, validation_warning_count?: unknown, failure_count?: unknown, failures?: unknown[], count?: unknown, unmanifested_count?: unknown, scanner_report?: unknown }} Registry */
+/** @typedef {Record<string, unknown> & { generated_at?: unknown, projects?: Project[], trust?: Record<string, unknown> & { canonicalization?: Canonicalization }, totals?: Record<string, unknown> & { brick_count?: unknown, project_count?: unknown }, build_plane?: Record<string, unknown> & { curated_builds?: Build[] } }} State */
+/** @typedef {Record<string, unknown> & { builds?: Build[] }} BuildIndex */
+/** @typedef {{ root: string, state: State, registry: Registry, buildIndex: BuildIndex | null, paths: { state: string, registry: string, buildIndex: string } }} RegistryContext */
+/** @typedef {{ query?: unknown, limit?: unknown, project?: unknown, kind?: unknown, status?: unknown }} SearchOptions */
+
 const STATE_CANDIDATES = [
   "wiki/SMA_STATE.generated.json",
 ];
@@ -31,6 +47,10 @@ export function currentRoot() {
   return path.resolve(process.env.SMA_ROOT || SMA_ROOT);
 }
 
+/**
+ * @param {string} root
+ * @param {readonly string[]} candidates
+ */
 function firstExisting(root, candidates) {
   for (const candidate of candidates) {
     const absolute = path.resolve(root, candidate);
@@ -45,7 +65,9 @@ export async function loadRegistryContext() {
   const registryPath = firstExisting(root, REGISTRY_CANDIDATES);
   const buildIndexPath = firstExisting(root, BUILD_INDEX_CANDIDATES);
 
+  /** @type {State | null} */
   let state = null;
+  /** @type {Registry | null} */
   let registry = null;
 
   if (existsSync(statePath) && existsSync(registryPath)) {
@@ -69,15 +91,22 @@ export async function loadRegistryContext() {
     );
   }
 
-  return {
+  /** @type {BuildIndex | null} */
+  const buildIndex = await maybeReadJson(buildIndexPath);
+  return /** @type {RegistryContext} */ ({
     root,
     state: state || {},
     registry,
-    buildIndex: await maybeReadJson(buildIndexPath),
+    buildIndex,
     paths: { state: statePath, registry: registryPath, buildIndex: buildIndexPath },
-  };
+  });
 }
 
+/**
+ * @param {State} state
+ * @param {Brick} brick
+ * @returns {CanonicalTarget | null}
+ */
 function canonicalTargetForBrick(state, brick) {
   const targets = [
     ...(state?.trust?.canonicalization?.top_targets || []),
@@ -92,6 +121,10 @@ function canonicalTargetForBrick(state, brick) {
   )) || null;
 }
 
+/**
+ * @param {Brick} brick
+ * @param {State} [state]
+ */
 export function trustFields(brick, state = {}) {
   const target = canonicalTargetForBrick(state, brick);
   const health = brick?.health || {};
@@ -121,6 +154,10 @@ export function trustFields(brick, state = {}) {
   };
 }
 
+/**
+ * @param {Brick} brick
+ * @param {State} [state]
+ */
 export function brickSummary(brick, state = {}) {
   const trust = trustFields(brick, state);
   return {
@@ -136,6 +173,10 @@ export function brickSummary(brick, state = {}) {
   };
 }
 
+/**
+ * @param {{ registry: Registry, state: State }} context
+ * @param {SearchOptions} [options]
+ */
 export function searchBricks({ registry, state }, options = {}) {
   const query = String(options.query || "").trim();
   const limit = Math.max(1, Math.min(100, Number(options.limit || 20)));
@@ -173,19 +214,38 @@ export function searchBricks({ registry, state }, options = {}) {
     .map(({ brick, score }) => ({ ...brickSummary(brick, state), match_score: score }));
 }
 
+/**
+ * @param {{ registry: Registry }} context
+ * @param {unknown} query
+ * @returns {Brick | null}
+ */
 export function getBrick({ registry }, query) {
   const exact = (registry?.bricks || []).find((brick) => String(brick?.id) === String(query));
   return exact || findBrick(registry, query);
 }
 
+/**
+ * @param {{ state: State, buildIndex: BuildIndex | null }} context
+ * @param {unknown} query
+ * @returns {Build | null}
+ */
 export function getBuild({ state, buildIndex }, query) {
-  return findCuratedBuild(state, buildIndex, query);
+  return /** @type {Build | null} */ (findCuratedBuild(state, buildIndex, query));
 }
 
+/**
+ * @param {{ state: State }} context
+ * @param {unknown} projectId
+ * @returns {Project | null}
+ */
 export function getProject({ state }, projectId) {
-  return findProject(state, projectId);
+  return /** @type {Project | null} */ (findProject(state, projectId));
 }
 
+/**
+ * @param {unknown} value
+ * @param {string} field
+ */
 export function requireString(value, field) {
   const normalized = typeof value === "string" ? value.trim() : "";
   if (!normalized) throw new McpToolError(
@@ -196,6 +256,10 @@ export function requireString(value, field) {
   return normalized;
 }
 
+/**
+ * @param {unknown} value
+ * @param {number} [fallback]
+ */
 export function normalizeLimit(value, fallback = 20) {
   const parsed = Number(value ?? fallback);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {

@@ -5,10 +5,40 @@ import path from "node:path";
 import { escapeHtml } from "./wiki-utils.ts";
 import type { LooseRecord } from "./wiki-utils.ts";
 
+export type RegistryProject = { id: string; root: string; security_gate?: { status?: string; high_or_critical?: number }; error_count?: number; warning_count?: number; health_counts?: Record<string, number>; brick_count?: number };
+type ProjectMeta = { sma?: { security_gate?: { status?: string; high_or_critical?: number } } };
+type ReadinessMetrics = { blocked_clone_count?: number; drift_count?: number; boundary_violation_count?: number; same_group_coupling_count?: number; env_gap_count?: number; compliance_score?: number; unmanifested_count?: number };
+type ComplianceDimension = { label?: string; coverage_rate?: number; coverage_units?: number; ready_count?: number; total_count?: number };
+type ComplianceReport = { score?: number; grade?: string; trackable_brick_count?: number; weakest_dimensions?: ComplianceDimension[]; dimensions?: Record<string, ComplianceDimension>; highest_gap_bricks?: GapEntry[] };
+type ReadinessProject = { project?: string; readiness?: { score?: number; grade?: string; label?: string; reasons?: string[]; metrics?: ReadinessMetrics }; compliance_report?: ComplianceReport };
+export type QueueEntry = { severity?: string; rank?: number; project?: string; path?: string; first_action?: string; strategy?: string; theme?: string; lines?: number; expected_slices?: number };
+type BoundaryEntry = { kind?: string; project?: string; file?: string; path?: string; specifier?: string; target?: string };
+type RiskEntry = { project?: string; name?: string; brick_id?: string; path?: string; effective_status?: string; blocker_codes?: string[]; warning_codes?: string[]; raw_source_tokens?: number };
+type GapEntry = RiskEntry & { undeclared_env_refs?: string[]; missing_dimensions?: string[] };
+type BuildCandidate = { project?: string; name?: string; candidate_key?: string; recurrence_key?: string; dominant_feature_cluster?: string; dominant_domain?: string; dominant_path_root?: string; dominant_group?: string; confidence_score?: number; confidence_label?: string; brick_count?: number; recurrent_project_count?: number; detection_sources?: string[]; why?: string; sample_paths?: string[] };
+type Finding = { rule_id?: string; code?: string; summary?: string; message?: string };
+type CuratedBuild = { source_project?: string; name?: string; artifact_id?: string; version?: string; required_brick_ref_count?: number; brick_ref_count?: number; promotion_desired_status?: string; suggested_build_status?: string; status?: string; update_ready?: boolean; release_count?: number; latest_channel?: string; latest_release_status?: string; verification_top_blockers?: Finding[]; private_publish_top_blockers?: Finding[]; promotion_blockers?: Finding[]; private_publish_status?: string; promotion_priority?: string; readiness_score?: number; publishability_score?: number; publish_ready?: boolean };
+type ReleaseArtifact = { source_projects?: string[]; artifact_id?: string; latest_release?: { path?: string; version?: string; channel?: string; status?: string; trust_summary?: { trust_level?: string; verification_status?: string; check_counts?: { total?: number } } } };
+type PublishBundle = { publish_safe?: boolean; decision?: { status?: string; counts?: { blocker?: number } }; top_blockers?: Finding[]; top_warnings?: Finding[]; artifact?: { type?: string; original_id?: string; community_id?: string }; bundle_path?: string; publishing_visibility?: string };
+type InstallTarget = { target_root?: string; selected_build_count?: number; build_ids?: string[]; resolved_brick_count?: number; imports_count?: number; placement_count?: number; update_event_count?: number };
+export type ActionEntry = { project?: string; category?: string; name?: string; brick_id?: string; brick_name?: string; path?: string; first_action?: string; why?: string; priority_score?: number; total_matches?: number; smell_score?: number; top_types?: Array<{ label?: string; key?: string; count?: number }> };
+type QualityProject = { project?: string; code_quality_report?: { hotspot_file_count?: number; score?: number; grade?: string; total_smell_count?: number; duplicate_cluster_count?: number }; remediation_counts?: { quality?: number }; canonicalization?: { top_targets?: CanonicalTarget[]; bottleneck_stage?: string } };
+type DuplicateCluster = { stem?: string; count: number; projects: string[]; bricks: Array<{ project: string; name?: string; id?: string }> };
+type TokenEntry = { project?: string; name?: string; brick_id?: string; path?: string; raw_source_tokens?: number; summary_tokens?: number; estimated_summary_tokens?: number; estimated_savings_tokens?: number; file_count?: number };
+type CanonicalTarget = { project?: string; target_type?: string; name?: string; target_id?: string; priority_score?: number; promotion_stage?: string; confidence_label?: string; blocker_reasons?: string[]; evidence_summary?: { brick_count?: number; duplicate_count?: number; why?: string }; blocker_summary?: Record<string, number> };
+export type CanonicalizationView = { top_targets?: CanonicalTarget[]; reasons?: Array<{ code?: string; message?: string; current?: number; threshold?: number }>; counts?: { build_target_count?: number; brick_target_count?: number; ready_project_count?: number; project_work_bottleneck_count?: number; artifact_promotion_bottleneck_count?: number; project_count?: number }; project_canonicalization_ready?: boolean };
+type QualityReportView = { average_score?: number; score?: number; average_grade?: string; grade?: string; hotspot_file_count?: number; total_smell_count?: number; duplicate_cluster_count?: number };
+type PublishSummary = { bundle_count?: number; publish_safe_count?: number; blocked_count?: number; finding_count?: number };
+export type StateSnapshot = { build_plane?: { curated_builds?: CuratedBuild[]; released_curated_build_count?: number; curated_manifest_count?: number; verification_ready_count?: number; publish_ready_count?: number; update_ready_build_count?: number; average_publishability_score?: number; promotion_ready_count?: number; installable_build_count?: number; rollback_supported_build_count?: number; candidate_or_better_verification_count?: number; private_publish_bundle_count?: number; private_publish_safe_count?: number }; release_plane?: { top_build_releases?: ReleaseArtifact[]; summary?: { build?: { artifact_count?: number; published_artifact_count?: number; channels?: Record<string, number>; stable_or_lts_artifact_count?: number }; release_count?: number } }; publish_plane?: { bundles?: PublishBundle[]; summary?: PublishSummary }; install_plane?: { targets?: InstallTarget[]; target_count?: number; update_event_count?: number; selected_build_count?: number; resolved_brick_count?: number; import_count?: number; placement_count?: number; latest_event_at?: string; scan_roots?: string[] }; projects?: QualityProject[]; trust?: { build_candidates?: BuildCandidate[]; canonicalization?: CanonicalizationView; quality_queue?: ActionEntry[]; code_quality_report?: QualityReportView; readiness?: { average_score?: number; average_grade?: string }; compliance?: { average_score?: number; average_grade?: string }; remediation_counts?: { env_contract?: number; rls_contract?: number; boundary?: number; quality?: number } }; totals?: PortfolioTotals; promotion_plane?: { summary?: { auto_promotable_count?: number; build_count?: number } } };
+export type ScannerView = { readiness?: { projects?: ReadinessProject[]; average_score?: number; average_grade?: string }; boundary_report?: { top_violations?: BoundaryEntry[]; private_cross_brick_import_count?: number; cross_brick_owned_import_count?: number; same_group_internal_import_count?: number; unresolved_local_import_count?: number }; clone_preflight?: { highest_risk_bricks?: RiskEntry[]; counts?: Record<string, number> }; env_contract_report?: { highest_gap_bricks?: GapEntry[]; bricks_with_undeclared_refs?: number; undeclared_reference_count?: number; ignored_reference_count?: number }; compliance_report?: ComplianceReport & { average_score?: number; average_grade?: string }; build_report?: { top_candidates?: BuildCandidate[]; candidate_signatures?: BuildCandidate[]; average_confidence_score?: number; candidate_count?: number; recurrent_family_count?: number; recurrent_candidate_count?: number; detected_brick_count?: number }; remediation_report?: { top_actions?: ActionEntry[]; project_action_plans?: Array<{ project?: string; actions?: ActionEntry[] }>; quality_queue?: ActionEntry[]; counts?: { env_contract?: number; rls_contract?: number; boundary?: number; quality?: number } }; duplicate_clusters?: DuplicateCluster[]; token_economics?: { top_token_heavy_bricks?: TokenEntry[]; raw_source_tokens?: number; estimated_summary_tokens?: number }; canonicalization?: CanonicalizationView; code_quality_report?: QualityReportView; manifest_drift?: { count?: number } };
+type CapabilityFamily = { key: string; label: string; feature: string; domain: string; projects: Set<string>; occurrence_count: number; total_brick_count: number; max_confidence_score: number; confidence_total: number; detection_sources: Set<string>; examples: Array<{ name: string; project: string; brick_count: number; confidence_score: number; why: string; path: string }> };
+type PortfolioTotals = { project_count?: number; brick_count?: number; status_counts?: Record<string, number> };
+type SurfaceMetric = { label: string; value: unknown; note?: string };
 
 
-export async function projectMetadata(projects) {
-  const byId = new Map();
+
+export async function projectMetadata(projects: RegistryProject[]): Promise<Map<string, ProjectMeta>> {
+  const byId = new Map<string, ProjectMeta>();
 
   for (const project of projects) {
     if (!project.root) {
@@ -28,7 +58,7 @@ export async function projectMetadata(projects) {
   return byId;
 }
 
-export function projectStatus(project, meta) {
+export function projectStatus(project: RegistryProject, meta?: ProjectMeta): string {
   const securityGate = meta?.sma?.security_gate || project.security_gate;
 
   if (securityGate?.status === "blocked") {
@@ -50,28 +80,28 @@ export function projectStatus(project, meta) {
   return "not_indexed";
 }
 
-export function projectTone(status) {
+export function projectTone(status: string): string {
   if (status.includes("blocked")) return "danger";
   if (status.includes("warnings")) return "review";
   if (status === "indexed_clean") return "ready";
   return "steady";
 }
 
-export function scoreTone(score) {
+export function scoreTone(score: number): string {
   if (score >= 85) return "ready";
   if (score >= 70) return "review";
   return "danger";
 }
 
-export function formatNumber(value) {
+export function formatNumber(value: unknown): string {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
 }
 
-export function toArray(value) {
+export function toArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
-export function formatCoverageUnits(value) {
+export function formatCoverageUnits(value: unknown): string {
   const numeric = Number(value || 0);
 
   if (Number.isInteger(numeric)) {
@@ -84,7 +114,7 @@ export function formatCoverageUnits(value) {
   }).format(numeric);
 }
 
-export function scannerReadinessCards(scanner) {
+export function scannerReadinessCards(scanner: ScannerView | null | undefined): string {
   const projects = scanner?.readiness?.projects || [];
 
   return projects.map((entry) => {
@@ -115,7 +145,7 @@ export function scannerReadinessCards(scanner) {
   }).join("\n");
 }
 
-export function scannerQueueCards(queue) {
+export function scannerQueueCards(queue: QueueEntry[] | null | undefined): string {
   return (queue || []).slice(0, 12).map((entry) => `      <article class="queue-card queue-card--${escapeHtml(entry.severity || "medium")}">
         <div class="queue-rank">#${entry.rank}</div>
         <p class="queue-project">${escapeHtml(entry.project)}</p>
@@ -130,7 +160,7 @@ export function scannerQueueCards(queue) {
       </article>`).join("\n");
 }
 
-export function boundaryRows(scanner) {
+export function boundaryRows(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.boundary_report?.top_violations || [];
 
   return rows.slice(0, 18).map((entry) => `        <li>
@@ -141,7 +171,7 @@ export function boundaryRows(scanner) {
         </li>`).join("\n");
 }
 
-export function cloneRiskCards(scanner) {
+export function cloneRiskCards(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.clone_preflight?.highest_risk_bricks || [];
 
   return rows.slice(0, 10).map((entry) => `      <article class="risk-card risk-card--${escapeHtml(entry.effective_status || "manual_review")}">
@@ -157,7 +187,7 @@ export function cloneRiskCards(scanner) {
       </article>`).join("\n");
 }
 
-export function envContractCards(scanner) {
+export function envContractCards(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.env_contract_report?.highest_gap_bricks || [];
 
   return rows.slice(0, 8).map((entry) => `      <article class="env-card env-card--${escapeHtml(entry.effective_status || "manual_review")}">
@@ -168,7 +198,7 @@ export function envContractCards(scanner) {
       </article>`).join("\n");
 }
 
-export function complianceProjectCards(scanner) {
+export function complianceProjectCards(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.readiness?.projects || [];
 
   return rows.slice(0, 8).map((entry) => {
@@ -185,7 +215,7 @@ export function complianceProjectCards(scanner) {
   }).join("\n");
 }
 
-export function complianceDimensionRows(scanner) {
+export function complianceDimensionRows(scanner: ScannerView | null | undefined): string {
   const dimensions = (Object.entries(scanner?.compliance_report?.dimensions || {}) as Array<[string, LooseRecord]>)
     .filter(([, dimension]) => Number(dimension?.total_count || 0) > 0)
     .sort((a, b) => Number(a[1]?.coverage_rate || 0) - Number(b[1]?.coverage_rate || 0) || String(a[0]).localeCompare(String(b[0])));
@@ -198,7 +228,7 @@ export function complianceDimensionRows(scanner) {
         </li>`).join("\n");
 }
 
-export function complianceGapCards(scanner) {
+export function complianceGapCards(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.compliance_report?.highest_gap_bricks || [];
 
   return rows.slice(0, 10).map((entry) => `      <article class="gap-card gap-card--${escapeHtml(entry.effective_status || "manual_review")}">
@@ -209,7 +239,7 @@ export function complianceGapCards(scanner) {
       </article>`).join("\n");
 }
 
-export function buildCandidateCards(scanner, limit = 8) {
+export function buildCandidateCards(scanner: ScannerView | null | undefined, limit = 8): string {
   const rows = scanner?.build_report?.top_candidates || [];
 
   return rows.slice(0, limit).map((entry) => {
@@ -232,7 +262,7 @@ export function buildCandidateCards(scanner, limit = 8) {
   }).join("\n");
 }
 
-export function buildFamilyRows(scanner, limit = 10) {
+export function buildFamilyRows(scanner: ScannerView | null | undefined, limit = 10): string {
   const rows = scanner?.build_report?.candidate_signatures || [];
 
   return rows.slice(0, limit).map((entry) => `        <li>
@@ -243,20 +273,20 @@ export function buildFamilyRows(scanner, limit = 10) {
         </li>`).join("\n");
 }
 
-export function releaseTone(trustLevel, verificationStatus) {
+export function releaseTone(trustLevel: unknown, verificationStatus: unknown): string {
   if (["high", "strong"].includes(String(trustLevel || "").toLowerCase()) || ["verified", "canonical"].includes(String(verificationStatus || "").toLowerCase())) return "ready";
   if (["medium"].includes(String(trustLevel || "").toLowerCase()) || ["candidate"].includes(String(verificationStatus || "").toLowerCase())) return "review";
   return "danger";
 }
 
-export function buildVerificationTone(entry) {
+export function buildVerificationTone(entry: CuratedBuild | null | undefined): string {
   const suggested = String(entry?.suggested_build_status || "").toLowerCase();
   if (suggested === "canonical" || entry?.publish_ready) return "ready";
   if (suggested === "verified" || Number(entry?.readiness_score || 0) >= 75) return "review";
   return "danger";
 }
 
-export function curatedBuildCards(stateSnapshot, limit = 8) {
+export function curatedBuildCards(stateSnapshot: StateSnapshot | null | undefined, limit = 8): string {
   const rows = stateSnapshot?.build_plane?.curated_builds || [];
 
   return rows.slice(0, limit).map((entry) => {
@@ -290,7 +320,7 @@ export function curatedBuildCards(stateSnapshot, limit = 8) {
   }).join("\n");
 }
 
-export function releaseArtifactCards(stateSnapshot, limit = 6) {
+export function releaseArtifactCards(stateSnapshot: StateSnapshot | null | undefined, limit = 6): string {
   const rows = stateSnapshot?.release_plane?.top_build_releases || [];
 
   return rows.slice(0, limit).map((entry) => {
@@ -313,7 +343,7 @@ export function releaseArtifactCards(stateSnapshot, limit = 6) {
   }).join("\n");
 }
 
-export function privatePublishCards(stateSnapshot, limit = 6) {
+export function privatePublishCards(stateSnapshot: StateSnapshot | null | undefined, limit = 6): string {
   const rows = stateSnapshot?.publish_plane?.bundles || [];
 
   return rows.slice(0, limit).map((entry) => {
@@ -334,7 +364,7 @@ export function privatePublishCards(stateSnapshot, limit = 6) {
   }).join("\n");
 }
 
-export function installEvidenceCards(stateSnapshot) {
+export function installEvidenceCards(stateSnapshot: StateSnapshot | null | undefined): string {
   const rows = stateSnapshot?.install_plane?.targets || [];
 
   return rows.slice(0, 8).map((entry) => `      <article class="plan-card">
@@ -350,7 +380,7 @@ export function installEvidenceCards(stateSnapshot) {
       </article>`).join("\n");
 }
 
-export function remediationActionCards(scanner) {
+export function remediationActionCards(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.remediation_report?.top_actions || [];
 
   return rows.slice(0, 12).map((entry) => `      <article class="action-card action-card--${escapeHtml(entry.category || "boundary")}">
@@ -362,7 +392,7 @@ export function remediationActionCards(scanner) {
       </article>`).join("\n");
 }
 
-export function remediationProjectPlans(scanner) {
+export function remediationProjectPlans(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.remediation_report?.project_action_plans || [];
 
   return rows.slice(0, 6).map((entry) => `      <article class="plan-card">
@@ -372,7 +402,7 @@ export function remediationProjectPlans(scanner) {
       </article>`).join("\n");
 }
 
-export function qualityQueueCards(rows, limit = 8) {
+export function qualityQueueCards(rows: ActionEntry[] | null | undefined, limit = 8): string {
   return toArray(rows).slice(0, limit).map((entry) => `      <article class="plan-card">
         <p>${escapeHtml(entry.project || "")}</p>
         <h3>${escapeHtml(entry.path || entry.brick_name || entry.brick_id || "quality hotspot")}</h3>
@@ -386,7 +416,7 @@ export function qualityQueueCards(rows, limit = 8) {
       </article>`).join("\n");
 }
 
-export function qualityProjectCards(stateSnapshot, limit = 8) {
+export function qualityProjectCards(stateSnapshot: StateSnapshot | null | undefined, limit = 8): string {
   return toArray(stateSnapshot?.projects)
     .filter((entry) => Number(entry?.code_quality_report?.hotspot_file_count || 0) > 0)
     .sort((left, right) =>
@@ -407,7 +437,7 @@ export function qualityProjectCards(stateSnapshot, limit = 8) {
       </article>`).join("\n");
 }
 
-export function duplicateCards(scanner) {
+export function duplicateCards(scanner: ScannerView | null | undefined): string {
   const clusters = scanner?.duplicate_clusters || [];
 
   return clusters.slice(0, 10).map((cluster) => `      <article class="duplicate-card">
@@ -418,7 +448,7 @@ export function duplicateCards(scanner) {
       </article>`).join("\n");
 }
 
-export function tokenCards(scanner) {
+export function tokenCards(scanner: ScannerView | null | undefined): string {
   const rows = scanner?.token_economics?.top_token_heavy_bricks || [];
 
   return rows.slice(0, 8).map((entry) => {
@@ -441,7 +471,7 @@ export function tokenCards(scanner) {
   }).join("\n");
 }
 
-export function titleLabel(value) {
+export function titleLabel(value: unknown): string {
   const text = String(value || "unknown")
     .replace(/::/g, " / ")
     .replace(/[._/]+/g, " ")
@@ -454,7 +484,7 @@ export function titleLabel(value) {
   return text.replace(/\b[a-z]/g, (match) => match.toUpperCase());
 }
 
-export function buildCandidateSource(stateSnapshot, scanner) {
+export function buildCandidateSource(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined): BuildCandidate[] {
   const scannerRows = scanner?.build_report?.top_candidates || [];
   if (scannerRows.length > 0) {
     return scannerRows;
@@ -462,12 +492,12 @@ export function buildCandidateSource(stateSnapshot, scanner) {
   return stateSnapshot?.trust?.build_candidates || [];
 }
 
-export function canonicalizationState(stateSnapshot, scanner) {
+export function canonicalizationState(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined): CanonicalizationView {
   return stateSnapshot?.trust?.canonicalization || scanner?.canonicalization || {};
 }
 
-export function capabilityFamilies(stateSnapshot, scanner) {
-  const families = new Map();
+export function capabilityFamilies(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined) {
+  const families = new Map<string, CapabilityFamily>();
 
   for (const entry of buildCandidateSource(stateSnapshot, scanner)) {
     const key = entry.recurrence_key || [entry.dominant_feature_cluster, entry.dominant_domain].filter(Boolean).join("::") || entry.candidate_key || entry.name || "mixed";
@@ -518,14 +548,14 @@ export function capabilityFamilies(stateSnapshot, scanner) {
     .sort((a, b) => b.project_count - a.project_count || b.occurrence_count - a.occurrence_count || b.max_confidence_score - a.max_confidence_score || a.label.localeCompare(b.label));
 }
 
-export function topSummaryItems(summary, limit = 3) {
+export function topSummaryItems(summary: Record<string, number> | null | undefined, limit = 3): Array<[string, number]> {
   return Object.entries(summary || {})
     .filter(([, value]) => Number(value || 0) > 0)
     .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || String(a[0]).localeCompare(String(b[0])))
     .slice(0, limit);
 }
 
-export function canonicalTargetTone(entry) {
+export function canonicalTargetTone(entry: CanonicalTarget | null | undefined): string {
   if (entry?.promotion_stage === "promote_now" && !(entry?.blocker_reasons || []).includes("contains_project_bound_members")) {
     return "ready";
   }
@@ -535,7 +565,7 @@ export function canonicalTargetTone(entry) {
   return "danger";
 }
 
-export function capabilityFamilyCards(stateSnapshot, scanner, limit = 12) {
+export function capabilityFamilyCards(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined, limit = 12): string {
   return capabilityFamilies(stateSnapshot, scanner).slice(0, limit).map((entry) => {
     const tone = entry.max_confidence_score >= 90 ? "ready" : entry.max_confidence_score >= 75 ? "review" : "danger";
     const examples = entry.examples.slice(0, 3).map((example) => `<li>${escapeHtml(example.project)} · ${escapeHtml(example.name)} · ${formatNumber(example.brick_count)} bricks</li>`).join("");
@@ -555,7 +585,7 @@ export function capabilityFamilyCards(stateSnapshot, scanner, limit = 12) {
   }).join("\n");
 }
 
-export function canonicalTargetCards(stateSnapshot, scanner, limit = 12) {
+export function canonicalTargetCards(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined, limit = 12): string {
   const rows = canonicalizationState(stateSnapshot, scanner).top_targets || [];
 
   return rows.slice(0, limit).map((entry) => {
@@ -580,7 +610,7 @@ export function canonicalTargetCards(stateSnapshot, scanner, limit = 12) {
   }).join("\n");
 }
 
-export function projectCanonicalizationCards(stateSnapshot, limit = 6) {
+export function projectCanonicalizationCards(stateSnapshot: StateSnapshot | null | undefined, limit = 6): string {
   const rows = stateSnapshot?.projects || [];
 
   return rows
@@ -598,7 +628,7 @@ export function projectCanonicalizationCards(stateSnapshot, limit = 6) {
     }).join("\n");
 }
 
-export function canonicalizationReasonList(stateSnapshot, scanner) {
+export function canonicalizationReasonList(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined): string {
   const reasons = canonicalizationState(stateSnapshot, scanner).reasons || [];
 
   return reasons.slice(0, 8).map((reason) => `        <li>
@@ -608,7 +638,7 @@ export function canonicalizationReasonList(stateSnapshot, scanner) {
         </li>`).join("\n");
 }
 
-export function proofSurfaceCards(stateSnapshot, scanner, totals, projectCount) {
+export function proofSurfaceCards(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined, totals: PortfolioTotals, projectCount: number): string {
   const buildPlane = stateSnapshot?.build_plane || {};
   const releasePlane = stateSnapshot?.release_plane || {};
   const releaseSummary = releasePlane.summary || {};
@@ -638,7 +668,7 @@ export function proofSurfaceCards(stateSnapshot, scanner, totals, projectCount) 
       action: "Open build registry"
     },
     {
-      tone: buildPlane.released_curated_build_count > 0 ? "review" : "danger",
+      tone: Number(buildPlane.released_curated_build_count || 0) > 0 ? "review" : "danger",
       label: "Delivery Plane",
       title: `${formatNumber(buildPlane.curated_manifest_count || 0)} curated builds, ${formatNumber(buildSummary.artifact_count || 0)} build release artifacts`,
       copy: `${formatNumber(buildPlane.verification_ready_count || 0)} builds are verification-ready and ${formatNumber(buildPlane.publish_ready_count || 0)} are publish-ready.`,
@@ -663,7 +693,7 @@ export function proofSurfaceCards(stateSnapshot, scanner, totals, projectCount) 
       </article>`).join("\n");
 }
 
-export function surfaceNav(activeHref) {
+export function surfaceNav(activeHref: string): string {
   const links = [
     { href: "DASHBOARD.generated.html", label: "Dashboard" },
     { href: "PROOF.generated.html", label: "Proof" },
@@ -682,7 +712,7 @@ ${links.map((link) => `      <a${link.href === activeHref ? ' class="active"' : 
     </nav>`;
 }
 
-export function surfaceMetricGrid(metrics) {
+export function surfaceMetricGrid(metrics: SurfaceMetric[]): string {
   return `<div class="metrics">
 ${metrics.map((metric) => `      <div class="metric">
         <span>${escapeHtml(metric.label)}</span>
@@ -691,4 +721,3 @@ ${metrics.map((metric) => `      <div class="metric">
       </div>`).join("\n")}
     </div>`;
 }
-

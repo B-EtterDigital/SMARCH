@@ -12,6 +12,12 @@ const ROOT = path.resolve(HERE, '../..');
 const SCENARIOS = path.join(HERE, 'scenarios');
 const DEFAULT_TREND = path.join(HERE, 'results', 'trend.jsonl');
 
+/** @typedef {{ backend: string, scenario: string, matrix: boolean, selftest: boolean, trend: string }} ScenarioOptions */
+/** @typedef {{ command: string }} CommandGate */
+/** @typedef {{ expected?: { files_shape?: { required?: string[] }, forbidden?: string[], criteria?: string[], gate_outcomes?: Array<string | CommandGate> }, id: string, skill: string, packet: Parameters<typeof dispatch>[0] }} Scenario */
+/** @typedef {{ command: string, ok: boolean, exit_code: number | null, output: string }} GateResult */
+
+/** @param {string[]} argv @returns {ScenarioOptions} */
 function parseArgs(argv) {
   const out = { backend: 'stub', scenario: '', matrix: false, selftest: false, trend: process.env.SMA_EVAL_TREND || DEFAULT_TREND };
   for (let i = 0; i < argv.length; i += 1) {
@@ -26,12 +32,14 @@ function parseArgs(argv) {
   return out;
 }
 
+/** @param {string} [selected] @returns {Scenario[]} */
 function loadScenarios(selected = '') {
   return fs.readdirSync(SCENARIOS).filter((name) => name.endsWith('.json'))
-    .map((name) => JSON.parse(fs.readFileSync(path.join(SCENARIOS, name), 'utf8')))
+    .map((name) => /** @type {Scenario} */ (JSON.parse(fs.readFileSync(path.join(SCENARIOS, name), 'utf8'))))
     .filter((scenario) => !selected || scenario.id === selected);
 }
 
+/** @param {Scenario} scenario @param {string} cwd @param {GateResult[]} gateResults */
 function scoreScenario(scenario, cwd, gateResults) {
   const required = scenario.expected?.files_shape?.required || [];
   const forbidden = scenario.expected?.forbidden || [];
@@ -44,6 +52,7 @@ function scoreScenario(scenario, cwd, gateResults) {
   return { score, gates_passed: gatesPassed, required_files_passed: requiredPassed, forbidden_surfaces_untouched: forbiddenPassed, criteria_declared: criteriaPassed };
 }
 
+/** @param {Scenario} scenario @param {string} cwd @returns {GateResult[]} */
 function runGates(scenario, cwd) {
   return (scenario.expected?.gate_outcomes || []).map((gate) => {
     const command = typeof gate === 'string' ? gate : gate.command;
@@ -52,6 +61,7 @@ function runGates(scenario, cwd) {
   });
 }
 
+/** @param {Scenario} scenario @param {ScenarioOptions} options */
 async function evaluate(scenario, options) {
   let cwd = ROOT;
   let worktree = '';
@@ -97,4 +107,7 @@ async function main() {
   if (results.some((result) => result.score < 100)) process.exitCode = 4;
 }
 
-main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+});

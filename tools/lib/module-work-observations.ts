@@ -10,7 +10,11 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
-export function latestObservationForDispatch({ dispatchId, observationDir, rootDir }) {
+export function latestObservationForDispatch({ dispatchId, observationDir, rootDir }: {
+  dispatchId: string;
+  observationDir: string;
+  rootDir?: string;
+}): { json_path: string; markdown_path: string | null } | null {
   const id = String(dispatchId || '').trim();
   if (!id || !observationDir || !existsSync(observationDir)) return null;
   const prefix = `${id}-observed-`;
@@ -21,7 +25,7 @@ export function latestObservationForDispatch({ dispatchId, observationDir, rootD
   if (!latestJson) return null;
   const jsonPath = resolve(observationDir, latestJson);
   const markdownPath = jsonPath.replace(/\.json$/i, '.md');
-  const local = (filePath) => (rootDir ? relative(rootDir, filePath) : filePath);
+  const local = (filePath: string): string => (rootDir ? relative(rootDir, filePath) : filePath);
   return {
     json_path: local(jsonPath),
     markdown_path: existsSync(markdownPath) ? local(markdownPath) : null,

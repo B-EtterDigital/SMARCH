@@ -39,7 +39,7 @@ export const SCHEMA_VERSION = '1.0.0';
 // Project ids that intentionally live outside PROJECTS_ROOT. The SMA control
 // plane governs other projects, but it must still be able to log its own
 // Gen3 leases, conflicts, and edit context.
-export const PROJECT_ABSOLUTE_OVERRIDES = {
+export const PROJECT_ABSOLUTE_OVERRIDES: Record<string, string> = {
   sma: SMA_ROOT,
   'dev-sma': SMA_ROOT,
   'sweetspot-modular-architecture': SMA_ROOT,
@@ -85,10 +85,10 @@ type ContextEventInput = {
   linkedBacklog?: string[] | null;
   filesTouched?: string[] | null;
   commit?: string | null;
-  verification?: { status?: string; [key: string]: any } | null;
+  verification?: { status?: string; [key: string]: unknown } | null;
 };
 
-type ContextEvent = Record<string, any>;
+type ContextEvent = Record<string, unknown>;
 export const VERIFY_STATUSES = new Set(['pass', 'fail', 'skipped', 'blocked']);
 
 /**
@@ -105,10 +105,10 @@ export const VERIFY_STATUSES = new Set(['pass', 'fail', 'skipped', 'blocked']);
  * @property {string} [leaseId]
  * @property {string} [decisionRationale]
  * @property {Array<string | {alternative?: string, reason?: string}>} [rejectedAlternatives]
- * @property {any[]} [linkedBacklog]
+ * @property {unknown[]} [linkedBacklog]
  * @property {string[]} [filesTouched]
  * @property {string} [commit]
- * @property {{status?: string, [key: string]: any}} [verification]
+ * @property {{status?: string, [key: string]: unknown}} [verification]
  */
 
 const SESSION_ENV_KEYS = [
@@ -121,7 +121,7 @@ const SESSION_ENV_KEYS = [
   'XDG_SESSION_ID',
 ];
 
-export function projectRoot(projectId) {
+export function projectRoot(projectId: string): string {
   if (!projectId) throw new Error('projectRoot: missing project id');
   const key = String(projectId).toLowerCase();
   const absolute = PROJECT_ABSOLUTE_OVERRIDES[key];
@@ -138,16 +138,16 @@ export function projectRoot(projectId) {
   throw new Error(`project not found: ${projectId}`);
 }
 
-export function logPath(projectId, brickId) {
+export function logPath(projectId: string, brickId: string): string {
   if (!brickId) throw new Error('logPath: missing brick id');
   const safe = String(brickId).replace(/[^a-z0-9._-]/gi, '_');
   return resolve(projectRoot(projectId), '.smarch/agent-context', `${safe}.ndjson`);
 }
 
-export function readContextLog(projectId, brickId) {
+export function readContextLog(projectId: string, brickId: string): ContextEvent[] {
   const path = logPath(projectId, brickId);
   if (!existsSync(path)) return [];
-  const out = [];
+  const out: ContextEvent[] = [];
   for (const line of readFileSync(path, 'utf8').split('\n')) {
     const t = line.trim();
     if (!t) continue;
@@ -234,7 +234,7 @@ export function appendContextEvent({
   return event;
 }
 
-export function newEventId() {
+export function newEventId(): string {
   return `ctx-${Date.now()}-${randomBytes(4).toString('hex')}`;
 }
 
@@ -249,7 +249,7 @@ export function resolveSessionId(explicit?: unknown): string | null {
   return focusSession ? `warp-${focusSession}` : null;
 }
 
-export function resolveActorId(explicit, sessionId = resolveSessionId()) {
+export function resolveActorId(explicit?: unknown, sessionId: string | null = resolveSessionId()): string {
   const direct = cleanIdentity(explicit);
   if (direct) return direct;
   const configured = cleanIdentity(env.SMA_AGENT ?? env.CODEX_AGENT_ID ?? env.CLAUDE_AGENT_ID);
@@ -259,11 +259,11 @@ export function resolveActorId(explicit, sessionId = resolveSessionId()) {
   return suffix ? `${user}@${suffix}` : user;
 }
 
-export function nowIso() {
+export function nowIso(): string {
   return new Date().toISOString();
 }
 
-export function listBricksWithContext(projectId) {
+export function listBricksWithContext(projectId: string): string[] {
   const dir = resolve(projectRoot(projectId), '.smarch/agent-context');
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
@@ -271,20 +271,20 @@ export function listBricksWithContext(projectId) {
     .map((f) => f.replace(/\.ndjson$/, ''));
 }
 
-function normalizeSessionValue(key, value) {
+function normalizeSessionValue(key: string, value: string): string {
   if (key === 'WARP_TERMINAL_SESSION_UUID') return `warp-${value}`;
   if (key === 'XDG_SESSION_ID') return `xdg-${value}`;
   return value;
 }
 
-function shortIdentity(value) {
+function shortIdentity(value: unknown): string {
   const text = cleanIdentity(value);
   if (!text) return '';
   const shortened = text.includes('-') ? text.split('-')[0] : text;
   return shortened.slice(0, 12);
 }
 
-function cleanIdentity(value) {
+function cleanIdentity(value: unknown): string | null {
   const text = String(value ?? '').trim();
   return text ? text : null;
 }

@@ -199,6 +199,10 @@ runner checks every numbered lesson that contains a bash block.
 `);
 }
 
+/** @typedef {{ code: string, line: number }} BashBlock */
+/** @typedef {{ block: BashBlock, filename: string, index: number, total: number, lessonTemp: string, env: NodeJS.ProcessEnv }} BlockExecution */
+
+/** @param {Set<string>} target @param {string} value */
 function addSelectors(target, value) {
   for (const selector of value.split(",")) {
     const normalized = selector.trim();
@@ -206,7 +210,9 @@ function addSelectors(target, value) {
   }
 }
 
+/** @param {string[]} argv */
 function parseArgs(argv) {
+  /** @type {Set<string>} */
   const selectors = new Set();
   let selftest = false;
 
@@ -234,7 +240,9 @@ function parseArgs(argv) {
   return { selectors, selftest };
 }
 
+/** @param {string} markdown @returns {BashBlock[]} */
 function parseBashBlocks(markdown) {
+  /** @type {BashBlock[]} */
   const blocks = [];
   const pattern = /```bash[ \t]*\r?\n([\s\S]*?)\r?\n```/g;
   let match;
@@ -247,17 +255,20 @@ function parseBashBlocks(markdown) {
   return blocks;
 }
 
+/** @param {string} filename @param {string} markdown */
 function validateLessonContract(filename, markdown) {
   const contract = LESSON_CONTRACTS.get(filename);
   if (!contract) return [];
   return contract.requiredSnippets.filter((snippet) => !markdown.includes(snippet));
 }
 
+/** @param {string} filename @param {string} selector */
 function matchesSelector(filename, selector) {
   const basename = filename.replace(/\.md$/, "");
   return basename === selector || basename.startsWith(`${selector}-`);
 }
 
+/** @param {string[]} discovered */
 function assertCurriculumCoverage(discovered) {
   const discoveredSet = new Set(discovered);
   const unregistered = discovered.filter((name) => !REGISTERED_LESSONS.has(name));
@@ -278,6 +289,7 @@ async function discoverLessons() {
   return entries;
 }
 
+/** @param {Set<string>} selectors */
 async function findLessons(selectors) {
   const entries = await discoverLessons();
 
@@ -311,6 +323,7 @@ async function selftest() {
   console.log(`Lesson curriculum selftest passed: ${entries.length} registered lesson(s); drift negatives rejected.`);
 }
 
+/** @param {unknown} value */
 function tail(value) {
   const text = String(value || "").trim();
   return text.length <= FAILURE_OUTPUT_LIMIT
@@ -318,6 +331,7 @@ function tail(value) {
     : text.slice(text.length - FAILURE_OUTPUT_LIMIT);
 }
 
+/** @param {BlockExecution} execution */
 function executeBlock({ block, filename, index, total, lessonTemp, env }) {
   const result = spawnSync(
     "bash",
@@ -349,6 +363,7 @@ function executeBlock({ block, filename, index, total, lessonTemp, env }) {
   return false;
 }
 
+/** @param {Set<string>} selectors */
 async function runJourney(selectors) {
   const filenames = await findLessons(selectors);
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "smarch-lessons-"));

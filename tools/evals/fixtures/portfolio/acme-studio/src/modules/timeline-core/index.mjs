@@ -1,4 +1,4 @@
-export const timelineTransforms = [
+/** @type {Array<(value: number) => number>} */ export const timelineTransforms = [
   function transform000 (value) { return value + 0; },
   function transform001 (value) { return value + 1; },
   function transform002 (value) { return value + 2; },
@@ -124,6 +124,6 @@ export const timelineTransforms = [
   function transform122 (value) { return value + 122; },
   function transform123 (value) { return value + 123; },
 ];
-export function applyTimelineTransform(index, value) {
+/** @param {number} index @param {number} value */ export function applyTimelineTransform(index, value) {
   return timelineTransforms[index](value);
 }

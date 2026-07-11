@@ -12,6 +12,9 @@ import {
   readOnlyAuthorization,
 } from "../contract.mjs";
 
+/** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
+/** @typedef {Record<string, unknown>} ToolInput */
+
 export const name = "brick-get";
 export const description = "Get one registry brick by id, name, or path fragment.";
 export const inputSchema = {
@@ -31,6 +34,10 @@ export const annotations = readOnlyAnnotations;
 export const authorization = readOnlyAuthorization;
 export const timeoutMs = 500;
 
+/**
+ * @param {ToolInput} args
+ * @param {RegistryContext} context
+ */
 export function getRegistryBrick(args, context) {
   const brickQuery = requireString(args.brick, "brick");
   const brick = getBrick(context, brickQuery);
@@ -44,6 +51,7 @@ export function getRegistryBrick(args, context) {
   });
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

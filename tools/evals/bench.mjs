@@ -19,6 +19,15 @@ const HEADROOM_PERCENT = 20;
 const HEADROOM_FACTOR = (100 + HEADROOM_PERCENT) / 100;
 const OUTPUT_LIMIT_BYTES = 16 * 1024 * 1024;
 
+/** @typedef {{ id: string, label: string, unit: "ms" | "bytes", budget: number }} Budget */
+/** @typedef {{ json: boolean, selftest: boolean, only: string | null }} BenchOptions */
+/** @typedef {{ cwd?: string, env?: NodeJS.ProcessEnv, measureRss?: boolean, timeoutMs?: number }} CommandOptions */
+/** @typedef {{ durationMs: number, peakRssBytes: number, stdout: string, stderr: string, slowdownMs: number }} CommandResult */
+/** @typedef {{ id: string, label: string, unit: "ms" | "bytes", actual: number, budget: number, gate_limit: number, headroom_percent: number, passed: boolean } & Record<string, unknown>} GateResult */
+/** @typedef {{ schema_version: number, benchmark: string, baseline: string, fixture_file_count: number, headroom_percent: number, started_at: string, finished_at: string, passed: boolean, results: GateResult[], selftest?: { passed: boolean, injected_slowdown_ms: number, injected_metric: string, negative_exit_code: number | null, quality_gates_exit_code: number | null } }} BenchReport */
+/** @typedef {{ exitCode: number | null, stdout: string, stderr: string }} ChildResult */
+
+/** @type {Record<string, Budget>} */
 const BUDGETS = Object.freeze({
   scan: { id: "scan", label: "sma scan", unit: "ms", budget: 60_000 },
   graphifyRefresh: {
@@ -44,7 +53,9 @@ const BUDGETS = Object.freeze({
 
 const ALL_BENCHMARK_IDS = new Set(Object.values(BUDGETS).map(({ id }) => id));
 
+/** @param {string[]} argv @returns {BenchOptions} */
 function parseArgs(argv) {
+  /** @type {BenchOptions} */
   const options = { json: false, selftest: false, only: null };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -80,10 +91,12 @@ the failure path with an artificial slowdown.`);
   return options;
 }
 
+/** @param {number} milliseconds */
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+/** @param {string} metricId */
 function injectedSleep(metricId) {
   const milliseconds = Number(process.env.SMARCH_BENCH_INJECT_SLEEP_MS ?? 0);
   const selectedMetric = process.env.SMARCH_BENCH_INJECT_SLEEP_METRIC || "scan";
@@ -92,6 +105,7 @@ function injectedSleep(metricId) {
     : 0;
 }
 
+/** @param {string} current @param {Buffer | string} chunk @param {string} streamName */
 function appendBounded(current, chunk, streamName) {
   const next = current + String(chunk);
   if (Buffer.byteLength(next) > OUTPUT_LIMIT_BYTES) {
@@ -100,6 +114,7 @@ function appendBounded(current, chunk, streamName) {
   return next;
 }
 
+/** @param {number | undefined} pid */
 function linuxRssBytes(pid) {
   if (process.platform !== "linux" || !pid) return 0;
   try {
@@ -111,6 +126,7 @@ function linuxRssBytes(pid) {
   }
 }
 
+/** @param {string} metricId @param {string} command @param {string[]} args @param {CommandOptions} [options] @returns {Promise<CommandResult>} */
 async function runCommand(metricId, command, args, options = {}) {
   const startedAt = performance.now();
   const slowdownMs = injectedSleep(metricId);
@@ -183,11 +199,13 @@ async function runCommand(metricId, command, args, options = {}) {
   });
 }
 
+/** @param {string} root */
 async function countFiles(root) {
   let count = 0;
   const pending = [root];
   while (pending.length) {
     const current = pending.pop();
+    if (current === undefined) continue;
     const entries = await fs.readdir(current, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isDirectory()) pending.push(path.join(current, entry.name));
@@ -197,6 +215,7 @@ async function countFiles(root) {
   return count;
 }
 
+/** @param {string} tempRoot */
 async function prepareFixture(tempRoot) {
   const portfolioRoot = path.join(tempRoot, "portfolio");
   await fs.cp(FIXTURE_ROOT, portfolioRoot, { recursive: true });
@@ -218,6 +237,7 @@ async function prepareFixture(tempRoot) {
   return portfolioRoot;
 }
 
+/** @param {Budget} budget @param {number} actual @param {Record<string, unknown>} [details] @returns {GateResult} */
 function gateResult(budget, actual, details = {}) {
   const gateLimit = budget.budget * HEADROOM_FACTOR;
   return {
@@ -233,14 +253,17 @@ function gateResult(budget, actual, details = {}) {
   };
 }
 
+/** @param {BenchOptions} options @param {Budget} budget */
 function selected(options, budget) {
   return !options.only || options.only === budget.id;
 }
 
-async function executeBench(options = {}) {
+/** @param {BenchOptions} [options] @returns {Promise<BenchReport>} */
+async function executeBench(options = { json: false, selftest: false, only: null }) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "smarch-perf-bench-"));
   const startedAt = new Date().toISOString();
-  const results = [];
+    /** @type {GateResult[]} */
+    const results = [];
 
   try {
     const portfolioRoot = await prepareFixture(tempRoot);
@@ -329,6 +352,7 @@ async function executeBench(options = {}) {
   }
 }
 
+/** @param {string} script @param {string[]} args @param {NodeJS.ProcessEnv} [env] @returns {Promise<ChildResult>} */
 function runNodeScript(script, args, env = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [script, ...args], {
@@ -345,6 +369,7 @@ function runNodeScript(script, args, env = {}) {
   });
 }
 
+/** @param {string[]} args @param {NodeJS.ProcessEnv} [env] */
 function runChild(args, env = {}) {
   return runNodeScript(fileURLToPath(import.meta.url), args, env);
 }
@@ -393,12 +418,14 @@ async function selftest() {
   };
 }
 
+/** @param {number} value @param {"ms" | "bytes"} unit */
 function formatValue(value, unit) {
   if (unit === "bytes") return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
   if (value >= 1_000) return `${(value / 1_000).toFixed(2)} s`;
   return `${value.toFixed(1)} ms`;
 }
 
+/** @param {BenchReport} report */
 function printHuman(report) {
   for (const result of report.results) {
     const marker = result.passed ? "PASS" : "FAIL";
@@ -424,6 +451,6 @@ main()
     process.exitCode = exitCode;
   })
   .catch((error) => {
-    console.error(`bench failed: ${error.message}`);
+    console.error(`bench failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   });

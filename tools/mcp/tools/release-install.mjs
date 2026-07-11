@@ -24,6 +24,7 @@ export const annotations = releaseInstallAnnotations;
 export const authorization = releaseInstallAuthorization;
 export const timeoutMs = 10_000;
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

@@ -10,6 +10,13 @@ const TOOL_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "../..");
 const OUTPUT_LIMIT = 16 * 1024 * 1024;
 
+/** @typedef {{ id: string, script: string, args: string[] }} EvalCheck */
+/** @typedef {{ json: boolean, quiet: boolean, verbose: boolean, selftest: boolean, only: string, help: boolean }} EvalOptions */
+/** @typedef {{ status: number | null, stdout?: string, stderr?: string, error?: Error }} EvalSpawnResult */
+/** @typedef {(command: string, args: string[], options: import("node:child_process").SpawnSyncOptionsWithStringEncoding) => EvalSpawnResult} EvalSpawn */
+/** @typedef {{ spawnSync?: EvalSpawn }} EvalDependencies */
+
+/** @type {EvalCheck[]} */
 export const CHECKS = [
   { id: "fixture-snapshot", script: path.join(SCRIPT_DIR, "fixture-snapshot.mjs"), args: ["--selftest"] },
   { id: "lesson-curriculum", script: path.join(SCRIPT_DIR, "journeys", "lessons.mjs"), args: ["--selftest"] },
@@ -34,12 +41,16 @@ Exit codes: 0 all pass; 2 usage; 4 evaluation failure; 1 runner failure.
 Known limitation: checks execute serially and may take several minutes.`;
 }
 
+/** @param {string[]} argv @returns {EvalOptions} */
 export function parseArgs(argv) {
   const options = { json: false, quiet: false, verbose: false, selftest: false, only: "", help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--only") { options.only = requireValue(argv, index, arg, "Run `sma evals-run --help`."); index += 1; }
-    else if (["--json", "--quiet", "--verbose", "--selftest"].includes(arg)) options[arg.slice(2)] = true;
+    else if (arg === "--json") options.json = true;
+    else if (arg === "--quiet") options.quiet = true;
+    else if (arg === "--verbose") options.verbose = true;
+    else if (arg === "--selftest") options.selftest = true;
     else if (arg === "--help" || arg === "-h") options.help = true;
     else throw new CliError("USAGE_ERROR", `Unknown option: ${arg}`, { exitCode: 2, nextCommand: "Run `sma evals-run --help`." });
   }
@@ -48,12 +59,15 @@ export function parseArgs(argv) {
   return options;
 }
 
+/** @param {unknown} value @param {number} [limit] */
 function tail(value, limit = 4_000) {
   const text = String(value || "").trim();
   return text.length <= limit ? text : text.slice(text.length - limit);
 }
 
+/** @param {EvalOptions} options @param {EvalDependencies} [dependencies] */
 export function execute(options, dependencies = {}) {
+  /** @type {EvalSpawn} */
   const spawn = dependencies.spawnSync || spawnSync;
   const checks = options.only ? CHECKS.filter((check) => check.id === options.only) : CHECKS;
   const results = [];
@@ -70,6 +84,7 @@ export function execute(options, dependencies = {}) {
   return { ok: results.every((result) => result.status === "passed"), checks: results, passed: results.filter((result) => result.status === "passed").length, total: results.length };
 }
 
+/** @param {string[]} argv @param {EvalDependencies} [dependencies] */
 export function run(argv, dependencies = {}) {
   let options;
   try {

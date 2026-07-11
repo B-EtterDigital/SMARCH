@@ -19,6 +19,41 @@ import {
   buildProjectBuildReport, contractStatusScore, detectProjectBuildCandidates,
   emptyComplianceReport, finalizeComplianceReport
 } from "./scan-build.ts";
+import type { CompactBrick } from "./scan-discovery.ts";
+import type { QualityFingerprintEntry, QualityHotspot } from "./scan-refactor.ts";
+
+type SourceFile = { absolute_path: string; relative_path: string };
+type SourceGraph = {
+  file_map: Map<string, { absolute_path: string; relative_path: string; brick_ids: Set<string> }>;
+  brick_files: Map<string, SourceFile[]>;
+  missing_source_paths: Array<{ project: string; brick_id: string; path: string }>;
+  analysis_failures: Array<{ project: string; path: string; error: string }>;
+};
+type ResolvedImport = { absolute_path: string; unresolved: boolean };
+type BoundaryScope = "private" | "public" | "owned" | "source";
+type BoundaryRule = { brick_id: string; scope: BoundaryScope; absolute_path: string; relative_path: string };
+type RemediationEntry = {
+  project: string; path: string; priority_score?: number; effective_status?: string; raw_source_tokens?: number;
+  undeclared_env_refs?: string[]; observed_env_variable_count?: number; observed_table_refs?: string[]; negative_test_count?: number;
+  private_cross_import_count?: number; cross_brick_owned_import_count?: number; unresolved_local_import_count?: number; unowned_local_dependency_count?: number;
+  [key: string]: unknown;
+};
+type BoundaryViolation = { project: string; brick_id: string; file: string; specifier: string; kind: string; target_brick_id?: string; target?: string };
+type DriftEntry = { project: string; brick_id: string; kind: string; manifest_value: number; actual_value: number; path: string };
+type CloneEntry = {
+  project: string; brick_id: string; name: string; path: string; declared_readiness: string; effective_status: string;
+  blocker_codes: string[]; warning_codes: string[]; local_import_count: number; public_cross_import_count: number;
+  same_group_internal_import_count: number; cross_brick_owned_import_count: number; private_cross_import_count: number;
+  unresolved_local_import_count: number; unowned_local_dependency_count: number; undeclared_env_refs: string[];
+  raw_source_tokens: number; file_count: number;
+};
+type EnvGapEntry = { project: string; brick_id: string; name: string; path: string; undeclared_env_refs: string[]; observed_env_variable_count: number; declared_env_variable_count: number; effective_status: string; raw_source_tokens: number };
+type RlsGapEntry = { project: string; brick_id: string; name: string; path: string; rls_status: string; observed_table_refs: string[]; negative_test_count: number; effective_status: string; raw_source_tokens: number };
+type BoundaryHotspot = { project: string; brick_id: string; name: string; path: string; private_cross_import_count: number; cross_brick_owned_import_count: number; unresolved_local_import_count: number; unowned_local_dependency_count: number; effective_status: string; raw_source_tokens: number; priority_score: number };
+type TokenHeavyEntry = { project: string; brick_id: string; name: string; path: string; raw_source_tokens: number; summary_tokens: number; compact_card_tokens: number; estimated_savings_tokens: number; file_count: number };
+type CodeQualityBrick = { project: string; brick_id: string; name: string; path: string; smell_score: number; total_matches: number; by_type: Record<string, number>; top_types: ReturnType<typeof topCodeQualityTypes>; raw_source_tokens: number };
+type Penalty = { points: number; label: string };
+type CardRecord = Record<string, unknown> & { id?: string };
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const ignoredImportExtensions = new Set([
@@ -27,7 +62,7 @@ export const ignoredImportExtensions = new Set([
   ".mp3", ".wav", ".ogg", ".mp4", ".webm",
   ".woff", ".woff2", ".ttf", ".otf", ".eot"
 ]);
-export function normalizeDuplicateStem(value) {
+export function normalizeDuplicateStem(value: unknown): string {
   return String(value || "")
     .toLowerCase()
     .replace(/\.(ts|tsx|js|jsx|mjs|cjs|py|rb|go|rs|java|kt|swift|php|cs|sql)$/i, "")
@@ -37,14 +72,14 @@ export function normalizeDuplicateStem(value) {
     .replace(/^-+|-+$/g, "");
 }
 
-export function normalizeImportSpecifier(specifier) {
+export function normalizeImportSpecifier(specifier: unknown): string {
   return String(specifier || "")
     .split("?")[0]
     .split("#")[0]
     .trim();
 }
 
-export function isIgnoredProjectImportSpecifier(specifier) {
+export function isIgnoredProjectImportSpecifier(specifier: unknown): boolean {
   const normalized = normalizeImportSpecifier(specifier);
 
   if (!normalized || /^virtual:/i.test(normalized)) {
@@ -55,13 +90,13 @@ export function isIgnoredProjectImportSpecifier(specifier) {
   return ignoredImportExtensions.has(ext);
 }
 
-export function isTestLikePath(value) {
+export function isTestLikePath(value: unknown): boolean {
   const normalized = String(value || "").replaceAll("\\", "/");
   return /(^|\/)(__tests__|tests?|suites)(\/|$)|\.(test|spec)\.[a-z0-9]+$/i.test(normalized)
     || normalized.includes("0000testing/");
 }
 
-export function isTestLikeBrick(brick) {
+export function isTestLikeBrick(brick: CompactBrick | null | undefined): boolean {
   if (!brick) {
     return false;
   }
@@ -77,18 +112,18 @@ export function isTestLikeBrick(brick) {
   return (brick.source_paths || []).some((sourcePath) => isTestLikePath(sourcePath));
 }
 
-export function normalizeBrickGroupKey(value) {
+export function normalizeBrickGroupKey(value: unknown): string {
   const group = String(value || "");
   const [, relative = ""] = group.split(":");
   return relative.replace(/\/+$/g, "");
 }
 
-export function sharedSourceRoot(brick) {
+export function sharedSourceRoot(brick: CompactBrick | null | undefined): string {
   const [sourcePath = ""] = brick?.source_paths || [];
   return String(sourcePath || "").replace(/\/+$/g, "");
 }
 
-export function sharesBrickGroupFamily(left, right) {
+export function sharesBrickGroupFamily(left: CompactBrick | null | undefined, right: CompactBrick | null | undefined): boolean {
   if (!left || !right) {
     return false;
   }
@@ -114,7 +149,7 @@ export function sharesBrickGroupFamily(left, right) {
   ));
 }
 
-export function isCloneTrackableBrick(brick) {
+export function isCloneTrackableBrick(brick: CompactBrick): boolean {
   return brick.status === "candidate"
     || brick.status === "canonical"
     || ["copy_ready", "guided", "semi_automatic"].includes(brick.clone_readiness)
@@ -122,7 +157,7 @@ export function isCloneTrackableBrick(brick) {
     || (brick.clone_known_traps || []).length > 0;
 }
 
-export function shouldTrackManifestDrift(brick, files) {
+export function shouldTrackManifestDrift(brick: CompactBrick, files: SourceFile[]): boolean {
   if ((files || []).length === 0) {
     return false;
   }
@@ -130,14 +165,14 @@ export function shouldTrackManifestDrift(brick, files) {
   return isCloneTrackableBrick(brick);
 }
 
-export function duplicateStemForBrick(brick) {
+export function duplicateStemForBrick(brick: CompactBrick): string {
   const firstSourcePath = String((brick.source_paths || [])[0] || "");
   const pathStem = normalizeDuplicateStem(path.basename(firstSourcePath));
   const nameStem = normalizeDuplicateStem(brick.name || brick.id);
   return pathStem || nameStem || "unknown";
 }
 
-export function looksLikeProjectImport(specifier) {
+export function looksLikeProjectImport(specifier: string): boolean {
   if (isIgnoredProjectImportSpecifier(specifier)) {
     return false;
   }
@@ -153,7 +188,7 @@ export function looksLikeProjectImport(specifier) {
     || /^(src|app|apps|web|packages|acme-agent|supabase|electron|renderer|main|sidecar|shared|lib|libs|0000[a-z0-9._-]*|000_[a-z0-9._-]+|002-[a-z0-9._-]+|099_[a-z0-9._-]+)/i.test(specifier);
 }
 
-export function importResolutionCandidates(basePath) {
+export function importResolutionCandidates(basePath: string): string[] {
   const ext = path.extname(basePath).toLowerCase();
   const extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json", ".sql"];
   const candidates = [basePath];
@@ -195,7 +230,7 @@ export function importResolutionCandidates(basePath) {
   return [...new Set(candidates)];
 }
 
-export function importBasePath(projectRoot, fromFile, specifier) {
+export function importBasePath(projectRoot: string, fromFile: string, specifier: string): string | null {
   if (specifier.startsWith(".")) {
     return path.resolve(path.dirname(fromFile), specifier);
   }
@@ -215,7 +250,7 @@ export function importBasePath(projectRoot, fromFile, specifier) {
   return null;
 }
 
-export function contextualProjectRoots(projectRoot, fromFile, leadingSegment = "src") {
+export function contextualProjectRoots(projectRoot: string, fromFile: string, leadingSegment = "src"): string[] {
   const roots = [projectRoot];
   let current = path.dirname(fromFile);
 
@@ -240,12 +275,12 @@ export function contextualProjectRoots(projectRoot, fromFile, leadingSegment = "
   return [...new Set(roots)];
 }
 
-export async function resolveProjectImport(projectRoot, fromFile, specifier, cache = null, existsCache = null) {
+export async function resolveProjectImport(projectRoot: string, fromFile: string, specifier: string, cache: Map<string, ResolvedImport> | null = null, existsCache: Map<string, boolean> | null = null): Promise<ResolvedImport | null> {
   const normalizedSpecifier = normalizeImportSpecifier(specifier);
   const cacheKey = `${fromFile}\0${normalizedSpecifier}`;
 
   if (cache?.has(cacheKey)) {
-    return cache.get(cacheKey);
+    return cache.get(cacheKey) || null;
   }
 
   if (!normalizedSpecifier || !looksLikeProjectImport(normalizedSpecifier)) {
@@ -295,7 +330,7 @@ export async function resolveProjectImport(projectRoot, fromFile, specifier, cac
       }
 
       const exists = existsCache?.has(candidate)
-        ? existsCache.get(candidate)
+        ? Boolean(existsCache.get(candidate))
         : await pathExists(candidate);
 
       if (existsCache && !existsCache.has(candidate)) {
@@ -329,8 +364,8 @@ export async function resolveProjectImport(projectRoot, fromFile, specifier, cac
   return unresolved;
 }
 
-export function extractImportSpecifiers(sourceText) {
-  const specifiers = new Set();
+export function extractImportSpecifiers(sourceText: string): string[] {
+  const specifiers = new Set<string>();
   const patterns = [
     /\bimport\s+(?:[^"'`]+?\s+from\s+)?["'`]([^"'`]+)["'`]/g,
     /\bexport\s+(?:[^"'`]+?\s+from\s+)?["'`]([^"'`]+)["'`]/g,
@@ -355,14 +390,14 @@ export function extractImportSpecifiers(sourceText) {
   return [...specifiers];
 }
 
-export function countExports(sourceText) {
+export function countExports(sourceText: string): number {
   const matches = sourceText.match(/\bexport\s+(default\s+)?(async\s+)?(function|class|const|let|var|type|interface|enum)\b/g) || [];
   const moduleExports = sourceText.match(/\bmodule\.exports\b|\bexports\.[A-Za-z0-9_]+\b/g) || [];
   return matches.length + moduleExports.length;
 }
 
-export function extractEnvReferences(sourceText) {
-  const names = [];
+export function extractEnvReferences(sourceText: string): string[] {
+  const names: string[] = [];
   const patterns = [
     /\bprocess\.env\.([A-Z][A-Z0-9_]+)/g,
     /\bprocess\.env\[\s*["'`]([A-Z][A-Z0-9_]+)["'`]\s*\]/g,
@@ -386,8 +421,8 @@ export function extractEnvReferences(sourceText) {
   return names;
 }
 
-export function extractSupabaseTableRefs(sourceText, filePath = "") {
-  const names = new Set();
+export function extractSupabaseTableRefs(sourceText: string, filePath = ""): string[] {
+  const names = new Set<string>();
   const fromPattern = /\.\s*from\(\s*["'`]([A-Za-z0-9_.-]+)["'`]\s*\)/g;
   let match;
   const sqlKeywords = new Set([
@@ -441,7 +476,7 @@ export function extractSupabaseTableRefs(sourceText, filePath = "") {
     "with"
   ]);
 
-  const addTableName = (value) => {
+  const addTableName = (value: unknown) => {
     const normalized = String(value || "").replace(/^public\./i, "");
     if (!normalized || sqlKeywords.has(normalized.toLowerCase())) {
       return;
@@ -477,7 +512,7 @@ export function extractSupabaseTableRefs(sourceText, filePath = "") {
   return [...names].sort();
 }
 
-export function envRemediationPriority(entry) {
+export function envRemediationPriority(entry: Pick<RemediationEntry, "effective_status" | "undeclared_env_refs" | "observed_env_variable_count" | "raw_source_tokens">): number {
   const blockedWeight = entry.effective_status === "blocked" ? 18 : entry.effective_status === "manual_review" ? 8 : 0;
   return (entry.undeclared_env_refs?.length || 0) * 18
     + (entry.observed_env_variable_count || 0) * 2
@@ -485,7 +520,7 @@ export function envRemediationPriority(entry) {
     + Math.min(24, Math.round((entry.raw_source_tokens || 0) / 12000));
 }
 
-export function rlsRemediationPriority(entry) {
+export function rlsRemediationPriority(entry: Pick<RemediationEntry, "effective_status" | "observed_table_refs" | "negative_test_count" | "raw_source_tokens">): number {
   const blockedWeight = entry.effective_status === "blocked" ? 16 : entry.effective_status === "manual_review" ? 7 : 0;
   return (entry.observed_table_refs?.length || 0) * 16
     + ((entry.negative_test_count || 0) === 0 ? 12 : 0)
@@ -493,7 +528,7 @@ export function rlsRemediationPriority(entry) {
     + Math.min(24, Math.round((entry.raw_source_tokens || 0) / 12000));
 }
 
-export function boundaryRemediationPriority(entry) {
+export function boundaryRemediationPriority(entry: Pick<RemediationEntry, "private_cross_import_count" | "cross_brick_owned_import_count" | "unresolved_local_import_count" | "unowned_local_dependency_count" | "raw_source_tokens">): number {
   return (entry.private_cross_import_count || 0) * 60
     + (entry.cross_brick_owned_import_count || 0) * 12
     + (entry.unresolved_local_import_count || 0) * 10
@@ -501,8 +536,8 @@ export function boundaryRemediationPriority(entry) {
     + Math.min(24, Math.round((entry.raw_source_tokens || 0) / 12000));
 }
 
-export function remediationActionProjectPlans(actions, limit = 3) {
-  const byProject = new Map();
+export function remediationActionProjectPlans<T extends RemediationEntry>(actions: T[], limit = 3) {
+  const byProject = new Map<string, T[]>();
 
   for (const action of actions) {
     const current = byProject.get(action.project) || [];
@@ -524,7 +559,7 @@ export function remediationActionProjectPlans(actions, limit = 3) {
     });
 }
 
-export function manifestPathHint(projectRoot, sourcePath) {
+export function manifestPathHint(projectRoot: string, sourcePath: string): { absolute_path: string; relative_path: string } | null {
   for (const candidate of sourcePathCandidates(projectRoot, sourcePath)) {
     if (!isWithinRoot(projectRoot, candidate)) {
       continue;
@@ -539,14 +574,14 @@ export function manifestPathHint(projectRoot, sourcePath) {
   return null;
 }
 
-export function pathRuleMatches(rulePath, targetPath) {
+export function pathRuleMatches(rulePath: string, targetPath: string): boolean {
   return rulePath === targetPath || isWithinRoot(rulePath, targetPath);
 }
 
-export function buildBoundaryRules(projectRoot, bricks) {
-  const rules = [];
-  const rulesByBrick = new Map();
-  const scopes = [
+export function buildBoundaryRules(projectRoot: string, bricks: CompactBrick[]): { rules: BoundaryRule[]; rulesByBrick: Map<string, BoundaryRule[]> } {
+  const rules: BoundaryRule[] = [];
+  const rulesByBrick = new Map<string, BoundaryRule[]>();
+  const scopes: Array<[BoundaryScope, "private_paths" | "public_paths" | "owned_paths" | "source_paths"]> = [
     ["private", "private_paths"],
     ["public", "public_paths"],
     ["owned", "owned_paths"],
@@ -554,7 +589,7 @@ export function buildBoundaryRules(projectRoot, bricks) {
   ];
 
   for (const brick of bricks) {
-    const brickRules = [];
+    const brickRules: BoundaryRule[] = [];
 
     for (const [scope, field] of scopes) {
       for (const sourcePath of brick[field] || []) {
@@ -589,17 +624,17 @@ export function buildBoundaryRules(projectRoot, bricks) {
   return { rules, rulesByBrick };
 }
 
-export function findBoundaryMatch(rules, targetPath) {
+export function findBoundaryMatch(rules: BoundaryRule[], targetPath: string): BoundaryRule | null {
   return rules.find((rule) => pathRuleMatches(rule.absolute_path, targetPath)) || null;
 }
 
-export function matchesOwnBoundary(targetPath, ownRules = []) {
+export function matchesOwnBoundary(targetPath: string, ownRules: BoundaryRule[] = []): boolean {
   return ownRules.some((rule) => pathRuleMatches(rule.absolute_path, targetPath));
 }
 
-export async function collectProjectSourceGraph(projectRoot, projectIdValue, bricks) {
-  const sourceTargets = new Map();
-  const missingSourcePathMap = new Map();
+export async function collectProjectSourceGraph(projectRoot: string, projectIdValue: string, bricks: CompactBrick[]): Promise<SourceGraph> {
+  const sourceTargets = new Map<string, { absolute_path: string; relative_path: string; brick_ids: Set<string> }>();
+  const missingSourcePathMap = new Map<string, { project: string; brick_id: string; path: string }>();
 
   for (const brick of bricks) {
     for (const sourcePath of brick.source_paths || []) {
@@ -619,7 +654,7 @@ export async function collectProjectSourceGraph(projectRoot, projectIdValue, bri
       const current = sourceTargets.get(key) || {
         absolute_path: resolvedTarget.absolute_path,
         relative_path: resolvedTarget.relative_path,
-        brick_ids: new Set()
+        brick_ids: new Set<string>()
       };
 
       current.brick_ids.add(brick.id);
@@ -627,12 +662,12 @@ export async function collectProjectSourceGraph(projectRoot, projectIdValue, bri
     }
   }
 
-  const fileMap = new Map();
-  const brickFiles = new Map();
-  const analysisFailures = [];
+  const fileMap = new Map<string, { absolute_path: string; relative_path: string; brick_ids: Set<string> }>();
+  const brickFiles = new Map<string, SourceFile[]>();
+  const analysisFailures: Array<{ project: string; path: string; error: string }> = [];
 
   for (const target of sourceTargets.values()) {
-    const sourceFiles = [];
+    const sourceFiles: string[] = [];
 
     try {
       await walkAnalyzableFiles(target.absolute_path, sourceFiles);
@@ -672,16 +707,17 @@ export async function collectProjectSourceGraph(projectRoot, projectIdValue, bri
   };
 }
 
-export async function loadCompactCardIndex() {
+export async function loadCompactCardIndex(): Promise<Map<string, CardRecord>> {
   const filePath = path.join(smaRoot, "security", "brick_cards.jsonl");
-  const index = new Map();
+  const index = new Map<string, CardRecord>();
 
   try {
     const raw = await fs.readFile(filePath, "utf8");
 
     for (const line of raw.split(/\r?\n/).filter(Boolean)) {
       try {
-        const record = JSON.parse(line);
+        const parsed: unknown = JSON.parse(line);
+        const record: CardRecord = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as CardRecord : {};
 
         if (record.id) {
           index.set(record.id, record);
@@ -699,12 +735,12 @@ export async function loadCompactCardIndex() {
   return index;
 }
 
-export function cardTokenEstimate(card) {
+export function cardTokenEstimate(card: unknown): number {
   return estimateTokens(JSON.stringify(card || {}));
 }
 
-export function buildDuplicateClusters(bricks) {
-  const byStem = new Map();
+export function buildDuplicateClusters(bricks: CompactBrick[]) {
+  const byStem = new Map<string, CompactBrick[]>();
 
   for (const brick of bricks) {
     const stem = duplicateStemForBrick(brick);
@@ -743,7 +779,7 @@ export function buildDuplicateClusters(bricks) {
     .slice(0, 80);
 }
 
-export function readinessReasons(penalties) {
+export function readinessReasons(penalties: Penalty[]): string[] {
   return penalties
     .filter((penalty) => penalty.points > 0)
     .sort((a, b) => b.points - a.points || a.label.localeCompare(b.label))
@@ -751,7 +787,7 @@ export function readinessReasons(penalties) {
     .map((penalty) => `${penalty.label} (-${penalty.points})`);
 }
 
-export function boundaryViolationPriority(kind) {
+export function boundaryViolationPriority(kind: string): number {
   return {
     private_cross_brick_import: 4,
     unresolved_local_import: 3,
@@ -760,28 +796,28 @@ export function boundaryViolationPriority(kind) {
   }[kind] || 0;
 }
 
-export async function analyzeProjectScannerReport(projectRoot, projectIdValue, bricks, unmanifestedCount = 0, compactCardIndex = new Map()) {
+export async function analyzeProjectScannerReport(projectRoot: string, projectIdValue: string, bricks: CompactBrick[], unmanifestedCount = 0, compactCardIndex: Map<string, CardRecord> = new Map()) {
   const sourceGraph = await collectProjectSourceGraph(projectRoot, projectIdValue, bricks);
   const buildCandidates = detectProjectBuildCandidates(projectIdValue, bricks);
   const buildReport = buildProjectBuildReport(projectIdValue, buildCandidates);
   const { rules, rulesByBrick } = buildBoundaryRules(projectRoot, bricks);
-  const brickById = new Map(bricks.map((brick) => [brick.id, brick]));
-  const importResolutionCache = new Map();
-  const importExistsCache = new Map();
-  const boundaryMatchCache = new Map();
-  const boundaryViolations = [];
-  const driftEntries = [];
-  const cloneEntries = [];
-  const tokenHeavyBricks = [];
-  const envGapBricks = [];
-  const blockerCounts = new Map();
-  const observedEnvNameCounts = new Map();
-  const undeclaredEnvNameCounts = new Map();
-  const ignoredEnvNameCounts = new Map();
-  const declaredEnvNames = new Set();
+  const brickById = new Map<string, CompactBrick>(bricks.map((brick) => [brick.id, brick]));
+  const importResolutionCache = new Map<string, ResolvedImport>();
+  const importExistsCache = new Map<string, boolean>();
+  const boundaryMatchCache = new Map<string, BoundaryRule | null>();
+  const boundaryViolations: BoundaryViolation[] = [];
+  const driftEntries: DriftEntry[] = [];
+  const cloneEntries: CloneEntry[] = [];
+  const tokenHeavyBricks: TokenHeavyEntry[] = [];
+  const envGapBricks: EnvGapEntry[] = [];
+  const blockerCounts = new Map<string, number>();
+  const observedEnvNameCounts = new Map<string, number>();
+  const undeclaredEnvNameCounts = new Map<string, { name: string; brick_count: number; bricks: Set<string> }>();
+  const ignoredEnvNameCounts = new Map<string, number>();
+  const declaredEnvNames = new Set<string>();
   const complianceReport = emptyComplianceReport(projectIdValue);
-  const rlsGapBricks = [];
-  const boundaryHotspots = [];
+  const rlsGapBricks: RlsGapEntry[] = [];
+  const boundaryHotspots: BoundaryHotspot[] = [];
   let localImportCount = 0;
   let publicCrossBrickImportCount = 0;
   let sameGroupInternalImportCount = 0;
@@ -799,9 +835,9 @@ export async function analyzeProjectScannerReport(projectRoot, projectIdValue, b
   let totalQualitySmellCount = 0;
   let totalQualityWeightedScore = 0;
   const aggregateQualityCounts = emptyCodeQualityCounts();
-  const codeQualityHotspots = [];
-  const codeQualityBricks = [];
-  const duplicateFingerprintEntries = [];
+  const codeQualityHotspots: QualityHotspot[] = [];
+  const codeQualityBricks: CodeQualityBrick[] = [];
+  const duplicateFingerprintEntries: QualityFingerprintEntry[] = [];
 
   for (const brick of bricks) {
     const files = sourceGraph.brick_files.get(brick.id) || [];
@@ -819,15 +855,15 @@ export async function analyzeProjectScannerReport(projectRoot, projectIdValue, b
     let brickQualitySmellCount = 0;
     let brickQualityWeighted = 0;
     const brickQualityCounts = emptyCodeQualityCounts();
-    const observedEnvRefs = new Set();
-    const observedTableRefs = new Set();
+    const observedEnvRefs = new Set<string>();
+    const observedTableRefs = new Set<string>();
     const ownRules = rulesByBrick.get(brick.id) || [];
     const testLikeBrick = isTestLikeBrick(brick);
     const cloneTrackable = isCloneTrackableBrick(brick);
     const strictReuseBrick = brick.status === "candidate"
       || brick.status === "canonical"
       || ["copy_ready", "guided", "semi_automatic"].includes(brick.clone_readiness);
-    const declaredEnvSet = new Set((brick.env_contract?.variables || []).map((entry) => entry?.name).filter(Boolean));
+    const declaredEnvSet = new Set((brick.env_contract?.variables || []).map((entry) => entry?.name).filter((name): name is string => typeof name === "string"));
 
     for (const name of declaredEnvSet) {
       declaredEnvNames.add(name);
@@ -951,7 +987,7 @@ export async function analyzeProjectScannerReport(projectRoot, projectIdValue, b
           : findBoundaryMatch(rules, cachedResolved.absolute_path);
 
         if (!boundaryMatchCache.has(cachedResolved.absolute_path)) {
-          boundaryMatchCache.set(cachedResolved.absolute_path, match);
+          boundaryMatchCache.set(cachedResolved.absolute_path, match || null);
         }
 
         if (match && match.brick_id !== brick.id) {
@@ -1119,8 +1155,8 @@ export async function analyzeProjectScannerReport(projectRoot, projectIdValue, b
       });
     }
 
-    const blockerCodes = [];
-    const warningCodes = [];
+    const blockerCodes: string[] = [];
+    const warningCodes: string[] = [];
     const highRiskFindings = (brick.vulnerability_findings?.critical || 0) + (brick.vulnerability_findings?.high || 0);
     const skippedVerification = (brick.verification || []).some((event) => event.status === "skipped");
     const missingSourceForBrick = sourceGraph.missing_source_paths.some((entry) => entry.brick_id === brick.id);
@@ -1306,18 +1342,20 @@ export async function analyzeProjectScannerReport(projectRoot, projectIdValue, b
         contribution: highRiskFindings === 0 ? 1 : 0
       }
     ];
-    const missingDimensions = [];
+    const missingDimensions: string[] = [];
 
     for (const dimension of complianceDimensions) {
       if (!dimension.active) {
         continue;
       }
 
-      complianceReport.dimensions[dimension.key].total_count += 1;
-      complianceReport.dimensions[dimension.key].coverage_units += Number(dimension.contribution ?? (dimension.ready ? 1 : 0));
+      const targetDimension = complianceReport.dimensions[dimension.key];
+      if (!targetDimension) continue;
+      targetDimension.total_count = Number(targetDimension.total_count || 0) + 1;
+      targetDimension.coverage_units = Number(targetDimension.coverage_units || 0) + Number(dimension.contribution ?? (dimension.ready ? 1 : 0));
 
       if (dimension.ready) {
-        complianceReport.dimensions[dimension.key].ready_count += 1;
+        targetDimension.ready_count = Number(targetDimension.ready_count || 0) + 1;
       } else {
         missingDimensions.push(dimension.key);
       }

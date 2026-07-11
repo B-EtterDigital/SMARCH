@@ -9,6 +9,12 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(SCRIPT_DIR, "../../..");
 const OUTPUT_LIMIT = 4_000;
 
+/** @typedef {{ cwd?: string, env?: NodeJS.ProcessEnv, timeoutMs?: number, input?: string | Buffer }} RunOptions */
+/** @typedef {{ command: string, status: number | null, signal: NodeJS.Signals | null, error: Error | undefined, stdout: string, stderr: string, durationMs: number }} RunResult */
+/** @typedef {{ journey: string, success: boolean, durationMs: number, budgetMs: number, signal: string, threshold: string, details?: Record<string, unknown> }} TelemetryInput */
+/** @typedef {{ journey: string, selftest?: boolean, repeats?: number, budgetMs: number, signal: string, threshold: string, runOnce: () => Promise<unknown> }} JourneyConfig */
+
+/** @param {string} command @param {string[]} [args] @param {RunOptions} [options] @returns {RunResult} */
 export function run(command, args = [], options = {}) {
   const started = Date.now();
   const result = spawnSync(command, args, {
@@ -37,15 +43,18 @@ export function run(command, args = [], options = {}) {
   };
 }
 
+/** @param {RunResult} result */
 export function outputOf(result) {
   return `${result.stdout}\n${result.stderr}`.trim();
 }
 
+/** @param {unknown} value */
 function tail(value) {
   const text = String(value || "").trim();
   return text.length <= OUTPUT_LIMIT ? text : text.slice(-OUTPUT_LIMIT);
 }
 
+/** @param {RunResult} result @param {string} label @param {RegExp} [pattern] */
 export function expectSuccess(result, label, pattern) {
   assert.equal(
     result.error,
@@ -56,6 +65,7 @@ export function expectSuccess(result, label, pattern) {
   if (pattern) assert.match(outputOf(result), pattern, `${label} omitted its user-visible success signal`);
 }
 
+/** @param {RunResult} result @param {string} label @param {RegExp} pattern */
 export function expectFailure(result, label, pattern) {
   assert.equal(
     result.error,
@@ -66,6 +76,7 @@ export function expectFailure(result, label, pattern) {
   assert.match(outputOf(result), pattern, `${label} omitted its user-visible recovery signal`);
 }
 
+/** @template T @param {string} prefix @param {(root: string) => Promise<T>} callback @returns {Promise<T>} */
 export async function withTemp(prefix, callback) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   try {
@@ -75,6 +86,7 @@ export async function withTemp(prefix, callback) {
   }
 }
 
+/** @param {string} root */
 export async function generateFixturePortfolio(root) {
   const portfolio = path.join(root, "portfolio");
   const result = run("node", ["tools/evals/fixtures/gen.mjs", "--out", portfolio]);
@@ -82,6 +94,7 @@ export async function generateFixturePortfolio(root) {
   return portfolio;
 }
 
+/** @param {TelemetryInput} input */
 export function emitTelemetry({ journey, success, durationMs, budgetMs, signal, threshold, details = {} }) {
   const event = {
     event: "smarch.journey.health.v1",
@@ -98,6 +111,7 @@ export function emitTelemetry({ journey, success, durationMs, budgetMs, signal, 
   return event;
 }
 
+/** @param {JourneyConfig} config */
 export async function executeJourney({ journey, selftest, repeats = 3, budgetMs, signal, threshold, runOnce }) {
   const outcomes = [];
   const started = Date.now();
@@ -125,6 +139,7 @@ export async function executeJourney({ journey, selftest, repeats = 3, budgetMs,
   console.log(`${journey} journey passed: ${count}/${count} deterministic run(s).`);
 }
 
+/** @param {string[]} argv */
 export function parseJourneyArgs(argv) {
   let selftest = false;
   for (const arg of argv) {
@@ -135,6 +150,7 @@ export function parseJourneyArgs(argv) {
   return { help: false, selftest };
 }
 
+/** @param {JourneyConfig} config */
 export async function mainJourney(config) {
   const options = parseJourneyArgs(process.argv.slice(2));
   if (options.help) {

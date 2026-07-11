@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { PROJECTS_ROOT } from "./sma-paths.ts";
 import { loadPortfolioConfig } from "./portfolio-config.ts";
+import type { Dirent } from "node:fs";
 
 const portfolioConfig = loadPortfolioConfig();
 
@@ -25,19 +26,39 @@ const ignoredNameFragments = [...portfolioConfig.ignored_name_fragments];
 
 const rootMarkers = [".git", "package.json", "pnpm-workspace.yaml"];
 
-type PortfolioProject = Record<string, any>;
-type PortfolioOptions = Record<string, any>;
+export type PortfolioProject = {
+  id: string;
+  name: string;
+  relative_root: string;
+  absolute_root: string;
+  priority_tier: "priority" | "standard";
+  priority_rank?: number;
+  portfolio_rank?: number;
+};
+
+type DirectoryEntry = Pick<Dirent, "name" | "isDirectory">;
+type PortfolioFs = {
+  readdir(directory: string, options: { withFileTypes: true }): Promise<DirectoryEntry[]>;
+  access(file: string): Promise<void>;
+};
+type PortfolioLogger = { warn?: (message: string) => void };
+type PortfolioOptions = {
+  projectsRoot?: string;
+  fsApi?: PortfolioFs;
+  logger?: PortfolioLogger;
+  strict?: boolean;
+};
 
 const portfolioOverrides = new Map(Object.entries(portfolioConfig.overrides));
 
-let portfolioCache = null;
+let portfolioCache: Promise<PortfolioProject[]> | null = null;
 
 export class PortfolioDiscoveryError extends Error {
   code: string;
   details: { directory: string; cause_code: string };
 
-  constructor(directory: string, cause: any) {
-    const code = typeof cause?.code === "string" ? cause.code : "UNKNOWN";
+  constructor(directory: string, cause: unknown) {
+    const code = cause && typeof cause === "object" && "code" in cause && typeof cause.code === "string" ? cause.code : "UNKNOWN";
     super(`portfolio discovery could not read ${directory} (${code}): ${cause instanceof Error ? cause.message : String(cause)}`);
     this.name = "PortfolioDiscoveryError";
     this.code = "PORTFOLIO_DISCOVERY_UNREADABLE";
@@ -57,7 +78,7 @@ export async function discoverPortfolioProjects(options: PortfolioOptions = {}):
   return portfolioCache;
 }
 
-export function projectPriorityRank(projectId, portfolioProjects = []) {
+export function projectPriorityRank(projectId: unknown, portfolioProjects: PortfolioProject[] = []): number {
   const id = String(projectId || "").trim();
   const priorityIndex = priorityProjectIds.indexOf(id);
   if (priorityIndex >= 0) return priorityIndex + 1;
@@ -68,7 +89,7 @@ export function projectPriorityRank(projectId, portfolioProjects = []) {
   return priorityProjectIds.length + portfolioProjects.length + 1;
 }
 
-export function sortByPortfolioPriority(entries, portfolioProjects = [], idSelector = (entry) => entry?.project || entry?.id) {
+export function sortByPortfolioPriority<T>(entries: T[], portfolioProjects: PortfolioProject[] = [], idSelector: (entry: T) => unknown): T[] {
   return [...entries].sort((left, right) => {
     const leftId = String(idSelector(left) || "");
     const rightId = String(idSelector(right) || "");
@@ -82,12 +103,12 @@ async function loadPortfolioProjects({
   fsApi = fs,
   logger = console,
   strict = process.argv.includes("--strict"),
-} = {}) {
-  const readDirectory = async (directory) => {
+}: PortfolioOptions = {}): Promise<PortfolioProject[]> {
+  const readDirectory = async (directory: string): Promise<DirectoryEntry[]> => {
     try {
       return await fsApi.readdir(directory, { withFileTypes: true });
     } catch (error) {
-      if (error?.code === "ENOENT") return [];
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return [];
       const discoveryError = new PortfolioDiscoveryError(directory, error);
       logger?.warn?.(`warn: ${discoveryError.message}`);
       if (strict) throw discoveryError;
@@ -96,7 +117,7 @@ async function loadPortfolioProjects({
   };
 
   const topEntries = await readDirectory(projectsRoot);
-  const results = [];
+  const results: PortfolioProject[] = [];
 
   for (const entry of topEntries) {
     if (!entry.isDirectory()) continue;
@@ -120,7 +141,7 @@ async function loadPortfolioProjects({
     }
   }
 
-  const deduped = new Map();
+  const deduped = new Map<string, PortfolioProject>();
   for (const entry of results) {
     const current = deduped.get(entry.id);
     if (!current || entry.relative_root.length < current.relative_root.length) {
@@ -141,9 +162,9 @@ async function loadPortfolioProjects({
   }));
 }
 
-async function describeProject(absolutePath, projectsRoot = portfolioProjectsRoot) {
+async function describeProject(absolutePath: string, projectsRoot = portfolioProjectsRoot): Promise<PortfolioProject> {
   const relativeRoot = normalizePath(path.relative(projectsRoot, absolutePath));
-  const override: Record<string, any> = portfolioOverrides.get(relativeRoot) || {};
+  const override = portfolioOverrides.get(relativeRoot) || {};
   const id = override.id || slugify(relativeRoot);
   const name = override.name || humanizeName(path.basename(absolutePath));
 
@@ -156,7 +177,7 @@ async function describeProject(absolutePath, projectsRoot = portfolioProjectsRoo
   };
 }
 
-async function hasProjectMarkers(absolutePath, fsApi = fs) {
+async function hasProjectMarkers(absolutePath: string, fsApi: PortfolioFs = fs): Promise<boolean> {
   for (const marker of rootMarkers) {
     try {
       await fsApi.access(path.join(absolutePath, marker));
@@ -170,7 +191,7 @@ async function hasProjectMarkers(absolutePath, fsApi = fs) {
   return false;
 }
 
-function shouldIgnore(name) {
+function shouldIgnore(name: unknown): boolean {
   const value = String(name || "");
   if (!value || value.startsWith(".")) return true;
   if (ignoredTopLevelDirs.has(value)) return true;
@@ -178,7 +199,7 @@ function shouldIgnore(name) {
   return ignoredNameFragments.some((fragment) => lowered.includes(fragment));
 }
 
-function slugify(value) {
+function slugify(value: unknown): string {
   return String(value || "project")
     .toLowerCase()
     .replace(/[\\/]+/g, "-")
@@ -186,7 +207,7 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "") || "project";
 }
 
-function humanizeName(value) {
+function humanizeName(value: unknown): string {
   return String(value || "Project")
     .replace(/[_-]+/g, " ")
     .replace(/\b0+([A-Za-z0-9])/g, "$1")
@@ -194,21 +215,21 @@ function humanizeName(value) {
     .trim() || "Project";
 }
 
-function normalizePath(value) {
+function normalizePath(value: unknown): string {
   return String(value || "").split(path.sep).join("/");
 }
 
 async function runSelftest() {
   const projectsRoot = path.resolve("/virtual/projects");
-  const directoryEntry = (name) => ({ name, isDirectory: () => true });
+  const directoryEntry = (name: string): DirectoryEntry => ({ name, isDirectory: () => true });
   const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
   const missing = Object.assign(new Error("not found"), { code: "ENOENT" });
-  const warnings = [];
-  const fsApi = {
+  const warnings: string[] = [];
+  const fsApi: PortfolioFs = {
     async access() {
       throw missing;
     },
-    async readdir(directory) {
+    async readdir(directory: string) {
       if (directory === projectsRoot) return [directoryEntry("unreadable")];
       throw unreadable;
     },
@@ -218,7 +239,7 @@ async function runSelftest() {
     projectsRoot,
     fsApi,
     strict: false,
-    logger: { warn: (message) => warnings.push(message) },
+    logger: { warn: (message: string) => { warnings.push(message); } },
   });
   assert.deepEqual(nonStrict, []);
   assert.equal(warnings.length, 1);
@@ -229,22 +250,25 @@ async function runSelftest() {
       projectsRoot,
       fsApi,
       strict: true,
-      logger: { warn: (message) => warnings.push(message) },
+    logger: { warn: (message: string) => { warnings.push(message); } },
     }),
-    (error: any) => error instanceof PortfolioDiscoveryError
+    (error: unknown) => error instanceof PortfolioDiscoveryError
       && error.details.cause_code === "EACCES",
   );
 
-  const emptyWarnings = [];
+  const emptyWarnings: string[] = [];
   const empty = await discoverPortfolioProjects({
     projectsRoot,
     fsApi: {
+      async access() {
+        throw missing;
+      },
       async readdir() {
         throw missing;
       },
     },
     strict: true,
-    logger: { warn: (message) => emptyWarnings.push(message) },
+    logger: { warn: (message: string) => { emptyWarnings.push(message); } },
   });
   assert.deepEqual(empty, []);
   assert.deepEqual(emptyWarnings, []);

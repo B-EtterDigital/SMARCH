@@ -31,12 +31,102 @@ const CONTROL_PLANE_MODULES = [
   { id: 'quality', label: 'Quality gates', paths: ['tools/sma-*-gate.mjs', 'tools/sma-validate*.mjs', 'tools/sma-source-size-gate.ts'] },
 ];
 
+type VerificationStatus = 'pass' | 'fail' | 'blocked' | 'skipped';
+type EventCategories = { srs: boolean; graph: boolean; collision: boolean; upgrade: boolean; gate: boolean };
+type CategoryCounts = { srs: number; graph: number; collision: number; upgrade: number; gate: number };
+type ProjectModule = {
+  id: string;
+  label?: string;
+  paths: string[];
+  excludePaths?: string[];
+  maxParallelAgents?: number;
+};
+type ProjectInput = { id?: string; project?: string; root?: string; absoluteRoot?: string; project_root?: string };
+type NormalizedProject = { id: string; root: string; modules: ProjectModule[] };
+type RawContextEvent = {
+  project?: string;
+  brick_id?: string;
+  kind?: string;
+  intent?: string;
+  decision_rationale?: string;
+  timestamp: string;
+  session_id?: string;
+  files_touched?: string[];
+  verification?: { status?: string; command?: string };
+};
+type GoalEvent = RawContextEvent & {
+  project: string;
+  brick_id: string;
+  kind: string;
+  timestamp: string;
+  time_ms: number;
+  files_touched: string[];
+  module: string;
+  verification_status: VerificationStatus | null;
+  verification_command: string;
+  categories: EventCategories;
+};
+type ModuleRow = {
+  project: string;
+  id: string;
+  label: string;
+  family: string;
+  primary_path: string;
+  path_count: number;
+  max_parallel_agents: number;
+  event_count: number;
+  pass_count: number;
+  fail_count: number;
+  blocked_count: number;
+  completion_count: number;
+  file_count: number;
+  file_set?: Set<string>;
+  srs_signal_count: number;
+  graph_signal_count: number;
+  collision_signal_count: number;
+  upgrade_signal_count: number;
+  last_event_at: string | null;
+};
+type TimelineBucket = {
+  bucket_start: string;
+  event_count: number;
+  pass_count: number;
+  fail_count: number;
+  blocked_count: number;
+  completion_count: number;
+  srs_signal_count: number;
+  collision_signal_count: number;
+  graph_signal_count: number;
+};
+type ModuleGroup = {
+  project: string;
+  family: string;
+  modules: ModuleRow[];
+  event_count: number;
+  pass_count: number;
+  fail_count: number;
+  blocked_count: number;
+  completion_count: number;
+  srs_signal_count: number;
+  graph_signal_count: number;
+  collision_signal_count: number;
+  file_count: number;
+  slot_count: number;
+  last_event_at: string | null;
+};
+
 export function buildGoalProgressReport({
   projects = [],
   hours = 100,
   now = null,
   maxBuckets = DEFAULT_BUCKETS,
   projectFilter = [],
+}: {
+  projects?: ProjectInput[];
+  hours?: number;
+  now?: string | null;
+  maxBuckets?: number;
+  projectFilter?: string[];
 } = {}) {
   const projectList = normalizeProjectList(projects, projectFilter);
   const allEvents = projectList.flatMap((project) => readProjectEvents(project));
@@ -130,7 +220,7 @@ export function buildGoalProgressReport({
   };
 }
 
-export function renderGoalProgressSection(report) {
+export function renderGoalProgressSection(report: ReturnType<typeof buildGoalProgressReport> | null | undefined): string {
   if (!report) return '';
   const s = report.summary || {};
   const timeline = renderTimelineChart(report.timeline || []);
@@ -210,7 +300,7 @@ export function renderGoalProgressSection(report) {
   </section>`);
 }
 
-export function goalProgressDashboardStyles() {
+export function goalProgressDashboardStyles(): string {
   return stripTrailingWhitespace(`
     .goal-progress { border: 1px solid var(--bd); border-radius: 8px; padding: 16px; background: linear-gradient(180deg, rgba(10,119,170,0.08), rgba(0,0,0,0.015)); }
     .gp-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
@@ -253,7 +343,7 @@ export function goalProgressDashboardStyles() {
   `);
 }
 
-export function runGoalProgressSelfTest() {
+export function runGoalProgressSelfTest(): ReturnType<typeof buildGoalProgressReport> {
   const root = mkdtempSync(resolve(tmpdir(), 'sma-goal-progress-'));
   try {
     mkdirSync(resolve(root, '.smarch/agent-context'), { recursive: true });
@@ -288,10 +378,10 @@ export function runGoalProgressSelfTest() {
   }
 }
 
-function normalizeProjectList(projects, projectFilter) {
+function normalizeProjectList(projects: ProjectInput[], projectFilter: string[]): NormalizedProject[] {
   const filters = new Set((projectFilter || []).map((id) => String(id).toLowerCase()));
   const seen = new Set();
-  const out = [];
+  const out: NormalizedProject[] = [];
   for (const project of projects || []) {
     const id = String(project?.id || project?.project || '').trim();
     const root = project?.root || project?.absoluteRoot || project?.project_root;
@@ -309,7 +399,7 @@ function normalizeProjectList(projects, projectFilter) {
   return out;
 }
 
-function readProjectModules(projectId, root) {
+function readProjectModules(projectId: string, root: string): ProjectModule[] {
   const file = resolve(root, 'sma.gen3.json');
   if (!existsSync(file)) {
     return projectId === 'sma'
@@ -317,8 +407,8 @@ function readProjectModules(projectId, root) {
       : [];
   }
   try {
-    const json = JSON.parse(readFileSync(file, 'utf8'));
-    return (json.modules || []).map((module) => ({
+    const json = JSON.parse(readFileSync(file, 'utf8')) as { modules?: ProjectModule[] };
+    return (json.modules || []).map((module: ProjectModule) => ({
       id: String(module.id || '').trim(),
       label: module.label || module.id,
       paths: Array.isArray(module.paths) ? module.paths : [],
@@ -331,12 +421,12 @@ function readProjectModules(projectId, root) {
   }
 }
 
-function readProjectEvents(project) {
+function readProjectEvents(project: NormalizedProject): GoalEvent[] {
   const dir = resolve(project.root, '.smarch/agent-context');
   if (!existsSync(dir)) return [];
   const files = readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.ndjson'));
-  const events = [];
+  const events: GoalEvent[] = [];
   for (const file of files) {
     const brickFromFile = basename(file.name, '.ndjson');
     const raw = safeRead(resolve(dir, file.name));
@@ -347,18 +437,23 @@ function readProjectEvents(project) {
       if (!parsed || !parsed.timestamp) continue;
       const timeMs = Date.parse(parsed.timestamp);
       if (!Number.isFinite(timeMs)) continue;
-      const enriched = {
+      const verificationStatus = parsed.verification?.status;
+      const enriched: GoalEvent = {
         ...parsed,
         project: parsed.project || project.id,
         brick_id: parsed.brick_id || brickFromFile,
+        kind: parsed.kind || '',
+        intent: parsed.intent || '',
         time_ms: timeMs,
         files_touched: Array.isArray(parsed.files_touched) ? parsed.files_touched : [],
+        module: '',
+        verification_status: verificationStatus && VERIFY_STATUSES.has(verificationStatus)
+          ? verificationStatus as VerificationStatus
+          : null,
+        verification_command: parsed.verification?.command || '',
+        categories: { srs: false, graph: false, collision: false, upgrade: false, gate: false },
       };
       enriched.module = inferModule(enriched, project.modules);
-      enriched.verification_status = VERIFY_STATUSES.has(parsed.verification?.status)
-        ? parsed.verification.status
-        : null;
-      enriched.verification_command = parsed.verification?.command || '';
       enriched.categories = classifyEvent(enriched);
       events.push(enriched);
     }
@@ -366,7 +461,7 @@ function readProjectEvents(project) {
   return events;
 }
 
-function inferModule(event, modules) {
+function inferModule(event: Pick<GoalEvent, 'files_touched' | 'brick_id' | 'intent' | 'project'>, modules: ProjectModule[]): string {
   const files = event.files_touched || [];
   for (const module of modules || []) {
     if (files.some((file) => moduleMatchesPath(module, file))) return module.id;
@@ -380,14 +475,14 @@ function inferModule(event, modules) {
   return event.project === 'sma' ? 'control-plane' : 'unmapped';
 }
 
-function moduleMatchesPath(module, file) {
+function moduleMatchesPath(module: ProjectModule, file: string): boolean {
   const path = String(file || '').replace(/\\/g, '/');
   if (!path) return false;
   if ((module.excludePaths || []).some((pattern) => pathPatternCovers(pattern, path))) return false;
   return (module.paths || []).some((pattern) => pathPatternCovers(pattern, path) || pathPatternCovers(path, pattern));
 }
 
-function moduleFromPath(file) {
+function moduleFromPath(file: string): string | null {
   const parts = String(file || '').replace(/\\/g, '/').split('/').filter(Boolean);
   if (parts[0] === 'src' && parts[1] === 'renderer' && parts[2] === 'modules' && parts[3]) return parts[3];
   if (parts[0] === 'src' && parts[1] === 'renderer' && parts[2] === 'features' && parts[3]) return parts[3];
@@ -395,8 +490,8 @@ function moduleFromPath(file) {
   return null;
 }
 
-function buildModuleRows(events, projects) {
-  const known = new Map();
+function buildModuleRows(events: GoalEvent[], projects: NormalizedProject[]): ModuleRow[] {
+  const known = new Map<string, ModuleRow>();
   for (const project of projects) {
     for (const module of project.modules || []) {
       known.set(`${project.id}:${module.id}`, {
@@ -452,12 +547,13 @@ function buildModuleRows(events, projects) {
       });
     }
     const row = known.get(key);
+    if (!row) continue;
     row.event_count += 1;
     if (event.verification_status === 'pass') row.pass_count += 1;
     if (event.verification_status === 'fail') row.fail_count += 1;
     if (event.verification_status === 'blocked') row.blocked_count += 1;
     if (event.kind === 'edit_applied' || event.kind === 'proof_recorded') row.completion_count += 1;
-    for (const file of event.files_touched || []) row.file_set.add(file);
+    for (const file of event.files_touched || []) row.file_set?.add(file);
     if (event.categories.srs) row.srs_signal_count += 1;
     if (event.categories.graph) row.graph_signal_count += 1;
     if (event.categories.collision) row.collision_signal_count += 1;
@@ -470,7 +566,7 @@ function buildModuleRows(events, projects) {
     .sort((a, b) => b.event_count - a.event_count || a.project.localeCompare(b.project) || a.id.localeCompare(b.id));
 }
 
-function buildBuckets(events, { startMs, anchorMs, maxBuckets }) {
+function buildBuckets(events: GoalEvent[], { startMs, anchorMs, maxBuckets }: { startMs: number; anchorMs: number; maxBuckets: number }): TimelineBucket[] {
   const bucketCount = Math.max(1, Math.min(maxBuckets, Math.ceil((anchorMs - startMs) / (2 * 60 * 60 * 1000)) || 1));
   const bucketMs = Math.max(1, Math.ceil((anchorMs - startMs) / bucketCount));
   const buckets = Array.from({ length: bucketCount }, (_, index) => ({
@@ -487,6 +583,7 @@ function buildBuckets(events, { startMs, anchorMs, maxBuckets }) {
   for (const event of events) {
     const index = Math.max(0, Math.min(bucketCount - 1, Math.floor((event.time_ms - startMs) / bucketMs)));
     const bucket = buckets[index];
+    if (!bucket) continue;
     bucket.event_count += 1;
     if (event.verification_status === 'pass') bucket.pass_count += 1;
     if (event.verification_status === 'fail') bucket.fail_count += 1;
@@ -499,15 +596,19 @@ function buildBuckets(events, { startMs, anchorMs, maxBuckets }) {
   return buckets;
 }
 
-function finalizeModuleRow(row) {
+function finalizeModuleRow(row: ModuleRow): ModuleRow {
   row.file_count = row.file_set?.size || 0;
   delete row.file_set;
   return row;
 }
 
-function moduleFamily(projectId, module) {
+function moduleFamily(projectId: string, module: ProjectModule | ModuleRow): string {
   if (projectId === 'sma') return 'control-plane';
-  const paths = Array.isArray(module.paths) ? module.paths : [];
+  const paths = 'paths' in module && Array.isArray(module.paths)
+    ? module.paths
+    : 'primary_path' in module && module.primary_path
+      ? [module.primary_path]
+      : [];
   const pathFamily = paths.map(familyFromPath).find(Boolean);
   if (pathFamily) return pathFamily;
   const id = String(module.id || '').toLowerCase();
@@ -519,7 +620,7 @@ function moduleFamily(projectId, module) {
   return id.split(/[-_.:/]+/).find(Boolean) || 'unmapped';
 }
 
-function familyFromPath(file) {
+function familyFromPath(file: string): string | null {
   const parts = String(file || '').replace(/\\/g, '/').split('/').filter(Boolean);
   const moduleIndex = parts.indexOf('modules');
   if (moduleIndex >= 0 && parts[moduleIndex + 1]) return parts[moduleIndex + 1].toLowerCase();
@@ -528,12 +629,12 @@ function familyFromPath(file) {
   return null;
 }
 
-function familyFromKnownName(value) {
+function familyFromKnownName(value: string): string | null {
   const match = String(value || '').match(/\b(modlink|modcap|modchat|moddic|acme-agent|modbro|modcore|modvibe|modflow)\b/i);
   return match ? match[1].toLowerCase() : null;
 }
 
-function classifyEvent(event) {
+function classifyEvent(event: Pick<GoalEvent, 'kind' | 'intent' | 'decision_rationale' | 'verification_command' | 'files_touched'>): EventCategories {
   const text = [
     event.kind,
     event.intent,
@@ -550,18 +651,18 @@ function classifyEvent(event) {
   };
 }
 
-function countCategories(events) {
+function countCategories(events: GoalEvent[]): CategoryCounts {
   return events.reduce((acc, event) => {
-    for (const [key, value] of Object.entries(event.categories || {})) {
-      if (value) acc[key] = (acc[key] || 0) + 1;
+    for (const key of ['srs', 'graph', 'collision', 'upgrade', 'gate'] as const) {
+      if (event.categories[key]) acc[key] += 1;
     }
     return acc;
   }, { srs: 0, graph: 0, collision: 0, upgrade: 0, gate: 0 });
 }
 
-function failedToPassed(verifications) {
-  const byKey = new Map();
-  const recovered = [];
+function failedToPassed(verifications: GoalEvent[]) {
+  const byKey = new Map<string, { fail?: GoalEvent | null }>();
+  const recovered: Array<{ project: string; module: string; brick_id: string; command: string; failed_at: string; passed_at: string }> = [];
   for (const event of verifications) {
     const key = `${event.project}:${event.brick_id}:${normalizeCommand(event.verification_command)}`;
     const previous = byKey.get(key) || {};
@@ -582,7 +683,10 @@ function failedToPassed(verifications) {
   return recovered;
 }
 
-function hardeningScore({ proofCoverage, passCount, failCount, blockedCount, conflictDetected, conflictResolved, categories, bricks }) {
+function hardeningScore({ proofCoverage, passCount, failCount, blockedCount, conflictDetected, conflictResolved, categories, bricks }: {
+  proofCoverage: number; passCount: number; failCount: number; blockedCount: number;
+  conflictDetected: number; conflictResolved: number; categories: CategoryCounts; bricks: number;
+}) {
   const passRate = percent(passCount, passCount + failCount + blockedCount);
   const conflictClosure = conflictDetected ? percent(conflictResolved, conflictDetected) : 100;
   const graphDiscipline = percent(Math.min(number(categories.graph), Math.max(1, bricks)), Math.max(1, bricks));
@@ -609,7 +713,7 @@ function hardeningScore({ proofCoverage, passCount, failCount, blockedCount, con
   };
 }
 
-function renderTimelineChart(buckets) {
+function renderTimelineChart(buckets: TimelineBucket[]): string {
   if (!buckets.length) return '<p class="empty">No timeline buckets available.</p>';
   const width = 920;
   const height = 220;
@@ -642,8 +746,8 @@ function renderTimelineChart(buckets) {
     </svg>`;
 }
 
-function renderModuleGroups(modules) {
-  const groups = new Map();
+function renderModuleGroups(modules: ModuleRow[]): string {
+  const groups = new Map<string, ModuleGroup>();
   for (const module of modules || []) {
     const family = module.family || moduleFamily(module.project, module);
     const key = `${module.project}:${family}`;
@@ -666,6 +770,7 @@ function renderModuleGroups(modules) {
       });
     }
     const group = groups.get(key);
+    if (!group) continue;
     group.modules.push(module);
     group.event_count += number(module.event_count);
     group.pass_count += number(module.pass_count);
@@ -689,7 +794,7 @@ function renderModuleGroups(modules) {
   return cards ? `<div class="gp-module-groups">${cards}</div>` : '';
 }
 
-function renderModuleGroup(group) {
+function renderModuleGroup(group: ModuleGroup): string {
   const modules = group.modules
     .slice()
     .sort((a, b) => b.event_count - a.event_count || b.max_parallel_agents - a.max_parallel_agents || a.id.localeCompare(b.id));
@@ -724,7 +829,7 @@ function renderModuleGroup(group) {
     </div>`;
 }
 
-function renderModuleCard(module) {
+function renderModuleCard(module: ModuleRow): string {
   const total = Math.max(1, module.event_count);
   const passWidth = percent(module.pass_count, total);
   const failWidth = percent(module.fail_count, total);
@@ -747,7 +852,7 @@ function renderModuleCard(module) {
     </div>`;
 }
 
-function moduleStatus(module) {
+function moduleStatus(module: ModuleRow): { label: string; className: string } {
   if (module.fail_count > 0) return { label: 'needs attention', className: 'attention' };
   if (module.blocked_count > 0) return { label: 'blocked', className: 'blocked' };
   if (module.pass_count > 0) return { label: 'verified', className: 'verified' };
@@ -755,11 +860,11 @@ function moduleStatus(module) {
   return { label: 'ready', className: 'ready' };
 }
 
-function metricCard(label, value, sub) {
+function metricCard(label: unknown, value: unknown, sub: unknown): string {
   return `<div class="gp-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong><small>${esc(sub)}</small></div>`;
 }
 
-function compactVerification(event) {
+function compactVerification(event: GoalEvent) {
   return {
     time: event.timestamp,
     project: event.project,
@@ -770,7 +875,10 @@ function compactVerification(event) {
   };
 }
 
-function event({ project, brick_id, kind, timestamp, status, command, files }) {
+function event({ project, brick_id, kind, timestamp, status, command, files }: {
+  project: string; brick_id: string; kind: string; timestamp: string;
+  status: VerificationStatus; command: string; files: string[];
+}): string {
   return JSON.stringify({
     schema_version: '1.0.0',
     event_id: `${brick_id}-${kind}-${status}`,
@@ -784,12 +892,16 @@ function event({ project, brick_id, kind, timestamp, status, command, files }) {
   });
 }
 
-function latestTimestamp(events) {
-  return events.reduce((latest, event) => (!latest || event.timestamp > latest ? event.timestamp : latest), null);
+function latestTimestamp(events: GoalEvent[]): string | null {
+  let latest: string | null = null;
+  for (const event of events) {
+    if (!latest || event.timestamp > latest) latest = event.timestamp;
+  }
+  return latest;
 }
 
-function countBy(items, keyFn) {
-  const out = {};
+function countBy<T>(items: readonly T[], keyFn: (item: T) => string): Record<string, number> {
+  const out: Record<string, number> = {};
   for (const item of items) {
     const key = keyFn(item);
     out[key] = (out[key] || 0) + 1;
@@ -797,48 +909,48 @@ function countBy(items, keyFn) {
   return out;
 }
 
-function normalizeCommand(command) {
+function normalizeCommand(command: unknown): string {
   return String(command || '').replace(/\s+/g, ' ').trim().toLowerCase() || '<no-command>';
 }
 
-function shortCommand(command) {
+function shortCommand(command: unknown): string {
   const text = normalizeCommand(command);
   return text.length > 96 ? `${text.slice(0, 93)}...` : text;
 }
 
-function shortText(value, max = 96) {
+function shortText(value: unknown, max = 96): string {
   const text = String(value || '').replace(/\s+/g, ' ').trim();
   return text.length > max ? `${text.slice(0, Math.max(0, max - 3))}...` : text;
 }
 
-function shortDate(value) {
+function shortDate(value: unknown): string {
   return value ? String(value).slice(5, 16).replace('T', ' ') : 'no events';
 }
 
-function titleLabel(id) {
+function titleLabel(id: unknown): string {
   const value = String(id || 'unmapped');
   if (/^c0[a-z0-9]+$/i.test(value)) return value.toUpperCase();
   return value.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function percent(value, total) {
+function percent(value: unknown, total: unknown): number {
   const n = number(value);
   const d = number(total);
   return d > 0 ? Math.round((n / d) * 100) : 0;
 }
 
-function number(value) {
+function number(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-function clampNumber(value, min, max, fallback) {
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
   const n = number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, n));
 }
 
-function safeRead(file) {
+function safeRead(file: string): string {
   try { return readFileSync(file, 'utf8'); } catch (error) {
     const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
     if (code !== 'ENOENT') console.error(JSON.stringify({ area: 'gen3-goal-progress.read', severity: 'warning', hint: 'Check the progress input file and its permissions.', error: error instanceof Error ? error.message : String(error), ...(code ? { code } : {}) }));
@@ -846,21 +958,21 @@ function safeRead(file) {
   }
 }
 
-function safeJson(text) {
-  try { return JSON.parse(text); } catch (error) {
+function safeJson(text: string): RawContextEvent | null {
+  try { return JSON.parse(text) as RawContextEvent; } catch (error) {
     console.error(JSON.stringify({ area: 'gen3-goal-progress.parse-json', severity: 'warning', hint: 'Repair malformed progress JSON.', error: error instanceof Error ? error.message : String(error) }));
     return null;
   }
 }
 
-function esc(value) {
+function esc(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function stripTrailingWhitespace(text) {
+function stripTrailingWhitespace(text: string): string {
   return String(text || '').replace(/[ \t]+$/gm, '');
 }
 
-function assert(condition, message) {
+function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }

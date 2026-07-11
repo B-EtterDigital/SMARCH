@@ -19,6 +19,16 @@ const STOPWORDS = new Set([
   "is", "it", "of", "on", "or", "that", "the", "this", "to", "with", "your", "you", "app", "project"
 ]);
 
+type CanonicalTarget = { project?: string; target_id?: string; name?: string; target_type?: string };
+type CuratedBuild = { build_id?: string; artifact_id?: string; name?: string; project?: string; domains?: string[]; runtimes?: string[]; summary?: string; status?: string; release_summary?: { latest_verification_status?: string | null; release_count?: number } };
+type BuildCandidate = { candidate_key?: string; recurrence_key?: string; name?: string; project?: string; dominant_feature_cluster?: string; dominant_domain?: string; dominant_group?: string; sample_paths?: string[]; why?: string; confidence_score?: number; confidence_label?: string };
+type AdoptionState = { projects?: Array<{ project?: string; [key: string]: unknown }>; trust?: { canonicalization?: { top_targets?: CanonicalTarget[] } }; build_plane?: { curated_builds?: CuratedBuild[] } };
+type AdoptionRegistry = { bricks?: Array<{ id?: string; name?: string; project?: string; kind?: string; path?: string; source_paths?: string[] }>; scanner_report?: { build_report?: { top_candidates?: BuildCandidate[] } } };
+type BuildIndex = { builds?: CuratedBuild[] };
+type AdoptionOptions = { state?: string; registry?: string; buildIndex?: string };
+type Recommendation = { type: string; id?: string; name?: string; project?: string; score: number; matches: string[]; readiness?: string; trust: string | null; release_count: number; why: string };
+type Reason = string | { message?: string; code?: string };
+
 export const defaultPaths = {
   repoRoot,
   state: path.resolve(repoRoot, "wiki/SMA_STATE.generated.json"),
@@ -26,11 +36,11 @@ export const defaultPaths = {
   buildIndex: path.resolve(repoRoot, "builds/build-index.generated.json"),
 };
 
-export async function readJson(filePath) {
+export async function readJson<T = unknown>(filePath: string): Promise<T> {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-export async function maybeReadJson(filePath) {
+export async function maybeReadJson<T = unknown>(filePath: string): Promise<T | null> {
   try {
     return await readJson(filePath);
   } catch (error) {
@@ -40,14 +50,14 @@ export async function maybeReadJson(filePath) {
   }
 }
 
-export async function loadAdoptionContext(options: Record<string, any> = {}) {
+export async function loadAdoptionContext(options: AdoptionOptions = {}) {
   const statePath = path.resolve(options.state || defaultPaths.state);
   const registryPath = path.resolve(options.registry || defaultPaths.registry);
   const buildIndexPath = path.resolve(options.buildIndex || defaultPaths.buildIndex);
   const [state, registry, buildIndex] = await Promise.all([
-    maybeReadJson(statePath),
-    maybeReadJson(registryPath),
-    maybeReadJson(buildIndexPath),
+    maybeReadJson<AdoptionState>(statePath),
+    maybeReadJson<AdoptionRegistry>(registryPath),
+    maybeReadJson<BuildIndex>(buildIndexPath),
   ]);
 
   return {
@@ -62,7 +72,7 @@ export async function loadAdoptionContext(options: Record<string, any> = {}) {
   };
 }
 
-export function tokenize(value) {
+export function tokenize(value: unknown): string[] {
   return String(value || "")
     .toLowerCase()
     .replace(/[^a-z0-9+/_-]+/g, " ")
@@ -71,11 +81,11 @@ export function tokenize(value) {
     .filter((token) => token.length >= 2 && !STOPWORDS.has(token));
 }
 
-export function overlapScore(query, fields) {
+export function overlapScore(query: unknown, fields: unknown[]): { score: number; matches: string[] } {
   const queryTokens = new Set(tokenize(query));
   if (queryTokens.size === 0) return { score: 0, matches: [] };
 
-  const weightedTokens = [];
+  const weightedTokens: string[] = [];
   for (const field of fields) {
     if (field == null) continue;
     if (Array.isArray(field)) {
@@ -92,7 +102,7 @@ export function overlapScore(query, fields) {
   };
 }
 
-export function uniqueStrings(values) {
+export function uniqueStrings(values: unknown[]): string[] {
   return [...new Set((Array.isArray(values) ? values : []).flatMap((value) => {
     if (Array.isArray(value)) return value;
     if (value == null) return [];
@@ -100,11 +110,11 @@ export function uniqueStrings(values) {
   }).map((value) => value.trim()).filter(Boolean))];
 }
 
-export function findProject(state, projectId) {
+export function findProject(state: AdoptionState | null | undefined, projectId: unknown) {
   return (state?.projects || []).find((project) => String(project.project) === String(projectId)) || null;
 }
 
-export function findCanonicalizationTarget(state, query) {
+export function findCanonicalizationTarget(state: AdoptionState | null | undefined, query: unknown): CanonicalTarget | null {
   const needle = String(query || "").toLowerCase().trim();
   if (!needle) return null;
 
@@ -119,7 +129,7 @@ export function findCanonicalizationTarget(state, query) {
   }) || null;
 }
 
-export function findCuratedBuild(state, buildIndex, query) {
+export function findCuratedBuild(state: AdoptionState | null | undefined, buildIndex: BuildIndex | null | undefined, query: unknown): CuratedBuild | null {
   const needle = String(query || "").toLowerCase().trim();
   if (!needle) return null;
 
@@ -137,7 +147,7 @@ export function findCuratedBuild(state, buildIndex, query) {
   }) || null;
 }
 
-export function findBrick(registry, query) {
+export function findBrick(registry: AdoptionRegistry | null | undefined, query: unknown) {
   const needle = String(query || "").toLowerCase().trim();
   if (!needle) return null;
 
@@ -154,9 +164,9 @@ export function findBrick(registry, query) {
   }) || null;
 }
 
-export function buildRecommendations({ state, registry, buildIndex, query, limit = 10, project = "" }) {
+export function buildRecommendations({ state, registry, buildIndex, query, limit = 10, project = "" }: { state?: AdoptionState | null; registry?: AdoptionRegistry | null; buildIndex?: BuildIndex | null; query: unknown; limit?: number; project?: string }): Recommendation[] {
   const projectNeedle = String(project || "").trim();
-  const results = [];
+  const results: Recommendation[] = [];
 
   for (const build of buildIndex?.builds || []) {
     if (projectNeedle && String(build.project) !== projectNeedle) continue;
@@ -211,8 +221,8 @@ export function buildRecommendations({ state, registry, buildIndex, query, limit
     });
   }
 
-  const deduped = [];
-  const seen = new Set();
+  const deduped: Recommendation[] = [];
+  const seen = new Set<string>();
   for (const entry of results
     .sort((left, right) =>
       right.score - left.score
@@ -229,11 +239,11 @@ export function buildRecommendations({ state, registry, buildIndex, query, limit
   return deduped;
 }
 
-export function formatJson(value) {
+export function formatJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export function formatReasonList(reasons) {
+export function formatReasonList(reasons: Reason[]): string {
   return (reasons || []).map((reason) => {
     if (typeof reason === "string") return `- ${reason}`;
     return `- ${reason.message || reason.code || "reason"}`;

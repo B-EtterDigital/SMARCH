@@ -27,6 +27,7 @@
  */
 
 import { readdirSync, openSync, readSync, closeSync } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import { join, basename } from 'node:path';
 
 import { classifyLicense, opennessRank } from './license-lattice.ts';
@@ -46,7 +47,20 @@ export const TEXT_SIGNATURES = [
   ['business source license', 'BUSL-1.1'],
   ['this is free and unencumbered', 'Unlicense'],
   ['creative commons attribution', 'CC-BY-4.0'],
-];
+] as const;
+
+type LicenseClassification = ReturnType<typeof classifyLicense>;
+type ScanResult = { spdxTags: string[]; textMatches: string[] };
+type DirectoryEvidence = {
+  detected: string[];
+  byLicense: Record<string, string[]>;
+  hasLicenseFile: boolean;
+  primary: string | null;
+  confidence: 'high' | 'medium' | 'low';
+  fileCount: number;
+};
+type EvidenceInput = string[] | { detected?: string[]; hasLicenseFile?: boolean };
+type MismatchResult = { mismatch: boolean; severity: 'high' | 'medium' | 'low' | 'none'; message: string };
 
 const SPDX_RE = /SPDX-License-Identifier:\s*([^\n\r]+)/gi;
 
@@ -70,13 +84,13 @@ const MAX_READ_BYTES = 128 * 1024; // license evidence lives near the top of a f
  * Detect license evidence in a single file's text.
  * @returns {{ spdxTags: string[], textMatches: string[] }}
  */
-export function scanText(text) {
-  const spdxTags = [];
-  const textMatches = [];
+export function scanText(text: unknown): ScanResult {
+  const spdxTags: string[] = [];
+  const textMatches: string[] = [];
   if (typeof text !== 'string' || !text) return { spdxTags, textMatches };
 
   for (const m of text.matchAll(SPDX_RE)) {
-    const expr = cleanSpdxExpr(m[1]);
+    const expr = cleanSpdxExpr(m[1] ?? '');
     if (expr) spdxTags.push(expr);
   }
 
@@ -89,7 +103,7 @@ export function scanText(text) {
 }
 
 /** Strip trailing comment closers / noise from a captured SPDX expression. */
-function cleanSpdxExpr(raw) {
+function cleanSpdxExpr(raw: unknown): string {
   return String(raw)
     .replace(/\*\/\s*$/, '') // C block comment close
     .replace(/-->\s*$/, '') // HTML comment close
@@ -110,21 +124,21 @@ function cleanSpdxExpr(raw) {
  *   fileCount: number,
  * }}
  */
-export function scanDirectory(absDir, { maxFiles = 2000 } = {}) {
-  const byLicense = Object.create(null);
+export function scanDirectory(absDir: string, { maxFiles = 2000 }: { maxFiles?: number } = {}): DirectoryEvidence {
+  const byLicense: Record<string, string[]> = Object.create(null) as Record<string, string[]>;
   let fileCount = 0;
   let spdxTagFiles = 0;
   let evidenceFiles = 0;
   let hasLicenseFile = false;
-  const licenseFileLicenses = [];
+  const licenseFileLicenses: string[] = [];
 
-  const record = (spdx, relPath) => {
+  const record = (spdx: string, relPath: string): void => {
     if (!byLicense[spdx]) byLicense[spdx] = [];
     byLicense[spdx].push(relPath);
   };
 
-  const walk = (dir, depth) => {
-    let entries;
+  const walk = (dir: string, depth: number): void => {
+    let entries: Dirent[];
     try {
       entries = readdirSync(dir, { withFileTypes: true });
     } catch (error) {
@@ -169,7 +183,7 @@ export function scanDirectory(absDir, { maxFiles = 2000 } = {}) {
   // Primary: prefer what the top-level LICENSE file declares (strongest wins,
   // so an AGPL file that also references the GPL resolves to AGPL); else the
   // most-common license across the tree.
-  let primary = null;
+  let primary: string | null = null;
   if (licenseFileLicenses.length) {
     primary = pickStrongest(licenseFileLicenses);
   } else if (detected.length) {
@@ -177,7 +191,7 @@ export function scanDirectory(absDir, { maxFiles = 2000 } = {}) {
   }
 
   /** @type {'low'|'medium'|'high'} */
-  let confidence = 'low';
+  let confidence: DirectoryEvidence['confidence'] = 'low';
   if (hasLicenseFile && (spdxTagFiles > 0 || evidenceFiles > 1)) confidence = 'high';
   else if (hasLicenseFile || spdxTagFiles > 0 || evidenceFiles > 0) confidence = 'medium';
 
@@ -200,7 +214,7 @@ export function scanDirectory(absDir, { maxFiles = 2000 } = {}) {
  * @param {string[] | {detected?: string[], hasLicenseFile?: boolean}} evidence
  * @returns {{ mismatch: boolean, severity: 'high'|'medium'|'low'|'none', message: string }}
  */
-export function evaluateDeclarationMismatch(declaredSpdx, evidence) {
+export function evaluateDeclarationMismatch(declaredSpdx: string, evidence: EvidenceInput): MismatchResult {
   const { detected, hasLicenseFile } = normalizeEvidence(evidence);
   const declared = classifyLicense(declaredSpdx);
   const strongest = strongestEvidence(detected); // null when no evidence
@@ -228,7 +242,7 @@ export function evaluateDeclarationMismatch(declaredSpdx, evidence) {
 
   const opennessEscalation = opennessRank(declared.openness) > opennessRank(actual.openness);
   /** @type {'high'|'medium'} */
-  let severity;
+  let severity: 'high' | 'medium';
   if (opennessEscalation) {
     // declaring open/source-available over closed/source-available evidence
     severity = 'high';
@@ -252,7 +266,7 @@ export function evaluateDeclarationMismatch(declaredSpdx, evidence) {
 
 // --- helpers ----------------------------------------------------------------
 
-function normalizeEvidence(evidence) {
+function normalizeEvidence(evidence: EvidenceInput): { detected: string[]; hasLicenseFile: boolean } {
   if (Array.isArray(evidence)) return { detected: uniq(evidence), hasLicenseFile: false };
   if (evidence && typeof evidence === 'object') {
     return {
@@ -264,8 +278,8 @@ function normalizeEvidence(evidence) {
 }
 
 /** The most restrictive license among the evidence (min openness, max copyleft). */
-function strongestEvidence(spdxList) {
-  let best = null;
+function strongestEvidence(spdxList: readonly string[]): LicenseClassification | null {
+  let best: LicenseClassification | null = null;
   for (const spdx of spdxList) {
     const c = classifyLicense(spdx);
     if (!best) { best = c; continue; }
@@ -277,13 +291,13 @@ function strongestEvidence(spdxList) {
 }
 
 /** The strongest (most restrictive) license label from a list — for primary. */
-function pickStrongest(spdxList) {
+function pickStrongest(spdxList: readonly string[]): string | null {
   const c = strongestEvidence(spdxList);
   return c ? c.spdx : null;
 }
 
 /** Is license `a` strictly MORE PERMISSIVE than license `b`? */
-function isMorePermissive(a, b) {
+function isMorePermissive(a: LicenseClassification, b: LicenseClassification): boolean {
   const ra = opennessRank(a.openness);
   const rb = opennessRank(b.openness);
   if (ra > rb) return true; // more open
@@ -291,8 +305,8 @@ function isMorePermissive(a, b) {
   return a.copyleft < b.copyleft; // same openness, weaker copyleft
 }
 
-function mostCommon(byLicense: Record<string, any[]>) {
-  let bestKey = null;
+function mostCommon(byLicense: Record<string, string[]>): string | null {
+  let bestKey: string | null = null;
   let bestCount = -1;
   for (const [key, files] of Object.entries(byLicense)) {
     const n = files.length;
@@ -305,15 +319,15 @@ function mostCommon(byLicense: Record<string, any[]>) {
   return bestKey;
 }
 
-function isBinaryName(name) {
+function isBinaryName(name: string): boolean {
   const dot = name.lastIndexOf('.');
   if (dot < 0) return false;
   return BINARY_EXT.has(name.slice(dot + 1).toLowerCase());
 }
 
 /** Read the head of a file as UTF-8; return null for binary or unreadable. */
-function readHead(filePath, maxBytes = MAX_READ_BYTES) {
-  let fd;
+function readHead(filePath: string, maxBytes = MAX_READ_BYTES): string | null {
+  let fd: number;
   try {
     fd = openSync(filePath, 'r');
   } catch (error) {
@@ -339,6 +353,6 @@ function readHead(filePath, maxBytes = MAX_READ_BYTES) {
   }
 }
 
-function uniq(arr) {
+function uniq<T>(arr: readonly T[]): T[] {
   return [...new Set(arr)];
 }

@@ -6,14 +6,21 @@ import { assertSupported, example, loadSchemas, validate } from "./validator.mjs
 const root = path.dirname(fileURLToPath(import.meta.url));
 assertSupported();
 
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 for (const [file, schema] of loadSchemas()) {
   const name = file.replace(/\.json$/, "");
   const directory = path.join(root, name);
   fs.mkdirSync(directory, { recursive: true });
   const valid = example(schema, file);
+  if (!isRecord(valid)) throw new Error(`${file} example root must be an object`);
   if (file === "submission-bundle-schema.json") {
     const roles = ["manifest", "source", "attestation", "checklist"];
     valid.files = roles.map((role, index) => ({ path: `files/${index}-${role}`, role, bytes: 1, sha256: "a".repeat(64) }));
+    if (!isRecord(valid.verification)) throw new Error(`${file} example verification must be an object`);
     valid.verification.gates = ["npm run gate:all", "npm run gate:leaks"].map((command) => ({
       command,
       status: 0,
@@ -25,8 +32,12 @@ for (const [file, schema] of loadSchemas()) {
   if (validErrors.length) throw new Error(`${file} generated invalid fixture:\n${validErrors.join("\n")}`);
   const invalid = structuredClone(valid);
   const required = schema.required || [];
-  if (required.length) delete invalid[required[0]];
-  else if (file === "capsule-manifest-schema.json") invalid.brick.kind = "module";
+  const firstRequired = required[0];
+  if (firstRequired) delete invalid[firstRequired];
+  else if (file === "capsule-manifest-schema.json") {
+    if (!isRecord(invalid.brick)) throw new Error(`${file} example brick must be an object`);
+    invalid.brick.kind = "module";
+  }
   else throw new Error(`${file} has no deterministic invalid mutation`);
   if (validate(schema, invalid, file).length === 0) throw new Error(`${file} invalid mutation still validates`);
   fs.writeFileSync(path.join(directory, "valid.json"), `${JSON.stringify(valid, null, 2)}\n`);

@@ -7,6 +7,9 @@ import { loadSdk, loadToolModules, main as serveStdio } from "./server.mjs";
 
 const TOOL_PATH = fileURLToPath(import.meta.url);
 
+/** @typedef {{ check: boolean, json: boolean, quiet: boolean, verbose: boolean, help: boolean }} CliOptions */
+/** @typedef {{ loadSdk?: () => Promise<unknown>, loadToolModules?: () => Promise<Array<{ name: string }>>, serve?: () => Promise<void> }} RunDependencies */
+
 export function usage() {
   return `Serve the SMARCH registry over MCP stdio.
 
@@ -29,6 +32,10 @@ Exit codes: 0 success; 2 usage; 3 optional SDK missing; 4 invalid tools; 1 runti
 Known limitation: serving uses stdio only; stdout is reserved for MCP JSON-RPC. A check can pass with ready=false when the optional SDK is absent.`;
 }
 
+/**
+ * @param {string[]} argv
+ * @returns {CliOptions}
+ */
 export function parseArgs(argv) {
   const options = { check: false, json: false, quiet: false, verbose: false, help: false };
   for (const arg of argv) {
@@ -44,6 +51,7 @@ export function parseArgs(argv) {
   return options;
 }
 
+/** @param {unknown} error */
 function classify(error) {
   if (error instanceof CliError) return error;
   const message = error instanceof Error ? error.message : String(error);
@@ -52,6 +60,10 @@ function classify(error) {
   return new CliError("MCP_SERVE_FAILED", message, { exitCode: 1, nextCommand: "Run `sma mcp-serve --check --verbose` before retrying the server." });
 }
 
+/**
+ * @param {string[]} argv
+ * @param {RunDependencies} [dependencies]
+ */
 export async function run(argv, dependencies = {}) {
   let options;
   try {
@@ -64,7 +76,8 @@ export async function run(argv, dependencies = {}) {
       let sdkAvailable = true;
       try { await sdkLoader(); }
       catch (error) {
-        if (!String(error?.message || error).includes("MCP_SDK_MISSING")) throw error;
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.includes("MCP_SDK_MISSING")) throw error;
         sdkAvailable = false;
       }
       const result = { ok: true, ready: sdkAvailable, transport: "stdio", tool_count: tools.length, sdk_available: sdkAvailable };

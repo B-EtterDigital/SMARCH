@@ -9,11 +9,25 @@
  */
 /** Path-overlap helpers for sma-module-work-packets.mjs. */
 
-export function modulePathSamples(module) {
+export type ModulePathSpec = {
+  paths?: string[];
+  excludePaths?: string[];
+};
+
+export type SharedHotPath = ModulePathSpec & {
+  id: string;
+  label?: string;
+  risk?: string;
+  requiredGates?: string[];
+};
+
+export type PathOverlapPair = { left: string; right: string };
+
+export function modulePathSamples(module: ModulePathSpec): string[] {
   return (module.paths || []).slice(0, 12);
 }
 
-export function overlappingSharedHotPaths(sharedHotPaths, module) {
+export function overlappingSharedHotPaths(sharedHotPaths: SharedHotPath[], module: ModulePathSpec) {
   return sharedHotPaths
     .filter((hot) => overlappingPathPairsWithExcludes(module.paths || [], hot.paths || [], module.excludePaths || [], []).length > 0)
     .map((hot) => ({
@@ -24,20 +38,20 @@ export function overlappingSharedHotPaths(sharedHotPaths, module) {
     }));
 }
 
-export function modulesOverlap(left, right) {
+export function modulesOverlap(left: ModulePathSpec | null | undefined, right: ModulePathSpec | null | undefined): boolean {
   if (!left || !right) return false;
   return overlappingModulePathPairs(left, right).length > 0;
 }
 
-export function pathsOverlap(leftPaths, rightPaths) {
+export function pathsOverlap(leftPaths: string[], rightPaths: string[]): boolean {
   return overlappingPathPairs(leftPaths, rightPaths).length > 0;
 }
 
-export function overlappingPathPairs(leftPaths, rightPaths) {
+export function overlappingPathPairs(leftPaths: string[], rightPaths: string[]): PathOverlapPair[] {
   return overlappingPathPairsWithExcludes(leftPaths, rightPaths, [], []);
 }
 
-export function overlappingModulePathPairs(leftModule, rightModule) {
+export function overlappingModulePathPairs(leftModule: ModulePathSpec | null | undefined, rightModule: ModulePathSpec | null | undefined): PathOverlapPair[] {
   return overlappingPathPairsWithExcludes(
     leftModule?.paths || [],
     rightModule?.paths || [],
@@ -46,8 +60,8 @@ export function overlappingModulePathPairs(leftModule, rightModule) {
   );
 }
 
-export function overlappingPathPairsWithExcludes(leftPaths, rightPaths, leftExcludePaths, rightExcludePaths) {
-  const pairs = [];
+export function overlappingPathPairsWithExcludes(leftPaths: string[], rightPaths: string[], leftExcludePaths: string[], rightExcludePaths: string[]): PathOverlapPair[] {
+  const pairs: PathOverlapPair[] = [];
   for (const left of leftPaths) {
     for (const right of rightPaths) {
       if (!pathPatternOverlap(left, right)) continue;
@@ -59,11 +73,11 @@ export function overlappingPathPairsWithExcludes(leftPaths, rightPaths, leftExcl
   return pairs;
 }
 
-export function patternCoveredByAnyExclude(pattern, excludePaths) {
+export function patternCoveredByAnyExclude(pattern: string, excludePaths: string[]): boolean {
   return (excludePaths || []).some((exclude) => pathPatternCovers(exclude, pattern));
 }
 
-export function pathPatternCovers(coverPattern, targetPattern) {
+export function pathPatternCovers(coverPattern: string, targetPattern: string): boolean {
   const coverBase = globBase(coverPattern);
   const targetBase = globBase(targetPattern);
   if (!coverBase || !targetBase) return false;
@@ -80,7 +94,7 @@ export function pathPatternCovers(coverPattern, targetPattern) {
   return true;
 }
 
-export function pathPatternOverlap(left, right) {
+export function pathPatternOverlap(left: string, right: string): boolean {
   const a = globBase(left);
   const b = globBase(right);
   if (!a || !b) return false;
@@ -94,7 +108,7 @@ export function pathPatternOverlap(left, right) {
   return true;
 }
 
-export function globBase(pattern) {
+export function globBase(pattern: string): string {
   let value = String(pattern || '').replace(/\\/g, '/').trim();
   if (!value) return '';
   const wildcard = value.search(/[*{[]/);
@@ -107,7 +121,7 @@ export function globBase(pattern) {
   return parts.join('/');
 }
 
-export function literalFileTokens(pattern) {
+export function literalFileTokens(pattern: string): string[] {
   const file = String(pattern || '').replace(/\\/g, '/').split('/').pop() || '';
   return file
     .replace(/\*\*/g, '*')

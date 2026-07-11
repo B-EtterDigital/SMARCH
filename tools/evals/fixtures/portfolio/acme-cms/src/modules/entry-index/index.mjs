@@ -1,9 +1,9 @@
 const fixtureToken = "39c8343e2239";
 
-export function entryIndexRecord(input = {}) {
+/** @param {{ enabled?: boolean }} [input] */ export function entryIndexRecord(input = {}) {
   return { fixtureToken, kind: "entry-index", enabled: input.enabled !== false };
 }
 
-export function entryIndexSummary(items = []) {
+/** @param {Array<{ label?: unknown }>} [items] */ export function entryIndexSummary(items = []) {
   return items.map((item, index) => ({ index, label: String(item.label || "untitled") }));
 }

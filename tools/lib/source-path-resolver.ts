@@ -43,8 +43,9 @@ export function resolveBrickPath(brick: BrickPathInput | null | undefined, proje
     if (src && /\.[a-z0-9]{1,8}$/i.test(src)) {
       // It's likely a file-style brick. The "dir" we want is dirname(src) or
       // the actual file path. Use manifest_dir as parent and try combining.
+      const manifestName = brick.manifest_path.split(sep).pop() || '';
       const fileGuess = resolve(dir, /** strip the manifest prefix */
-        brick.manifest_path.split(sep).pop()
+        manifestName
           .replace(/\.module\.sweetspot\.json$/, '.' + (src.split('.').pop() || 'ts'))
           .replace(/^module\.sweetspot\.json$/, '')
       );

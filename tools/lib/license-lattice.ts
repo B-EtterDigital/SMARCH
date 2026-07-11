@@ -24,16 +24,47 @@
 // Openness — the legal "can this be redistributed / opened" axis.
 // Ranks ascend from most-restrictive to least-restrictive. Meet = min rank.
 // ---------------------------------------------------------------------------
-export const OPENNESS = ['closed', 'source-available', 'open'];
-const OPENNESS_RANK = new Map(OPENNESS.map((v, i) => [v, i]));
+export const OPENNESS = ['closed', 'source-available', 'open'] as const;
+const OPENNESS_RANK = new Map<string, number>(OPENNESS.map((v, i) => [v, i]));
 
 // ---------------------------------------------------------------------------
 // Visibility — the access-tier axis. Meet = min rank.
 // ---------------------------------------------------------------------------
-export const VISIBILITY = ['private', 'internal', 'community', 'public'];
-const VISIBILITY_RANK = new Map(VISIBILITY.map((v, i) => [v, i]));
+export const VISIBILITY = ['private', 'internal', 'community', 'public'] as const;
+const VISIBILITY_RANK = new Map<string, number>(VISIBILITY.map((v, i) => [v, i]));
 
-export const LICENSE_TIERS = ['open', 'commercial'];
+export const LICENSE_TIERS = ['open', 'commercial'] as const;
+
+type Openness = typeof OPENNESS[number];
+type Visibility = typeof VISIBILITY[number];
+type LicenseTier = typeof LICENSE_TIERS[number];
+type LicenseClassification = {
+  spdx: string | null;
+  class: string;
+  openness: Openness;
+  copyleft: number;
+  attribution: boolean;
+  reason?: string;
+  expression?: 'OR' | 'AND';
+};
+type LicenseComponent = {
+  brick_id: string;
+  spdx?: string | null;
+  openness?: Openness;
+  visibility?: Visibility;
+  license_tier?: LicenseTier;
+  commercial_terms?: string | null;
+};
+type CompositionDeclaration = {
+  visibility?: Visibility;
+  license?: string | null;
+  openness?: Openness;
+  publishable?: boolean;
+  has_attribution?: boolean;
+  license_tier?: LicenseTier;
+  commercial_waiver?: boolean | { approved_by?: string; reason?: string };
+};
+type LicenseCombination = ReturnType<typeof combineLicenses>;
 
 // ---------------------------------------------------------------------------
 // License classification. copyleft_rank ascends: the combined work must carry
@@ -69,16 +100,16 @@ const LICENSE_TABLE = [
   { match: /^agpl(-3\.0)?/i, class: 'network-copyleft', openness: 'open', copyleft: 3, attribution: true },
 ];
 
-const UNKNOWN_LICENSE = { class: 'unknown', openness: 'closed', copyleft: 0, attribution: true };
+const UNKNOWN_LICENSE: Omit<LicenseClassification, 'spdx'> = { class: 'unknown', openness: 'closed', copyleft: 0, attribution: true };
 
 /**
  * Normalize a free-form license string into a canonical SPDX-ish token.
  * Strips noise words ("license", "version") and punctuation so
  * "Apache License 2.0" and "Apache-2.0" resolve the same.
  */
-export function normalizeSpdx(raw) {
+export function normalizeSpdx(raw: unknown): string | null {
   if (!raw || typeof raw !== 'string') return null;
-  let s = raw.trim()
+  const s = raw.trim()
     .replace(/\blicen[cs]e\b/gi, '')
     .replace(/\bversion\b/gi, '')
     .replace(/[,]/g, ' ')
@@ -95,7 +126,7 @@ export function normalizeSpdx(raw) {
  * Unknown / missing licenses are treated as `closed` (fail-safe): if we can't
  * prove it is open, we must not open it.
  */
-export function classifyLicense(raw) {
+export function classifyLicense(raw: unknown): LicenseClassification {
   if (!raw || typeof raw !== 'string' || !raw.trim()) {
     return { spdx: null, ...UNKNOWN_LICENSE, reason: 'no license declared' };
   }
@@ -104,7 +135,7 @@ export function classifyLicense(raw) {
   // SPDX expression: OR / AND (single level; nested parens are treated as text)
   if (/\s+OR\s+/i.test(expr) || /\s+AND\s+/i.test(expr)) {
     const isOr = /\s+OR\s+/i.test(expr);
-    const parts = expr.split(isOr ? /\s+OR\s+/i : /\s+AND\s+/i).map((p) => classifyLicense(p));
+    const parts = expr.split(isOr ? /\s+OR\s+/i : /\s+AND\s+/i).map((part: string) => classifyLicense(part));
     // OR => choose the most open (max openness rank, min copyleft).
     // AND => the most restrictive (min openness rank, max copyleft).
     const pick = isOr
@@ -121,7 +152,7 @@ export function classifyLicense(raw) {
   }
 
   // strip a WITH exception; classify the base license
-  const base = expr.split(/\s+WITH\s+/i)[0];
+  const base = expr.split(/\s+WITH\s+/i)[0] ?? '';
   const spdx = normalizeSpdx(base);
   if (!spdx) return { spdx: null, ...UNKNOWN_LICENSE, reason: 'no license declared' };
   for (const row of LICENSE_TABLE) {
@@ -129,7 +160,7 @@ export function classifyLicense(raw) {
       return {
         spdx,
         class: row.class,
-        openness: row.openness,
+        openness: row.openness as Openness,
         copyleft: row.copyleft,
         attribution: row.attribution,
       };
@@ -140,27 +171,27 @@ export function classifyLicense(raw) {
 
 // --- lattice primitives -----------------------------------------------------
 
-export function opennessRank(v) {
-  return OPENNESS_RANK.has(v) ? OPENNESS_RANK.get(v) : 0; // unknown => closed
+export function opennessRank(v: unknown): number {
+  return typeof v === 'string' ? OPENNESS_RANK.get(v) ?? 0 : 0; // unknown => closed
 }
-export function visibilityRank(v) {
-  return VISIBILITY_RANK.has(v) ? VISIBILITY_RANK.get(v) : 0; // unknown => private
+export function visibilityRank(v: unknown): number {
+  return typeof v === 'string' ? VISIBILITY_RANK.get(v) ?? 0 : 0; // unknown => private
 }
 
 /** MEET of openness values — the most restrictive wins. */
-export function meetOpenness(values) {
+export function meetOpenness(values: readonly Openness[]): Openness {
   if (!values || !values.length) return 'closed';
   let rank = Infinity;
   for (const v of values) rank = Math.min(rank, opennessRank(v));
-  return OPENNESS[Number.isFinite(rank) ? rank : 0];
+  return OPENNESS[Number.isFinite(rank) ? rank : 0] ?? 'closed';
 }
 
 /** MEET of visibility values — the least visible wins. */
-export function meetVisibility(values) {
+export function meetVisibility(values: readonly Visibility[]): Visibility {
   if (!values || !values.length) return 'private';
   let rank = Infinity;
   for (const v of values) rank = Math.min(rank, visibilityRank(v));
-  return VISIBILITY[Number.isFinite(rank) ? rank : 0];
+  return VISIBILITY[Number.isFinite(rank) ? rank : 0] ?? 'private';
 }
 
 /**
@@ -170,7 +201,7 @@ export function meetVisibility(values) {
  *
  * components: [{ brick_id, spdx }]
  */
-export function combineLicenses(components) {
+export function combineLicenses(components: readonly LicenseComponent[]) {
   const classified = (components || []).map((c) => ({
     brick_id: c.brick_id,
     ...classifyLicense(c.spdx),
@@ -180,9 +211,9 @@ export function combineLicenses(components) {
   const effectiveOpenness = meetOpenness(opennessValues.length ? opennessValues : ['closed']);
 
   let strongestCopyleft = 0;
-  let copyleftSource = null;
+  let copyleftSource: string | null = null;
   let attributionRequired = false;
-  const proprietary = [];
+  const proprietary: string[] = [];
   for (const c of classified) {
     if (c.copyleft > strongestCopyleft) {
       strongestCopyleft = c.copyleft;
@@ -192,7 +223,7 @@ export function combineLicenses(components) {
     if (c.class === 'proprietary' || c.class === 'unknown') proprietary.push(c.brick_id);
   }
 
-  const conflicts = [];
+  const conflicts: Array<{ code: string; message: string }> = [];
   // A strong/network copyleft component in the same work as a proprietary one
   // is a genuine legal conflict (cannot be combined and redistributed).
   if (strongestCopyleft >= 2 && proprietary.length) {
@@ -224,19 +255,24 @@ export function combineLicenses(components) {
  *
  * Returns { ok, effective:{openness,visibility,license}, violations:[] }.
  */
-export function checkComposition(declared, components) {
+export function checkComposition(declared: CompositionDeclaration, components: readonly LicenseComponent[]) {
   const declaredVisibility = declared.visibility || 'private';
   const declaredOpenness = declared.openness || opennessOfLicense(declared.license);
   const combined = combineLicenses(components);
 
   const meetVis = meetVisibility(
-    (components || []).map((c) => c.visibility).filter(Boolean),
+    (components || []).flatMap((component) => component.visibility ? [component.visibility] : []),
   );
   const effectiveOpenness = combined.effective_openness;
 
-  const violations = [];
+  const violations: Array<{
+    code: string; severity: 'block' | 'warn'; message: string;
+    components?: string[]; limit?: string; declared?: string;
+  }> = [];
 
-  const declaredTier = LICENSE_TIERS.includes(declared.license_tier) ? declared.license_tier : 'open';
+  const declaredTier: LicenseTier = declared.license_tier && LICENSE_TIERS.includes(declared.license_tier)
+    ? declared.license_tier
+    : 'open';
   const commercialComponents = (components || []).filter((component) => component.license_tier === 'commercial');
   if (declaredTier === 'open' && commercialComponents.length && !declared.commercial_waiver) {
     violations.push({
@@ -329,11 +365,11 @@ export function checkComposition(declared, components) {
   };
 }
 
-export function opennessOfLicense(license) {
+export function opennessOfLicense(license: unknown): Openness {
   return classifyLicense(license).openness;
 }
 
-function describeEffectiveLicense(combined) {
+function describeEffectiveLicense(combined: LicenseCombination): string {
   if (combined.effective_openness === 'closed') return 'proprietary';
   if (combined.strongest_copyleft >= 3) return 'network-copyleft';
   if (combined.strongest_copyleft === 2) return 'strong-copyleft';

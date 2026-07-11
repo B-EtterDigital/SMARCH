@@ -8,6 +8,30 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { isExcludedDirName, isExcludedPath, isWithinRoot, pathExists, toSlashPath } from "./scan-discovery.ts";
 
+type Severity = "medium" | "high" | "critical";
+export type SplitPoint = { line: number; kind: string; label: string };
+export type RefactorBrick = { id: string; source_paths?: string[] };
+type FileReference = { absolute_path: string; relative_path: string; brick_ids: Set<string> };
+export type OversizedFile = {
+  project: string; path: string; absolute_path: string; extension: string; lines: number; bytes: number; severity: Severity;
+  related_brick_count: number; related_bricks: string[]; split_points: SplitPoint[]; split_strategy: string;
+};
+type MissingSourcePath = { project: string; path: string; related_brick_count: number; related_bricks: string[] };
+type AnalysisFailure = { project: string; path: string; error: string };
+export type RefactorProjectReport = {
+  project: string; analyzed_file_count: number; oversized_file_count: number; split_opportunity_count: number;
+  missing_source_path_count: number; analysis_failure_count: number; severity_counts: Record<Severity, number>;
+  oversized_files: OversizedFile[]; missing_source_paths: MissingSourcePath[]; analysis_failures: AnalysisFailure[];
+};
+type CodeQualityCounts = Record<string, number>;
+type QualityType = { key: string; label: string; count: number; weighted_score: number };
+export type QualityHotspot = {
+  project: string; path: string; brick_id?: string; brick_name?: string; smell_score: number; total_matches: number;
+  line_count: number; raw_source_tokens: number; by_type: CodeQualityCounts; top_types: QualityType[]; [key: string]: unknown;
+};
+export type QualityFingerprintEntry = { fingerprint: string; project: string; path: string; brick_id?: string; brick_name?: string; line_count: number; raw_source_tokens: number };
+type QualityQueueEntry = { project: string; category: string; path: string; priority_score: number; [key: string]: unknown };
+
 export const oversizedThresholds = {
   medium: 350,
   high: 600,
@@ -135,15 +159,15 @@ export const contractEnvSignals = [
   "WEBHOOK",
   "WORKOS"
 ];
-export function isCodeFile(filePath) {
+export function isCodeFile(filePath: string): boolean {
   return codeFileExtensions.has(path.extname(filePath).toLowerCase());
 }
 
-export function isAnalyzableSourceFile(filePath) {
+export function isAnalyzableSourceFile(filePath: string): boolean {
   return analyzableSourceExtensions.has(path.extname(filePath).toLowerCase());
 }
 
-export function severityForLineCount(lineCount) {
+export function severityForLineCount(lineCount: number): Severity | "" {
   if (lineCount >= oversizedThresholds.critical) {
     return "critical";
   }
@@ -159,21 +183,21 @@ export function severityForLineCount(lineCount) {
   return "";
 }
 
-export function severityWeight(severity) {
+export function severityWeight(severity: string): number {
   return {
     medium: 1,
     high: 2,
     critical: 3
   }[severity] || 0;
 }
-export function topLevelIndent(line) {
+export function topLevelIndent(line: string): number {
   const match = line.match(/^(\s*)/);
   return match ? match[1].length : 0;
 }
 
-export function detectSplitPoints(sourceText) {
+export function detectSplitPoints(sourceText: string): SplitPoint[] {
   const lines = sourceText.split(/\r?\n/);
-  const rawPoints = [];
+  const rawPoints: SplitPoint[] = [];
 
   for (let index = 0; index < lines.length; index += 1) {
     const rawLine = lines[index];
@@ -185,7 +209,7 @@ export function detectSplitPoints(sourceText) {
 
     const indent = topLevelIndent(rawLine);
     const line = index + 1;
-    let point = null;
+    let point: SplitPoint | null = null;
 
     if (/^export\s+(async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/.test(trimmed)) {
       const [, , method] = trimmed.match(/^export\s+(async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/) || [];
@@ -224,7 +248,7 @@ export function detectSplitPoints(sourceText) {
     }
   }
 
-  const filtered = [];
+  const filtered: SplitPoint[] = [];
 
   for (const point of rawPoints) {
     const previous = filtered.at(-1);
@@ -243,7 +267,7 @@ export function detectSplitPoints(sourceText) {
   return filtered;
 }
 
-export function suggestSplitStrategy(splitPoints) {
+export function suggestSplitStrategy(splitPoints: SplitPoint[]): string {
   if (splitPoints.length === 0) {
     return "Start by separating orchestration from helpers, then add explicit section boundaries for the next pass.";
   }
@@ -274,7 +298,7 @@ export function suggestSplitStrategy(splitPoints) {
   return "Start with the first seam, extract one cohesive concern, then re-scan for the next split.";
 }
 
-export async function walkCodeFiles(targetPath, files = []) {
+export async function walkCodeFiles(targetPath: string, files: string[] = []): Promise<string[]> {
   if (isExcludedPath(targetPath)) {
     return files;
   }
@@ -322,7 +346,7 @@ export async function walkCodeFiles(targetPath, files = []) {
   return files;
 }
 
-export async function walkAnalyzableFiles(targetPath, files = []) {
+export async function walkAnalyzableFiles(targetPath: string, files: string[] = []): Promise<string[]> {
   if (isExcludedPath(targetPath)) {
     return files;
   }
@@ -370,7 +394,7 @@ export async function walkAnalyzableFiles(targetPath, files = []) {
   return files;
 }
 
-export function sourcePathCandidates(projectRoot, sourcePath) {
+export function sourcePathCandidates(projectRoot: string, sourcePath: string): string[] {
   const requestedPath = String(sourcePath || "").split("/").join(path.sep);
   const candidates = [path.resolve(projectRoot, requestedPath)];
   const projectDirName = path.basename(projectRoot);
@@ -383,7 +407,7 @@ export function sourcePathCandidates(projectRoot, sourcePath) {
   return [...new Set(candidates)];
 }
 
-export async function resolveSourceTarget(projectRoot, sourcePath) {
+export async function resolveSourceTarget(projectRoot: string, sourcePath: string): Promise<{ absolute_path: string; relative_path: string } | null> {
   for (const candidate of sourcePathCandidates(projectRoot, sourcePath)) {
     if (!isWithinRoot(projectRoot, candidate)) {
       continue;
@@ -400,12 +424,12 @@ export async function resolveSourceTarget(projectRoot, sourcePath) {
   return null;
 }
 
-export function attachFileReference(fileMap, absolutePath, relativePath, brickIds) {
+export function attachFileReference(fileMap: Map<string, FileReference>, absolutePath: string, relativePath: string, brickIds: Iterable<string>): void {
   const key = toSlashPath(absolutePath);
   const current = fileMap.get(key) || {
     absolute_path: absolutePath,
     relative_path: toSlashPath(relativePath),
-    brick_ids: new Set()
+    brick_ids: new Set<string>()
   };
 
   for (const brickId of brickIds) {
@@ -415,9 +439,9 @@ export function attachFileReference(fileMap, absolutePath, relativePath, brickId
   fileMap.set(key, current);
 }
 
-export async function analyzeProjectRefactorOpportunities(projectRoot, projectIdValue, bricks) {
-  const sourceTargets = new Map();
-  const missingSourcePathMap = new Map();
+export async function analyzeProjectRefactorOpportunities(projectRoot: string, projectIdValue: string, bricks: RefactorBrick[]): Promise<RefactorProjectReport> {
+  const sourceTargets = new Map<string, FileReference>();
+  const missingSourcePathMap = new Map<string, { project: string; path: string; brick_ids: Set<string> }>();
 
   for (const brick of bricks) {
     for (const sourcePath of brick.source_paths || []) {
@@ -428,7 +452,7 @@ export async function analyzeProjectRefactorOpportunities(projectRoot, projectId
         const currentMissing = missingSourcePathMap.get(key) || {
           project: projectIdValue,
           path: key,
-          brick_ids: new Set()
+          brick_ids: new Set<string>()
         };
 
         currentMissing.brick_ids.add(brick.id);
@@ -440,7 +464,7 @@ export async function analyzeProjectRefactorOpportunities(projectRoot, projectId
       const current = sourceTargets.get(key) || {
         absolute_path: resolvedTarget.absolute_path,
         relative_path: resolvedTarget.relative_path,
-        brick_ids: new Set()
+        brick_ids: new Set<string>()
       };
 
       current.brick_ids.add(brick.id);
@@ -448,17 +472,17 @@ export async function analyzeProjectRefactorOpportunities(projectRoot, projectId
     }
   }
 
-  const fileMap = new Map();
+  const fileMap = new Map<string, FileReference>();
   const missingSourcePaths = [...missingSourcePathMap.values()].map((entry) => ({
     project: entry.project,
     path: entry.path,
     related_brick_count: entry.brick_ids.size,
     related_bricks: [...entry.brick_ids].sort().slice(0, 12)
   }));
-  const analysisFailures = [];
+  const analysisFailures: AnalysisFailure[] = [];
 
   for (const target of sourceTargets.values()) {
-    const sourceFiles = [];
+    const sourceFiles: string[] = [];
 
     try {
       await walkCodeFiles(target.absolute_path, sourceFiles);
@@ -481,7 +505,7 @@ export async function analyzeProjectRefactorOpportunities(projectRoot, projectId
     }
   }
 
-  const oversizedFiles = [];
+  const oversizedFiles: OversizedFile[] = [];
   const severityCounts = { medium: 0, high: 0, critical: 0 };
 
   for (const file of fileMap.values()) {
@@ -538,7 +562,7 @@ export async function analyzeProjectRefactorOpportunities(projectRoot, projectId
   };
 }
 
-export function buildRefactorReport(projectReports) {
+export function buildRefactorReport(projectReports: RefactorProjectReport[]) {
   const oversizedFiles = projectReports
     .flatMap((report) => report.oversized_files)
     .sort((a, b) => {
@@ -585,7 +609,7 @@ export function buildRefactorReport(projectReports) {
   };
 }
 
-export function inferRefactorTheme(file) {
+export function inferRefactorTheme(file: OversizedFile): string {
   const splitKinds = new Set((file.split_points || []).map((point) => point.kind));
   const lowerPath = String(file.path || "").toLowerCase();
   const isUiFile = [".tsx", ".jsx"].includes(String(file.extension || "").toLowerCase())
@@ -623,7 +647,7 @@ export function inferRefactorTheme(file) {
   return "utility_module";
 }
 
-export function queuePriorityScore(file) {
+export function queuePriorityScore(file: OversizedFile): number {
   const severityBase = severityWeight(file.severity) * 1000;
   const lineFactor = Math.min(file.lines || 0, 12000);
   const splitFactor = Math.min((file.split_points || []).length, 8) * 120;
@@ -631,7 +655,7 @@ export function queuePriorityScore(file) {
   return severityBase + lineFactor + splitFactor + brickFactor;
 }
 
-export function extractionTargets(file, theme) {
+export function extractionTargets(file: OversizedFile, theme: string): string[] {
   const labels = (file.split_points || []).map((point) => point.label).filter(Boolean);
   const uniqueLabels = [...new Set(labels)];
 
@@ -671,7 +695,7 @@ export function extractionTargets(file, theme) {
   return utilityTargets.length > 0 ? utilityTargets : ["exports", "helpers", "state", "compat"];
 }
 
-export function slugifyRefactorLabel(label) {
+export function slugifyRefactorLabel(label: unknown): string {
   return String(label || "segment")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -679,7 +703,7 @@ export function slugifyRefactorLabel(label) {
     .slice(0, 32) || "segment";
 }
 
-export function firstActionForTheme(theme) {
+export function firstActionForTheme(theme: string): string {
   return {
     route_orchestration: "Extract shared route logic and validation into sibling service modules before touching handlers.",
     react_orchestration: "Move hooks and state transitions out first, then split presentational components.",
@@ -692,7 +716,7 @@ export function firstActionForTheme(theme) {
   }[theme] || "Extract one cohesive concern at a time and keep the old entrypoint as a facade until imports are updated.";
 }
 
-export function riskNoteForTheme(theme) {
+export function riskNoteForTheme(theme: string): string {
   return {
     route_orchestration: "Watch for request/response shape drift and auth checks moving out of the handler path.",
     react_orchestration: "Watch for hook order regressions and prop contract churn across child components.",
@@ -705,7 +729,7 @@ export function riskNoteForTheme(theme) {
   }[theme] || "Watch for import churn and compatibility breaks while the file is still the main integration point.";
 }
 
-export function buildRefactorQueue(oversizedFiles) {
+export function buildRefactorQueue(oversizedFiles: OversizedFile[]) {
   return oversizedFiles
     .filter((file) => file.severity === "critical" || (file.severity === "high" && (file.split_points || []).length > 0))
     .map((file) => {
@@ -739,8 +763,8 @@ export function buildRefactorQueue(oversizedFiles) {
     }));
 }
 
-export function countBy(items, keyFn) {
-  const counts = new Map();
+export function countBy<T>(items: T[], keyFn: (item: T) => string): Array<[string, number]> {
+  const counts = new Map<string, number>();
 
   for (const item of items) {
     const key = keyFn(item);
@@ -818,16 +842,16 @@ export const codeQualityDefinitions = [
   ...codeQualityStructuralDefinitions
 ];
 
-export function emptyCodeQualityCounts() {
+export function emptyCodeQualityCounts(): CodeQualityCounts {
   return Object.fromEntries(codeQualityDefinitions.map((definition) => [definition.key, 0]));
 }
 
-export function countMatches(sourceText, regex) {
+export function countMatches(sourceText: unknown, regex: RegExp): number {
   const matches = String(sourceText || "").match(regex);
   return matches ? matches.length : 0;
 }
 
-export function qualitySeverityLevel(lineCount, baseThreshold, step, maxLevel = 3) {
+export function qualitySeverityLevel(lineCount: number, baseThreshold: number, step: number, maxLevel = 3): number {
   if (lineCount < baseThreshold) {
     return 0;
   }
@@ -835,7 +859,7 @@ export function qualitySeverityLevel(lineCount, baseThreshold, step, maxLevel = 
   return Math.max(1, Math.min(maxLevel, 1 + Math.floor((lineCount - baseThreshold) / step)));
 }
 
-export function looksLikeReactComponentFile(filePath, sourceText) {
+export function looksLikeReactComponentFile(filePath: string, sourceText: string): boolean {
   if (!/\.(?:tsx|jsx)$/i.test(filePath)) {
     return false;
   }
@@ -844,19 +868,19 @@ export function looksLikeReactComponentFile(filePath, sourceText) {
     || /\buse(?:State|Effect|Memo|Callback|Reducer|Ref|LayoutEffect|Transition|DeferredValue)\b/.test(sourceText);
 }
 
-export function looksLikeHookFile(filePath, sourceText) {
+export function looksLikeHookFile(filePath: string, sourceText: string): boolean {
   const base = path.basename(filePath);
   return /^use[A-Z0-9].*\.(?:ts|tsx|js|jsx)$/i.test(base)
     || /\bfunction\s+use[A-Z0-9_]/.test(sourceText)
     || /\bconst\s+use[A-Z0-9_]\w*\s*=\s*(?:async\s*)?\(/.test(sourceText);
 }
 
-export function looksLikeServiceFile(filePath) {
+export function looksLikeServiceFile(filePath: string): boolean {
   return /(?:^|\/)(?:src\/)?(?:main\/)?services?(?:\/|$)/i.test(toSlashPath(filePath))
     || /Service\.(?:ts|tsx|js|jsx|mjs|cjs)$/i.test(path.basename(filePath));
 }
 
-export function structuralCodeQualityCounts({ filePath, sourceText, lineCount, testLike = false }) {
+export function structuralCodeQualityCounts({ filePath, sourceText, lineCount, testLike = false }: { filePath: string; sourceText: string; lineCount: number; testLike?: boolean }): CodeQualityCounts {
   const counts = emptyCodeQualityCounts();
 
   if (testLike) {
@@ -878,13 +902,13 @@ export function structuralCodeQualityCounts({ filePath, sourceText, lineCount, t
   return counts;
 }
 
-export function normalizeCodeFingerprint(sourceText) {
+export function normalizeCodeFingerprint(sourceText: unknown): string {
   return String(sourceText || "")
     .replace(/\b\d+(?:\.\d+)?\b/g, "0")
     .replace(/\s+/g, "");
 }
 
-export function duplicateFingerprintForFile({ filePath, sourceText, lineCount, testLike = false }) {
+export function duplicateFingerprintForFile({ filePath, sourceText, lineCount, testLike = false }: { filePath: string; sourceText: string; lineCount: number; testLike?: boolean }): string | null {
   if (testLike || lineCount < 120 || !isCodeFile(filePath)) {
     return null;
   }
@@ -898,7 +922,7 @@ export function duplicateFingerprintForFile({ filePath, sourceText, lineCount, t
   return createHash("sha1").update(normalized).digest("hex").slice(0, 16);
 }
 
-export function analyzeCodeQualityCounts(sourceText, { filePath = "", lineCount = 0, testLike = false } = {}) {
+export function analyzeCodeQualityCounts(sourceText: string, { filePath = "", lineCount = 0, testLike = false }: { filePath?: string; lineCount?: number; testLike?: boolean } = {}): CodeQualityCounts {
   const counts = emptyCodeQualityCounts();
 
   for (const definition of codeQualityPatternDefinitions) {
@@ -917,7 +941,7 @@ export function analyzeCodeQualityCounts(sourceText, { filePath = "", lineCount 
   return counts;
 }
 
-export function mergeCodeQualityCounts(target, nextCounts) {
+export function mergeCodeQualityCounts(target: CodeQualityCounts, nextCounts: CodeQualityCounts): CodeQualityCounts {
   for (const definition of codeQualityDefinitions) {
     target[definition.key] = (target[definition.key] || 0) + (nextCounts?.[definition.key] || 0);
   }
@@ -925,15 +949,15 @@ export function mergeCodeQualityCounts(target, nextCounts) {
   return target;
 }
 
-export function codeQualityMatchCount(counts: Record<string, any>) {
+export function codeQualityMatchCount(counts: CodeQualityCounts): number {
   return Object.values(counts || {}).reduce<number>((sum, value) => sum + Number(value || 0), 0);
 }
 
-export function codeQualityWeightedScore(counts) {
+export function codeQualityWeightedScore(counts: CodeQualityCounts): number {
   return codeQualityDefinitions.reduce((sum, definition) => sum + ((counts?.[definition.key] || 0) * definition.weight), 0);
 }
 
-export function compactCodeQualityCounts(counts) {
+export function compactCodeQualityCounts(counts: CodeQualityCounts): CodeQualityCounts {
   return Object.fromEntries(
     Object.entries(counts || {})
       .filter(([, value]) => Number(value || 0) > 0)
@@ -941,7 +965,7 @@ export function compactCodeQualityCounts(counts) {
   );
 }
 
-export function topCodeQualityTypes(counts, limit = 3) {
+export function topCodeQualityTypes(counts: CodeQualityCounts, limit = 3): QualityType[] {
   return codeQualityDefinitions
     .map((definition) => ({
       key: definition.key,
@@ -954,8 +978,8 @@ export function topCodeQualityTypes(counts, limit = 3) {
     .slice(0, limit);
 }
 
-export function buildQualityDuplicateGroups(entries: any[]) {
-  const byFingerprint = new Map<string, any[]>();
+export function buildQualityDuplicateGroups(entries: QualityFingerprintEntry[]): QualityQueueEntry[] {
+  const byFingerprint = new Map<string, QualityFingerprintEntry[]>();
 
   for (const entry of entries) {
     const current = byFingerprint.get(entry.fingerprint) || [];
@@ -994,7 +1018,7 @@ export function buildQualityDuplicateGroups(entries: any[]) {
     .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || String(a.path).localeCompare(String(b.path)));
 }
 
-export function qualityQueuePriority(entry) {
+export function qualityQueuePriority(entry: QualityHotspot): number {
   return Math.round(
     Number(entry.smell_score || 0)
     + Math.min(120, Number(entry.line_count || 0) / 6)
@@ -1002,7 +1026,7 @@ export function qualityQueuePriority(entry) {
   );
 }
 
-export function qualityQueueAction(topTypes = []) {
+export function qualityQueueAction(topTypes: QualityType[] = []): string {
   const primary = topTypes[0]?.key;
 
   switch (primary) {
@@ -1028,7 +1052,7 @@ export function qualityQueueAction(topTypes = []) {
   }
 }
 
-export function buildQualityQueue(hotspots, duplicateGroups) {
+export function buildQualityQueue(hotspots: QualityHotspot[], duplicateGroups: QualityQueueEntry[]): QualityQueueEntry[] {
   const hotspotActions = hotspots
     .filter((entry) => Number(entry.smell_score || 0) >= 40 || Number(entry.total_matches || 0) >= 12)
     .map((entry) => ({
@@ -1053,8 +1077,8 @@ export function buildQualityQueue(hotspots, duplicateGroups) {
     .slice(0, 120);
 }
 
-export function dedupeQualityHotspots(entries) {
-  const byKey = new Map();
+export function dedupeQualityHotspots(entries: QualityHotspot[]): QualityHotspot[] {
+  const byKey = new Map<string, QualityHotspot>();
 
   for (const entry of entries || []) {
     const key = `${entry.project || ""}:${entry.path || ""}`;
@@ -1068,11 +1092,11 @@ export function dedupeQualityHotspots(entries) {
   return [...byKey.values()];
 }
 
-export function estimateTokens(value) {
+export function estimateTokens(value: unknown): number {
   return Math.max(1, Math.ceil(String(value || "").length / 4));
 }
 
-export function gradeForScore(score) {
+export function gradeForScore(score: number): string {
   if (score >= 90) return "A";
   if (score >= 80) return "B";
   if (score >= 70) return "C";
@@ -1080,7 +1104,7 @@ export function gradeForScore(score) {
   return "F";
 }
 
-export function readinessLabel(score) {
+export function readinessLabel(score: number): string {
   if (score >= 90) return "launch_ready";
   if (score >= 80) return "strong_foundation";
   if (score >= 70) return "promising_but_incomplete";
@@ -1088,7 +1112,7 @@ export function readinessLabel(score) {
   return "heavy_repair_required";
 }
 
-export function isIgnoredEnvReference(name) {
+export function isIgnoredEnvReference(name: unknown): boolean {
   const normalized = String(name || "").trim().toUpperCase();
 
   if (!normalized) {
@@ -1106,7 +1130,7 @@ export function isIgnoredEnvReference(name) {
   return ignoredEnvPrefixes.some((prefix) => normalized.startsWith(prefix));
 }
 
-export function isContractRelevantEnvReference(name) {
+export function isContractRelevantEnvReference(name: unknown): boolean {
   const normalized = String(name || "").trim().toUpperCase();
 
   if (!normalized || isIgnoredEnvReference(normalized)) {

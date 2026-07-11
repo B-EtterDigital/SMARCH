@@ -14,7 +14,37 @@ export const PACKET_LEASE_FINGERPRINT_ALGORITHM = 'sha256:active-leases-v1';
 
 const TRANSIENT_LEASE_KINDS = new Set(['registry-regen', 'state-regen', 'wiki-regen']);
 
-export function maxAgeSeconds(value, fallback = DEFAULT_PACKET_MAX_AGE_SECONDS) {
+type PacketLease = {
+  lease_id?: unknown;
+  resource_kind?: unknown;
+  resource_id?: unknown;
+  project?: unknown;
+  agent_id?: unknown;
+  acquired_at?: unknown;
+  intent?: unknown;
+};
+
+type PacketLeaseSource = PacketLease[] | { leases?: PacketLease[] } | null | undefined;
+type NormalizedPacketLease = Record<'lease_id' | 'resource_kind' | 'resource_id' | 'project' | 'agent_id' | 'acquired_at' | 'intent', string | null>;
+export type LeaseFingerprint = { algorithm: string; hash: string; lease_count: number; lease_ids?: Array<string | null> };
+type PacketReport = { generated_at?: string | null; lease_fingerprint?: LeaseFingerprint | null } | null | undefined;
+export type PacketFreshness = {
+  generated_at: string | null;
+  age_seconds: number | null;
+  max_age_seconds: number;
+  age_stale: boolean;
+  lease_stale: boolean;
+  lease_fingerprint: {
+    packet_hash: string | null;
+    current_hash: string | null;
+    packet_lease_count: number | null;
+    current_lease_count: number | null;
+    algorithm: string | null;
+  };
+  stale: boolean;
+};
+
+export function maxAgeSeconds(value: unknown, fallback = DEFAULT_PACKET_MAX_AGE_SECONDS): number {
   if (value === undefined || value === null || value === true) return fallback;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) {
@@ -23,7 +53,7 @@ export function maxAgeSeconds(value, fallback = DEFAULT_PACKET_MAX_AGE_SECONDS) 
   return Math.floor(parsed);
 }
 
-export function packetLeaseFingerprint(activeLeases, { project = null } = {}) {
+export function packetLeaseFingerprint(activeLeases: PacketLeaseSource, { project = null }: { project?: string | null } = {}): LeaseFingerprint {
   const leases = normalizePacketLeases(activeLeases, { project });
   const payload = JSON.stringify({
     algorithm: PACKET_LEASE_FINGERPRINT_ALGORITHM,
@@ -38,7 +68,7 @@ export function packetLeaseFingerprint(activeLeases, { project = null } = {}) {
   };
 }
 
-export function normalizePacketLeases(activeLeases, { project = null } = {}) {
+export function normalizePacketLeases(activeLeases: PacketLeaseSource, { project = null }: { project?: string | null } = {}): NormalizedPacketLease[] {
   const projectFilter = normalizeString(project);
   const source = Array.isArray(activeLeases)
     ? activeLeases
@@ -76,11 +106,11 @@ export function normalizePacketLeases(activeLeases, { project = null } = {}) {
     ].join('\0')));
 }
 
-export function packetFreshness(report, {
+export function packetFreshness(report: PacketReport, {
   currentLeaseFingerprint = null,
   expectedLeaseFingerprint = null,
   maxAge = DEFAULT_PACKET_MAX_AGE_SECONDS,
-} = {}) {
+}: { currentLeaseFingerprint?: LeaseFingerprint | null; expectedLeaseFingerprint?: LeaseFingerprint | null; maxAge?: number } = {}): PacketFreshness {
   const generatedAt = report?.generated_at || null;
   const generatedMs = Date.parse(generatedAt || '');
   const ageSeconds = Number.isFinite(generatedMs)
@@ -110,14 +140,14 @@ export function packetFreshness(report, {
   };
 }
 
-export function assertFreshPacketReport(report, {
+export function assertFreshPacketReport(report: PacketReport, {
   allowStale = false,
   currentLeaseFingerprint = null,
   expectedLeaseFingerprint = null,
   label = 'packet',
   maxAge = DEFAULT_PACKET_MAX_AGE_SECONDS,
   refreshCommand = 'npm run controller:sweep:write',
-} = {}) {
+}: { allowStale?: boolean; currentLeaseFingerprint?: LeaseFingerprint | null; expectedLeaseFingerprint?: LeaseFingerprint | null; label?: string; maxAge?: number; refreshCommand?: string } = {}): PacketFreshness {
   const freshness = packetFreshness(report, { currentLeaseFingerprint, expectedLeaseFingerprint, maxAge });
   if (!allowStale && freshness.stale) {
     throw new Error(`${label} packet file is stale (${packetFreshnessReason(freshness)}). Run ${refreshCommand} or pass --allow-stale.`);
@@ -125,7 +155,7 @@ export function assertFreshPacketReport(report, {
   return freshness;
 }
 
-export function formatPacketFreshness(freshness) {
+export function formatPacketFreshness(freshness: PacketFreshness): string {
   const age = freshness.age_seconds === null ? 'unknown age' : `${freshness.age_seconds}s old`;
   const lease = freshness.lease_fingerprint || {};
   const leaseInfo = lease.packet_hash
@@ -139,8 +169,8 @@ export function formatPacketFreshness(freshness) {
   ].filter(Boolean).join(', ')})`;
 }
 
-function packetFreshnessReason(freshness) {
-  const reasons = [];
+function packetFreshnessReason(freshness: PacketFreshness): string {
+  const reasons: string[] = [];
   if (freshness.age_stale) {
     const age = freshness.age_seconds === null ? 'unknown age' : `${freshness.age_seconds}s old`;
     reasons.push(`${age}; max ${freshness.max_age_seconds}s`);
@@ -152,17 +182,17 @@ function packetFreshnessReason(freshness) {
   return reasons.join('; ') || 'unknown freshness failure';
 }
 
-function shortHash(value) {
+function shortHash(value: string | null | undefined): string {
   return value ? String(value).slice(0, 12) : 'none';
 }
 
-function isTransientPacketLease(lease) {
+function isTransientPacketLease(lease: PacketLease): boolean {
   const kind = normalizeString(lease?.resource_kind);
   const resource = normalizeString(lease?.resource_id);
-  return TRANSIENT_LEASE_KINDS.has(kind)
+  return (kind !== null && TRANSIENT_LEASE_KINDS.has(kind))
     || (kind === 'other' && resource === 'controller-actions');
 }
 
-function normalizeString(value) {
+function normalizeString(value: unknown): string | null {
   return value === undefined || value === null ? null : String(value);
 }

@@ -13,7 +13,22 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { renderAgentPacketMarkdown } from './module-work-renderers.ts';
 
-export function agentPacketDescriptor({ dispatchBase, slot, smaRoot }) {
+type AgentPacketDescriptor = { json_path: string; markdown_path: string; first_read: true };
+type ModuleAssignment = {
+  project: string; task: string; agent_slot: number; module_id: string; slot: number;
+  partition_id?: string | null; partition_label?: string | null; brick: string;
+  graph_query_command?: string; claim_command?: string; paths?: string[]; exclude_paths?: string[];
+  shared_hot_paths?: string[]; iteration_gates?: string[]; required_gates?: string[];
+  prompt?: string; agent_packet?: Partial<AgentPacketDescriptor>;
+};
+type ModuleManifest = {
+  created_at: string; dispatch_id: string; assignments?: ModuleAssignment[];
+  gains?: Record<string, number | undefined>;
+  controller_commands?: Record<string, string | undefined>;
+  dispatch_paths?: { json_path?: string; markdown_path?: string };
+};
+
+export function agentPacketDescriptor({ dispatchBase, slot, smaRoot }: { dispatchBase: string; slot: Pick<ModuleAssignment, 'agent_slot' | 'module_id'>; smaRoot: string }): AgentPacketDescriptor {
   const slotLabel = String(positiveInt(slot.agent_slot, 1)).padStart(2, '0');
   const moduleLabel = safeId(slot.module_id || 'module').toLowerCase();
   const base = resolve(`${dispatchBase}.agent-packets`, `${slotLabel}-${moduleLabel}`);
@@ -24,7 +39,7 @@ export function agentPacketDescriptor({ dispatchBase, slot, smaRoot }) {
   };
 }
 
-export function writeAgentPackets(manifest, { smaRoot }) {
+export function writeAgentPackets(manifest: ModuleManifest, { smaRoot }: { smaRoot: string }): void {
   for (const assignment of manifest.assignments || []) {
     if (!assignment.agent_packet?.json_path || !assignment.agent_packet?.markdown_path) continue;
     const jsonPath = resolve(smaRoot, assignment.agent_packet.json_path);
@@ -36,7 +51,7 @@ export function writeAgentPackets(manifest, { smaRoot }) {
   }
 }
 
-export function agentPacketPayload(manifest, assignment) {
+export function agentPacketPayload(manifest: ModuleManifest, assignment: ModuleAssignment) {
   return {
     schema_version: '1.0.0',
     kind: 'sma-gen3-module-agent-packet',
@@ -57,9 +72,9 @@ export function agentPacketPayload(manifest, assignment) {
       collision_reduction_percent_estimate: number(manifest.gains?.collision_reduction_percent_estimate),
     },
     commands: {
-      graph_query: assignment.graph_query_command,
-      claim: assignment.claim_command,
-      observe: manifest.controller_commands?.observe,
+      graph_query: assignment.graph_query_command || '',
+      claim: assignment.claim_command || '',
+      observe: manifest.controller_commands?.observe || '',
       observe_write: manifest.controller_commands?.observe_write,
       conflict_summary: manifest.controller_commands?.conflict_summary,
     },
@@ -89,22 +104,22 @@ export function agentPacketPayload(manifest, assignment) {
   };
 }
 
-function relativeToRoot(base, root, extension) {
+function relativeToRoot(base: string, root: string, extension: string): string {
   const filePath = `${base}${extension}`;
   return filePath.startsWith(`${root}/`) ? filePath.slice(root.length + 1) : filePath;
 }
 
-function safeId(value) {
+function safeId(value: unknown): string {
   return String(value || 'module').replace(/[^a-z0-9._-]/gi, '-').replace(/-+/g, '-');
 }
 
-function positiveInt(value, fallback) {
+function positiveInt(value: unknown, fallback: number): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return Math.floor(parsed);
 }
 
-function number(value) {
+function number(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }

@@ -29,10 +29,10 @@ import { intotoStatement, spdxDocument, cyclonedxDocument } from './attestation.
 import { leafHash, buildMerkle, inclusionProof } from './merkle.ts';
 import { verifyBundle } from '../sma-attest-verify.ts';
 
-const h = (s) => createHash('sha256').update(s).digest('hex');
+const h = (s: string): string => createHash('sha256').update(s).digest('hex');
 let n = 0;
-const ok = (cond, msg) => { assert.ok(cond, msg); n += 1; };
-const eq = (a, b, msg) => { assert.equal(a, b, msg); n += 1; };
+const ok = (cond: unknown, msg: string): void => { assert.ok(cond, msg); n += 1; };
+const eq = (a: unknown, b: unknown, msg: string): void => { assert.equal(a, b, msg); n += 1; };
 
 const contentHash = h('synthetic-brick-source');
 const timestamp = '2026-07-01T00:00:00Z';
@@ -77,8 +77,8 @@ eq(st.predicate.runDetails.builder.id, 'https://sma.local/brick-scanner', 'intot
 eq(st.predicate.runDetails.metadata.invocationId, brick.seal.head, 'intoto records seal head');
 const deps = st.predicate.buildDefinition.resolvedDependencies;
 ok(deps.length >= 3, 'intoto materials include commit + contributor + component');
-ok(deps.some((d) => d.uri.includes('dev@example.com')), 'intoto materials include contributor');
-ok(deps.some((d) => d.digest?.sha256 === components[0].content_hash), 'intoto materials include component digest');
+ok(deps.some((d: { uri: string }) => d.uri.includes('dev@example.com')), 'intoto materials include contributor');
+ok(deps.some((d: { digest?: { sha256?: string } }) => d.digest?.sha256 === components[0].content_hash), 'intoto materials include component digest');
 
 // --- SPDX 2.3 required fields ----------------------------------------------
 const spdx = spdxDocument(brick, components, timestamp);
@@ -103,8 +103,8 @@ eq(cdx.specVersion, '1.5', 'cdx specVersion');
 ok(/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(cdx.serialNumber), 'cdx serialNumber urn:uuid');
 eq(cdx.components.length, 1 + components.length, 'cdx one component per brick + component');
 eq(cdx.components[0].type, 'library', 'cdx component type library');
-eq(cdx.components[0].hashes[0].alg, 'SHA-256', 'cdx hash alg');
-eq(cdx.components[0].hashes[0].content, contentHash, 'cdx hash content');
+eq(cdx.components[0].hashes?.[0]?.alg, 'SHA-256', 'cdx hash alg');
+eq(cdx.components[0].hashes?.[0]?.content, contentHash, 'cdx hash content');
 ok(Array.isArray(cdx.components[0].licenses) && cdx.components[0].licenses.length >= 1, 'cdx licenses present');
 
 // --- round trip: attest -> verify (bundle + merkle.ts only) ---------------
@@ -168,6 +168,6 @@ try {
 
 console.log(`attestation-selftest: OK (${n} assertions)`);
 
-function writeJson(dir, name, v) {
+function writeJson(dir: string, name: string, v: unknown): void {
   writeFileSync(resolve(dir, name), `${JSON.stringify(v, null, 2)}\n`);
 }

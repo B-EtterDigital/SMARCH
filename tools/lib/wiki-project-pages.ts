@@ -1,8 +1,14 @@
 import { escapeHtml, mdTableRow, slugify } from "./wiki-utils.ts";
+import type { GlobalRegistry } from "./schema-types/global.registry.schema.d.ts";
+import type { CompactBrick } from "./scan-discovery.ts";
+
+type RegistryProject = GlobalRegistry["projects"][number];
+type Candidate = NonNullable<GlobalRegistry["unmanifested_bricks"]>[number];
+type CandidateGroup = NonNullable<GlobalRegistry["candidate_groups"]>[number];
 
 
 
-export function projectHealthMarkdown(projects, bricks) {
+export function projectHealthMarkdown(projects: RegistryProject[], bricks: CompactBrick[]): string {
   const rows = projects.map((project) => mdTableRow([
     `[${project.id}](projects/${slugify(project.id)}.md)`,
     project.brick_count ?? 0,
@@ -30,7 +36,7 @@ Unmanifested candidates: ${projects.reduce((sum, project) => sum + (project.unma
 `;
 }
 
-export function projectPage(project, bricks, unmanifested, candidateGroups) {
+export function projectPage(project: RegistryProject, bricks: CompactBrick[], unmanifested: Candidate[], candidateGroups: CandidateGroup[]): string {
   const projectBricks = bricks.filter((brick) => brick.project === project.id);
   const projectCandidates = unmanifested.filter((candidate) => candidate.project === project.id);
   const projectGroups = candidateGroups.filter((group) => group.project === project.id);
@@ -108,7 +114,7 @@ ${candidateRows.join("\n")}
 `;
 }
 
-export function courseHtml(bricks) {
+export function courseHtml(bricks: CompactBrick[]): string {
   const cards = bricks.map((brick) => `
       <article class="card">
         <p class="eyebrow">${escapeHtml(brick.kind || "brick")}</p>
@@ -213,5 +219,4 @@ ${cards || '      <article class="card"><h3>No bricks indexed yet</h3><p>Add mod
 </html>
 `;
 }
-
 

@@ -1,9 +1,9 @@
 const fixtureToken = "9faa5b8cf603";
 
-export function assetBrowserRecord(input = {}) {
+/** @param {{ enabled?: boolean }} [input] */ export function assetBrowserRecord(input = {}) {
   return { fixtureToken, kind: "asset-browser", enabled: input.enabled !== false };
 }
 
-export function assetBrowserSummary(items = []) {
+/** @param {Array<{ label?: unknown }>} [items] */ export function assetBrowserSummary(items = []) {
   return items.map((item, index) => ({ index, label: String(item.label || "untitled") }));
 }

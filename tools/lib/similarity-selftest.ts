@@ -27,8 +27,8 @@ import {
 } from './similarity.ts';
 
 let n = 0;
-const ok = (name, fn) => { fn(); n += 1; };
-const r3 = (x) => Math.round(x * 1000) / 1000;
+const ok = (name: string, fn: () => void) => { fn(); n += 1; };
+const r3 = (x: number) => Math.round(x * 1000) / 1000;
 const achieved: Record<string, number> = {};
 
 // A realistically sized source file so winnowing has room to work.

@@ -8,6 +8,10 @@ import net from "node:net";
 export const RUNS = 10;
 const OUTPUT_LIMIT = 4_000;
 
+/** @typedef {import("node:child_process").ChildProcessByStdio<null, import("node:stream").Readable, import("node:stream").Readable>} PipedChild */
+/** @typedef {{ cwd?: string, env?: NodeJS.ProcessEnv, timeoutMs?: number, expectStatus?: number, label?: string }} RunOptions */
+
+/** @param {string[]} argv @param {string} name */
 export function parseJourneyArgs(argv, name) {
   let selftest = false;
   for (const arg of argv) {
@@ -22,11 +26,13 @@ export function parseJourneyArgs(argv, name) {
   return { selftest };
 }
 
+/** @param {unknown} value */
 function tail(value) {
   const text = String(value || "").trim();
   return text.length <= OUTPUT_LIMIT ? text : text.slice(-OUTPUT_LIMIT);
 }
 
+/** @param {string} command @param {string[]} args @param {RunOptions} [options] */
 export function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
@@ -47,10 +53,12 @@ export function run(command, args, options = {}) {
   return { stdout: result.stdout || "", stderr: result.stderr || "", status: result.status };
 }
 
+/** @param {string} script @param {string[]} [args] @param {RunOptions} [options] */
 export function runNode(script, args = [], options = {}) {
   return run(process.execPath, [script, ...args], options);
 }
 
+/** @template T @param {string} prefix @param {(root: string) => Promise<T>} callback @returns {Promise<T>} */
 export async function withTempRoot(prefix, callback) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   try {
@@ -60,6 +68,7 @@ export async function withTempRoot(prefix, callback) {
   }
 }
 
+/** @param {string} name @param {() => Promise<unknown>} journey @param {number} perRunBudgetMs */
 export async function runSelftest(name, journey, perRunBudgetMs) {
   const signatures = [];
   const durations = [];
@@ -80,6 +89,7 @@ export async function runSelftest(name, journey, perRunBudgetMs) {
   console.log(`PASS ${name} selftest: ${RUNS}/${RUNS} identical outcomes; max ${maxMs}ms; total ${totalMs}ms`);
 }
 
+/** @param {PipedChild} child @param {RegExp} pattern @param {number} [timeoutMs] @returns {Promise<string>} */
 export function waitForOutput(child, pattern, timeoutMs = 10_000) {
   return new Promise((resolve, reject) => {
     let output = "";
@@ -87,6 +97,7 @@ export function waitForOutput(child, pattern, timeoutMs = 10_000) {
       cleanup();
       reject(new Error(`Timed out waiting for process signal ${pattern}: ${tail(output)}`));
     }, timeoutMs);
+    /** @param {Buffer | string} chunk */
     const onData = (chunk) => {
       output += chunk.toString();
       if (pattern.test(output)) {
@@ -94,6 +105,7 @@ export function waitForOutput(child, pattern, timeoutMs = 10_000) {
         resolve(output);
       }
     };
+    /** @param {number | null} code */
     const onExit = (code) => {
       cleanup();
       reject(new Error(`Process exited ${code} before signal ${pattern}: ${tail(output)}`));
@@ -110,6 +122,7 @@ export function waitForOutput(child, pattern, timeoutMs = 10_000) {
   });
 }
 
+/** @param {string} script @param {string[]} [args] @param {{ cwd?: string, env?: NodeJS.ProcessEnv }} [options] */
 export function spawnNode(script, args = [], options = {}) {
   return spawn(process.execPath, [script, ...args], {
     cwd: options.cwd,
@@ -118,6 +131,7 @@ export function spawnNode(script, args = [], options = {}) {
   });
 }
 
+/** @param {import("node:child_process").ChildProcess} child @param {number} [timeoutMs] @returns {Promise<number | null>} */
 export function waitForExit(child, timeoutMs = 5_000) {
   return new Promise((resolve, reject) => {
     if (child.exitCode !== null) return resolve(child.exitCode);

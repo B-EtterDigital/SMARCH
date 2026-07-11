@@ -18,6 +18,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const CONFLICT_CLI = path.join(REPO_ROOT, "tools", "sma-conflict.ts");
 const BUDGET_MS = 5_000;
 
+/** @param {string[]} args @param {NodeJS.ProcessEnv} env @param {number} [expectStatus] */
 function invoke(args, env, expectStatus = 0) {
   return runNode(CONFLICT_CLI, args, {
     cwd: REPO_ROOT,

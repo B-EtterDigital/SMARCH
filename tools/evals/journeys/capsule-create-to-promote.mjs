@@ -20,10 +20,12 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const TOOLS = path.join(REPO_ROOT, "tools");
 const BUDGET_MS = 5_000;
 
+/** @param {string} output */
 function firstJsonLine(output) {
   return JSON.parse(output.trim().split(/\r?\n/)[0]);
 }
 
+/** @param {string} capsule @param {string} candidatePath */
 async function promote(capsule, candidatePath) {
   const manifestPath = path.join(capsule, "module.sweetspot.json");
   await fs.writeFile(candidatePath, `${JSON.stringify({

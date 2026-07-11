@@ -28,7 +28,28 @@ const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OWNERS = resolve(SMA_ROOT, 'registry/owners.json');
 const IDENTITY_MAP = resolve(SMA_ROOT, 'registry/identity-map.json');
 
-function readJson(path) {
+type OwnerRule = {
+  brick_id?: string;
+  brick_prefix?: string;
+  project?: string;
+  owner?: string | null;
+  team?: string | null;
+};
+
+type OwnersConfig = {
+  rules: OwnerRule[];
+  default_owner: string | null;
+  default_team?: string | null;
+};
+
+type IdentityEntry = { canonical: string; aliases?: string[] };
+type IdentityConfig = { identities: IdentityEntry[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readJson(path: string): unknown {
   if (!existsSync(path)) return null;
   try { return JSON.parse(readFileSync(path, 'utf8')); } catch (error) {
     console.error(JSON.stringify({ area: 'ownership.read-json', severity: 'warning', hint: 'Repair the malformed ownership JSON.', error: error instanceof Error ? error.message : String(error) }));
@@ -38,11 +59,22 @@ function readJson(path) {
 
 // --- ownership --------------------------------------------------------------
 
-let _owners;
-export function loadOwners() {
+let _owners: OwnersConfig | undefined;
+export function loadOwners(): OwnersConfig {
   if (_owners) return _owners;
-  const data = readJson(OWNERS) || { rules: [], default_owner: null };
-  _owners = data;
+  const parsed = readJson(OWNERS);
+  const data = isRecord(parsed) ? parsed : {};
+  _owners = {
+    rules: Array.isArray(data.rules) ? data.rules.filter(isRecord).map((rule) => ({
+      brick_id: typeof rule.brick_id === 'string' ? rule.brick_id : undefined,
+      brick_prefix: typeof rule.brick_prefix === 'string' ? rule.brick_prefix : undefined,
+      project: typeof rule.project === 'string' ? rule.project : undefined,
+      owner: typeof rule.owner === 'string' ? rule.owner : null,
+      team: typeof rule.team === 'string' ? rule.team : null,
+    })) : [],
+    default_owner: typeof data.default_owner === 'string' ? data.default_owner : null,
+    default_team: typeof data.default_team === 'string' ? data.default_team : null,
+  };
   return _owners;
 }
 
@@ -51,9 +83,9 @@ export function loadOwners() {
  * an exact brick_id beats a brick_id prefix beats a project match beats default.
  * Returns { owner, team, source } or { owner: null, ... }.
  */
-export function ownerFor(brickId, project, owners = loadOwners()) {
+export function ownerFor(brickId: string | null | undefined, project: string | null | undefined, owners: OwnersConfig = loadOwners()) {
   const rules = owners.rules || [];
-  let best = null;
+  let best: OwnerRule | null = null;
   let bestScore = -1;
   for (const rule of rules) {
     let score = -1;
@@ -68,13 +100,19 @@ export function ownerFor(brickId, project, owners = loadOwners()) {
 
 // --- identity aliasing ------------------------------------------------------
 
-let _identityIndex;
-function identityIndex() {
+let _identityIndex: Map<string, string> | undefined;
+function identityIndex(): Map<string, string> {
   if (_identityIndex) return _identityIndex;
-  const data = readJson(IDENTITY_MAP) || { identities: [] };
-  const index = new Map();
-  for (const entry of data.identities || []) {
-    const canonical = entry.canonical;
+  const parsed = readJson(IDENTITY_MAP);
+  const data: IdentityConfig = isRecord(parsed) && Array.isArray(parsed.identities)
+    ? { identities: parsed.identities.filter(isRecord).map((entry) => ({
+      canonical: typeof entry.canonical === 'string' ? entry.canonical : '',
+      aliases: Array.isArray(entry.aliases) ? entry.aliases.filter((alias): alias is string => typeof alias === 'string') : [],
+    })) }
+    : { identities: [] };
+  const index = new Map<string, string>();
+  for (const entry of data.identities) {
+    const { canonical } = entry;
     if (!canonical) continue;
     index.set(normalize(canonical), canonical);
     for (const alias of entry.aliases || []) index.set(normalize(alias), canonical);
@@ -83,18 +121,18 @@ function identityIndex() {
   return _identityIndex;
 }
 
-function normalize(id) {
+function normalize(id: unknown): string {
   return String(id || '').trim().toLowerCase();
 }
 
 /** Map any actor id/email/name to its canonical identity (or itself if unknown). */
-export function canonicalIdentity(id) {
+export function canonicalIdentity<T>(id: T): string | T | null {
   if (id == null) return null;
   return identityIndex().get(normalize(id)) || id;
 }
 
 /** True if two actor ids resolve to the same person. */
-export function sameIdentity(a, b) {
+export function sameIdentity(a: unknown, b: unknown): boolean {
   if (!a || !b) return false;
   return canonicalIdentity(a) === canonicalIdentity(b) || normalize(a) === normalize(b);
 }

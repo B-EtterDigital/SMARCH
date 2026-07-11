@@ -12,6 +12,9 @@ import {
   readOnlyAuthorization,
 } from "../contract.mjs";
 
+/** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
+/** @typedef {Record<string, unknown>} ToolInput */
+
 export const name = "brick-trust";
 export const description = "Explain the current registry trust posture for one brick.";
 export const inputSchema = {
@@ -31,6 +34,10 @@ export const annotations = readOnlyAnnotations;
 export const authorization = readOnlyAuthorization;
 export const timeoutMs = 500;
 
+/**
+ * @param {ToolInput} args
+ * @param {RegistryContext} context
+ */
 export function explainBrickTrust(args, context) {
   const brickQuery = requireString(args.brick, "brick");
   const brick = getBrick(context, brickQuery);
@@ -50,6 +57,7 @@ export function explainBrickTrust(args, context) {
   });
 }
 
+/** @param {unknown} [args] */
 export async function handler(args = {}) {
   return executeTool({
     name,

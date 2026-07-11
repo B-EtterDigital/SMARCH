@@ -1,9 +1,9 @@
 const fixtureToken = "356cccea949a";
 
-export function exportQueueRecord(input = {}) {
+/** @param {{ enabled?: boolean }} [input] */ export function exportQueueRecord(input = {}) {
   return { fixtureToken, kind: "export-queue", enabled: input.enabled !== false };
 }
 
-export function exportQueueSummary(items = []) {
+/** @param {Array<{ label?: unknown }>} [items] */ export function exportQueueSummary(items = []) {
   return items.map((item, index) => ({ index, label: String(item.label || "untitled") }));
 }

@@ -12,11 +12,15 @@ import { defaultPaths, maybeReadJson } from "./sma-adoption.ts";
 export const DEFAULT_STATE_PATH = defaultPaths.state;
 export const DEFAULT_REGISTRY_PATH = defaultPaths.registry;
 
-export function formatNumber(value) {
+type Scalar = string | number | boolean | bigint | null | undefined;
+type SortableRecord = Record<string, unknown>;
+type ParsedArgs = { _: string[] } & Record<string, string | boolean | string[]>;
+
+export function formatNumber(value: Scalar) {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
 }
 
-export function tokenize(value) {
+export function tokenize(value: Scalar): string[] {
   return [...new Set(
     String(value || "")
       .toLowerCase()
@@ -25,7 +29,7 @@ export function tokenize(value) {
   )];
 }
 
-export function tokenOverlapScore(queryTokens, ...parts) {
+export function tokenOverlapScore(queryTokens: readonly string[], ...parts: readonly Scalar[]): number {
   if (!Array.isArray(queryTokens) || queryTokens.length === 0) return 0;
   const haystack = new Set(tokenize(parts.filter(Boolean).join(" ")));
   let score = 0;
@@ -35,13 +39,13 @@ export function tokenOverlapScore(queryTokens, ...parts) {
   return score;
 }
 
-export function relativeFromCwd(cwd, targetPath) {
+export function relativeFromCwd(cwd: string, targetPath: string): string {
   return path.relative(cwd, targetPath).split(path.sep).join("/");
 }
 
-export function parseArgs(argv: string[], options: { booleanFlags?: string[] } = {}): Record<string, any> {
+export function parseArgs(argv: string[], options: { booleanFlags?: string[] } = {}): ParsedArgs {
   const booleanFlags = new Set(options.booleanFlags || []);
-  const parsed = { _: [] };
+  const parsed: ParsedArgs = { _: [] };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -68,7 +72,11 @@ export function parseArgs(argv: string[], options: { booleanFlags?: string[] } =
   return parsed;
 }
 
-export async function loadStateAndRegistry({ cwd, statePath = DEFAULT_STATE_PATH, registryPath = DEFAULT_REGISTRY_PATH }) {
+export async function loadStateAndRegistry({ cwd, statePath = DEFAULT_STATE_PATH, registryPath = DEFAULT_REGISTRY_PATH }: {
+  cwd: string;
+  statePath?: string;
+  registryPath?: string;
+}) {
   const absoluteStatePath = path.resolve(cwd, statePath);
   const absoluteRegistryPath = path.resolve(cwd, registryPath);
   const [state, registry] = await Promise.all([
@@ -91,9 +99,9 @@ export async function loadStateAndRegistry({ cwd, statePath = DEFAULT_STATE_PATH
   };
 }
 
-export function compareBy(key, direction = "asc") {
+export function compareBy<T extends SortableRecord>(key: keyof T & string, direction: "asc" | "desc" = "asc") {
   const factor = direction === "desc" ? -1 : 1;
-  return (left, right) => {
+  return (left: T, right: T): number => {
     const a = Number(left?.[key] ?? 0);
     const b = Number(right?.[key] ?? 0);
     if (a !== b) return (a - b) * factor;
@@ -101,15 +109,15 @@ export function compareBy(key, direction = "asc") {
   };
 }
 
-export function topList(values, limit = 5, comparator = null) {
+export function topList<T>(values: readonly T[] | null | undefined, limit = 5, comparator: ((left: T, right: T) => number) | null = null): T[] {
   const rows = Array.isArray(values) ? [...values] : [];
   if (typeof comparator === "function") rows.sort(comparator);
   return rows.slice(0, limit);
 }
 
-export function uniqueBy(values, keyFn) {
-  const seen = new Set();
-  const out = [];
+export function uniqueBy<T, K>(values: readonly T[] | null | undefined, keyFn: (value: T) => K): T[] {
+  const seen = new Set<K>();
+  const out: T[] = [];
   for (const value of values || []) {
     const key = keyFn(value);
     if (seen.has(key)) continue;
@@ -119,7 +127,7 @@ export function uniqueBy(values, keyFn) {
   return out;
 }
 
-export function fuzzyMatchScore(query, ...fields) {
+export function fuzzyMatchScore(query: Scalar, ...fields: readonly Scalar[]): number {
   const q = String(query || "").toLowerCase().trim();
   if (!q) return 0;
   const tokens = q.split(/\s+/).filter(Boolean);
@@ -138,7 +146,11 @@ export function fuzzyMatchScore(query, ...fields) {
   return score;
 }
 
-export function findProjectEntries(state, registry, projectId) {
+export function findProjectEntries(
+  state: { projects?: SortableRecord[] } | null | undefined,
+  registry: { projects?: SortableRecord[] } | null | undefined,
+  projectId: Scalar,
+) {
   const stateProject = (state?.projects || []).find((entry) => String(entry.project) === String(projectId)) || null;
   const registryProject = (registry?.projects || []).find((entry) => String(entry.id || entry.project) === String(projectId)) || null;
   return { stateProject, registryProject };

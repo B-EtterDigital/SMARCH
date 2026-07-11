@@ -25,7 +25,16 @@
  * responsibility to treat as closed.
  */
 
-function signatureOf(id, project) {
+type LicenseRow = {
+  brick_id: string;
+  project?: string;
+  spdx?: unknown;
+  openness?: unknown;
+  visibility?: unknown;
+  [key: string]: unknown;
+};
+
+function signatureOf(id: string, project?: string): string {
   const segs = String(id).split('.');
   let i = 0;
   // drop a leading run of segments equal to the project token or duplicated.
@@ -33,22 +42,23 @@ function signatureOf(id, project) {
   return segs.slice(i).join('.');
 }
 
-function tail3(id) {
+function tail3(id: string): string {
   const segs = String(id).split('.');
   return segs.slice(Math.max(0, segs.length - 3)).join('.');
 }
 
-function normalizeProject(p) {
+function normalizeProject(p: unknown): string {
   return String(p || '').replace(/^[0-9]+[-_]?/, '').toLowerCase();
 }
 
-function push(map, key, row) {
+function push(map: Map<string, LicenseRow[]>, key: string, row: LicenseRow): void {
   if (!key) return;
-  if (!map.has(key)) map.set(key, []);
-  map.get(key).push(row);
+  const existing = map.get(key);
+  if (existing) existing.push(row);
+  else map.set(key, [row]);
 }
 
-function pick(candidates, projectHint) {
+function pick(candidates: LicenseRow[] | undefined, projectHint?: string): LicenseRow | null {
   if (!candidates || !candidates.length) return null;
   if (candidates.length === 1) return candidates[0];
   const hint = normalizeProject(projectHint);
@@ -63,18 +73,19 @@ function pick(candidates, projectHint) {
  * Build an index over the license ledger's rows ([{brick_id, project, ...}]).
  * Returns { resolve(brickId, projectHint) -> { row, via } | null }.
  */
-export function buildLicenseIndex(rows) {
-  const byId = new Map();
-  const bySig = new Map();
-  const byTail = new Map();
+export function buildLicenseIndex(rows: readonly LicenseRow[]) {
+  const byId = new Map<string, LicenseRow>();
+  const bySig = new Map<string, LicenseRow[]>();
+  const byTail = new Map<string, LicenseRow[]>();
   for (const row of rows || []) {
     byId.set(row.brick_id, row);
     push(bySig, signatureOf(row.brick_id, row.project), row);
     push(byTail, tail3(row.brick_id), row);
   }
 
-  function resolve(brickId, projectHint) {
-    if (byId.has(brickId)) return { row: byId.get(brickId), via: 'exact' };
+  function resolve(brickId: string, projectHint?: string) {
+    const exact = byId.get(brickId);
+    if (exact) return { row: exact, via: 'exact' };
     const sig = pick(bySig.get(signatureOf(brickId, projectHint)), projectHint);
     if (sig) return { row: sig, via: 'signature' };
     const t = pick(byTail.get(tail3(brickId)), projectHint);
