@@ -19,6 +19,32 @@ import {
   PROJECT_ABSOLUTE_OVERRIDES,
 } from './lib/context-log.ts';
 
+type StatsArgs = {
+  since?: string;
+  project?: string | string[];
+  json?: boolean;
+  excludeVendored?: boolean;
+  by?: string;
+  metric?: string;
+  n?: string;
+};
+type ContextEvent = Record<string, unknown> & {
+  timestamp: string;
+  project: string;
+  brick_id?: string;
+  kind?: string;
+  actor_id?: string;
+  actor_kind?: string;
+  session_id?: string;
+  files_touched?: string[];
+  verification?: { status?: string };
+};
+type MergeProposal = Record<string, unknown> & {
+  generated_at: string;
+  resolved_at?: string;
+};
+type TrendRow = { date: string; total: number; leases: number; edits: number; conflicts: number; verifications: number; merges: number };
+
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
@@ -46,7 +72,7 @@ try {
       exit(2);
   }
 } catch (err) {
-  console.error(`sma-stats: ${err.message}`);
+  console.error(`sma-stats: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -71,17 +97,17 @@ function runSummary() {
   const events = collectEvents(resolveProjects(), cutoff);
   const proposals = collectProposals(resolveProjects(), cutoff);
 
-  const summary: Record<string, any> = {
+  const summary = {
     window_start: new Date(cutoff).toISOString(),
     window_end: new Date().toISOString(),
     projects_with_events: countProjectsWithEvents(events),
     total_events: events.length,
     by_kind: bucket(events, 'kind'),
-    by_actor: topBucket(events.map((e) => e.actor_id), 8),
-    by_session: topBucket(events.map((e) => e.session_id).filter(Boolean), 8),
+    by_actor: topBucket(events.map((e) => e.actor_id).filter((value): value is string => Boolean(value)), 8),
+    by_session: topBucket(events.map((e) => e.session_id).filter((value): value is string => Boolean(value)), 8),
     by_actor_kind: bucket(events, 'actor_kind'),
     distinct_bricks: new Set(events.map((e) => `${e.project}:${e.brick_id}`)).size,
-    distinct_sessions: new Set(events.map((e) => e.session_id).filter(Boolean)).size,
+    distinct_sessions: new Set(events.map((e) => e.session_id).filter((value): value is string => Boolean(value))).size,
     session_attributed_events: events.filter((e) => e.session_id).length,
     session_unattributed_events: events.filter((e) => !e.session_id).length,
     leases_acquired: events.filter((e) => e.kind === 'lease_acquired').length,
@@ -143,11 +169,12 @@ function runTrend() {
   const cutoff = parseSince(args.since ?? '30d');
   const events = collectEvents(resolveProjects(), cutoff);
   const granularity = args.by ?? 'day';
-  const buckets = new Map();
+  const buckets = new Map<string, TrendRow>();
   for (const e of events) {
     const key = bucketKey(e.timestamp, granularity);
     if (!buckets.has(key)) buckets.set(key, { date: key, total: 0, leases: 0, edits: 0, conflicts: 0, verifications: 0, merges: 0 });
     const row = buckets.get(key);
+    if (!row) continue;
     row.total += 1;
     if (e.kind?.startsWith('lease_')) row.leases += 1;
     if (e.kind === 'edit_planned' || e.kind === 'edit_applied') row.edits += 1;
@@ -187,7 +214,7 @@ function runTop() {
       label = 'session';
       break;
     case 'brick':
-      counts = events.reduce((m, e) => {
+      counts = events.reduce<Record<string, number>>((m, e) => {
         const k = `${e.project}:${e.brick_id}`;
         m[k] = (m[k] ?? 0) + 1;
         return m;
@@ -224,7 +251,7 @@ const VENDORED_PATH_PATTERNS = [
   /\/__generated__\//,
 ];
 
-function isVendoredBrickId(brickId) {
+function isVendoredBrickId(brickId: string): boolean {
   if (!brickId) return false;
   // Brick IDs like "<project>.<kind>.packages-foo-dist-..." encode the path with
   // dashes. We approximate the same heuristic on the id itself.
@@ -232,9 +259,9 @@ function isVendoredBrickId(brickId) {
       || /\.__generated__\./.test(brickId);
 }
 
-function collectEvents(projects, cutoff) {
-  const excludeVendored = !!args.excludeVendored;
-  const out = [];
+function collectEvents(projects: string[], cutoff: number): ContextEvent[] {
+  const excludeVendored = args.excludeVendored === true;
+  const out: ContextEvent[] = [];
   for (const id of projects) {
     const root = resolveProjectRoot(id);
     if (!root) continue;
@@ -244,13 +271,13 @@ function collectEvents(projects, cutoff) {
       // Filter at file level when possible (cheap; saves per-line parsing)
       const brickId = f.replace(/\.ndjson$/, '');
       if (excludeVendored && isVendoredBrickId(brickId)) continue;
-      let raw;
+      let raw: string;
       try { raw = readFileSync(resolve(dir, f), 'utf8'); } catch { continue; }
       for (const line of raw.split('\n')) {
         const t = line.trim();
         if (!t) continue;
         try {
-          const ev = JSON.parse(t);
+          const ev = JSON.parse(t) as ContextEvent;
           if (!ev.timestamp) continue;
           if (Date.parse(ev.timestamp) < cutoff) continue;
           if (!ev.project) ev.project = id;
@@ -263,8 +290,8 @@ function collectEvents(projects, cutoff) {
   return out;
 }
 
-function collectProposals(projects, cutoff) {
-  const out = [];
+function collectProposals(projects: string[], cutoff: number): MergeProposal[] {
+  const out: MergeProposal[] = [];
   for (const id of projects) {
     const root = resolveProjectRoot(id);
     if (!root) continue;
@@ -272,7 +299,7 @@ function collectProposals(projects, cutoff) {
     if (!existsSync(dir)) continue;
     for (const f of readdirSync(dir).filter((x) => x.endsWith('.json'))) {
       try {
-        const p = JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+        const p = JSON.parse(readFileSync(resolve(dir, f), 'utf8')) as MergeProposal;
         if (!p.generated_at) continue;
         if (Date.parse(p.generated_at) < cutoff) continue;
         out.push(p);
@@ -282,7 +309,7 @@ function collectProposals(projects, cutoff) {
   return out;
 }
 
-function resolveProjects() {
+function resolveProjects(): string[] {
   if (Array.isArray(args.project)) return args.project;
   if (args.project) return [args.project];
   // Discovery uses two paths:
@@ -290,10 +317,10 @@ function resolveProjects() {
   //   (b) every top-level dir under PROJECTS_ROOT with .smarch/
   // Combining the two catches both flat layouts and nested ones (e.g.
   // acme-lab → workspace/acme-lab, two levels deep).
-  const out = new Set();
-  const seenRoots = new Set();
+  const out = new Set<string>();
+  const seenRoots = new Set<string>();
 
-  const addIfContextProject = (id) => {
+  const addIfContextProject = (id: string): void => {
     const root = resolveProjectRoot(id);
     if (!root || !existsSync(resolve(root, '.smarch'))) return;
     if (seenRoots.has(root)) return;
@@ -322,13 +349,13 @@ function resolveProjects() {
   return [...out];
 }
 
-function resolveProjectRoot(projectId) {
+function resolveProjectRoot(projectId: string): string | null {
   try { return projectRoot(projectId); } catch { return null; }
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function parseSince(raw) {
+function parseSince(raw: string): number {
   const dm = String(raw).match(/^(\d+)([dwm])$/);
   if (dm) {
     const n = Number(dm[1]);
@@ -341,7 +368,7 @@ function parseSince(raw) {
   throw new Error(`bad --since: ${raw}`);
 }
 
-function bucketKey(iso, by) {
+function bucketKey(iso: string, by: string): string {
   if (by === 'week') {
     const d = new Date(iso);
     const yearStart = new Date(d.getUTCFullYear(), 0, 1);
@@ -351,21 +378,28 @@ function bucketKey(iso, by) {
   return iso.slice(0, 10);
 }
 
-function bucket(arr, key) {
-  return arr.reduce((m, e) => ((m[e[key] ?? 'unknown'] = (m[e[key] ?? 'unknown'] ?? 0) + 1), m), {});
+function bucket<T extends Record<string, unknown>>(arr: T[], key: keyof T): Record<string, number> {
+  return arr.reduce<Record<string, number>>((counts, entry) => {
+    const value = String(entry[key] ?? 'unknown');
+    counts[value] = (counts[value] ?? 0) + 1;
+    return counts;
+  }, {});
 }
 
-function topBucket(arr, n) {
-  const all = arr.reduce((m, k) => ((m[k] = (m[k] ?? 0) + 1), m), {});
+function topBucket(arr: string[], n: number): Record<string, number> {
+  const all = arr.reduce<Record<string, number>>((counts, key) => {
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
   return Object.fromEntries(Object.entries(all).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, n));
 }
 
-function countProjectsWithEvents(events) {
+function countProjectsWithEvents(events: ContextEvent[]): number {
   return new Set(events.map((e) => e.project)).size;
 }
 
-function countOpenConflicts(events) {
-  const byBrick = new Map();
+function countOpenConflicts(events: ContextEvent[]): number {
+  const byBrick = new Map<string, number>();
   for (const event of [...events].sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')))) {
     if (event.kind !== 'conflict_detected' && event.kind !== 'conflict_resolved') continue;
     const key = `${event.project}:${event.brick_id}`;
@@ -376,25 +410,28 @@ function countOpenConflicts(events) {
   return [...byBrick.values()].reduce((sum, value) => sum + value, 0);
 }
 
-function pad(s, n) { return String(s ?? '').slice(0, n).padEnd(n); }
-function print(label, value) { console.log(`${label}${value}`); }
+function pad(s: unknown, n: number): string { return String(s ?? '').slice(0, n).padEnd(n); }
+function print(label: string, value: unknown): void { console.log(`${label}${String(value)}`); }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): StatsArgs {
+  const out: StatsArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase()) as keyof StatsArgs;
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
-    if (isBool) { out[camel] = true; continue; }
+    if (isBool) {
+      if (camel === 'json' || camel === 'excludeVendored') out[camel] = true;
+      continue;
+    }
     if (camel === 'project') {
       if (Array.isArray(out.project)) out.project.push(next);
       else if (out.project) out.project = [out.project, next];
       else out.project = next;
     } else {
-      out[camel] = next;
+      if (camel === 'since' || camel === 'by' || camel === 'metric' || camel === 'n') out[camel] = next;
     }
     i += 1;
   }

@@ -53,7 +53,7 @@ const portfolioOverrides = new Map(Object.entries(portfolioConfig.overrides));
 
 let portfolioCache: Promise<PortfolioProject[]> | null = null;
 
-export class PortfolioDiscoveryError extends Error {
+class PortfolioDiscoveryError extends Error {
   code: string;
   details: { directory: string; cause_code: string };
 

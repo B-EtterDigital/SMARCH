@@ -14,11 +14,12 @@ import { dirname, resolve } from 'node:path';
 import { renderAgentPacketMarkdown } from './module-work-renderers.ts';
 
 type AgentPacketDescriptor = { json_path: string; markdown_path: string; first_read: true };
+type SharedScopeItem = string | { id?: string; path?: string };
 type ModuleAssignment = {
   project: string; task: string; agent_slot: number; module_id: string; slot: number;
   partition_id?: string | null; partition_label?: string | null; brick: string;
   graph_query_command?: string; claim_command?: string; paths?: string[]; exclude_paths?: string[];
-  shared_hot_paths?: string[]; iteration_gates?: string[]; required_gates?: string[];
+  shared_hot_paths?: SharedScopeItem[]; iteration_gates?: string[]; required_gates?: string[];
   prompt?: string; agent_packet?: Partial<AgentPacketDescriptor>;
 };
 type ModuleManifest = {

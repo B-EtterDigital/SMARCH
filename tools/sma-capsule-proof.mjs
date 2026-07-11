@@ -9,6 +9,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'sma-capsule-proof-'));
 const capsule = path.join(temp, 'proof-capsule');
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {string} [cwd]
+ */
 function run(command, args, cwd = root) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', timeout: 10 * 60_000, env: { ...process.env, CI: '1', NO_COLOR: '1' } });
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed (${result.status}): ${result.stderr || result.stdout}`);
@@ -23,7 +28,7 @@ try {
   if (parsed.ok === false || parsed.status === 'failed') throw new Error('generated capsule fixture reported failure');
   console.log(JSON.stringify({ ok: true, capsule_created_without_edits: true, gates: 'passing', fixture: 'passing' }));
 } catch (error) {
-  console.error(`capsule proof failed: ${error.message}`);
+  console.error(`capsule proof failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });

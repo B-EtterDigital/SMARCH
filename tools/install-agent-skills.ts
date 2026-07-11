@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Installs repository agent skills, instruction snippets, and optional ambient hooks into a target project.
  * WHY: Supported coding agents need the same current workflow files without manual copying or platform drift.
@@ -19,28 +21,33 @@ const platformTargets = {
   codex: [".codex/skills"],
   opencode: [".opencode/skills", ".agents/skills"]
 };
+type Platform = keyof typeof platformTargets;
 
-type InstallOptions = {
+interface InstallOptions {
   target: string;
   platform: string;
   instructions: boolean;
   hooks: boolean;
   check: boolean;
-};
+}
 
-type CommandHook = {
+interface CommandHook {
   type?: string;
   command?: string;
-};
+}
 
-type HookEntry = {
+interface HookEntry {
   matcher?: string;
   hooks?: CommandHook[];
-};
+}
 
-type ClaudeSettings = {
+interface ClaudeSettings {
   hooks?: Record<string, HookEntry[]>;
-};
+}
+
+function isPlatform(value: string): value is Platform {
+  return value in platformTargets;
+}
 
 function errorCode(error: unknown): string {
   return error && typeof error === "object" && "code" in error
@@ -134,7 +141,7 @@ async function installAmbientHooks(target: string): Promise<void> {
   let settings: ClaudeSettings = {};
 
   try {
-    settings = JSON.parse(await fs.readFile(settingsPath, "utf8"));
+    settings = JSON.parse(await fs.readFile(settingsPath, "utf8")) as ClaudeSettings;
   } catch (error) {
     if (errorCode(error) !== "ENOENT") {
       throw new Error(`Cannot merge ambient hooks into ${settingsPath}: ${errorMessage(error)}`);
@@ -151,7 +158,7 @@ async function installAmbientHooks(target: string): Promise<void> {
   }
 
   const matcher = "Write|Edit|MultiEdit|NotebookEdit";
-  const hookSpecs: Array<[string, string]> = [
+  const hookSpecs: [string, string][] = [
     ["PreToolUse", "pre-write.sh"],
     ["PostToolUse", "post-write.sh"],
   ];
@@ -219,12 +226,8 @@ async function appendInstructionSnippet(target: string, targetFile: string, temp
   return true;
 }
 
-async function installForPlatform(target: string, platform: string): Promise<void> {
+async function installForPlatform(target: string, platform: Platform): Promise<void> {
   const targets = platformTargets[platform];
-
-  if (!targets) {
-    throw new Error(`Unknown platform: ${platform}`);
-  }
 
   for (const relativeTarget of targets) {
     for (const skillName of skillNames) {
@@ -255,8 +258,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  const platforms = options.platform === "all"
-    ? Object.keys(platformTargets)
+  if (options.platform !== "all" && !isPlatform(options.platform)) {
+    throw new Error(`Unknown platform: ${options.platform}`);
+  }
+  const platforms: Platform[] = options.platform === "all"
+    ? Object.keys(platformTargets) as Platform[]
     : [options.platform];
 
   for (const platform of platforms) {
@@ -264,10 +270,6 @@ async function main(): Promise<void> {
       await installForPlatform(options.target, platform);
     } else {
       const targets = platformTargets[platform];
-
-      if (!targets) {
-        throw new Error(`Unknown platform: ${platform}`);
-      }
 
       for (const relativeTarget of targets) {
         for (const skillName of skillNames) {

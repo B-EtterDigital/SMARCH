@@ -1,4 +1,5 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
+import { runWorkforceProcess } from "./process-runner.mjs";
 
 const DEFAULT_TIMEOUT_MS = 600_000;
 
@@ -36,37 +37,6 @@ export function parseJsonEvents(stdout) {
 }
 
 /**
- * @param {string} command
- * @param {string[]} args
- * @param {{ timeoutMs: number, signal?: AbortSignal, cwd: string }} options
- * @returns {Promise<ProcessResult>}
- */
-function runProcess(command, args, { timeoutMs, signal, cwd }) {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, { env: process.env, cwd });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    let timedOut = false;
-    /** @param {ProcessResult} result */
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", abort);
-      resolve(result);
-    };
-    const abort = () => { timedOut = true; child.kill("SIGKILL"); };
-    const timer = setTimeout(abort, timeoutMs);
-    signal?.addEventListener("abort", abort, { once: true });
-    child.stdout.on("data", (/** @type {Buffer | string} */ chunk) => { stdout += chunk; });
-    child.stderr.on("data", (/** @type {Buffer | string} */ chunk) => { stderr += chunk; });
-    child.on("error", (error) => finish({ code: null, stdout, stderr, error, timedOut }));
-    child.on("close", (code, closeSignal) => finish({ code, stdout, stderr, closeSignal, timedOut }));
-  });
-}
-
-/**
  * @param {unknown} packet
  * @param {{ model?: string, effort?: string, readOnly?: boolean, timeoutMs?: number, signal?: AbortSignal, cwd?: string, command?: string }} [options]
  */
@@ -84,7 +54,7 @@ export async function execute(packet, {
   if (effort) args.push("--variant", String(effort));
   if (!readOnly) args.push("--dangerously-skip-permissions");
   args.push(packetPrompt(packet));
-  const result = await runProcess(command, args, { timeoutMs, signal, cwd });
+  const result = await runWorkforceProcess(command, args, undefined, { timeoutMs, signal, cwd });
   const parsed = parseJsonEvents(result.stdout);
   return {
     ok: result.code === 0 && !result.timedOut,

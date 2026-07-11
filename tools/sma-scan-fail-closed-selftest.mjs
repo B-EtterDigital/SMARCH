@@ -12,6 +12,7 @@ const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "sma-scan-fail-closed-"))
 const out = path.join(tempRoot, "registry.json");
 const rejectedOut = `${out}.rejected.json`;
 const previousRegistry = '{"sentinel":"previous"}\n';
+/** @param {...string} args */
 const run = (...args) => spawnSync(process.execPath, [scanner, "--root", tempRoot, "--out", out, "--json", ...args], { encoding: "utf8" });
 
 try {

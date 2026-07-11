@@ -131,6 +131,72 @@ function guardCloneWrite(opts: CloneOptions, brickIds: string[], project: string
 async function readJson<T>(p: string): Promise<T> { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
 async function maybeReadJson<T>(p: string): Promise<T | null> { try { return JSON.parse(await fs.readFile(p, "utf8")) as T; } catch { return null; } }
 
+type PreparedBuildLock = BuildLockDocument & {
+  selected_builds: NonNullable<BuildLockDocument["selected_builds"]>;
+  resolved_bricks: NonNullable<BuildLockDocument["resolved_bricks"]>;
+  frozen_dependency_graph: NonNullable<BuildLockDocument["frozen_dependency_graph"]> & {
+    nodes: NonNullable<NonNullable<BuildLockDocument["frozen_dependency_graph"]>["nodes"]>;
+    edges: NonNullable<NonNullable<BuildLockDocument["frozen_dependency_graph"]>["edges"]>;
+  };
+};
+
+async function prepareBuildLock(
+  buildLockPath: string,
+  opts: CloneOptions,
+  now: string,
+  registrySha: string,
+  defaults: {
+    minimumVerificationStatus: unknown;
+    runDeclaredTests: boolean;
+    runEnvTruthing: boolean;
+    runRlsTruthing: boolean;
+    failOnMissingEnv: boolean;
+    postInstallChecks: string[];
+  },
+): Promise<PreparedBuildLock> {
+  const buildLock = (await maybeReadJson<BuildLockDocument>(buildLockPath)) || {};
+  buildLock.version = 1;
+  buildLock.schema_version = "1.0.0";
+  buildLock.lock = toJsonObject(buildLock.lock, {});
+  Object.assign(buildLock.lock, {
+    generated_at: now,
+    generated_by: { actor: "smarch", tool: "tools/sma-clone.ts", model: "codex-gpt-5.4" },
+    registry_snapshot_sha: registrySha,
+    mode: "exact",
+    imports_path: ".smarch/imports.json",
+    placements_path: ".smarch/placements.json",
+    update_journal_path: ".smarch/update-journal.jsonl",
+  });
+  if (opts.registryOrigin) buildLock.lock.registry_origin = opts.registryOrigin;
+  buildLock.target = toJsonObject(buildLock.target, {});
+  buildLock.target.id ||= slugify(path.basename(opts.target) || "target-project");
+  buildLock.target.name ||= path.basename(opts.target) || "target-project";
+  buildLock.target.root = opts.target;
+  buildLock.selected_builds = Array.isArray(buildLock.selected_builds) ? buildLock.selected_builds : [];
+  buildLock.resolved_bricks = Array.isArray(buildLock.resolved_bricks) ? buildLock.resolved_bricks : [];
+  buildLock.frozen_dependency_graph = toJsonObject(buildLock.frozen_dependency_graph, {});
+  buildLock.frozen_dependency_graph.nodes = Array.isArray(buildLock.frozen_dependency_graph.nodes) ? buildLock.frozen_dependency_graph.nodes : [];
+  buildLock.frozen_dependency_graph.edges = Array.isArray(buildLock.frozen_dependency_graph.edges) ? buildLock.frozen_dependency_graph.edges : [];
+  buildLock.channels = Array.isArray(buildLock.channels) ? buildLock.channels : [];
+  buildLock.trust_policy = toJsonObject(buildLock.trust_policy, {});
+  buildLock.trust_policy.allowed_release_statuses = Array.isArray(buildLock.trust_policy.allowed_release_statuses) ? buildLock.trust_policy.allowed_release_statuses : ["draft", "published"];
+  buildLock.trust_policy.minimum_verification_status ||= defaults.minimumVerificationStatus;
+  buildLock.trust_policy.require_contract_hashes = firstDefined(buildLock.trust_policy.require_contract_hashes, false);
+  buildLock.trust_policy.allow_local_overrides = firstDefined(buildLock.trust_policy.allow_local_overrides, Boolean(opts.force));
+  buildLock.trust_policy.fail_on_yanked_release = firstDefined(buildLock.trust_policy.fail_on_yanked_release, true);
+  buildLock.trust_policy.fail_on_breaking_upgrade = firstDefined(buildLock.trust_policy.fail_on_breaking_upgrade, true);
+  buildLock.verification_policy = toJsonObject(buildLock.verification_policy, {});
+  buildLock.verification_policy.run_declared_tests = firstDefined(buildLock.verification_policy.run_declared_tests, defaults.runDeclaredTests);
+  buildLock.verification_policy.run_import_resolution = firstDefined(buildLock.verification_policy.run_import_resolution, true);
+  buildLock.verification_policy.run_env_truthing = firstDefined(buildLock.verification_policy.run_env_truthing, defaults.runEnvTruthing);
+  buildLock.verification_policy.run_rls_truthing = firstDefined(buildLock.verification_policy.run_rls_truthing, defaults.runRlsTruthing);
+  buildLock.verification_policy.fail_on_missing_env = firstDefined(buildLock.verification_policy.fail_on_missing_env, defaults.failOnMissingEnv);
+  buildLock.verification_policy.fail_on_contract_delta = firstDefined(buildLock.verification_policy.fail_on_contract_delta, true);
+  buildLock.verification_policy.required_check_status ||= "warning";
+  buildLock.verification_policy.post_install_checks = uniqStrings(defaults.postInstallChecks);
+  return buildLock as PreparedBuildLock;
+}
+
 async function copyDir(src: string, dst: string): Promise<void> {
   const entries = await fs.readdir(src, { withFileTypes: true });
   await fs.mkdir(dst, { recursive: true });
@@ -1223,50 +1289,14 @@ async function main() {
       await fs.mkdir(path.dirname(smarchImportsPath), { recursive: true });
       await fs.writeFile(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
 
-      const buildLock = (await maybeReadJson<BuildLockDocument>(buildLockPath)) || {};
-      buildLock.version = 1;
-      buildLock.schema_version = "1.0.0";
-      buildLock.lock = toJsonObject(buildLock.lock, {});
-      buildLock.lock.generated_at = now;
-      buildLock.lock.generated_by = {
-        actor: "smarch",
-        tool: "tools/sma-clone.ts",
-        model: "codex-gpt-5.4"
-      };
-      buildLock.lock.registry_snapshot_sha = registrySha;
-      buildLock.lock.mode = "exact";
-      buildLock.lock.imports_path = ".smarch/imports.json";
-      buildLock.lock.placements_path = ".smarch/placements.json";
-      buildLock.lock.update_journal_path = ".smarch/update-journal.jsonl";
-      if (opts.registryOrigin) buildLock.lock.registry_origin = opts.registryOrigin;
-      buildLock.target = toJsonObject(buildLock.target, {});
-      buildLock.target.id = buildLock.target.id || slugify(path.basename(opts.target) || "target-project");
-      buildLock.target.name = buildLock.target.name || path.basename(opts.target) || "target-project";
-      buildLock.target.root = opts.target;
-      buildLock.selected_builds = Array.isArray(buildLock.selected_builds) ? buildLock.selected_builds : [];
-      buildLock.resolved_bricks = Array.isArray(buildLock.resolved_bricks) ? buildLock.resolved_bricks : [];
-      buildLock.frozen_dependency_graph = toJsonObject(buildLock.frozen_dependency_graph, {});
-      buildLock.frozen_dependency_graph.nodes = Array.isArray(buildLock.frozen_dependency_graph.nodes) ? buildLock.frozen_dependency_graph.nodes : [];
-      buildLock.frozen_dependency_graph.edges = Array.isArray(buildLock.frozen_dependency_graph.edges) ? buildLock.frozen_dependency_graph.edges : [];
-      buildLock.channels = Array.isArray(buildLock.channels) ? buildLock.channels : [];
-      buildLock.trust_policy = toJsonObject(buildLock.trust_policy, {});
-      buildLock.trust_policy.allowed_release_statuses = Array.isArray(buildLock.trust_policy.allowed_release_statuses)
-        ? buildLock.trust_policy.allowed_release_statuses
-        : ["draft", "published"];
-      buildLock.trust_policy.minimum_verification_status = buildLock.trust_policy.minimum_verification_status || mapBuildVerificationStatus(buildMeta, buildManifest.verification);
-      buildLock.trust_policy.require_contract_hashes = firstDefined(buildLock.trust_policy.require_contract_hashes, false);
-      buildLock.trust_policy.allow_local_overrides = firstDefined(buildLock.trust_policy.allow_local_overrides, Boolean(opts.force));
-      buildLock.trust_policy.fail_on_yanked_release = firstDefined(buildLock.trust_policy.fail_on_yanked_release, true);
-      buildLock.trust_policy.fail_on_breaking_upgrade = firstDefined(buildLock.trust_policy.fail_on_breaking_upgrade, true);
-      buildLock.verification_policy = toJsonObject(buildLock.verification_policy, {});
-      buildLock.verification_policy.run_declared_tests = firstDefined(buildLock.verification_policy.run_declared_tests, buildTestCommands.length > 0);
-      buildLock.verification_policy.run_import_resolution = firstDefined(buildLock.verification_policy.run_import_resolution, true);
-      buildLock.verification_policy.run_env_truthing = firstDefined(buildLock.verification_policy.run_env_truthing, buildEnvBindingRecordsList.length > 0);
-      buildLock.verification_policy.run_rls_truthing = firstDefined(buildLock.verification_policy.run_rls_truthing, buildRlsTables.length > 0);
-      buildLock.verification_policy.fail_on_missing_env = firstDefined(buildLock.verification_policy.fail_on_missing_env, buildEnvBindingRecordsList.some((binding) => binding.required));
-      buildLock.verification_policy.fail_on_contract_delta = firstDefined(buildLock.verification_policy.fail_on_contract_delta, true);
-      buildLock.verification_policy.required_check_status = buildLock.verification_policy.required_check_status || "warning";
-      buildLock.verification_policy.post_install_checks = uniqStrings([...buildCloneSteps, ...buildInstallSteps, ...buildIntegrationRecipe]);
+      const buildLock = await prepareBuildLock(buildLockPath, opts, now, registrySha, {
+        minimumVerificationStatus: mapBuildVerificationStatus(buildMeta, buildManifest.verification),
+        runDeclaredTests: buildTestCommands.length > 0,
+        runEnvTruthing: buildEnvBindingRecordsList.length > 0,
+        runRlsTruthing: buildRlsTables.length > 0,
+        failOnMissingEnv: buildEnvBindingRecordsList.some((binding) => binding.required),
+        postInstallChecks: [...buildCloneSteps, ...buildInstallSteps, ...buildIntegrationRecipe],
+      });
       buildLock.selected_builds.push({
         import_id: buildImportId,
         artifact_type: "build",
@@ -1692,50 +1722,14 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
     await fs.mkdir(path.dirname(smarchImportsPath), { recursive: true });
     await fs.writeFile(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
 
-    const buildLock = (await maybeReadJson<BuildLockDocument>(buildLockPath)) || {};
-    buildLock.version = 1;
-    buildLock.schema_version = "1.0.0";
-    buildLock.lock = toJsonObject(buildLock.lock, {});
-    buildLock.lock.generated_at = now;
-    buildLock.lock.generated_by = {
-      actor: "smarch",
-      tool: "tools/sma-clone.ts",
-      model: "codex-gpt-5.4"
-    };
-    buildLock.lock.registry_snapshot_sha = registrySha;
-    buildLock.lock.mode = "exact";
-    buildLock.lock.imports_path = ".smarch/imports.json";
-    buildLock.lock.placements_path = ".smarch/placements.json";
-    buildLock.lock.update_journal_path = ".smarch/update-journal.jsonl";
-    if (opts.registryOrigin) buildLock.lock.registry_origin = opts.registryOrigin;
-    buildLock.target = toJsonObject(buildLock.target, {});
-    buildLock.target.id = buildLock.target.id || slugify(path.basename(opts.target) || "target-project");
-    buildLock.target.name = buildLock.target.name || path.basename(opts.target) || "target-project";
-    buildLock.target.root = opts.target;
-    buildLock.selected_builds = Array.isArray(buildLock.selected_builds) ? buildLock.selected_builds : [];
-    buildLock.resolved_bricks = Array.isArray(buildLock.resolved_bricks) ? buildLock.resolved_bricks : [];
-    buildLock.frozen_dependency_graph = toJsonObject(buildLock.frozen_dependency_graph, {});
-    buildLock.frozen_dependency_graph.nodes = Array.isArray(buildLock.frozen_dependency_graph.nodes) ? buildLock.frozen_dependency_graph.nodes : [];
-    buildLock.frozen_dependency_graph.edges = Array.isArray(buildLock.frozen_dependency_graph.edges) ? buildLock.frozen_dependency_graph.edges : [];
-    buildLock.channels = Array.isArray(buildLock.channels) ? buildLock.channels : [];
-    buildLock.trust_policy = toJsonObject(buildLock.trust_policy, {});
-    buildLock.trust_policy.allowed_release_statuses = Array.isArray(buildLock.trust_policy.allowed_release_statuses)
-      ? buildLock.trust_policy.allowed_release_statuses
-      : ["draft", "published"];
-    buildLock.trust_policy.minimum_verification_status = buildLock.trust_policy.minimum_verification_status || mapBrickStatusToVerificationStatus(brick.status);
-    buildLock.trust_policy.require_contract_hashes = firstDefined(buildLock.trust_policy.require_contract_hashes, false);
-    buildLock.trust_policy.allow_local_overrides = firstDefined(buildLock.trust_policy.allow_local_overrides, Boolean(opts.force));
-    buildLock.trust_policy.fail_on_yanked_release = firstDefined(buildLock.trust_policy.fail_on_yanked_release, true);
-    buildLock.trust_policy.fail_on_breaking_upgrade = firstDefined(buildLock.trust_policy.fail_on_breaking_upgrade, true);
-    buildLock.verification_policy = toJsonObject(buildLock.verification_policy, {});
-    buildLock.verification_policy.run_declared_tests = firstDefined(buildLock.verification_policy.run_declared_tests, testCommands.length > 0);
-    buildLock.verification_policy.run_import_resolution = firstDefined(buildLock.verification_policy.run_import_resolution, true);
-    buildLock.verification_policy.run_env_truthing = firstDefined(buildLock.verification_policy.run_env_truthing, envBindingRecords.length > 0);
-    buildLock.verification_policy.run_rls_truthing = firstDefined(buildLock.verification_policy.run_rls_truthing, rlsTables.length > 0);
-    buildLock.verification_policy.fail_on_missing_env = firstDefined(buildLock.verification_policy.fail_on_missing_env, envBindingRecords.some((binding) => binding.required));
-    buildLock.verification_policy.fail_on_contract_delta = firstDefined(buildLock.verification_policy.fail_on_contract_delta, true);
-    buildLock.verification_policy.required_check_status = buildLock.verification_policy.required_check_status || "warning";
-    buildLock.verification_policy.post_install_checks = uniqStrings([...cloneSteps, ...installSteps]);
+    const buildLock = await prepareBuildLock(buildLockPath, opts, now, registrySha, {
+      minimumVerificationStatus: mapBrickStatusToVerificationStatus(brick.status),
+      runDeclaredTests: testCommands.length > 0,
+      runEnvTruthing: envBindingRecords.length > 0,
+      runRlsTruthing: rlsTables.length > 0,
+      failOnMissingEnv: envBindingRecords.some((binding) => binding.required),
+      postInstallChecks: [...cloneSteps, ...installSteps],
+    });
     buildLock.resolved_bricks.push({
       import_id: importId,
       artifact_type: "brick",

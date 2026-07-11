@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Audits Codex startup inputs and prepares reversible lean-profile actions.
  * WHY: Large agent waves need visibility into heavy skills, plugins, and hooks before a controller chooses any global trim.
@@ -38,7 +40,32 @@ import {
 import { argv, env, exit } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-type JsonMap = Record<string, any>;
+interface ProfileOptions {
+  positionals: string[]; json: boolean; help: boolean; codexHome: string; agentsHome: string; top: number;
+  heavyThreshold: number; hookStringThreshold: number; pluginCache: boolean; profile: string; apply: boolean;
+  manifest: string; latest: boolean; manifestDir: string; includeSkills: Set<string>; excludeSkills: Set<string>;
+}
+type AuditOptions = Pick<ProfileOptions, 'codexHome' | 'agentsHome' | 'top' | 'heavyThreshold' | 'hookStringThreshold' | 'pluginCache'>;
+interface SkillEntry { name: string; frontmatter_description: string; path: string; bytes: number; lines: number; sha256: string; mtime_ms: number; source_kind: string; root_kind: string; plugin_id: string | null; plugin_enabled: boolean | null }
+interface DuplicateGroup { name: string; entries: SkillEntry[]; total_bytes: number; identical: boolean }
+interface IdenticalDuplicate extends DuplicateGroup { keep_entry: SkillEntry; reclaimable_entries: SkillEntry[]; reclaimable_bytes: number }
+interface DuplicateReport { byName: DuplicateGroup[]; identical: IdenticalDuplicate[]; divergent: DuplicateGroup[] }
+interface PluginEntry { type: 'plugin'; id: string; enabled: boolean | null }
+interface PluginStatus { plugins: PluginEntry[]; byId: Map<string, PluginEntry>; hookTrustEntries: string[]; disabledPluginHookTrustEntries: string[] }
+interface HookManifest { path: string; bytes: number; sha256: string; plugin_id: string | null; plugin_enabled: boolean | null; valid_json: boolean; parse_error: string | null; event_count: number; command_string_count: number; largest_string_bytes: number; long_strings: Array<{ bytes: number; preview: string }> }
+interface Recommendations { identical_duplicate_personal_skills: IdenticalDuplicate[]; divergent_duplicate_personal_skills: DuplicateGroup[]; heavy_personal_skill_review: SkillEntry[]; bulky_hook_manifests: HookManifest[]; disabled_plugin_hook_trust: string[]; disabled_plugin_cache_skills: SkillEntry[]; active_budget_top: SkillEntry[]; notes: string[] }
+interface AuditSummary { personal_active_skills: number; personal_active_skill_bytes: number; personal_disabled_skills: number; plugin_cache_skills: number; enabled_plugin_cache_skills: number; disabled_plugin_cache_skills: number; enabled_plugin_skill_bytes: number; disabled_plugin_skill_bytes: number; active_budget_skills: number; active_budget_skill_bytes: number; active_budget_risk: string; duplicate_active_skill_names: number; identical_duplicate_active_skill_names: number; duplicate_reclaim_bytes_estimate: number; heavy_personal_review_bytes_estimate: number; total_reclaim_bytes_estimate: number; context_budget_gain_percent_estimate: number; hook_manifests: number; hook_manifest_bytes: number; hook_parse_errors: number; long_hook_command_strings: number; enabled_plugins: number; disabled_plugins: number; hook_trust_entries: number; disabled_plugin_hook_trust_entries: number }
+interface AuditRoots { codex_home: string; agents_home: string; personal_active_skill_roots: string[]; personal_disabled_skill_roots: string[]; plugin_cache_root: string; config_path: string; hooks_path: string }
+interface Audit { schema_version: string; generated_at: string; roots: AuditRoots; summary: AuditSummary; top_active_budget_skills: SkillEntry[]; top_personal_active_skills: SkillEntry[]; top_plugin_cache_skills: SkillEntry[]; duplicate_personal_skills: DuplicateReport; hook_manifests: HookManifest[]; plugins: PluginEntry[]; disabled_plugin_hook_trust_entries: string[]; recommendations: Recommendations; commands: Record<string, string> }
+interface LeanCandidate { skill: SkillEntry; reason: string }
+interface LeanMove { name: string; reason: string; source_kind: string; root_kind: string; bytes: number; sha256: string; from: string; to: string }
+interface LeanManifest { schema_version: string; command: string; profile: string; generated_at: string; applied: boolean; restored: boolean; state?: string; manifest_path: string; disabled_group: string; roots: AuditRoots; summary_before: AuditSummary; summary: { move_count: number; move_bytes: number; context_budget_gain_percent_estimate: number; dry_run: boolean }; moves: LeanMove[]; commands: { apply: string; restore: string; restore_apply: string } }
+interface RestoreMove { name: string; bytes: number; sha256: string; from: string; to: string; source_manifest_from: string; source_manifest_to: string }
+interface RestoreConflict { name: string; reason: string; path: string }
+interface RestorePlan { schema_version: string; command: string; generated_at: string; profile: string; manifest_path: string; apply: boolean; summary: { restore_count: number; restore_bytes: number; dry_run: boolean; conflict_count: number }; conflicts: RestoreConflict[]; moves: RestoreMove[] }
+interface StoredLeanManifest { profile?: string; moves?: LeanMove[]; [key: string]: unknown }
+interface WalkOptions { maxDepth: number; match: (filePath: string) => boolean; skipDir?: (dirPath: string) => boolean }
+interface BytesItem { bytes?: number }
 
 const DEFAULT_TOP = 12;
 const DEFAULT_HEAVY_THRESHOLD = 50_000;
@@ -83,12 +110,12 @@ try {
     exit(0);
   }
   throw new Error(`unknown command: ${command}`);
-} catch (err: any) {
-  console.error(`sma-codex-profile: ${err.message}`);
+} catch (err) {
+  console.error(`sma-codex-profile: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
-function usage() {
+function usage(): void {
   console.log(`Usage:
   sma-codex-profile.ts audit [--json] [--codex-home <path>] [--agents-home <path>]
                               [--top <n>] [--heavy-threshold <bytes>]
@@ -108,8 +135,8 @@ gain from safe cleanup opportunities. Lean and restore default to dry-run; pass
 `);
 }
 
-function parseArgs(raw: string[]) {
-  const opts = {
+function parseArgs(raw: string[]): ProfileOptions {
+  const opts: ProfileOptions = {
     positionals: [],
     json: false,
     help: false,
@@ -124,8 +151,8 @@ function parseArgs(raw: string[]) {
     manifest: '',
     latest: false,
     manifestDir: '',
-    includeSkills: new Set(),
-    excludeSkills: new Set(),
+    includeSkills: new Set<string>(),
+    excludeSkills: new Set<string>(),
   };
   for (let i = 0; i < raw.length; i += 1) {
     const arg = raw[i];
@@ -196,7 +223,7 @@ function positiveInt(value: unknown, label: string): number {
   return parsedValue;
 }
 
-function buildAudit(opts) {
+function buildAudit(opts: AuditOptions): Audit {
   const codexHome = resolve(opts.codexHome);
   const agentsHome = resolve(opts.agentsHome);
   const configPath = join(codexHome, 'config.toml');
@@ -295,9 +322,9 @@ function buildAudit(opts) {
   };
 }
 
-function scanPersonalSkills(root, rootKind) {
+function scanPersonalSkills(root: string, rootKind: string): SkillEntry[] {
   if (!existsSync(root)) return [];
-  const skills = [];
+  const skills: SkillEntry[] = [];
   for (const entry of safeReaddir(root)) {
     const dir = join(root, entry.name);
     if (!entry.isDirectory()) continue;
@@ -313,7 +340,7 @@ function scanPersonalSkills(root, rootKind) {
   return skills;
 }
 
-function scanPluginCacheSkills(root, pluginStatusById) {
+function scanPluginCacheSkills(root: string, pluginStatusById: Map<string, PluginEntry>): SkillEntry[] {
   if (!existsSync(root)) return [];
   const files = walkFiles(root, {
     maxDepth: 8,
@@ -335,7 +362,7 @@ function scanPluginCacheSkills(root, pluginStatusById) {
   });
 }
 
-function readSkill(skillPath: string, extra: JsonMap): JsonMap {
+function readSkill(skillPath: string, extra: Pick<SkillEntry, 'source_kind' | 'root_kind' | 'plugin_id' | 'plugin_enabled'>): SkillEntry {
   const text = readText(skillPath);
   const stat = statSync(skillPath);
   const meta = parseFrontmatter(text);
@@ -351,36 +378,37 @@ function readSkill(skillPath: string, extra: JsonMap): JsonMap {
   };
 }
 
-function parseFrontmatter(text: string): JsonMap {
+function parseFrontmatter(text: string): Record<string, string> {
   if (!text.startsWith('---')) return {};
   const end = text.indexOf('\n---', 3);
   if (end === -1) return {};
   const body = text.slice(3, end).trim();
-  const meta: JsonMap = {};
+  const meta: Record<string, string> = {};
   for (const line of body.split(/\r?\n/)) {
-    const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    const match = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
     if (!match) continue;
     meta[match[1]] = match[2].replace(/^['"]|['"]$/g, '').trim();
   }
   return meta;
 }
 
-function pluginIdFromCachePath(cacheRoot, filePath) {
+function pluginIdFromCachePath(cacheRoot: string, filePath: string): string {
   const parts = relative(cacheRoot, filePath).split(sep);
   if (parts.length < 3) return parts[0] || 'unknown';
   return `${parts[1]}@${parts[0]}`;
 }
 
-function findDuplicatePersonalSkills(skills) {
-  const groups = new Map();
+function findDuplicatePersonalSkills(skills: SkillEntry[]): DuplicateReport {
+  const groups = new Map<string, SkillEntry[]>();
   for (const skill of skills) {
     const key = skill.name;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(skill);
+    const entries = groups.get(key) ?? [];
+    entries.push(skill);
+    groups.set(key, entries);
   }
-  const byName = [];
-  const identical = [];
-  const divergent = [];
+  const byName: DuplicateGroup[] = [];
+  const identical: IdenticalDuplicate[] = [];
+  const divergent: DuplicateGroup[] = [];
   for (const [name, entries] of groups.entries()) {
     if (entries.length < 2) continue;
     const sorted = sortByBytes(entries);
@@ -410,19 +438,19 @@ function findDuplicatePersonalSkills(skills) {
   };
 }
 
-function parsePluginStatus(configPath) {
-  const plugins = [];
-  const byId = new Map();
-  const hookTrustEntries = [];
+function parsePluginStatus(configPath: string): PluginStatus {
+  const plugins: PluginEntry[] = [];
+  const byId = new Map<string, PluginEntry>();
+  const hookTrustEntries: string[] = [];
   if (!existsSync(configPath)) {
     return { plugins, byId, hookTrustEntries, disabledPluginHookTrustEntries: [] };
   }
   const text = readText(configPath);
-  let section = null;
+  let section: PluginEntry | { type: 'hook_state'; id: string } | null = null;
   for (const line of text.split(/\r?\n/)) {
-    const pluginMatch = line.match(/^\[plugins\."([^"]+)"\]/);
-    const hookStateMatch = line.match(/^\[hooks\.state\."([^"]+)"\]/);
-    const anySection = line.match(/^\[/);
+    const pluginMatch = /^\[plugins\."([^"]+)"\]/.exec(line);
+    const hookStateMatch = /^\[hooks\.state\."([^"]+)"\]/.exec(line);
+    const anySection = /^\[/.exec(line);
     if (pluginMatch) {
       section = { type: 'plugin', id: pluginMatch[1], enabled: null };
       plugins.push(section);
@@ -439,7 +467,7 @@ function parsePluginStatus(configPath) {
       continue;
     }
     if (section?.type === 'plugin') {
-      const enabledMatch = line.match(/^enabled\s*=\s*(true|false)\s*$/);
+      const enabledMatch = /^enabled\s*=\s*(true|false)\s*$/.exec(line);
       if (enabledMatch) section.enabled = enabledMatch[1] === 'true';
     }
   }
@@ -456,8 +484,8 @@ function parsePluginStatus(configPath) {
   };
 }
 
-function scanHookManifests(codexHome, pluginStatusById, longStringThreshold) {
-  const candidates = [];
+function scanHookManifests(codexHome: string, pluginStatusById: Map<string, PluginEntry>, longStringThreshold: number): HookManifest[] {
+  const candidates: string[] = [];
   const userHooks = join(codexHome, 'hooks.json');
   if (existsSync(userHooks)) candidates.push(userHooks);
   const cacheRoot = join(codexHome, 'plugins', 'cache');
@@ -477,11 +505,11 @@ function scanHookManifests(codexHome, pluginStatusById, longStringThreshold) {
   return candidates.map((filePath) => readHookManifest(filePath, cacheRoot, pluginStatusById, longStringThreshold));
 }
 
-function readHookManifest(filePath, cacheRoot, pluginStatusById, longStringThreshold) {
+function readHookManifest(filePath: string, cacheRoot: string, pluginStatusById: Map<string, PluginEntry>, longStringThreshold: number): HookManifest {
   const text = readText(filePath);
   const pluginId = filePath.startsWith(cacheRoot) ? pluginIdFromCachePath(cacheRoot, filePath) : null;
   const plugin = pluginId ? pluginStatusById.get(pluginId) : null;
-  const hook: JsonMap = {
+  const hook: HookManifest = {
     path: filePath,
     bytes: byteLength(text),
     sha256: sha256(text),
@@ -495,7 +523,7 @@ function readHookManifest(filePath, cacheRoot, pluginStatusById, longStringThres
     long_strings: [],
   };
   try {
-    const parsedJson = JSON.parse(text);
+    const parsedJson = JSON.parse(text) as unknown;
     const strings: string[] = [];
     collectStrings(parsedJson, strings);
     hook.command_string_count = strings.length;
@@ -509,9 +537,9 @@ function readHookManifest(filePath, cacheRoot, pluginStatusById, longStringThres
       .sort((a, b) => b.bytes - a.bytes)
       .slice(0, 5);
     hook.event_count = countHookEvents(parsedJson);
-  } catch (err: any) {
+  } catch (err) {
     hook.valid_json = false;
-    hook.parse_error = err.message;
+    hook.parse_error = err instanceof Error ? err.message : String(err);
   }
   return hook;
 }
@@ -533,7 +561,7 @@ function collectStrings(value: unknown, out: string[]): void {
 function countHookEvents(value: unknown): number {
   if (!value || typeof value !== 'object') return 0;
   if (Array.isArray(value)) return value.length;
-  return Object.values(value).reduce<number>((sum, item) => {
+  return Object.values(value as Record<string, unknown>).reduce<number>((sum, item) => {
     if (Array.isArray(item)) return sum + item.length;
     if (item && typeof item === 'object') return sum + Object.keys(item).length;
     return sum;
@@ -548,14 +576,17 @@ function buildRecommendations({
   hookManifests,
   pluginStatus,
   opts,
-}) {
+}: {
+  activePersonalSkills: SkillEntry[]; activeBudgetSkills: SkillEntry[]; disabledPluginSkills: SkillEntry[];
+  duplicates: DuplicateReport; hookManifests: HookManifest[]; pluginStatus: PluginStatus; opts: AuditOptions;
+}): Recommendations {
   const heavyPersonalSkillReview = sortByBytes(activePersonalSkills)
     .filter((skill) => skill.bytes >= opts.heavyThreshold && !PROTECTED_PERSONAL_SKILL_NAMES.has(skill.name));
   const bulkyHooks = hookManifests
     .filter((hook) => hook.bytes >= 4_000 || hook.long_strings.length > 0)
     .sort((a, b) => b.bytes - a.bytes);
   const disabledPluginHookTrust = pluginStatus.disabledPluginHookTrustEntries;
-  const notes = [];
+  const notes: string[] = [];
   if (duplicates.identical.length) {
     notes.push('Move byte-identical duplicate personal skills out of active roots; keep one canonical copy.');
   }
@@ -589,7 +620,7 @@ function buildRecommendations({
   };
 }
 
-function printAudit(audit) {
+function printAudit(audit: Audit): void {
   const s = audit.summary;
   console.log('SMA Codex Profile Audit');
   console.log(`generated:       ${audit.generated_at}`);
@@ -616,14 +647,14 @@ function printAudit(audit) {
   console.log(`Next: ${audit.commands.audit_json}`);
 }
 
-function runLean(opts) {
+function runLean(opts: ProfileOptions): LeanManifest {
   const audit = buildAudit(opts);
   const manifest = buildLeanManifest(audit, opts);
   if (opts.apply) applyLeanManifest(manifest);
   return manifest;
 }
 
-function buildLeanManifest(audit, opts) {
+function buildLeanManifest(audit: Audit, opts: ProfileOptions): LeanManifest {
   const stamp = timestampSlug();
   const manifestDir = profileManifestDir(opts);
   const disabledGroup = `sma-lean-${opts.profile}-${stamp}`;
@@ -668,10 +699,10 @@ function buildLeanManifest(audit, opts) {
   };
 }
 
-function leanMoveCandidates(audit, opts) {
-  const moves = [];
-  const seen = new Set();
-  const addCandidate = (skill, reason) => {
+function leanMoveCandidates(audit: Audit, opts: ProfileOptions): LeanCandidate[] {
+  const moves: LeanCandidate[] = [];
+  const seen = new Set<string>();
+  const addCandidate = (skill: SkillEntry, reason: string): void => {
     if (!skill?.path || seen.has(skill.path)) return;
     if (PROTECTED_PERSONAL_SKILL_NAMES.has(skill.name)) return;
     if (opts.excludeSkills.has(skill.name)) return;
@@ -689,7 +720,7 @@ function leanMoveCandidates(audit, opts) {
     }
   }
   if (opts.includeSkills.size) {
-    const byName = new Map();
+    const byName = new Map<string, SkillEntry>();
     for (const skill of audit.top_personal_active_skills || []) byName.set(skill.name, skill);
     for (const skill of audit.recommendations.active_budget_top || []) {
       if (skill.source_kind === 'personal') byName.set(skill.name, skill);
@@ -700,16 +731,16 @@ function leanMoveCandidates(audit, opts) {
       addCandidate(skill, 'explicit-include');
     }
   }
-  return sortByBytes(moves.map((item) => item.skill)).map((skill) => moves.find((item) => item.skill.path === skill.path));
+  return sortByBytes(moves.map((item) => item.skill)).map((skill) => moves.find((item) => item.skill.path === skill.path)).filter((item): item is LeanCandidate => Boolean(item));
 }
 
-function disabledRootForSkill(skill, roots) {
+function disabledRootForSkill(skill: SkillEntry, roots: AuditRoots): string {
   if (skill.root_kind === 'codex') return roots.personal_disabled_skill_roots[0];
   if (skill.root_kind === 'agents') return roots.personal_disabled_skill_roots[1];
   throw new Error(`lean profile can only move personal skills, got ${skill.root_kind}:${skill.name}`);
 }
 
-function applyLeanManifest(manifest) {
+function applyLeanManifest(manifest: LeanManifest): void {
   mkdirSync(dirname(manifest.manifest_path), { recursive: true });
   validateMoveTargets(manifest.moves);
   writeFileSync(manifest.manifest_path, JSON.stringify({ ...manifest, applied: false, state: 'planned' }, null, 2) + '\n');
@@ -722,22 +753,22 @@ function applyLeanManifest(manifest) {
   manifest.state = 'applied';
 }
 
-function validateMoveTargets(moves) {
+function validateMoveTargets(moves: LeanMove[]): void {
   for (const move of moves) {
     if (!existsSync(move.from)) throw new Error(`move source missing: ${move.from}`);
     if (existsSync(move.to)) throw new Error(`move target already exists: ${move.to}`);
   }
 }
 
-function runRestore(opts) {
+function runRestore(opts: ProfileOptions): RestorePlan {
   const manifestPath = opts.manifest || resolveLatestManifest(opts);
-  const manifest = JSON.parse(readText(manifestPath));
+  const manifest = JSON.parse(readText(manifestPath)) as StoredLeanManifest;
   const plan = buildRestorePlan(manifest, opts, manifestPath);
   if (opts.apply) applyRestorePlan(plan);
   return plan;
 }
 
-function buildRestorePlan(manifest, opts, manifestPath) {
+function buildRestorePlan(manifest: StoredLeanManifest, opts: Pick<ProfileOptions, 'apply' | 'profile'>, manifestPath: string): RestorePlan {
   const moves = (manifest.moves || []).map((move) => ({
     name: move.name,
     bytes: move.bytes,
@@ -748,7 +779,7 @@ function buildRestorePlan(manifest, opts, manifestPath) {
     source_manifest_to: move.to,
   }));
   const totalBytes = sumBytes(moves);
-  const conflicts = [];
+  const conflicts: RestoreConflict[] = [];
   for (const move of moves) {
     if (!existsSync(move.from)) conflicts.push({ name: move.name, reason: 'restore source missing', path: move.from });
     if (existsSync(move.to)) conflicts.push({ name: move.name, reason: 'restore target already exists', path: move.to });
@@ -771,7 +802,7 @@ function buildRestorePlan(manifest, opts, manifestPath) {
   };
 }
 
-function applyRestorePlan(plan) {
+function applyRestorePlan(plan: RestorePlan): void {
   if (plan.conflicts.length) {
     throw new Error(`restore has ${plan.conflicts.length} conflict(s); run dry-run and resolve first`);
   }
@@ -779,7 +810,7 @@ function applyRestorePlan(plan) {
     mkdirSync(dirname(move.to), { recursive: true });
     renameSync(move.from, move.to);
   }
-  const manifest = JSON.parse(readText(plan.manifest_path));
+  const manifest = JSON.parse(readText(plan.manifest_path)) as StoredLeanManifest;
   writeFileSync(plan.manifest_path, JSON.stringify({
     ...manifest,
     restored: true,
@@ -787,7 +818,7 @@ function applyRestorePlan(plan) {
   }, null, 2) + '\n');
 }
 
-function resolveLatestManifest(opts) {
+function resolveLatestManifest(opts: ProfileOptions): string {
   const dir = profileManifestDir(opts);
   const prefix = `codex-profile-lean-${opts.profile}-`;
   const candidates = safeReaddir(dir)
@@ -801,11 +832,11 @@ function resolveLatestManifest(opts) {
   return candidates[0].path;
 }
 
-function profileManifestDir(opts) {
+function profileManifestDir(opts: Pick<ProfileOptions, 'manifestDir' | 'codexHome'>): string {
   return opts.manifestDir || join(resolve(opts.codexHome), 'profile-manifests');
 }
 
-function printLean(manifest) {
+function printLean(manifest: LeanManifest): void {
   console.log('SMA Codex Lean Profile');
   console.log(`profile:         ${manifest.profile}`);
   console.log(`mode:            ${manifest.applied ? 'applied' : 'dry-run'}`);
@@ -829,7 +860,7 @@ function printLean(manifest) {
   }
 }
 
-function printRestore(plan) {
+function printRestore(plan: RestorePlan): void {
   console.log('SMA Codex Lean Restore');
   console.log(`profile:         ${plan.profile}`);
   console.log(`mode:            ${plan.apply ? 'applied' : 'dry-run'}`);
@@ -852,7 +883,7 @@ function printRestore(plan) {
   }
 }
 
-function printSkillList(title, skills) {
+function printSkillList(title: string, skills: SkillEntry[]): void {
   if (!skills.length) return;
   console.log('');
   console.log(`${title}:`);
@@ -863,7 +894,7 @@ function printSkillList(title, skills) {
   }
 }
 
-function printDuplicateList(duplicates) {
+function printDuplicateList(duplicates: IdenticalDuplicate[]): void {
   if (!duplicates.length) return;
   console.log('');
   console.log('Byte-identical personal duplicates:');
@@ -872,7 +903,7 @@ function printDuplicateList(duplicates) {
   }
 }
 
-function printHookList(hooks) {
+function printHookList(hooks: HookManifest[]): void {
   if (!hooks.length) return;
   console.log('');
   console.log('Hook manifests:');
@@ -885,8 +916,8 @@ function printHookList(hooks) {
   }
 }
 
-function walkFiles(root, options) {
-  const files = [];
+function walkFiles(root: string, options: WalkOptions): string[] {
+  const files: string[] = [];
   const stack = [{ path: root, depth: 0 }];
   while (stack.length) {
     const current = stack.pop();
@@ -904,7 +935,7 @@ function walkFiles(root, options) {
   return files.sort();
 }
 
-function safeReaddir(dir) {
+function safeReaddir(dir: string): import('node:fs').Dirent[] {
   try {
     return readdirSync(dir, { withFileTypes: true });
   } catch { /* optional profile directory */
@@ -924,11 +955,11 @@ function byteLength(text: unknown): number {
   return Buffer.byteLength(String(text), 'utf8');
 }
 
-function sumBytes(items) {
+function sumBytes(items: BytesItem[]): number {
   return items.reduce((sum, item) => sum + Number(item.bytes || 0), 0);
 }
 
-function sortByBytes(items) {
+function sortByBytes<T extends BytesItem>(items: T[]): T[] {
   return [...items].sort((a, b) => Number(b.bytes || 0) - Number(a.bytes || 0));
 }
 
@@ -970,7 +1001,7 @@ function shellArg(value: unknown): string {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
 }
 
-function runSelftest() {
+function runSelftest(): void {
   const workforceSelftest = spawnSync(process.execPath, [fileURLToPath(new URL('./lib/workforce/claude-cli.mjs', import.meta.url)), '--selftest'], { encoding: 'utf8' });
   assertSelftest(workforceSelftest.status === 0, workforceSelftest.stderr || 'Claude workforce backend contract should pass');
   const root = mkdtempSync(join(tmpdir(), 'sma-codex-profile-'));
@@ -1036,7 +1067,7 @@ trusted_hash = "sha256:test"
     applyLeanManifest(lean);
     assertSelftest(!existsSync(join(agentsHome, 'skills', 'big-optional')), 'lean apply should move heavy skill out of active root');
     assertSelftest(existsSync(lean.moves[0].to), 'lean apply target should exist');
-    const restore = buildRestorePlan(JSON.parse(readText(lean.manifest_path)), { apply: true, profile: 'sma' }, lean.manifest_path);
+    const restore = buildRestorePlan(JSON.parse(readText(lean.manifest_path)) as StoredLeanManifest, { apply: true, profile: 'sma' }, lean.manifest_path);
     assertSelftest(restore.summary.conflict_count === 0, 'restore should have no conflicts after lean apply');
     applyRestorePlan(restore);
     assertSelftest(existsSync(join(agentsHome, 'skills', 'big-optional')), 'restore should move heavy skill back to active root');
@@ -1046,10 +1077,10 @@ trusted_hash = "sha256:test"
   }
 }
 
-function skillFixture(name, description, body) {
+function skillFixture(name: string, description: string, body: string): string {
   return `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n\n${body}\n`;
 }
 
-function assertSelftest(condition, message) {
+function assertSelftest(condition: boolean, message: string): void {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }

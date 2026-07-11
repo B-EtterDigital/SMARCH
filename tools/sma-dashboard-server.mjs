@@ -327,7 +327,7 @@ async function runSelftest() {
         const timeout = setTimeout(() => { request.destroy(); reject(new Error("selftest: SSE reconnect did not replay a lease event and heartbeat within 1s")); }, 1_000);
         response.on("data", (chunk) => {
           content += chunk;
-          if (content.includes("event: leases") && content.includes(": heartbeat")) { clearTimeout(timeout); request.destroy(); resolve(); }
+          if (content.includes("event: leases") && content.includes(": heartbeat")) { clearTimeout(timeout); request.destroy(); resolve(undefined); }
         });
       });
     });
@@ -341,14 +341,14 @@ async function runSelftest() {
     const principal = { subject: "unit-reader", scopes: ["dashboard:registry:read", "dashboard:leases:read"] };
     let timeoutCode = "";
     try {
-      await handleRegistry({ root, principal, query: new URLSearchParams(), timeoutMs: 5, telemetry: (event) => telemetry.push(event), load: () => new Promise((resolve) => setTimeout(() => resolve(undefined), 50)) });
+      await handleRegistry({ root, principal, query: new URLSearchParams(), timeoutMs: 5, telemetry: (event) => telemetry.push(event), load: () => new Promise((resolve) => setTimeout(resolve, 50)) });
     } catch (error) {
       timeoutCode = dashboardErrorCode(error) || "";
     }
     if (timeoutCode !== "DASH_API_TIMEOUT") throw new Error("selftest: timeout did not produce a typed error");
     for (const query of [null, {}, [], "", 7]) {
       let code = "";
-      try { await handleLeases({ root, principal, query, telemetry: () => {} }); } catch (error) { code = dashboardErrorCode(error) || ""; }
+      try { await handleLeases({ root, principal, query: /** @type {URLSearchParams} */ (query), telemetry: () => {} }); } catch (error) { code = dashboardErrorCode(error) || ""; }
       if (code !== "DASH_API_VALIDATION") throw new Error("selftest: fuzzed query shape escaped validation");
     }
 

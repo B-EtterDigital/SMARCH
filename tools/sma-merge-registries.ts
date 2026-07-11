@@ -14,13 +14,101 @@ import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/s
 import { buildCanonicalizationReport, emptyCanonicalizationReport } from "./sma-canonicalization.ts";
 import { SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
-const defaults = {
+interface RegistryRef { id: string; file: string }
+interface MergeOptions { out: string; registry: RegistryRef[] }
+interface SecurityGate { status: string; findings: number; high_or_critical: number; scanned_files: number; truncated: boolean }
+interface SeverityCounts { medium: number; high: number; critical: number }
+interface Dimension { label: string; weight: number; ready_count: number; coverage_units: number; total_count: number; coverage_rate: number }
+type NumericCounts = Record<string, number>;
+interface SignalCounts extends NumericCounts { feature: number; domain: number; path: number; group: number }
+interface EnvVariable { name?: string }
+interface DataEntry extends Record<string, unknown> {
+  id?: string; project?: string; root?: string; name?: string; path?: string; file?: string;
+  kind?: string; status?: string; severity?: string; brick_id?: string; target_brick_id?: string;
+  candidate_key?: string; recurrence_key?: string; brick_group?: string; candidate_type?: string;
+  hierarchy_role?: string; grade?: string; average_grade?: string; effective_status?: string;
+  score?: number; readiness_score?: number; average_score?: number; average_confidence_score?: number;
+  analyzed_code_file_count?: number; hotspot_file_count?: number; brick_hotspot_count?: number;
+  duplicate_cluster_count?: number; total_smell_count?: number; weighted_smell_score?: number;
+  error_count?: number; warning_count?: number; lines?: number; raw_source_tokens?: number;
+  smell_score?: number; total_matches?: number; priority_score?: number; file_count?: number;
+  brick_count?: number; missing_count?: number; count?: number; confidence_score?: number;
+  candidate_count?: number; detected_brick_count?: number; recurrent_candidate_count?: number;
+  recurrent_family_count?: number; recurrent_project_count?: number; max_confidence_score?: number;
+  analyzed_file_count?: number; oversized_file_count?: number; split_opportunity_count?: number;
+  missing_source_path_count?: number; analysis_failure_count?: number; undeclared_reference_count?: number;
+  bricks_with_undeclared_refs?: number; trackable_brick_count?: number;
+  import_scan_count?: number; same_group_internal_import_count?: number;
+  private_cross_brick_import_count?: number; cross_brick_owned_import_count?: number;
+  unresolved_local_import_count?: number; unowned_local_dependency_count?: number;
+  observed_reference_count?: number; ignored_reference_count?: number; high_or_critical?: number;
+  scanned_files?: number; truncated?: boolean;
+  source_paths?: string[]; related_bricks?: string[]; brick_ids?: string[]; recurrent_projects?: string[];
+  split_points?: unknown[]; blocker_codes?: string[]; warning_codes?: string[]; undeclared_env_refs?: string[];
+  observed_variable_names?: string[]; ignored_variable_names?: string[]; sample_bricks?: DataEntry[];
+  entries?: DataEntry[]; projects?: DataEntry[]; bricks?: DataEntry[]; top_candidates?: DataEntry[];
+  candidate_signatures?: DataEntry[]; oversized_files?: DataEntry[]; refactor_queue?: DataEntry[];
+  missing_source_paths?: DataEntry[]; analysis_failures?: DataEntry[]; top_violations?: DataEntry[];
+  highest_risk_bricks?: DataEntry[]; top_hotspots?: DataEntry[]; duplicate_groups?: DataEntry[];
+  highest_gap_bricks?: DataEntry[]; top_undeclared_refs?: DataEntry[]; env_contract_queue?: DataEntry[];
+  rls_contract_queue?: DataEntry[]; boundary_queue?: DataEntry[]; quality_queue?: DataEntry[];
+  top_actions?: DataEntry[]; top_token_heavy_bricks?: DataEntry[]; actions?: DataEntry[];
+  health?: DataEntry; readiness?: DataEntry; scanner?: DataEntry; refactor?: DataEntry;
+  build_report?: DataEntry; code_quality_report?: DataEntry; env_contract_report?: DataEntry;
+  compliance_report?: DataEntry; boundary_report?: DataEntry; clone_preflight?: DataEntry;
+  manifest_drift?: DataEntry; remediation_report?: DataEntry; token_economics?: DataEntry;
+  signal_type_counts?: SignalCounts; counts?: NumericCounts; severity_counts?: SeverityCounts;
+  by_type?: Record<string, number>; dimensions?: Record<string, Dimension>;
+  env_contract?: { variables?: EnvVariable[] };
+}
+interface DuplicateCluster { key: string; projects: string[]; kind: string; stem: string; count: number; bricks: DataEntry[] }
+interface RegistryInput extends DataEntry {
+  scanned_project_roots?: DataEntry[]; projects?: DataEntry[]; bricks?: DataEntry[];
+  unmanifested_bricks?: DataEntry[]; candidate_groups?: DataEntry[]; failures?: DataEntry[];
+  refactor_report?: DataEntry; scanner_report?: DataEntry & { duplicate_clusters?: DuplicateCluster[] };
+}
+interface RefactorReport {
+  thresholds: DataEntry | null; analyzed_file_count: number; oversized_file_count: number;
+  split_opportunity_count: number; missing_source_path_count: number; analysis_failure_count: number;
+  severity_counts: SeverityCounts; projects: DataEntry[]; top_split_opportunities: DataEntry[];
+  refactor_queue: DataEntry[]; oversized_files: DataEntry[]; missing_source_paths: DataEntry[];
+  analysis_failures: DataEntry[];
+}
+interface BuildReport extends DataEntry {
+  candidate_count: number; detected_brick_count: number; recurrent_candidate_count: number;
+  recurrent_family_count: number; average_confidence_score: number; signal_type_counts: SignalCounts;
+  top_candidates: DataEntry[]; candidate_signatures: DataEntry[]; projects: DataEntry[];
+}
+interface ScannerReport {
+  readiness: DataEntry & { average_score: number; average_grade: string; projects: DataEntry[] };
+  boundary_report: DataEntry & { import_scan_count: number; same_group_internal_import_count: number; private_cross_brick_import_count: number; cross_brick_owned_import_count: number; unresolved_local_import_count: number; unowned_local_dependency_count: number; top_violations: DataEntry[] };
+  clone_preflight: DataEntry & { counts: NumericCounts; highest_risk_bricks: DataEntry[] };
+  manifest_drift: DataEntry & { count: number; by_type: Record<string, number>; entries: DataEntry[] };
+  code_quality_report: DataEntry & { average_score: number; average_grade: string; analyzed_code_file_count: number; hotspot_file_count: number; brick_hotspot_count: number; duplicate_cluster_count: number; total_smell_count: number; weighted_smell_score: number; by_type: Record<string, number>; top_hotspots: DataEntry[]; highest_risk_bricks: DataEntry[]; duplicate_groups: DataEntry[]; projects: DataEntry[] };
+  env_contract_report: DataEntry & { observed_reference_count: number; observed_variable_count: number; ignored_reference_count: number; ignored_variable_count: number; declared_variable_count: number; undeclared_reference_count: number; bricks_with_undeclared_refs: number; observed_variable_names: string[]; ignored_variable_names: string[]; top_undeclared_refs: DataEntry[]; highest_gap_bricks: DataEntry[] };
+  compliance_report: DataEntry & { average_score: number; average_grade: string; trackable_brick_count: number; dimensions: Record<string, Dimension>; weakest_dimensions: DataEntry[]; highest_gap_bricks: DataEntry[] };
+  build_report: BuildReport;
+  remediation_report: DataEntry & { counts: NumericCounts; env_contract_queue: DataEntry[]; rls_contract_queue: DataEntry[]; boundary_queue: DataEntry[]; quality_queue: DataEntry[]; top_actions: DataEntry[]; project_action_plans: DataEntry[] };
+  canonicalization_report: ReturnType<typeof emptyCanonicalizationReport>;
+  duplicate_clusters: DuplicateCluster[];
+  token_economics: DataEntry & { raw_source_tokens: number; estimated_summary_tokens: number; compact_card_tokens: number; top_token_heavy_bricks: DataEntry[] };
+  missing_source_paths: DataEntry[]; analysis_failures: DataEntry[];
+}
+interface MergeOutput {
+  schema_version: string; generated_at: string; scan_root: string; scan_project_id: string;
+  scanned_project_roots: DataEntry[]; projects: DataEntry[]; count: number; failure_count: number;
+  validation_error_count: number; validation_warning_count: number; unmanifested_count: number;
+  candidate_group_count: number; refactor_report: RefactorReport; scanner_report: ScannerReport;
+  bricks: DataEntry[]; candidate_groups: DataEntry[]; unmanifested_bricks: DataEntry[]; failures: DataEntry[];
+}
+
+const defaults: MergeOptions = {
   out: smaPath("registry/all-projects.generated.json"),
   registry: []
 };
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = { ...defaults, registry: [] };
+function parseArgs(argv: string[]): MergeOptions {
+  const options: MergeOptions = { ...defaults, registry: [] };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -58,7 +146,7 @@ Usage:
   return options;
 }
 
-function parseRegistryRef(value) {
+function parseRegistryRef(value: string): RegistryRef {
   const index = value.indexOf("=");
 
   if (index === -1) {
@@ -75,22 +163,22 @@ function parseRegistryRef(value) {
   };
 }
 
-function slugify(value) {
-  return String(value || "project")
+function slugify(value: string): string {
+  return (value || "project")
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "") || "project";
 }
 
-async function readJson(file) {
-  return JSON.parse(await fs.readFile(file, "utf8"));
+async function readJson<T>(file: string): Promise<T> {
+  return JSON.parse(await fs.readFile(file, "utf8")) as T;
 }
 
-async function maybeSecurityGate(registryFile) {
+async function maybeSecurityGate(registryFile: string): Promise<SecurityGate | null> {
   const file = path.join(path.dirname(registryFile), "security-gate.json");
 
   try {
-    const report = await readJson(file);
+    const report = await readJson<DataEntry>(file);
     return {
       status: (report.high_or_critical || 0) > 0 ? "blocked" : "passed",
       findings: report.count || 0,
@@ -103,7 +191,7 @@ async function maybeSecurityGate(registryFile) {
   }
 }
 
-function normalizeCodeQualitySummary(summary: Record<string, any> = {}) {
+function normalizeCodeQualitySummary(summary: DataEntry = {}): DataEntry {
   const score = Number(
     summary.score
     ?? summary.average_score
@@ -125,7 +213,7 @@ function normalizeCodeQualitySummary(summary: Record<string, any> = {}) {
   };
 }
 
-function emptyStatusCounts() {
+function emptyStatusCounts(): Record<string, number> {
   return {
     experimental: 0,
     project_bound: 0,
@@ -137,7 +225,7 @@ function emptyStatusCounts() {
   };
 }
 
-function emptyRefactorReport() {
+function emptyRefactorReport(): RefactorReport {
   return {
     thresholds: null,
     analyzed_file_count: 0,
@@ -155,7 +243,7 @@ function emptyRefactorReport() {
   };
 }
 
-function emptyScannerReport() {
+function emptyScannerReport(): ScannerReport {
   return {
     readiness: {
       average_score: 0,
@@ -274,7 +362,7 @@ function emptyScannerReport() {
   };
 }
 
-function emptyBuildReport(project = null) {
+function emptyBuildReport(project: string | null = null): BuildReport {
   return {
     ...(project ? { project } : {}),
     candidate_count: 0,
@@ -294,8 +382,8 @@ function emptyBuildReport(project = null) {
   };
 }
 
-function countBy(items, keyFn) {
-  const counts = new Map();
+function countBy<T>(items: T[], keyFn: (item: T) => string): Record<string, number> {
+  const counts = new Map<string, number>();
 
   for (const item of items) {
     const key = keyFn(item);
@@ -305,7 +393,7 @@ function countBy(items, keyFn) {
   return Object.fromEntries([...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]))));
 }
 
-function gradeForScore(score) {
+function gradeForScore(score: number): string {
   if (score >= 90) return "A";
   if (score >= 80) return "B";
   if (score >= 70) return "C";
@@ -325,16 +413,17 @@ const complianceDimensionDefinitions = [
   { key: "security_clean", label: "Security clean", weight: 5 }
 ];
 
-function boundaryViolationPriority(kind) {
-  return {
+function boundaryViolationPriority(kind: string | undefined): number {
+  const priorities: Record<string, number> = {
     private_cross_brick_import: 4,
     unresolved_local_import: 3,
     unowned_local_dependency: 2,
     cross_brick_owned_import: 1
-  }[kind] || 0;
+  };
+  return kind ? (priorities[kind] ?? 0) : 0;
 }
 
-function normalizeDuplicateStem(value) {
+function normalizeDuplicateStem(value: unknown): string {
   return String(value || "")
     .toLowerCase()
     .replace(/\.(ts|tsx|js|jsx|mjs|cjs|py|rb|go|rs|java|kt|swift|php|cs|sql)$/i, "")
@@ -344,15 +433,15 @@ function normalizeDuplicateStem(value) {
     .replace(/^-+|-+$/g, "");
 }
 
-function duplicateStemForBrick(brick) {
+function duplicateStemForBrick(brick: DataEntry): string {
   const firstSourcePath = String((brick.source_paths || [])[0] || "");
   const pathStem = normalizeDuplicateStem(path.basename(firstSourcePath));
   const nameStem = normalizeDuplicateStem(brick.name || brick.id);
   return pathStem || nameStem || "unknown";
 }
 
-function buildDuplicateClusters(bricks) {
-  const byStem = new Map();
+function buildDuplicateClusters(bricks: DataEntry[]): DuplicateCluster[] {
+  const byStem = new Map<string, DataEntry[]>();
 
   for (const brick of bricks) {
     const stem = duplicateStemForBrick(brick);
@@ -370,12 +459,12 @@ function buildDuplicateClusters(bricks) {
   return [...byStem.entries()]
     .map(([key, group]) => ({
       key,
-      projects: [...new Set(group.map((brick) => brick.project))].sort(),
+      projects: [...new Set(group.map((brick) => brick.project).filter((value): value is string => Boolean(value)))].sort(),
       kind: group[0]?.kind || "unknown",
-      stem: key.split(":")[0],
+      stem: key.split(":")[0] ?? "unknown",
       count: group.length,
       bricks: group
-        .sort((a, b) => (b.score || 0) - (a.score || 0) || a.id.localeCompare(b.id))
+        .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.id).localeCompare(String(b.id)))
         .slice(0, 10)
         .map((brick) => ({
           id: brick.id,
@@ -391,26 +480,30 @@ function buildDuplicateClusters(bricks) {
     .slice(0, 80);
 }
 
-function projectSummary(projectId, root, bricks, unmanifested, candidateGroups, securityGate, refactor, scanner) {
+function projectSummary(projectId: string, root: string, bricks: DataEntry[], unmanifested: DataEntry[], candidateGroups: DataEntry[], securityGate: SecurityGate | null, refactor: DataEntry | null, scanner: DataEntry | null): DataEntry {
   const statusCounts = emptyStatusCounts();
-  const healthCounts = { ok: 0, warn: 0, fail: 0 };
-  const candidateTypeCounts = {};
-  const candidateRoleCounts = {};
+  const healthCounts: Record<string, number> = { ok: 0, warn: 0, fail: 0 };
+  const candidateTypeCounts: Record<string, number> = {};
+  const candidateRoleCounts: Record<string, number> = {};
   let errorCount = 0;
   let warningCount = 0;
   let scoreTotal = 0;
 
   for (const brick of bricks) {
-    statusCounts[brick.status] = (statusCounts[brick.status] || 0) + 1;
-    healthCounts[brick.health?.status || "warn"] = (healthCounts[brick.health?.status || "warn"] || 0) + 1;
+    const status = brick.status ?? "experimental";
+    const healthStatus = brick.health?.status === "ok" || brick.health?.status === "fail" ? brick.health.status : "warn";
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+    healthCounts[healthStatus] = (healthCounts[healthStatus] || 0) + 1;
     errorCount += brick.health?.error_count || 0;
     warningCount += brick.health?.warning_count || 0;
     scoreTotal += brick.score || 0;
   }
 
   for (const candidate of unmanifested) {
-    candidateTypeCounts[candidate.candidate_type] = (candidateTypeCounts[candidate.candidate_type] || 0) + 1;
-    candidateRoleCounts[candidate.hierarchy_role] = (candidateRoleCounts[candidate.hierarchy_role] || 0) + 1;
+    const candidateType = candidate.candidate_type ?? "unknown";
+    const candidateRole = candidate.hierarchy_role ?? "unknown";
+    candidateTypeCounts[candidateType] = (candidateTypeCounts[candidateType] || 0) + 1;
+    candidateRoleCounts[candidateRole] = (candidateRoleCounts[candidateRole] || 0) + 1;
   }
 
   return {
@@ -432,7 +525,7 @@ function projectSummary(projectId, root, bricks, unmanifested, candidateGroups, 
   };
 }
 
-function normalizeBrick(projectId, brick, seenIds) {
+function normalizeBrick(projectId: string, brick: DataEntry, seenIds: Set<string>): DataEntry & { id: string; project: string } {
   const originalId = brick.id || "missing-id";
   let id = `${projectId}.${originalId}`;
   let index = 2;
@@ -451,7 +544,7 @@ function normalizeBrick(projectId, brick, seenIds) {
   };
 }
 
-function normalizeCandidate(projectId, candidate) {
+function normalizeCandidate(projectId: string, candidate: DataEntry): DataEntry {
   return {
     ...candidate,
     project: projectId,
@@ -459,7 +552,7 @@ function normalizeCandidate(projectId, candidate) {
   };
 }
 
-function normalizeGroup(projectId, group) {
+function normalizeGroup(projectId: string, group: DataEntry): DataEntry {
   return {
     ...group,
     project: projectId,
@@ -467,11 +560,11 @@ function normalizeGroup(projectId, group) {
   };
 }
 
-function normalizeRelatedBrickIds(projectId, value) {
-  return Array.isArray(value) ? value.map((id) => `${projectId}.${id}`) : value;
+function normalizeRelatedBrickIds(projectId: string, value: unknown): string[] {
+  return Array.isArray(value) ? value.map((id) => `${projectId}.${String(id)}`) : value as string[];
 }
 
-function normalizeRefactorEntry(projectId, entry) {
+function normalizeRefactorEntry(projectId: string, entry: DataEntry): DataEntry {
   return {
     ...entry,
     project: projectId,
@@ -479,7 +572,7 @@ function normalizeRefactorEntry(projectId, entry) {
   };
 }
 
-function normalizeScannerEntry(projectId, entry) {
+function normalizeScannerEntry(projectId: string, entry: DataEntry): DataEntry {
   return {
     ...entry,
     project: projectId,
@@ -489,7 +582,7 @@ function normalizeScannerEntry(projectId, entry) {
   };
 }
 
-function normalizeBuildCandidate(projectId, entry) {
+function normalizeBuildCandidate(projectId: string, entry: DataEntry): DataEntry {
   return {
     ...entry,
     project: projectId,
@@ -506,7 +599,7 @@ function normalizeBuildCandidate(projectId, entry) {
   };
 }
 
-function normalizeBuildSignature(projectId, entry) {
+function normalizeBuildSignature(projectId: string, entry: DataEntry): DataEntry {
   return {
     ...entry,
     project: projectId,
@@ -514,7 +607,7 @@ function normalizeBuildSignature(projectId, entry) {
   };
 }
 
-function finalizeMergedBuildReport(report) {
+function finalizeMergedBuildReport(report: BuildReport): BuildReport {
   const finalized = {
     ...emptyBuildReport(),
     ...report,
@@ -525,7 +618,7 @@ function finalizeMergedBuildReport(report) {
       group: report.signal_type_counts?.group || 0
     }
   };
-  const recurrence = new Map();
+  const recurrence = new Map<string, { projects: Set<string>; candidate_count: number; max_confidence_score: number }>();
 
   for (const signature of finalized.candidate_signatures || []) {
     const key = signature.recurrence_key || "capability";
@@ -535,7 +628,7 @@ function finalizeMergedBuildReport(report) {
       max_confidence_score: 0
     };
 
-    current.projects.add(signature.project);
+    current.projects.add(signature.project ?? "unknown");
     current.candidate_count += 1;
     current.max_confidence_score = Math.max(current.max_confidence_score, Number(signature.confidence_score || 0));
     recurrence.set(key, current);
@@ -575,13 +668,13 @@ function finalizeMergedBuildReport(report) {
   return finalized;
 }
 
-function queuePriorityScore(entry) {
+function queuePriorityScore(entry: DataEntry): number {
   return Number(entry.priority_score || 0);
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const output = {
+  const output: MergeOutput = {
     schema_version: "1.0.0",
     generated_at: new Date().toISOString(),
     scan_root: SMA_ROOT,
@@ -601,10 +694,10 @@ async function main() {
     unmanifested_bricks: [],
     failures: []
   };
-  const seenIds = new Set();
+  const seenIds = new Set<string>();
 
   for (const ref of options.registry) {
-    const registry = await readJson(ref.file);
+    const registry = await readJson<RegistryInput>(ref.file);
     const projectRoot = registry.scanned_project_roots?.[0]?.root || registry.projects?.[0]?.root || path.dirname(ref.file);
     const securityGate = await maybeSecurityGate(ref.file);
     const bricks = (registry.bricks || []).map((brick) => normalizeBrick(ref.id, brick, seenIds));
@@ -644,7 +737,7 @@ async function main() {
     });
 
     if (refactorReport) {
-      output.refactor_report.thresholds = output.refactor_report.thresholds || refactorReport.thresholds || null;
+      output.refactor_report.thresholds = output.refactor_report.thresholds || (refactorReport.thresholds as DataEntry | undefined) || null;
       output.refactor_report.analyzed_file_count += refactorReport.analyzed_file_count || 0;
       output.refactor_report.oversized_file_count += refactorReport.oversized_file_count || 0;
       output.refactor_report.split_opportunity_count += refactorReport.split_opportunity_count || 0;
@@ -766,9 +859,9 @@ async function main() {
       output.scanner_report.remediation_report.quality_queue.push(...(scannerReport.remediation_report?.quality_queue || []).map((entry) => normalizeScannerEntry(ref.id, entry)));
       output.scanner_report.remediation_report.top_actions.push(...(scannerReport.remediation_report?.top_actions || []).map((entry) => normalizeScannerEntry(ref.id, entry)));
 
-      output.scanner_report.token_economics.raw_source_tokens += scannerReport.token_economics?.raw_source_tokens || 0;
-      output.scanner_report.token_economics.estimated_summary_tokens += scannerReport.token_economics?.estimated_summary_tokens || 0;
-      output.scanner_report.token_economics.compact_card_tokens += scannerReport.token_economics?.compact_card_tokens || 0;
+      output.scanner_report.token_economics.raw_source_tokens += Number(scannerReport.token_economics?.raw_source_tokens || 0);
+      output.scanner_report.token_economics.estimated_summary_tokens += Number(scannerReport.token_economics?.estimated_summary_tokens || 0);
+      output.scanner_report.token_economics.compact_card_tokens += Number(scannerReport.token_economics?.compact_card_tokens || 0);
       output.scanner_report.token_economics.top_token_heavy_bricks.push(...(scannerReport.token_economics?.top_token_heavy_bricks || []).map((entry) => normalizeScannerEntry(ref.id, entry)));
 
       output.scanner_report.missing_source_paths.push(...(scannerReport.missing_source_paths || []).map((entry) => normalizeScannerEntry(ref.id, entry)));
@@ -776,11 +869,11 @@ async function main() {
     }
   }
 
-  output.bricks.sort((a, b) => a.project.localeCompare(b.project) || a.id.localeCompare(b.id));
-  output.unmanifested_bricks.sort((a, b) => a.project.localeCompare(b.project) || String(a.path).localeCompare(String(b.path)));
-  output.candidate_groups.sort((a, b) => a.project.localeCompare(b.project) || a.name.localeCompare(b.name));
-  output.projects.sort((a, b) => a.id.localeCompare(b.id));
-  output.refactor_report.projects.sort((a, b) => a.project.localeCompare(b.project));
+  output.bricks.sort((a, b) => String(a.project).localeCompare(String(b.project)) || String(a.id).localeCompare(String(b.id)));
+  output.unmanifested_bricks.sort((a, b) => String(a.project).localeCompare(String(b.project)) || String(a.path).localeCompare(String(b.path)));
+  output.candidate_groups.sort((a, b) => String(a.project).localeCompare(String(b.project)) || String(a.name).localeCompare(String(b.name)));
+  output.projects.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  output.refactor_report.projects.sort((a, b) => String(a.project).localeCompare(String(b.project)));
   output.refactor_report.oversized_files.sort((a, b) => {
     const severityOrder = (b.severity === "critical" ? 3 : b.severity === "high" ? 2 : b.severity === "medium" ? 1 : 0)
       - (a.severity === "critical" ? 3 : a.severity === "high" ? 2 : a.severity === "medium" ? 1 : 0);
@@ -790,12 +883,12 @@ async function main() {
   output.refactor_report.refactor_queue = output.refactor_report.refactor_queue
     .slice(0, 100)
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
-  output.refactor_report.missing_source_paths.sort((a, b) => a.project.localeCompare(b.project) || String(a.path).localeCompare(String(b.path)));
-  output.refactor_report.analysis_failures.sort((a, b) => a.project.localeCompare(b.project) || String(a.path).localeCompare(String(b.path)));
+  output.refactor_report.missing_source_paths.sort((a, b) => String(a.project).localeCompare(String(b.project)) || String(a.path).localeCompare(String(b.path)));
+  output.refactor_report.analysis_failures.sort((a, b) => String(a.project).localeCompare(String(b.project)) || String(a.path).localeCompare(String(b.path)));
   output.refactor_report.top_split_opportunities = output.refactor_report.oversized_files
     .filter((file) => Array.isArray(file.split_points) && file.split_points.length > 0)
     .slice(0, 50);
-  output.scanner_report.readiness.projects.sort((a, b) => a.project.localeCompare(b.project));
+  output.scanner_report.readiness.projects.sort((a, b) => String(a.project).localeCompare(String(b.project)));
   output.scanner_report.readiness.average_score = output.scanner_report.readiness.projects.length
     ? Math.round(output.scanner_report.readiness.projects.reduce((sum, project) => sum + (project.readiness?.score || 0), 0) / output.scanner_report.readiness.projects.length)
     : 0;
@@ -806,7 +899,7 @@ async function main() {
   output.scanner_report.clone_preflight.highest_risk_bricks = output.scanner_report.clone_preflight.highest_risk_bricks
     .sort((a, b) => (b.blocker_codes?.length || 0) - (a.blocker_codes?.length || 0) || (b.warning_codes?.length || 0) - (a.warning_codes?.length || 0) || (b.raw_source_tokens || 0) - (a.raw_source_tokens || 0))
     .slice(0, 120);
-  output.scanner_report.manifest_drift.by_type = countBy(output.scanner_report.manifest_drift.entries, (entry) => entry.kind);
+  output.scanner_report.manifest_drift.by_type = countBy(output.scanner_report.manifest_drift.entries, (entry) => entry.kind ?? "unknown");
   output.scanner_report.manifest_drift.entries = output.scanner_report.manifest_drift.entries
     .sort((a, b) => String(a.path).localeCompare(String(b.path)))
     .slice(0, 160);
@@ -857,10 +950,10 @@ async function main() {
     .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || Number(b.file_count || 0) - Number(a.file_count || 0) || String(a.path).localeCompare(String(b.path)))
     .slice(0, 80);
   {
-    const observedEnvNames = new Set();
-    const ignoredEnvNames = new Set();
-    const declaredEnvNames = new Set();
-    const undeclaredEnvNames = new Map();
+    const observedEnvNames = new Set<string>();
+    const ignoredEnvNames = new Set<string>();
+    const declaredEnvNames = new Set<string>();
+    const undeclaredEnvNames = new Map<string, { name: string; brick_count: number; sample_bricks: Set<string> }>();
 
     for (const name of output.scanner_report.env_contract_report.observed_variable_names || []) {
       observedEnvNames.add(name);
@@ -879,19 +972,20 @@ async function main() {
     }
 
     for (const entry of output.scanner_report.env_contract_report.top_undeclared_refs || []) {
-      const current = undeclaredEnvNames.get(entry.name) || {
-        name: entry.name,
+      const name = entry.name ?? "unknown";
+      const current = undeclaredEnvNames.get(name) || {
+        name,
         brick_count: 0,
         sample_bricks: new Set()
       };
 
       current.brick_count += entry.brick_count || 0;
 
-      for (const brickId of entry.sample_bricks || []) {
+      for (const brickId of (entry.sample_bricks ?? []) as unknown as string[]) {
         current.sample_bricks.add(brickId);
       }
 
-      undeclaredEnvNames.set(entry.name, current);
+      undeclaredEnvNames.set(name, current);
     }
 
     for (const entry of output.scanner_report.env_contract_report.highest_gap_bricks || []) {
@@ -906,7 +1000,7 @@ async function main() {
           current.brick_count += 1;
         }
 
-        current.sample_bricks.add(entry.brick_id);
+        if (entry.brick_id) current.sample_bricks.add(entry.brick_id);
         undeclaredEnvNames.set(name, current);
       }
     }
@@ -923,13 +1017,13 @@ async function main() {
         name: entry.name,
         brick_count: entry.brick_count,
         sample_bricks: [...entry.sample_bricks].sort().slice(0, 6)
-      }));
+      })) as unknown as DataEntry[];
     output.scanner_report.env_contract_report.highest_gap_bricks = output.scanner_report.env_contract_report.highest_gap_bricks
       .sort((a, b) => (b.undeclared_env_refs?.length || 0) - (a.undeclared_env_refs?.length || 0) || String(a.path).localeCompare(String(b.path)))
       .slice(0, 80);
   }
   {
-    const activeDimensions = [];
+    const activeDimensions: Array<[string, Dimension]> = [];
 
     for (const definition of complianceDimensionDefinitions) {
       const current = output.scanner_report.compliance_report.dimensions[definition.key];
@@ -973,10 +1067,10 @@ async function main() {
   }
   output.scanner_report.build_report = finalizeMergedBuildReport(output.scanner_report.build_report);
   {
-    const sortActions = (items, limit) => items
+    const sortActions = (items: DataEntry[], limit: number): DataEntry[] => items
       .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || String(a.path).localeCompare(String(b.path)))
       .slice(0, limit);
-    const byProject = new Map();
+    const byProject = new Map<string, DataEntry[]>();
 
     output.scanner_report.remediation_report.env_contract_queue = sortActions(output.scanner_report.remediation_report.env_contract_queue, 80);
     output.scanner_report.remediation_report.rls_contract_queue = sortActions(output.scanner_report.remediation_report.rls_contract_queue, 80);
@@ -985,9 +1079,10 @@ async function main() {
     output.scanner_report.remediation_report.top_actions = sortActions(output.scanner_report.remediation_report.top_actions, 120);
 
     for (const action of output.scanner_report.remediation_report.top_actions) {
-      const current = byProject.get(action.project) || [];
+      const project = action.project ?? "unknown";
+      const current = byProject.get(project) || [];
       current.push(action);
-      byProject.set(action.project, current);
+      byProject.set(project, current);
     }
 
     output.scanner_report.remediation_report.project_action_plans = [...byProject.entries()]
@@ -998,7 +1093,7 @@ async function main() {
       .sort((a, b) => (b.actions[0]?.priority_score || 0) - (a.actions[0]?.priority_score || 0) || a.project.localeCompare(b.project));
   }
   output.scanner_report.duplicate_clusters = buildDuplicateClusters(output.bricks);
-  output.scanner_report.canonicalization_report = buildCanonicalizationReport(output);
+  output.scanner_report.canonicalization_report = buildCanonicalizationReport(output as unknown as Parameters<typeof buildCanonicalizationReport>[0]);
   output.scanner_report.token_economics.top_token_heavy_bricks = output.scanner_report.token_economics.top_token_heavy_bricks
     .sort((a, b) => (b.raw_source_tokens || 0) - (a.raw_source_tokens || 0) || String(a.path).localeCompare(String(b.path)))
     .slice(0, 80);
@@ -1013,7 +1108,7 @@ async function main() {
   output.unmanifested_count = output.unmanifested_bricks.length;
   output.candidate_group_count = output.candidate_groups.length;
 
-  await writeJsonIfMeaningfulChanged(options.out, output, {
+  await writeJsonIfMeaningfulChanged(options.out, output as unknown as Parameters<typeof normalizeRegistrySnapshot>[0], {
     normalize: normalizeRegistrySnapshot,
   });
 

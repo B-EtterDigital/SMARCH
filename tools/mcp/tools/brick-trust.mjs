@@ -8,31 +8,23 @@ import {
   boundedDiagnosticValue,
   executeTool,
   McpToolError,
-  readOnlyAnnotations,
-  readOnlyAuthorization,
 } from "../contract.mjs";
+import {
+  brickReadAnnotations,
+  brickReadAuthorization,
+  brickReadInputSchema,
+  brickReadTimeoutMs,
+} from "../brick-read-contract.mjs";
 
 /** @typedef {Awaited<ReturnType<typeof loadRegistryContext>>} RegistryContext */
 /** @typedef {Record<string, unknown>} ToolInput */
 
 export const name = "brick-trust";
 export const description = "Explain the current registry trust posture for one brick.";
-export const inputSchema = {
-  type: "object",
-  properties: {
-    brick: {
-      type: "string",
-      minLength: 1,
-      maxLength: 256,
-      description: "Brick id, name, or path fragment.",
-    },
-  },
-  required: ["brick"],
-  additionalProperties: false,
-};
-export const annotations = readOnlyAnnotations;
-export const authorization = readOnlyAuthorization;
-export const timeoutMs = 500;
+export const inputSchema = brickReadInputSchema;
+export const annotations = brickReadAnnotations;
+export const authorization = brickReadAuthorization;
+export const timeoutMs = brickReadTimeoutMs;
 
 /**
  * @param {ToolInput} args

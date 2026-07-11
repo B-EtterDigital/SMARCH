@@ -79,6 +79,6 @@ export function resolveProjectRoot(projectId: string | null | undefined): string
  * For ids known via the override map, returns the relative path under
  * PROJECTS_ROOT. Useful for log lines and debug output.
  */
-export function projectRelativeRoot(projectId: string): string {
+function projectRelativeRoot(projectId: string): string {
   return PROJECT_PATH_OVERRIDES[projectId] ?? projectId;
 }

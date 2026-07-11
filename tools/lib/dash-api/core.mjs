@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 
-export const DASH_API_DEFAULT_TIMEOUT_MS = 500;
+const DASH_API_DEFAULT_TIMEOUT_MS = 500;
 export const DASH_API_MAX_ROWS = 500;
 
 const LOOPBACK_READ_SCOPES = Object.freeze([
@@ -48,7 +48,7 @@ export class DashboardApiError extends Error {
 }
 
 /** @param {unknown} error */
-export function toDashboardApiError(error) {
+function toDashboardApiError(error) {
   if (error instanceof DashboardApiError) return error;
   return new DashboardApiError("DASH_API_INTERNAL", { cause: error });
 }

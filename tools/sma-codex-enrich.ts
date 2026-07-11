@@ -27,8 +27,63 @@ import path from "node:path";
 import { codexBatch } from "./lib/codex-runner.ts";
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
-function parseArgs(argv: string[]) {
-  const opts = {
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
+
+interface EnrichArgs {
+  candidates: string;
+  concurrency: number;
+  dryRun: boolean;
+  filter: string;
+  limit: number;
+  minScore: number;
+  model: string;
+  overwrite: boolean;
+  project: string;
+  timeoutMs: number;
+}
+
+interface CandidateBrick {
+  domain?: unknown[];
+  id: string;
+  kind?: string;
+  manifest_path: string;
+  name?: string;
+  project?: string;
+  score?: number;
+  source_paths?: string[];
+}
+
+interface EnrichmentData {
+  purpose: string;
+  use_when: string[];
+  do_not_use_when: string[];
+  public_api: string[];
+  tags: string[];
+  clone_steps: string[];
+  risks: string[];
+  reuse_archetype: string;
+  related_concepts: string[];
+}
+
+interface SemanticMetadata extends Partial<EnrichmentData> {
+  enriched_at?: string;
+  enrichment_source?: string;
+  purpose_synthesized?: boolean;
+}
+
+interface EnrichManifest {
+  brick?: { id?: string; kind?: string; name?: string };
+  semantics?: SemanticMetadata;
+}
+
+type BatchItem = Parameters<typeof codexBatch>[0][number];
+
+function parseArgs(argv: string[]): EnrichArgs {
+  const opts: EnrichArgs = {
     candidates: smaPath("security/reuse_candidates.json"),
     limit: 0,
     concurrency: 3,
@@ -81,14 +136,17 @@ const SCHEMA = {
   }
 };
 
-async function readJson(p: string): Promise<any> { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson<T>(filePath: string): Promise<T> {
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
+}
 
-async function gatherSourceContext(brick, manifest) {
+async function gatherSourceContext(brick: CandidateBrick): Promise<string> {
   const rootDir = path.dirname(brick.manifest_path);
   const wanted = new Set<string>();
-  const isFileBrick = (brick.source_paths || []).some((p) => /\.(t|j)sx?$|\.py$|\.sql$/i.test(p));
+  const sourcePaths = orElse(brick.source_paths, () => []);
+  const isFileBrick = sourcePaths.some((sourcePath) => /\.(t|j)sx?$|\.py$|\.sql$/i.test(sourcePath));
   if (isFileBrick) {
-    const abs = path.resolve(PROJECTS_ROOT, brick.project || "", brick.source_paths[0]);
+    const abs = path.resolve(PROJECTS_ROOT, orElse(brick.project, () => ""), sourcePaths[0]);
     wanted.add(abs);
   }
   for (const name of ["README.md", "README.txt", "readme.md", "index.ts", "index.tsx", "index.js", "index.mjs",
@@ -128,17 +186,17 @@ async function gatherSourceContext(brick, manifest) {
   return pieces.join("\n\n");
 }
 
-function buildPrompt(brick, manifest, sourceContext) {
+function buildPrompt(brick: CandidateBrick, manifest: EnrichManifest, sourceContext: string): string {
   return `You are documenting a software brick (a reusable code module) for a multi-project registry. Your goal is to write the metadata an automated agent will read when deciding whether to reuse this brick in a new project.
 
 ## Brick metadata
-- id: ${brick.id || manifest.brick?.id}
-- name: ${brick.name || manifest.brick?.name}
-- kind: ${brick.kind || manifest.brick?.kind}
-- project: ${brick.project}
-- source_paths: ${JSON.stringify(brick.source_paths || [])}
-- existing_domain: ${JSON.stringify(brick.domain || [])}
-- existing_tags: ${JSON.stringify(manifest.semantics?.tags || [])}
+- id: ${String(brick.id || manifest.brick?.id)}
+- name: ${String(orElse(brick.name, () => manifest.brick?.name))}
+- kind: ${String(orElse(brick.kind, () => manifest.brick?.kind))}
+- project: ${String(brick.project)}
+- source_paths: ${JSON.stringify(orElse(brick.source_paths, () => []))}
+- existing_domain: ${JSON.stringify(orElse(brick.domain, () => []))}
+- existing_tags: ${JSON.stringify(orElse(manifest.semantics?.tags, () => []))}
 
 ## Brick source (truncated; up to 6KB across the most informative files)
 
@@ -161,55 +219,55 @@ Field guidance:
 Return only the JSON.`;
 }
 
-function isHonest(prev) {
+function isHonest(prev: SemanticMetadata | undefined): boolean {
   // Treat values that came from sma-enrich-heuristic OR are missing/synthesized as overwriteable.
   if (!prev) return false;
   if (prev.purpose_synthesized === true) return false;
-  if (prev.enrichment_source && prev.enrichment_source.startsWith("sma-enrich-heuristic")) return false;
+  if (prev.enrichment_source?.startsWith("sma-enrich-heuristic")) return false;
   return true;
 }
 
-async function loadCandidates(opts) {
-  const c = await readJson(opts.candidates);
-  let bricks = c.bricks || [];
+async function loadCandidates(opts: EnrichArgs): Promise<CandidateBrick[]> {
+  const candidates = await readJson<{ bricks?: CandidateBrick[] }>(opts.candidates);
+  let bricks = orElse(candidates.bricks, () => []);
   if (opts.project) bricks = bricks.filter((b) => b.project === opts.project);
-  if (opts.minScore > 0) bricks = bricks.filter((b) => (b.score || 0) >= opts.minScore);
+  if (opts.minScore > 0) bricks = bricks.filter((b) => (orElse(b.score, () => 0)) >= opts.minScore);
   if (opts.filter) {
     const f = opts.filter;
     bricks = bricks.filter((b) =>
       (b.id || "").toLowerCase().includes(f) ||
-      (b.name || "").toLowerCase().includes(f) ||
-      (b.source_paths || []).some((p) => p.toLowerCase().includes(f))
+      (orElse(b.name, () => "")).toLowerCase().includes(f) ||
+      (orElse(b.source_paths, () => [])).some((p) => p.toLowerCase().includes(f))
     );
   }
   if (opts.limit > 0) bricks = bricks.slice(0, opts.limit);
   return bricks;
 }
 
-async function main() {
+async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
   const candidates = await loadCandidates(opts);
-  console.error(`enriching ${candidates.length} brick(s) with codex (model=${opts.model}, concurrency=${opts.concurrency})...`);
+  console.error(`enriching ${String(candidates.length)} brick(s) with codex (model=${opts.model}, concurrency=${String(opts.concurrency)})...`);
 
-  const items = [];
-  const manifests = new Map();
+  const items: BatchItem[] = [];
+  const manifests = new Map<string, EnrichManifest>();
   for (const b of candidates) {
     try {
-      const mf = JSON.parse(await fs.readFile(b.manifest_path, "utf8"));
+      const mf = await readJson<EnrichManifest>(b.manifest_path);
       manifests.set(b.id, mf);
 
       // Skip if already real-enriched and not --overwrite
       if (!opts.overwrite && isHonest(mf.semantics)) {
         continue;
       }
-      const ctx = await gatherSourceContext(b, mf);
+      const ctx = await gatherSourceContext(b);
       items.push({
         id: b.id,
         prompt: buildPrompt(b, mf, ctx),
         schema: SCHEMA
       });
-    } catch (err) {
-      console.error(`skip ${b.id}: ${err.message}`);
+    } catch (error: unknown) {
+      console.error(`skip ${b.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -218,26 +276,31 @@ async function main() {
     return;
   }
 
-  console.error(`queued ${items.length} (skipped ${candidates.length - items.length} already real-enriched)`);
+  console.error(`queued ${String(items.length)} (skipped ${String(candidates.length - items.length)} already real-enriched)`);
 
   let processed = 0;
   let cacheHits = 0;
   let failed = 0;
 
-  const results = await codexBatch(items, {
+  await codexBatch(items, {
     concurrency: opts.concurrency,
     model: opts.model,
     timeoutMs: opts.timeoutMs,
     onResult: (wrapped) => {
       processed += 1;
       const r = wrapped.result;
-      if (r.ok) {
+      if (r.ok === true) {
         if (r.fromCache) cacheHits += 1;
+        if (!isEnrichmentData(r.data)) {
+          failed += 1;
+          console.error(`  ${wrapped.id}: structured response did not match enrichment schema`);
+          return;
+        }
         const data = r.data;
         const brick = candidates.find((b) => b.id === wrapped.id);
         const mf = manifests.get(wrapped.id);
         if (!mf || !brick) return;
-        mf.semantics = mf.semantics || {};
+        mf.semantics = orElse(mf.semantics, () => ({}));
         Object.assign(mf.semantics, {
           purpose: data.purpose,
           use_when: data.use_when,
@@ -253,12 +316,12 @@ async function main() {
         mf.semantics.enrichment_source = "codex-gpt-5.4";
         mf.semantics.enriched_at = new Date().toISOString();
         if (!opts.dryRun) {
-          fs.writeFile(brick.manifest_path, `${JSON.stringify(mf, null, 2)}\n`).catch((err) => {
-            console.error(`write fail ${brick.id}: ${err.message}`);
+          fs.writeFile(brick.manifest_path, `${JSON.stringify(mf, null, 2)}\n`).catch((error: unknown) => {
+            console.error(`write fail ${brick.id}: ${error instanceof Error ? error.message : String(error)}`);
           });
         }
         if (processed % 5 === 0) {
-          console.error(`  ${processed}/${items.length} done${r.fromCache ? " (cache)" : ""} (${cacheHits} cache hits, ${failed} failed)`);
+          console.error(`  ${String(processed)}/${String(items.length)} done${r.fromCache ? " (cache)" : ""} (${String(cacheHits)} cache hits, ${String(failed)} failed)`);
         }
       } else {
         failed += 1;
@@ -278,4 +341,25 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.stack : String(error));
+  process.exit(1);
+});
+
+function isEnrichmentData(value: unknown): value is EnrichmentData {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.purpose === 'string'
+    && typeof candidate.reuse_archetype === 'string'
+    && isStringArray(candidate.use_when)
+    && isStringArray(candidate.do_not_use_when)
+    && isStringArray(candidate.public_api)
+    && isStringArray(candidate.tags)
+    && isStringArray(candidate.clone_steps)
+    && isStringArray(candidate.risks)
+    && isStringArray(candidate.related_concepts);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}

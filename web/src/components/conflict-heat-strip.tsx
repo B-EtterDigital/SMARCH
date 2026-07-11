@@ -3,7 +3,7 @@ import type { Conflict } from "../schema-types";
 import { STRINGS } from "../strings";
 import { EmptyState, type SurfaceState } from "./empty-states";
 
-export type HeatStripDay = { date: string; count: number; today: boolean };
+type HeatStripDay = { date: string; count: number; today: boolean };
 export type HeatStripRow = { module: string; days: HeatStripDay[]; total: number };
 
 export type ConflictHeatStripProps = {
@@ -19,7 +19,7 @@ function dateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function buildConflictHeatRows(conflicts: Conflict[], now = new Date()): HeatStripRow[] {
+function buildConflictHeatRows(conflicts: Conflict[], now = new Date()): HeatStripRow[] {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const keys = Array.from({ length: 30 }, (_, index) => {
     const date = new Date(today);

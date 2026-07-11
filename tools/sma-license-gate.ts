@@ -209,7 +209,8 @@ function evaluateBuild(buildPath: string, ledger: LicenseIndex, theftByBrick: Ma
       const visibility = row.visibility === 'private' || row.visibility === 'internal' || row.visibility === 'community' || row.visibility === 'public'
         ? row.visibility
         : undefined;
-      const spdx = typeof row.spdx === 'string' || row.spdx === null ? row.spdx : undefined;
+      const rawSpdx = row.spdx;
+      const spdx = typeof rawSpdx === 'string' ? rawSpdx : rawSpdx === null ? null : undefined;
       components.push({ brick_id: id, spdx, openness, visibility });
     }
     const theft = theftByBrick.get(row?.brick_id || id);

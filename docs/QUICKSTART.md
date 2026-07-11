@@ -29,6 +29,7 @@ Cloning into '.../SMARCH'...
 SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
 cd "$SMARCH_DIR"
 npm install
+npm --prefix web install
 npm install --no-save @modelcontextprotocol/sdk
 ```
 
@@ -40,20 +41,27 @@ added ... packages
 
 ## 3. Check the checkout
 
-This runs the source-size, type, Gen3, and JavaScript syntax [gates](GLOSSARY.md#gate).
+This runs the source-size, ratcheted quality, Gen3, and JavaScript syntax
+[gates](GLOSSARY.md#gate). The quality gate measures strict TypeScript debt
+against the checked-in ratchet instead of treating the existing migration
+backlog as a fresh-install failure.
 
 ```bash
 SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
 cd "$SMARCH_DIR"
-npm run check
+npm run source:size:gate
+node tools/sma-quality-gate.mjs
+npm run gen3:selftest
+bash -c 'find tools -name "*.mjs" -print0 | xargs -0 -n 50 node --check'
 ```
 
 Expected output includes the individual checks and returns to your prompt
 without an error:
 
 ```text
-> smarch@0.1.0 check
-> npm run source:size:gate && npm run typecheck && npm run gen3:selftest ...
+source size gate: ok
+quality gate passed
+sma-module-work-packets selftest: ok
 ```
 
 ## 4. Generate the fixture portfolio

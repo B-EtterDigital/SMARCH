@@ -1,8 +1,8 @@
 import path from "node:path";
 import { DASH_API_MAX_ROWS, readJsonFile, runReadHandler, validateQuery } from "./core.mjs";
 
-export const REGISTRY_SCOPE = "dashboard:registry:read";
-export const REGISTRY_CONTRACT = Object.freeze({ method: "GET", path: "/api/registry", idempotent: true, retry: "safe with exponential backoff after 502/504", timeout_ms: 500, max_rows: DASH_API_MAX_ROWS });
+const REGISTRY_SCOPE = "dashboard:registry:read";
+const REGISTRY_CONTRACT = Object.freeze({ method: "GET", path: "/api/registry", idempotent: true, retry: "safe with exponential backoff after 502/504", timeout_ms: 500, max_rows: DASH_API_MAX_ROWS });
 
 /** @typedef {{ project?: string, status: string, limit: number }} RegistryInput */
 /** @typedef {{ id?: unknown, brick_count?: unknown, average_score?: unknown }} RegistryProject */

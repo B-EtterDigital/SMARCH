@@ -121,7 +121,7 @@ function stableInternalEdges(memberIds, edges) {
 }
 
 /** @param {GraphRecord[]} members @param {GraphRecord[]} [edges] @returns {string} */
-export function clusterContentHash(members, edges = []) {
+function clusterContentHash(members, edges = []) {
   const stableMembers = members.map(stableMember).sort((left, right) => left.id.localeCompare(right.id));
   const memberIds = new Set(stableMembers.map((member) => member.id));
   const payload = { members: stableMembers, edges: stableInternalEdges(memberIds, edges) };
@@ -374,7 +374,7 @@ export function communitySummaryBlock({ graphPath, question = "", hits = [], tra
   ].join("\n");
 }
 
-export const enrichGraphWithCommunitySummaries = generateCommunitySummaries;
+const enrichGraphWithCommunitySummaries = generateCommunitySummaries;
 
 /** @param {{ fixtureRoot: string, assert: (condition: unknown, message: string) => void }} options */
 export async function selftestCommunitySummaries({ fixtureRoot, assert: assertResult }) {

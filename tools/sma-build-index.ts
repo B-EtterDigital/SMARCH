@@ -95,7 +95,7 @@ async function main() {
 
   for (const filePath of manifests) {
     const parsed = await readJson(filePath);
-    if (!parsed.ok) {
+    if (parsed.ok === false) {
       skipped.push({
         path: normalizePath(path.relative(repoRoot, filePath)),
         reason: "invalid_json",
@@ -105,7 +105,7 @@ async function main() {
     }
 
     const summary = await summarizeBuildManifest(parsed.value, filePath, releaseLookup, verificationLookup);
-    if (!summary.ok) {
+    if (summary.ok === false) {
       skipped.push({
         path: normalizePath(path.relative(repoRoot, filePath)),
         reason: summary.reason,
@@ -149,36 +149,24 @@ function parseArgs(argv: string[]): CliOptions {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === "--root") {
-      options.root = path.resolve(requireValue(argv, ++index, "--root"));
-      continue;
-    }
-    if (arg === "--releases") {
-      options.releases = path.resolve(requireValue(argv, ++index, "--releases"));
-      continue;
-    }
-    if (arg === "--verification-root") {
-      options.verificationRoot = path.resolve(requireValue(argv, ++index, "--verification-root"));
-      continue;
-    }
-    if (arg === "--out") {
-      options.out = path.resolve(requireValue(argv, ++index, "--out"));
-      continue;
-    }
-    if (arg === "--stdout") {
+    const pathOption = {
+      "--root": "root",
+      "--releases": "releases",
+      "--verification-root": "verificationRoot",
+      "--out": "out",
+    }[arg] as "root" | "releases" | "verificationRoot" | "out" | undefined;
+    if (pathOption) {
+      options[pathOption] = path.resolve(requireValue(argv, ++index, arg));
+    } else if (arg === "--stdout") {
       options.stdout = true;
-      continue;
-    }
-    if (arg === "--dry-run") {
+    } else if (arg === "--dry-run") {
       options.dryRun = true;
       options.stdout = true;
-      continue;
-    }
-    if (arg === "--help" || arg === "-h") {
+    } else if (arg === "--help" || arg === "-h") {
       options.help = true;
-      continue;
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
     }
-    throw new Error(`Unknown argument: ${arg}`);
   }
 
   return options;

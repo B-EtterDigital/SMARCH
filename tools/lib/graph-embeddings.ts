@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, utimesSync, writeFileSyn
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-export const NO_LOCAL_EMBEDDER_WARNING = "WARN no local embedder available; using substring ranking";
+const NO_LOCAL_EMBEDDER_WARNING = "WARN no local embedder available; using substring ranking";
 const OLLAMA_URL = "http://127.0.0.1:11434/api/embeddings";
 const OLLAMA_MODEL = "nomic-embed-text";
 const TRANSFORMERS_MODEL = "Xenova/all-MiniLM-L6-v2";
@@ -168,7 +168,7 @@ async function createTransformersEmbedder(importTransformers?: () => Promise<Tra
   };
 }
 
-export async function resolveLocalEmbedder(options: EmbedderOptions = {}): Promise<Embedder | null> {
+async function resolveLocalEmbedder(options: EmbedderOptions = {}): Promise<Embedder | null> {
   if (options.embedder) return options.embedder;
   const requiredBackend = options.backend ?? null;
   if (!requiredBackend || requiredBackend === "ollama") {

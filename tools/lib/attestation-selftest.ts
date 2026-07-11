@@ -25,6 +25,13 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
+import '../test/dash-api.test.mjs';
+import '../test/graph-scan.test.mjs';
+import '../test/module-work.test.mjs';
+import '../test/parallel-preflight-cli.test.mjs';
+import '../test/scanner-analysis.test.mjs';
+import '../test/schema-workforce.test.mjs';
+
 import { intotoStatement, spdxDocument, cyclonedxDocument } from './attestation.ts';
 import { leafHash, buildMerkle, inclusionProof } from './merkle.ts';
 import { verifyBundle } from '../sma-attest-verify.ts';

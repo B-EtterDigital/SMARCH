@@ -13,10 +13,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { calculateScore } from "./sma-score.ts";
 
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
+
 const defaults = {
   registry: "",
   root: "",
-  owner: process.env.SMA_OWNER || "sma-operator",
+  owner: orElse(process.env.SMA_OWNER, () => "sma-operator"),
   team: "Sweetspot",
   provider: "openai",
   model: "gpt-5-codex",
@@ -60,8 +66,87 @@ const countableExtensions = new Set([
   ".yml"
 ]);
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = { ...defaults };
+interface BootstrapArgs {
+  registry: string;
+  root: string;
+  owner: string;
+  team: string;
+  provider: string;
+  model: string;
+  write: boolean;
+  overwrite: boolean;
+}
+
+interface Candidate {
+  brick_group?: string;
+  candidate_type?: string;
+  file_brick?: boolean;
+  hierarchy_role?: string;
+  path: string;
+  project?: string;
+  relative_path?: string;
+}
+
+interface ExistingBrick {
+  id: string;
+  manifest_path?: string;
+  score?: number;
+  status: string;
+}
+
+interface BootstrapRegistry {
+  bricks?: ExistingBrick[];
+  projects?: { id?: string }[];
+  scanned_project_roots?: { id?: string; root: string }[];
+  unmanifested_bricks?: Candidate[];
+}
+
+interface PackageDocument {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  name?: string;
+  packageManager?: string;
+  peerDependencies?: Record<string, string>;
+}
+
+interface SourceStats {
+  extensions: string[];
+  file_count: number;
+  feature_lines: number;
+  max_file_lines: number;
+  over_600_count: number;
+}
+
+interface ClassificationInfo {
+  data_classes: string[];
+  risk: string;
+  notes: string;
+}
+
+interface BootstrapContext {
+  root: string;
+  registryPath: string;
+  projectId: string;
+  packageJson: PackageDocument;
+  repository: string;
+  commit: string;
+  timestamp: string;
+  owner: string;
+  team: string;
+  provider: string;
+  model: string;
+}
+
+interface ProjectIndexEntry {
+  brick_id: string;
+  manifest_path: string;
+  status: string;
+  score: number;
+  notes: string;
+}
+
+function parseArgs(argv: string[]): BootstrapArgs {
+  const options: BootstrapArgs = { ...defaults };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -102,7 +187,7 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function printHelp() {
+function printHelp(): void {
   console.log(`SMA manifest bootstrap
 
 Usage:
@@ -122,7 +207,7 @@ Options:
 `);
 }
 
-async function pathExists(target) {
+async function pathExists(target: string): Promise<boolean> {
   try {
     await fs.access(target);
     return true;
@@ -131,15 +216,17 @@ async function pathExists(target) {
   }
 }
 
-async function readJson(target, fallback = null) {
+async function readJson<T>(target: string): Promise<T | null>;
+async function readJson<T>(target: string, fallback: T): Promise<T>;
+async function readJson<T>(target: string, fallback: T | null = null): Promise<T | null> {
   try {
-    return JSON.parse(await fs.readFile(target, "utf8"));
+    return JSON.parse(await fs.readFile(target, "utf8")) as T;
   } catch {
     return fallback;
   }
 }
 
-async function gitValue(root, args) {
+async function gitValue(root: string, args: string[]): Promise<string> {
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
   const execFileAsync = promisify(execFile);
@@ -152,19 +239,19 @@ async function gitValue(root, args) {
   }
 }
 
-function slug(value) {
-  return String(value || "")
+function slug(value: unknown): string {
+  return String(orElse(value, () => ""))
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/[-.]{2,}/g, "-");
 }
 
-function stableBrickId(projectId, candidate) {
-  const type = slug(candidate.candidate_type || "brick").replaceAll("_", "-");
-  const relative = slug(candidate.relative_path || path.basename(candidate.path));
-  const hash = crypto.createHash("sha1").update(candidate.relative_path || candidate.path).digest("hex").slice(0, 8);
-  const prefix = slug(projectId || candidate.project || "project");
+function stableBrickId(projectId: string, candidate: Candidate): string {
+  const type = slug(orElse(candidate.candidate_type, () => "brick")).replaceAll("_", "-");
+  const relative = slug(orElse(candidate.relative_path, () => path.basename(candidate.path)));
+  const hash = crypto.createHash("sha1").update(orElse(candidate.relative_path, () => candidate.path)).digest("hex").slice(0, 8);
+  const prefix = slug(orElse(projectId || candidate.project, () => "project"));
   const base = `${prefix}.${type}.${relative}`;
 
   if (base.length <= 111) {
@@ -174,26 +261,26 @@ function stableBrickId(projectId, candidate) {
   return `${base.slice(0, 111).replace(/[.-]+$/g, "")}.${hash}`;
 }
 
-function title(value) {
-  return String(value || "Brick")
+function title(value: unknown): string {
+  return String(orElse(value, () => "Brick"))
     .replace(/\.[^.]+$/g, "")
     .replace(/[-_./]+/g, " ")
     .trim()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function brickKind(candidate) {
+function brickKind(candidate: Candidate) {
   const type = candidate.candidate_type;
 
   if (type === "app") {
     return "module_group";
   }
 
-  if (["agent_skill", "test_suite"].includes(type)) {
+  if (["agent_skill", "test_suite"].includes(orElse(type, () => ""))) {
     return "tooling";
   }
 
-  if (["supabase_function", "netlify_function", "netlify_edge_function", "runpod_worker"].includes(type)) {
+  if (["supabase_function", "netlify_function", "netlify_edge_function", "runpod_worker"].includes(orElse(type, () => ""))) {
     return "adapter";
   }
 
@@ -204,7 +291,7 @@ function brickKind(candidate) {
   return "module";
 }
 
-function hierarchy(candidate) {
+function hierarchy(candidate: Candidate) {
   const role = candidate.hierarchy_role;
 
   if (role === "brick_group_candidate") {
@@ -236,8 +323,8 @@ function hierarchy(candidate) {
   };
 }
 
-async function walkFiles(dir, root = dir, files = []) {
-  let entries = [];
+async function walkFiles(dir: string, files: string[] = []): Promise<string[]> {
+  let entries: import('node:fs').Dirent[] = [];
 
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
@@ -248,7 +335,7 @@ async function walkFiles(dir, root = dir, files = []) {
   for (const entry of entries) {
     if (entry.isDirectory()) {
       if (!excludedDirs.has(entry.name)) {
-        await walkFiles(path.join(dir, entry.name), root, files);
+        await walkFiles(path.join(dir, entry.name), files);
       }
       continue;
     }
@@ -261,13 +348,13 @@ async function walkFiles(dir, root = dir, files = []) {
   return files;
 }
 
-async function lineStats(dir) {
+async function lineStats(dir: string): Promise<SourceStats> {
   const files = await walkFiles(dir);
   let maxFileLines = 0;
   let over600Count = 0;
   let featureLines = 0;
   let sourceFileCount = 0;
-  const extensions = new Set();
+  const extensions = new Set<string>();
 
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
@@ -307,8 +394,8 @@ async function lineStats(dir) {
   };
 }
 
-function languages(stats, candidate) {
-  const values = new Set();
+function languages(stats: SourceStats, candidate: Candidate): string[] {
+  const values = new Set<string>();
 
   for (const ext of stats.extensions) {
     if (ext === ".ts") values.add("typescript");
@@ -333,10 +420,10 @@ function languages(stats, candidate) {
   return [...values].sort();
 }
 
-function frameworks(candidate, packageJson) {
-  const relative = candidate.relative_path || "";
-  const deps = { ...(packageJson.dependencies || {}), ...(packageJson.devDependencies || {}) };
-  const values = new Set();
+function frameworks(candidate: Candidate, packageJson: PackageDocument): string[] {
+  const relative = orElse(candidate.relative_path, () => "");
+  const deps = { ...(orElse(packageJson.dependencies, () => ({}))), ...(orElse(packageJson.devDependencies, () => ({}))) };
+  const values = new Set<string>();
 
   if (relative.startsWith("apps/web/") || relative === "apps/web" || deps.react) values.add("react");
   if (deps.vite || relative.startsWith("apps/web/")) values.add("vite");
@@ -349,10 +436,10 @@ function frameworks(candidate, packageJson) {
   return [...values].sort();
 }
 
-function domains(candidate) {
-  const relative = candidate.relative_path || "";
+function domains(candidate: Candidate): string[] {
+  const relative = orElse(candidate.relative_path, () => "");
   const parts = relative.split(/[/-]/).filter(Boolean);
-  const values = new Set([candidate.candidate_type || "brick"]);
+  const values = new Set([orElse(candidate.candidate_type, () => "brick")]);
 
   for (const part of parts) {
     if (["apps", "web", "src", "components", "pages", "supabase", "functions", "packages"].includes(part)) {
@@ -366,11 +453,11 @@ function domains(candidate) {
   return [...values].filter(Boolean);
 }
 
-function classification(candidate) {
-  const value = `${candidate.relative_path || ""} ${candidate.candidate_type || ""}`.toLowerCase();
+function classification(candidate: Candidate): ClassificationInfo {
+  const value = `${orElse(candidate.relative_path, () => "")} ${orElse(candidate.candidate_type, () => "")}`.toLowerCase();
   const classes = new Set(["public"]);
   let risk = "low";
-  let notes = "Bootstrap classification. Manual data-flow review required before promotion.";
+  const notes = "Bootstrap classification. Manual data-flow review required before promotion.";
 
   if (/billing|stripe|paypal|polar|checkout|subscription|payout|payment|invoice|financial/.test(value)) {
     classes.add("payment");
@@ -399,15 +486,15 @@ function classification(candidate) {
   };
 }
 
-function security(candidate, classInfo) {
-  const value = `${candidate.relative_path || ""} ${candidate.candidate_type || ""}`.toLowerCase();
+function security(candidate: Candidate, classInfo: ClassificationInfo) {
+  const value = `${orElse(candidate.relative_path, () => "")} ${orElse(candidate.candidate_type, () => "")}`.toLowerCase();
   const serverRuntime = /supabase\/functions|netlify\/functions|runpod-workers|packages\//.test(value);
   const privateData = classInfo.data_classes.some((item) => item !== "public");
 
   return {
     rls: {
-      required: privateData && /supabase/.test(value),
-      status: privateData && /supabase/.test(value) ? "partial" : "not_applicable",
+      required: privateData && value.includes('supabase'),
+      status: privateData && value.includes('supabase') ? "partial" : "not_applicable",
       negative_tests: []
     },
     env: {
@@ -425,12 +512,12 @@ function security(candidate, classInfo) {
   };
 }
 
-function gate(status, score, notes) {
+function gate(status: string, score: number, notes: string) {
   return { status, score, notes, evidence: [] };
 }
 
-function sweetspot(candidate, classInfo) {
-  const ui = /apps\/web\/src|components|pages|features/.test(candidate.relative_path || "");
+function sweetspot(candidate: Candidate, classInfo: ClassificationInfo) {
+  const ui = /apps\/web\/src|components|pages|features/.test(orElse(candidate.relative_path, () => ""));
   const data = classInfo.data_classes.some((item) => item !== "public");
 
   return {
@@ -449,9 +536,9 @@ function sweetspot(candidate, classInfo) {
   };
 }
 
-async function publicPaths(candidatePath, relativePath) {
+async function publicPaths(candidatePath: string, relativePath: string): Promise<string[]> {
   const candidates = ["index.ts", "index.tsx", "index.js", "mod.ts", "package.json", "README.md"];
-  const found = [];
+  const found: string[] = [];
 
   for (const name of candidates) {
     if (await pathExists(path.join(candidatePath, name))) {
@@ -462,19 +549,19 @@ async function publicPaths(candidatePath, relativePath) {
   return found.length ? found : [relativePath];
 }
 
-async function packageDependencies(candidatePath) {
-  const packageJson = await readJson(path.join(candidatePath, "package.json"), {});
-  const deps = { ...(packageJson.dependencies || {}), ...(packageJson.peerDependencies || {}) };
+async function packageDependencies(candidatePath: string) {
+  const packageJson = await readJson<PackageDocument>(path.join(candidatePath, "package.json"), {});
+  const deps = { ...(orElse(packageJson.dependencies, () => ({}))), ...(orElse(packageJson.peerDependencies, () => ({}))) };
 
   return Object.entries(deps).slice(0, 20).map(([name, version]) => ({
     name,
-    version: String(version),
+    version: version,
     purpose: "Declared package dependency.",
     risk: "unknown"
   }));
 }
 
-function codeBudgetStatus(stats) {
+function codeBudgetStatus(stats: SourceStats): string {
   if (stats.over_600_count > 0 || stats.file_count > 30) {
     return "bloated";
   }
@@ -486,19 +573,19 @@ function codeBudgetStatus(stats) {
   return "acceptable";
 }
 
-function testCommand(candidate) {
+function testCommand(candidate: Candidate): string {
   if (candidate.candidate_type === "test_suite") {
     return "pnpm test";
   }
 
-  if ((candidate.relative_path || "").startsWith("apps/web/")) {
+  if ((orElse(candidate.relative_path, () => "")).startsWith("apps/web/")) {
     return "pnpm -C apps/web test";
   }
 
   return "pnpm test";
 }
 
-function clone(candidate) {
+function clone(candidate: Candidate) {
   return {
     readiness: "manual_only",
     adaptation_points: [
@@ -507,7 +594,7 @@ function clone(candidate) {
       "Confirm RLS/authz/data contracts when data is touched."
     ],
     install_steps: [
-      `Copy ${candidate.relative_path}.`,
+      `Copy ${String(candidate.relative_path)}.`,
       "Copy or adapt declared runtime dependencies.",
       "Run the verification commands and update this manifest."
     ],
@@ -519,7 +606,11 @@ function clone(candidate) {
   };
 }
 
-function projectIndexEntry(manifest, manifestPath, root) {
+function projectIndexEntry(
+  manifest: { brick: { id: string; status: string }; quality: { score: number } },
+  manifestPath: string,
+  root: string,
+): ProjectIndexEntry {
   return {
     brick_id: manifest.brick.id,
     manifest_path: path.relative(root, manifestPath).split(path.sep).join("/"),
@@ -529,7 +620,7 @@ function projectIndexEntry(manifest, manifestPath, root) {
   };
 }
 
-function existingProjectIndexEntry(brick, root) {
+function existingProjectIndexEntry(brick: ExistingBrick & { manifest_path: string }, root: string): ProjectIndexEntry {
   return {
     brick_id: brick.id,
     manifest_path: path.relative(root, brick.manifest_path).split(path.sep).join("/"),
@@ -539,9 +630,9 @@ function existingProjectIndexEntry(brick, root) {
   };
 }
 
-async function buildManifest(candidate, context) {
+async function buildManifest(candidate: Candidate, context: BootstrapContext) {
   const candidatePath = candidate.path;
-  const relativePath = candidate.relative_path || path.relative(context.root, candidatePath).split(path.sep).join("/");
+  const relativePath = orElse(candidate.relative_path, () => path.relative(context.root, candidatePath).split(path.sep).join("/"));
   const stats = await lineStats(candidatePath);
   const classInfo = classification(candidate);
   const securityInfo = security(candidate, classInfo);
@@ -683,12 +774,12 @@ async function buildManifest(candidate, context) {
   return { manifest, manifestPath };
 }
 
-function resolveRoot(registry, options) {
+function resolveRoot(registry: BootstrapRegistry, options: BootstrapArgs): string {
   if (options.root) {
     return options.root;
   }
 
-  const roots = registry.scanned_project_roots || [];
+  const roots = orElse(registry.scanned_project_roots, () => []);
 
   if (roots.length === 1) {
     return roots[0].root;
@@ -697,13 +788,13 @@ function resolveRoot(registry, options) {
   throw new Error("Could not infer project root; pass --root");
 }
 
-function inferProjectId(registry, root) {
-  const match = (registry.scanned_project_roots || []).find((item) => item.root === root);
-  return match?.id || registry.projects?.[0]?.id || path.basename(root);
+function inferProjectId(registry: BootstrapRegistry, root: string): string {
+  const match = (orElse(registry.scanned_project_roots, () => [])).find((item) => item.root === root);
+  return orElse(orElse(match?.id, () => (registry.projects?.[0]?.id)), () => path.basename(root));
 }
 
-function inferProjectStack(packageJson) {
-  const deps = { ...(packageJson.dependencies || {}), ...(packageJson.devDependencies || {}) };
+function inferProjectStack(packageJson: PackageDocument): string[] {
+  const deps = { ...(orElse(packageJson.dependencies, () => ({}))), ...(orElse(packageJson.devDependencies, () => ({}))) };
   const stack = new Set(["sma"]);
 
   if (deps.react) stack.add("react");
@@ -716,7 +807,11 @@ function inferProjectStack(packageJson) {
   return [...stack].sort();
 }
 
-async function writeProjectFiles(context, modules, options) {
+async function writeProjectFiles(
+  context: BootstrapContext,
+  modules: ProjectIndexEntry[],
+  options: BootstrapArgs,
+): Promise<void> {
   const sweetspotDir = path.join(context.root, ".sweetspot");
   const scansDir = path.join(sweetspotDir, "scans");
   const projectFile = path.join(sweetspotDir, "project.json");
@@ -726,7 +821,7 @@ async function writeProjectFiles(context, modules, options) {
     schema_version: "1.0.0",
     project: {
       id: context.projectId,
-      name: context.packageJson.name || context.projectId,
+      name: orElse(context.packageJson.name, () => context.projectId),
       root: context.root,
       repository: context.repository,
       commit: context.commit,
@@ -755,16 +850,16 @@ async function writeProjectFiles(context, modules, options) {
   await fs.copyFile(context.registryPath, latestScanFile);
 }
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
-  const registry = await readJson(options.registry);
+  const registry = await readJson<BootstrapRegistry>(options.registry);
 
   if (!registry) {
     throw new Error(`Could not read registry: ${options.registry}`);
   }
 
   const root = resolveRoot(registry, options);
-  const packageJson = await readJson(path.join(root, "package.json"), {});
+  const packageJson = await readJson<PackageDocument>(path.join(root, "package.json"), {});
   const context = {
     root,
     registryPath: options.registry,
@@ -778,20 +873,20 @@ async function main() {
     provider: options.provider,
     model: options.model
   };
-  const candidates = registry.unmanifested_bricks || [];
-  const modules = [];
-  const modulePaths = new Set();
+  const candidates = orElse(registry.unmanifested_bricks, () => []);
+  const modules: ProjectIndexEntry[] = [];
+  const modulePaths = new Set<string>();
   let written = 0;
   let skipped = 0;
 
-  for (const brick of registry.bricks || []) {
+  for (const brick of orElse(registry.bricks, () => [])) {
     if (!brick.manifest_path) {
       continue;
     }
 
     const relativeManifestPath = path.relative(root, brick.manifest_path).split(path.sep).join("/");
     modulePaths.add(relativeManifestPath);
-    modules.push(existingProjectIndexEntry(brick, root));
+    modules.push(existingProjectIndexEntry({ ...brick, manifest_path: brick.manifest_path }, root));
   }
 
   for (const candidate of candidates) {
@@ -835,7 +930,7 @@ async function main() {
   }, null, 2));
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

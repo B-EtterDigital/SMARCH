@@ -88,7 +88,7 @@ function sha256(buf: BinaryLike): string {
 }
 
 /** Hash a single file's content with line endings normalized to LF. */
-export function hashFileContent(absPath: string): string {
+function hashFileContent(absPath: string): string {
   const buf = readFileSync(absPath);
   // Normalize CRLF/CR -> LF so a pure line-ending change is not a new identity.
   const normalized = buf.includes(0x00)
@@ -279,4 +279,4 @@ export function publicKeyId(publicPem: string): string {
   return sha256(String(publicPem)).slice(0, 16);
 }
 
-export const ALGOS = { FINGERPRINT_ALGO, SEAL_ALGO };
+const ALGOS = { FINGERPRINT_ALGO, SEAL_ALGO };

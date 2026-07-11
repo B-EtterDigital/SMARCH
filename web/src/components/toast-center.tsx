@@ -4,7 +4,7 @@ import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
 import { VerdictStamp, type Verdict } from "./verdict-stamp";
 
-export interface ToastMessage {
+interface ToastMessage {
   id: string;
   message: string;
   verdict?: Verdict;

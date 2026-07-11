@@ -1,12 +1,49 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": [
-    "tools/*.ts",
-    "tools/*.mjs",
-    "web/src/main.tsx",
-    "tools/mcp/server.mjs",
-    "tools/evals/**"
-  ],
-  "project": ["tools/**", "web/src/**"],
-  "ignore": ["skills/**", "templates/**", "agent-skills/**"]
+  "workspaces": {
+    ".": {
+      "entry": [
+        "tools/*.ts",
+        "tools/*.mjs",
+        "tools/**/*.test.mjs",
+        "tools/**/*-selftest.mjs",
+        "tools/**/*-selftest.ts",
+        "tools/mcp/selftest.mjs",
+        "tools/mcp/serve-cli.mjs",
+        "tools/mcp/tools/*.mjs",
+        "tools/evals/**"
+      ],
+      "project": ["tools/**"],
+      "ignoreDependencies": [
+        // Spawned by the quality gate, so there is intentionally no static import edge.
+        "c8",
+        "jscpd",
+        // Optional tokenizer acceleration loaded at runtime with a built-in fallback.
+        "tiktoken"
+      ],
+      "ignoreBinaries": [
+        // Host tools invoked through subprocess boundaries rather than package imports.
+        "codex",
+        "graphify",
+        "ots",
+        "ps",
+        "vhs",
+        "which"
+      ]
+    },
+    "web": {
+      "entry": ["tests/**/*.test.mjs"],
+      "project": ["src/**", "tests/**"],
+      "ignoreFiles": [
+        // These contract fixtures are read as source text by node:test; there is intentionally no import edge.
+        "src/components/{app-shell,brick-card,brick-detail,brick-wall,lease-board,lease-row,module-filter,provenance-ribbon,registry-table,seal-chip,search-bar,settings-panel}.tsx",
+        "src/dev/{component-fixtures,dashboard-components,w15-ui-b-fixture,w15-ui-d-fixtures}.tsx"
+      ],
+      "ignoreDependencies": [
+        // Font packages are consumed from CSS, which Knip's TypeScript graph cannot see.
+        "@fontsource/ibm-plex-mono",
+        "@fontsource/space-grotesk"
+      ]
+    }
+  }
 }

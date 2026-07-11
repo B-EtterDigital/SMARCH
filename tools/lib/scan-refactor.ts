@@ -37,16 +37,16 @@ export const oversizedThresholds = {
   high: 600,
   critical: 900
 };
-export const codeFileExtensions = new Set([
+const codeFileExtensions = new Set([
   ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
   ".py", ".rb", ".go", ".rs", ".java", ".kt",
   ".swift", ".php", ".cs", ".sql"
 ]);
-export const analyzableSourceExtensions = new Set([
+const analyzableSourceExtensions = new Set([
   ...codeFileExtensions,
   ".json", ".md", ".mdx", ".yaml", ".yml", ".toml", ".txt"
 ]);
-export const ignoredEnvNames = new Set([
+const ignoredEnvNames = new Set([
   "APPDATA",
   "CI",
   "COMSPEC",
@@ -80,7 +80,7 @@ export const ignoredEnvNames = new Set([
   "USERPROFILE"
 ]);
 
-export const ignoredEnvPrefixes = [
+const ignoredEnvPrefixes = [
   "ALLOW_",
   "ANT_",
   "CLAUDE_CODE_",
@@ -106,7 +106,7 @@ export const ignoredEnvPrefixes = [
   "VITEST_"
 ];
 
-export const contractEnvSignals = [
+const contractEnvSignals = [
   "ACCOUNT",
   "ANON",
   "API",
@@ -163,7 +163,7 @@ export function isCodeFile(filePath: string): boolean {
   return codeFileExtensions.has(path.extname(filePath).toLowerCase());
 }
 
-export function isAnalyzableSourceFile(filePath: string): boolean {
+function isAnalyzableSourceFile(filePath: string): boolean {
   return analyzableSourceExtensions.has(path.extname(filePath).toLowerCase());
 }
 
@@ -183,14 +183,14 @@ export function severityForLineCount(lineCount: number): Severity | "" {
   return "";
 }
 
-export function severityWeight(severity: string): number {
+function severityWeight(severity: string): number {
   return {
     medium: 1,
     high: 2,
     critical: 3
   }[severity] || 0;
 }
-export function topLevelIndent(line: string): number {
+function topLevelIndent(line: string): number {
   const match = line.match(/^(\s*)/);
   return match ? match[1].length : 0;
 }
@@ -298,7 +298,11 @@ export function suggestSplitStrategy(splitPoints: SplitPoint[]): string {
   return "Start with the first seam, extract one cohesive concern, then re-scan for the next split.";
 }
 
-export async function walkCodeFiles(targetPath: string, files: string[] = []): Promise<string[]> {
+async function walkMatchingFiles(
+  targetPath: string,
+  files: string[],
+  acceptsFile: (filePath: string) => boolean,
+): Promise<string[]> {
   if (isExcludedPath(targetPath)) {
     return files;
   }
@@ -313,7 +317,7 @@ export async function walkCodeFiles(targetPath: string, files: string[] = []): P
   }
 
   if (stats.isFile()) {
-    if (isCodeFile(targetPath)) {
+    if (acceptsFile(targetPath)) {
       files.push(targetPath);
     }
 
@@ -334,11 +338,11 @@ export async function walkCodeFiles(targetPath: string, files: string[] = []): P
         continue;
       }
 
-      await walkCodeFiles(fullPath, files);
+      await walkMatchingFiles(fullPath, files, acceptsFile);
       continue;
     }
 
-    if (entry.isFile() && !isExcludedPath(fullPath) && isCodeFile(fullPath)) {
+    if (entry.isFile() && !isExcludedPath(fullPath) && acceptsFile(fullPath)) {
       files.push(fullPath);
     }
   }
@@ -346,52 +350,12 @@ export async function walkCodeFiles(targetPath: string, files: string[] = []): P
   return files;
 }
 
+async function walkCodeFiles(targetPath: string, files: string[] = []): Promise<string[]> {
+  return walkMatchingFiles(targetPath, files, isCodeFile);
+}
+
 export async function walkAnalyzableFiles(targetPath: string, files: string[] = []): Promise<string[]> {
-  if (isExcludedPath(targetPath)) {
-    return files;
-  }
-
-  let stats;
-
-  try {
-    stats = await fs.stat(targetPath);
-  } catch (error) {
-    void error;
-    return files;
-  }
-
-  if (stats.isFile()) {
-    if (isAnalyzableSourceFile(targetPath)) {
-      files.push(targetPath);
-    }
-
-    return files;
-  }
-
-  if (!stats.isDirectory()) {
-    return files;
-  }
-
-  const entries = await fs.readdir(targetPath, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = path.join(targetPath, entry.name);
-
-    if (entry.isDirectory()) {
-      if (isExcludedDirName(entry.name) || isExcludedPath(fullPath)) {
-        continue;
-      }
-
-      await walkAnalyzableFiles(fullPath, files);
-      continue;
-    }
-
-    if (entry.isFile() && !isExcludedPath(fullPath) && isAnalyzableSourceFile(fullPath)) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
+  return walkMatchingFiles(targetPath, files, isAnalyzableSourceFile);
 }
 
 export function sourcePathCandidates(projectRoot: string, sourcePath: string): string[] {
@@ -609,7 +573,7 @@ export function buildRefactorReport(projectReports: RefactorProjectReport[]) {
   };
 }
 
-export function inferRefactorTheme(file: OversizedFile): string {
+function inferRefactorTheme(file: OversizedFile): string {
   const splitKinds = new Set((file.split_points || []).map((point) => point.kind));
   const lowerPath = String(file.path || "").toLowerCase();
   const isUiFile = [".tsx", ".jsx"].includes(String(file.extension || "").toLowerCase())
@@ -647,7 +611,7 @@ export function inferRefactorTheme(file: OversizedFile): string {
   return "utility_module";
 }
 
-export function queuePriorityScore(file: OversizedFile): number {
+function queuePriorityScore(file: OversizedFile): number {
   const severityBase = severityWeight(file.severity) * 1000;
   const lineFactor = Math.min(file.lines || 0, 12000);
   const splitFactor = Math.min((file.split_points || []).length, 8) * 120;
@@ -655,7 +619,7 @@ export function queuePriorityScore(file: OversizedFile): number {
   return severityBase + lineFactor + splitFactor + brickFactor;
 }
 
-export function extractionTargets(file: OversizedFile, theme: string): string[] {
+function extractionTargets(file: OversizedFile, theme: string): string[] {
   const labels = (file.split_points || []).map((point) => point.label).filter(Boolean);
   const uniqueLabels = [...new Set(labels)];
 
@@ -695,7 +659,7 @@ export function extractionTargets(file: OversizedFile, theme: string): string[] 
   return utilityTargets.length > 0 ? utilityTargets : ["exports", "helpers", "state", "compat"];
 }
 
-export function slugifyRefactorLabel(label: unknown): string {
+function slugifyRefactorLabel(label: unknown): string {
   return String(label || "segment")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -703,7 +667,7 @@ export function slugifyRefactorLabel(label: unknown): string {
     .slice(0, 32) || "segment";
 }
 
-export function firstActionForTheme(theme: string): string {
+function firstActionForTheme(theme: string): string {
   return {
     route_orchestration: "Extract shared route logic and validation into sibling service modules before touching handlers.",
     react_orchestration: "Move hooks and state transitions out first, then split presentational components.",
@@ -716,7 +680,7 @@ export function firstActionForTheme(theme: string): string {
   }[theme] || "Extract one cohesive concern at a time and keep the old entrypoint as a facade until imports are updated.";
 }
 
-export function riskNoteForTheme(theme: string): string {
+function riskNoteForTheme(theme: string): string {
   return {
     route_orchestration: "Watch for request/response shape drift and auth checks moving out of the handler path.",
     react_orchestration: "Watch for hook order regressions and prop contract churn across child components.",
@@ -774,7 +738,7 @@ export function countBy<T>(items: T[], keyFn: (item: T) => string): Array<[strin
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
 }
 
-export const codeQualityPatternDefinitions = [
+const codeQualityPatternDefinitions = [
   {
     key: "ts_any",
     label: "TypeScript any",
@@ -819,7 +783,7 @@ export const codeQualityPatternDefinitions = [
   }
 ];
 
-export const codeQualityStructuralDefinitions = [
+const codeQualityStructuralDefinitions = [
   {
     key: "oversized_react_component",
     label: "Oversized React component",
@@ -837,7 +801,7 @@ export const codeQualityStructuralDefinitions = [
   }
 ];
 
-export const codeQualityDefinitions = [
+const codeQualityDefinitions = [
   ...codeQualityPatternDefinitions,
   ...codeQualityStructuralDefinitions
 ];
@@ -846,12 +810,12 @@ export function emptyCodeQualityCounts(): CodeQualityCounts {
   return Object.fromEntries(codeQualityDefinitions.map((definition) => [definition.key, 0]));
 }
 
-export function countMatches(sourceText: unknown, regex: RegExp): number {
+function countMatches(sourceText: unknown, regex: RegExp): number {
   const matches = String(sourceText || "").match(regex);
   return matches ? matches.length : 0;
 }
 
-export function qualitySeverityLevel(lineCount: number, baseThreshold: number, step: number, maxLevel = 3): number {
+function qualitySeverityLevel(lineCount: number, baseThreshold: number, step: number, maxLevel = 3): number {
   if (lineCount < baseThreshold) {
     return 0;
   }
@@ -859,7 +823,7 @@ export function qualitySeverityLevel(lineCount: number, baseThreshold: number, s
   return Math.max(1, Math.min(maxLevel, 1 + Math.floor((lineCount - baseThreshold) / step)));
 }
 
-export function looksLikeReactComponentFile(filePath: string, sourceText: string): boolean {
+function looksLikeReactComponentFile(filePath: string, sourceText: string): boolean {
   if (!/\.(?:tsx|jsx)$/i.test(filePath)) {
     return false;
   }
@@ -868,19 +832,19 @@ export function looksLikeReactComponentFile(filePath: string, sourceText: string
     || /\buse(?:State|Effect|Memo|Callback|Reducer|Ref|LayoutEffect|Transition|DeferredValue)\b/.test(sourceText);
 }
 
-export function looksLikeHookFile(filePath: string, sourceText: string): boolean {
+function looksLikeHookFile(filePath: string, sourceText: string): boolean {
   const base = path.basename(filePath);
   return /^use[A-Z0-9].*\.(?:ts|tsx|js|jsx)$/i.test(base)
     || /\bfunction\s+use[A-Z0-9_]/.test(sourceText)
     || /\bconst\s+use[A-Z0-9_]\w*\s*=\s*(?:async\s*)?\(/.test(sourceText);
 }
 
-export function looksLikeServiceFile(filePath: string): boolean {
+function looksLikeServiceFile(filePath: string): boolean {
   return /(?:^|\/)(?:src\/)?(?:main\/)?services?(?:\/|$)/i.test(toSlashPath(filePath))
     || /Service\.(?:ts|tsx|js|jsx|mjs|cjs)$/i.test(path.basename(filePath));
 }
 
-export function structuralCodeQualityCounts({ filePath, sourceText, lineCount, testLike = false }: { filePath: string; sourceText: string; lineCount: number; testLike?: boolean }): CodeQualityCounts {
+function structuralCodeQualityCounts({ filePath, sourceText, lineCount, testLike = false }: { filePath: string; sourceText: string; lineCount: number; testLike?: boolean }): CodeQualityCounts {
   const counts = emptyCodeQualityCounts();
 
   if (testLike) {
@@ -902,7 +866,7 @@ export function structuralCodeQualityCounts({ filePath, sourceText, lineCount, t
   return counts;
 }
 
-export function normalizeCodeFingerprint(sourceText: unknown): string {
+function normalizeCodeFingerprint(sourceText: unknown): string {
   return String(sourceText || "")
     .replace(/\b\d+(?:\.\d+)?\b/g, "0")
     .replace(/\s+/g, "");
@@ -1018,7 +982,7 @@ export function buildQualityDuplicateGroups(entries: QualityFingerprintEntry[]):
     .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0) || String(a.path).localeCompare(String(b.path)));
 }
 
-export function qualityQueuePriority(entry: QualityHotspot): number {
+function qualityQueuePriority(entry: QualityHotspot): number {
   return Math.round(
     Number(entry.smell_score || 0)
     + Math.min(120, Number(entry.line_count || 0) / 6)
@@ -1026,7 +990,7 @@ export function qualityQueuePriority(entry: QualityHotspot): number {
   );
 }
 
-export function qualityQueueAction(topTypes: QualityType[] = []): string {
+function qualityQueueAction(topTypes: QualityType[] = []): string {
   const primary = topTypes[0]?.key;
 
   switch (primary) {

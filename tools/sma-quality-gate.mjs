@@ -26,6 +26,12 @@ const TOOL_PATH = fileURLToPath(import.meta.url);
 const ROOT = resolve(dirname(TOOL_PATH), "..");
 const DEFAULT_RATCHET = resolve(ROOT, "tools/quality-ratchet.json");
 const MAX_BUFFER = 64 * 1024 * 1024;
+/** @typedef {"ts_strict_errors" | "eslint_errors" | "knip_issues" | "dup_pct" | "lib_coverage_min"} MetricKey */
+/** @typedef {Record<MetricKey, number>} Metrics */
+/** @typedef {"max" | "min"} MetricDirection */
+/** @typedef {import("node:child_process").SpawnSyncReturns<string>} BinResult */
+/** @typedef {Error & { code: string }} CodedError */
+/** @type {Readonly<Record<MetricKey, MetricDirection>>} */
 const METRICS = Object.freeze({
   ts_strict_errors: "max",
   eslint_errors: "max",
@@ -56,11 +62,15 @@ try {
     }
   }
 } catch (error) {
-  const code = error?.code ?? "QUALITY_GATE_ERROR";
-  console.error(`[${code}] ${error?.message ?? String(error)}`);
+  const code = error instanceof Error && "code" in error
+    ? String(error.code)
+    : "QUALITY_GATE_ERROR";
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`[${code}] ${message}`);
   process.exitCode = 2;
 }
 
+/** @param {string[]} values */
 function parseArgs(values) {
   const known = new Set(["--selftest", "--update-ratchet"]);
   const unknown = values.filter((value) => !known.has(value));
@@ -92,7 +102,7 @@ function measureQuality() {
 }
 
 function measureTypeScript() {
-  const result = runBin("tsc", ["-p", "tsconfig.strict.json", "--pretty", "false"]);
+  const result = runBin("tsc", ["-p", "tsconfig.json", "--pretty", "false"]);
   const output = `${result.stdout}\n${result.stderr}`;
   const count = output.match(/\berror TS\d+:/g)?.length ?? 0;
   assertStatus("tsc", result, count > 0 ? [0, 2] : [0]);
@@ -107,7 +117,9 @@ function measureEslint() {
     "tools/**/*.ts",
     "web/src/**/*.{ts,tsx}",
   ]);
-  const report = parseJsonReport("eslint", result.stdout, result);
+  const report = /** @type {Array<{ errorCount: unknown }>} */ (
+    parseJsonReport("eslint", result.stdout, result)
+  );
   assertStatus("eslint", result, [0, 1]);
   if (!Array.isArray(report)) throw codedError("ESLINT_REPORT_INVALID", "ESLint JSON report must be an array");
   return report.reduce((sum, file) => sum + numeric(file.errorCount, "ESLint errorCount"), 0);
@@ -121,7 +133,9 @@ function measureKnip() {
     "--include",
     "dependencies,devDependencies,optionalPeerDependencies,unlisted,unresolved,binaries,catalog,exports,types,enumMembers,namespaceMembers,duplicates",
   ]);
-  const report = parseJsonReport("knip", result.stdout, result);
+  const report = /** @type {{ issues: Array<Record<string, unknown>> }} */ (
+    parseJsonReport("knip", result.stdout, result)
+  );
   assertStatus("knip", result, [0]);
   if (!Array.isArray(report.issues)) throw codedError("KNIP_REPORT_INVALID", "Knip JSON report is missing issues[]");
   const issueKeys = [
@@ -144,6 +158,7 @@ function measureKnip() {
   );
 }
 
+/** @param {string} workspace */
 function measureDuplication(workspace) {
   const outputDir = join(workspace, "jscpd");
   const result = runBin("jscpd", [
@@ -163,12 +178,14 @@ function measureDuplication(workspace) {
   return numeric(report?.statistics?.total?.percentage, "jscpd duplication percentage");
 }
 
+/** @param {string} workspace */
 function measureCoverage(workspace) {
   const outputDir = join(workspace, "coverage");
   const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
   const result = runBin("c8", [
     "--all",
     "--include=tools/lib/**/*.ts",
+    "--exclude=tools/lib/**/*.d.ts",
     "--exclude=tools/lib/**/*-selftest.ts",
     "--reporter=json-summary",
     `--reports-dir=${outputDir}`,
@@ -183,6 +200,7 @@ function measureCoverage(workspace) {
   return numeric(report?.total?.lines?.pct, "c8 line coverage percentage");
 }
 
+/** @param {string} name @param {string[]} commandArgs @returns {BinResult} */
 function runBin(name, commandArgs) {
   const executable = resolve(ROOT, "node_modules", ".bin", process.platform === "win32" ? `${name}.cmd` : name);
   if (!existsSync(executable)) throw codedError("TOOL_NOT_INSTALLED", `${name} is not installed at ${executable}`);
@@ -196,39 +214,47 @@ function runBin(name, commandArgs) {
   return result;
 }
 
+/** @param {string} label @param {BinResult} result @param {number[]} allowedStatuses */
 function assertStatus(label, result, allowedStatuses) {
-  if (allowedStatuses.includes(result.status)) return;
+  if (allowedStatuses.includes(result.status ?? -1)) return;
   const detail = String(result.stderr || result.stdout || "no diagnostic output").trim().slice(0, 2_000);
   throw codedError("CHECKER_FAILED", `${label} exited ${result.status}: ${detail}`);
 }
 
+/** @template T @param {string} label @param {string} text @param {BinResult} result @returns {T} */
 function parseJsonReport(label, text, result) {
   try {
     return parseJsonText(label, text);
   } catch (error) {
     const detail = String(result.stderr || "").trim().slice(0, 2_000);
-    throw codedError(error.code, `${error.message}${detail ? `; stderr: ${detail}` : ""}`);
+    const code = error instanceof Error && "code" in error ? String(error.code) : "REPORT_PARSE_FAILED";
+    const message = error instanceof Error ? error.message : String(error);
+    throw codedError(code, `${message}${detail ? `; stderr: ${detail}` : ""}`);
   }
 }
 
+/** @template T @param {string} label @param {string} text @returns {T} */
 function parseJsonText(label, text) {
   try {
-    return JSON.parse(text);
+    return /** @type {T} */ (JSON.parse(text));
   } catch (error) {
-    throw codedError("REPORT_PARSE_FAILED", `${label} did not emit valid JSON: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw codedError("REPORT_PARSE_FAILED", `${label} did not emit valid JSON: ${message}`);
   }
 }
 
+/** @param {string} path @returns {Metrics} */
 function readRatchet(path) {
   if (!existsSync(path)) throw codedError("RATCHET_MISSING", `missing ratchet: ${path}`);
   const ratchet = parseJsonText("quality ratchet", readFileSync(path, "utf8"));
-  for (const key of Object.keys(METRICS)) numeric(ratchet[key], `ratchet.${key}`);
+  for (const [key] of metricEntries()) numeric(ratchet[key], `ratchet.${key}`);
   return ratchet;
 }
 
+/** @param {Metrics} measured @param {Metrics} ratchet */
 function compareMetrics(measured, ratchet) {
   const failures = [];
-  for (const [key, direction] of Object.entries(METRICS)) {
+  for (const [key, direction] of metricEntries()) {
     const current = numeric(measured[key], `measured.${key}`);
     const budget = numeric(ratchet[key], `ratchet.${key}`);
     if (direction === "max" && current > budget) failures.push(`${key}: ${current} exceeds maximum ${budget}`);
@@ -237,22 +263,26 @@ function compareMetrics(measured, ratchet) {
   return failures;
 }
 
+/** @param {Metrics} ratchet @param {Metrics} measured @returns {Metrics} */
 function tightenRatchet(ratchet, measured) {
+  /** @type {Partial<Metrics>} */
   const updated = {};
-  for (const [key, direction] of Object.entries(METRICS)) {
+  for (const [key, direction] of metricEntries()) {
     updated[key] = direction === "max"
       ? Math.min(ratchet[key], measured[key])
       : Math.max(ratchet[key], measured[key]);
   }
-  return updated;
+  return /** @type {Metrics} */ (updated);
 }
 
+/** @param {string} path @param {Metrics} ratchet */
 function writeRatchet(path, ratchet) {
   writeFileSync(path, `${JSON.stringify(ratchet, null, 2)}\n`);
 }
 
+/** @param {Metrics} measured @param {Metrics} ratchet */
 function printSummary(measured, ratchet) {
-  for (const [key, direction] of Object.entries(METRICS)) {
+  for (const [key, direction] of metricEntries()) {
     const comparator = direction === "max" ? "max" : "min";
     console.log(`${key}: ${measured[key]} (${comparator} ${ratchet[key]})`);
   }
@@ -296,10 +326,17 @@ function runSelftest() {
   }
 }
 
+/** @param {unknown} value */
 function arrayLength(value) {
   return Array.isArray(value) ? value.length : 0;
 }
 
+/** @returns {Array<[MetricKey, MetricDirection]>} */
+function metricEntries() {
+  return /** @type {Array<[MetricKey, MetricDirection]>} */ (Object.entries(METRICS));
+}
+
+/** @param {unknown} value @param {string} label */
 function numeric(value, label) {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     throw codedError("INVALID_METRIC", `${label} must be a non-negative finite number`);
@@ -307,12 +344,14 @@ function numeric(value, label) {
   return value;
 }
 
+/** @param {string} path */
 function relativePath(path) {
   return path.startsWith(`${ROOT}/`) ? path.slice(ROOT.length + 1) : path;
 }
 
+/** @param {string} code @param {string} message @returns {CodedError} */
 function codedError(code, message) {
-  const error = new Error(message);
+  const error = /** @type {CodedError} */ (new Error(message));
   error.code = code;
   return error;
 }

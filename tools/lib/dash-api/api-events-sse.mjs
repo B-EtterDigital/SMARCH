@@ -1,11 +1,18 @@
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import { DashboardApiError, authorizePrincipal, createRequestId, createTelemetrySink, emitTelemetry, validateQuery } from "./core.mjs";
 
-export const EVENTS_SCOPE = "dashboard:events:read";
-export const EVENTS_CONTRACT = Object.freeze({ method: "GET", path: "/api/events", idempotent: true, retry: "EventSource reconnects after 3000 ms with Last-Event-ID", heartbeat_ms: 15_000, replay_events: 100 });
+const EVENTS_SCOPE = "dashboard:events:read";
+const EVENTS_CONTRACT = Object.freeze({ method: "GET", path: "/api/events", idempotent: true, retry: "EventSource reconnects after 3000 ms with Last-Event-ID", heartbeat_ms: 15_000, replay_events: 100 });
 
-export function prepareEventStream(options) {
+/** @typedef {{ subject: string, scopes: string[] }} EventPrincipal */
+/** @typedef {{ principal: EventPrincipal, query: URLSearchParams, lastEventId?: unknown, requestId?: string }} EventContext */
+/** @typedef {{ id: number, type: string, data: Record<string, unknown> }} StreamEvent */
+/** @typedef {{ response: http.ServerResponse, requestId: string }} StreamClient */
+
+/** @param {EventContext} options */
+function prepareEventStream(options) {
   authorizePrincipal(options.principal, EVENTS_SCOPE);
   validateQuery(options.query, {});
   const raw = options.lastEventId;
@@ -16,17 +23,25 @@ export function prepareEventStream(options) {
   return { lastEventId };
 }
 
+/** @param {string} root @param {{ telemetry?: (event: Record<string, unknown>) => void, heartbeatMs?: number }} [options] */
 export function createEventHub(root, options = {}) {
   const telemetry = createTelemetrySink(options.telemetry);
   const heartbeatMs = options.heartbeatMs || EVENTS_CONTRACT.heartbeat_ms;
+  /** @type {Set<StreamClient>} */
   const clients = new Set();
+  /** @type {fs.FSWatcher[]} */
   const watchers = [];
+  /** @type {StreamEvent[]} */
   const history = [];
+  /** @type {NodeJS.Timeout | undefined} */
   let debounceTimer;
+  /** @type {NodeJS.Timeout | undefined} */
   let heartbeatTimer;
   let sequence = 0;
 
+  /** @param {http.ServerResponse} response @param {StreamEvent} event */
   const writeEvent = (response, event) => response.write(`id: ${event.id}\nevent: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`);
+  /** @param {string} type @param {Record<string, unknown>} [context] @returns {StreamEvent} */
   const publish = (type, context = {}) => {
     const event = { id: ++sequence, type, data: { type, changed_at: new Date().toISOString(), ...context } };
     history.push(event);
@@ -34,6 +49,7 @@ export function createEventHub(root, options = {}) {
     for (const client of clients) writeEvent(client.response, event);
     return event;
   };
+  /** @param {string} type */
   const broadcast = (type) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => publish(type), 100);
@@ -47,7 +63,7 @@ export function createEventHub(root, options = {}) {
       watcher.on("error", (error) => emitTelemetry(telemetry, { event: "dashboard_sse_watcher_failed", area: "dashboard.api.events", severity: "error", code: "DASH_API_STORAGE", message: error.message }));
       watchers.push(watcher);
     } catch (error) {
-      if (error?.code !== "ENOENT") emitTelemetry(telemetry, { event: "dashboard_sse_watcher_failed", area: "dashboard.api.events", severity: "error", code: "DASH_API_STORAGE", message: error instanceof Error ? error.message : String(error) });
+      if (!(error && typeof error === "object" && "code" in error && error.code === "ENOENT")) emitTelemetry(telemetry, { event: "dashboard_sse_watcher_failed", area: "dashboard.api.events", severity: "error", code: "DASH_API_STORAGE", message: error instanceof Error ? error.message : String(error) });
     }
   }
   heartbeatTimer = setInterval(() => {
@@ -57,6 +73,7 @@ export function createEventHub(root, options = {}) {
   heartbeatTimer.unref?.();
 
   return {
+    /** @param {http.IncomingMessage} req @param {http.ServerResponse} res @param {EventContext} context */
     add(req, res, context) {
       const requestId = context.requestId || createRequestId();
       const prepared = prepareEventStream(context);

@@ -9,7 +9,7 @@ type SurfaceSection = string;
 
 
 
-export function surfacePageHtml({ title, lead, activeHref, metrics, sections }: { title: string; lead: string; activeHref: string; metrics: Array<{ label: string; value: unknown; note?: string }>; sections: SurfaceSection[] }): string {
+function surfacePageHtml({ title, lead, activeHref, metrics, sections }: { title: string; lead: string; activeHref: string; metrics: Array<{ label: string; value: unknown; note?: string }>; sections: SurfaceSection[] }): string {
   return `<!doctype html>
 <html lang="en">
 <head>

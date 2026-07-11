@@ -3,14 +3,14 @@ import { useEffect } from "preact/hooks";
 import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
 
-export interface StatsTileValues {
+interface StatsTileValues {
   bricks: number;
   canonical: number;
   leases: number;
   conflicts: number;
 }
 
-export type StatsTilesState = "loading" | "empty" | "error" | "populated";
+type StatsTilesState = "loading" | "empty" | "error" | "populated";
 
 export interface StatsTilesProps {
   values?: StatsTileValues;
@@ -19,7 +19,7 @@ export interface StatsTilesProps {
   onRetry?: () => void;
 }
 
-export function formatStatValue(value: number): string {
+function formatStatValue(value: number): string {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
 }
 

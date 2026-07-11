@@ -23,6 +23,31 @@ import { appendContextEvent } from './lib/context-log.ts';
 const ROLES = new Set(['architect', 'implementer', 'reviewer', 'security', 'tester', 'refactor', 'release', 'scanner']);
 const ACTOR_KINDS = new Set(['human', 'ai_model', 'agent', 'automation', 'tool']);
 
+type CliArgs = {
+  manifest?: string; intent?: string; role?: string; actorKind?: string; actor?: string;
+  summary?: string; decision?: string; rejected?: string[]; linkedBacklog?: string[];
+  commit?: string; model?: string; session?: string; task?: string; lease?: string;
+  project?: string; noContext?: boolean; intentFromMessage?: boolean; eventId?: string;
+};
+type StringArgKey = Exclude<keyof CliArgs, 'rejected' | 'linkedBacklog' | 'noContext' | 'intentFromMessage'>;
+type RejectedAlternative = { alternative: string; reason: string };
+type TouchEvent = Record<string, unknown> & {
+  actor_kind: string; actor_id: string; role: string; timestamp: string; summary: string; intent: string;
+  context_event_ids?: string[];
+};
+type Manifest = {
+  brick?: { id?: string };
+  build?: { id?: string };
+  provenance?: { created_by?: TouchEvent; touched_by?: TouchEvent[] };
+};
+type TouchInput = {
+  actorKind: string; actorId: string; role: string; intent: string; summary?: string;
+  decisionRationale?: string; rejectedAlternatives?: RejectedAlternative[]; linkedBacklog?: string[];
+  commit?: string; model?: string; sessionId?: string; taskId?: string; leaseId?: string;
+  attestation?: { method: string; reference: string }; timestamp?: string;
+};
+type GitCommit = { sha: string; author_name: string; author_email: string; iso_date: string; subject: string; body: string };
+
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
@@ -50,7 +75,7 @@ try {
       exit(2);
   }
 } catch (err) {
-  console.error(`sma-touch-backfill: ${err.message}`);
+  console.error(`sma-touch-backfill: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -77,23 +102,23 @@ Actor kinds: ${[...ACTOR_KINDS].join(', ')}
 // ── add ──────────────────────────────────────────────────────────────────────
 
 function runAdd() {
-  requireArg('manifest', '--manifest');
-  requireArg('intent', '--intent');
-  requireArg('role', '--role');
-  requireArg('actorKind', '--actor-kind');
-  if (!ROLES.has(args.role)) throw new Error(`bad --role: ${args.role}`);
-  if (!ACTOR_KINDS.has(args.actorKind)) throw new Error(`bad --actor-kind: ${args.actorKind}`);
+  const manifestPath = requireArg('manifest', '--manifest');
+  const intent = requireArg('intent', '--intent');
+  const role = requireArg('role', '--role');
+  const actorKind = requireArg('actorKind', '--actor-kind');
+  if (!ROLES.has(role)) throw new Error(`bad --role: ${role}`);
+  if (!ACTOR_KINDS.has(actorKind)) throw new Error(`bad --actor-kind: ${actorKind}`);
 
-  const manifest = loadManifest(args.manifest);
+  const manifest = loadManifest(manifestPath);
   const brickId = manifest?.brick?.id ?? manifest?.build?.id;
   if (!brickId) throw new Error('manifest has no brick.id or build.id');
 
   const touch = buildTouchEvent({
-    actorKind: args.actorKind,
+    actorKind,
     actorId: args.actor ?? process.env.SMA_AGENT ?? process.env.USER ?? 'unknown',
-    role: args.role,
-    intent: args.intent,
-    summary: args.summary ?? args.intent,
+    role,
+    intent,
+    summary: args.summary ?? intent,
     decisionRationale: args.decision,
     rejectedAlternatives: parseRejected(args.rejected),
     linkedBacklog: args.linkedBacklog,
@@ -111,8 +136,8 @@ function runAdd() {
         project: args.project,
         brick: brickId,
         kind: 'edit_applied',
-        intent: args.intent,
-        actorKind: args.actorKind,
+        intent,
+        actorKind,
         actorId: touch.actor_id,
         model: args.model,
         sessionId: args.session,
@@ -123,31 +148,31 @@ function runAdd() {
         linkedBacklog: args.linkedBacklog,
         commit: args.commit,
       });
-      touch.context_event_ids = [ctx.event_id];
+      touch.context_event_ids = [String(ctx.event_id)];
     } catch (e) {
-      console.error(`warn: could not append context event: ${e.message}`);
+      console.error(`warn: could not append context event: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
   appendTouch(manifest, touch);
-  saveManifest(args.manifest, manifest);
-  console.log(`added touch_event to ${brickId} (role=${args.role}, intent=${args.intent.slice(0, 40)}...)`);
+  saveManifest(manifestPath, manifest);
+  console.log(`added touch_event to ${brickId} (role=${role}, intent=${intent.slice(0, 40)}...)`);
 }
 
 // ── from-git ─────────────────────────────────────────────────────────────────
 
 function runFromGit() {
-  requireArg('manifest', '--manifest');
-  requireArg('commit', '--commit');
+  const manifestPath = requireArg('manifest', '--manifest');
+  const commit = requireArg('commit', '--commit');
   const role = args.role ?? 'implementer';
   if (!ROLES.has(role)) throw new Error(`bad --role: ${role}`);
 
-  const manifest = loadManifest(args.manifest);
+  const manifest = loadManifest(manifestPath);
   const brickId = manifest?.brick?.id ?? manifest?.build?.id;
   if (!brickId) throw new Error('manifest has no brick.id or build.id');
 
-  const cwd = dirname(args.manifest);
-  const meta = readGitCommit(cwd, args.commit);
+  const cwd = dirname(manifestPath);
+  const meta = readGitCommit(cwd, commit);
 
   const intent = args.intentFromMessage ? meta.subject : (args.intent ?? meta.subject);
   if (!intent) throw new Error('could not derive intent (no --intent and empty commit subject)');
@@ -177,42 +202,42 @@ function runFromGit() {
         linkedBacklog: args.linkedBacklog,
         commit: meta.sha,
       });
-      touch.context_event_ids = [ctx.event_id];
+      touch.context_event_ids = [String(ctx.event_id)];
     } catch (e) {
-      console.error(`warn: could not append context event: ${e.message}`);
+      console.error(`warn: could not append context event: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
   appendTouch(manifest, touch);
-  saveManifest(args.manifest, manifest);
+  saveManifest(manifestPath, manifest);
   console.log(`added touch_event to ${brickId} from commit ${meta.sha} (${meta.subject})`);
 }
 
 // ── sync-touch ───────────────────────────────────────────────────────────────
 
 function runSyncTouch() {
-  requireArg('manifest', '--manifest');
-  requireArg('eventId', '--event-id');
-  const manifest = loadManifest(args.manifest);
+  const manifestPath = requireArg('manifest', '--manifest');
+  const eventId = requireArg('eventId', '--event-id');
+  const manifest = loadManifest(manifestPath);
   const arr = manifest?.provenance?.touched_by ?? [];
   if (!arr.length) throw new Error('manifest has no touched_by[] entries');
   const last = arr[arr.length - 1];
   if (!last.context_event_ids) last.context_event_ids = [];
-  if (!last.context_event_ids.includes(args.eventId)) last.context_event_ids.push(args.eventId);
-  saveManifest(args.manifest, manifest);
-  console.log(`linked ${args.eventId} into last touch_event of ${manifest?.brick?.id ?? manifest?.build?.id}`);
+  if (!last.context_event_ids.includes(eventId)) last.context_event_ids.push(eventId);
+  saveManifest(manifestPath, manifest);
+  console.log(`linked ${eventId} into last touch_event of ${manifest?.brick?.id ?? manifest?.build?.id}`);
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function loadManifest(path) {
+function loadManifest(path: string): Manifest {
   const abs = resolve(path);
   if (!existsSync(abs)) throw new Error(`manifest not found: ${abs}`);
-  try { return JSON.parse(readFileSync(abs, 'utf8')); }
-  catch (e) { throw new Error(`could not parse manifest: ${e.message}`); }
+  try { return JSON.parse(readFileSync(abs, 'utf8')) as Manifest; }
+  catch (e) { throw new Error(`could not parse manifest: ${e instanceof Error ? e.message : String(e)}`); }
 }
 
-function saveManifest(path, manifest) {
+function saveManifest(path: string, manifest: Manifest): void {
   const abs = resolve(path);
   const tmp = abs + '.tmp.' + process.pid;
   writeFileSync(tmp, JSON.stringify(manifest, null, 2) + '\n');
@@ -228,7 +253,7 @@ function saveManifest(path, manifest) {
  * summary?: string,
  * decisionRationale?: string,
  * rejectedAlternatives?: Array<{alternative: string, reason: string}>,
- * linkedBacklog?: any[],
+ * linkedBacklog?: string[],
  * commit?: string,
  * model?: string,
  * sessionId?: string,
@@ -254,8 +279,8 @@ function buildTouchEvent({
   leaseId,
   attestation,
   timestamp,
-}: Record<string, any>) {
-  const t: Record<string, any> = {
+}: TouchInput): TouchEvent {
+  const t: TouchEvent = {
     actor_kind: actorKind,
     actor_id: actorId,
     role,
@@ -275,7 +300,7 @@ function buildTouchEvent({
   return t;
 }
 
-function appendTouch(manifest, touch) {
+function appendTouch(manifest: Manifest, touch: TouchEvent): void {
   manifest.provenance = manifest.provenance ?? {};
   if (!manifest.provenance.created_by) {
     manifest.provenance.created_by = touch;
@@ -285,14 +310,14 @@ function appendTouch(manifest, touch) {
   }
 }
 
-function readGitCommit(cwd, sha) {
+function readGitCommit(cwd: string, sha: string): GitCommit {
   // %H sha, %an author name, %ae email, %aI iso8601 date, %s subject, %b body
   const fmt = '%H%n%an%n%ae%n%aI%n%s%n%b';
   let raw;
   try {
     raw = execFileSync('git', ['log', '-1', `--pretty=format:${fmt}`, sha], { cwd, encoding: 'utf8' });
   } catch (e) {
-    throw new Error(`git log failed for ${sha}: ${e.message}`);
+    throw new Error(`git log failed for ${sha}: ${e instanceof Error ? e.message : String(e)}`);
   }
   const lines = raw.split('\n');
   return {
@@ -305,8 +330,8 @@ function readGitCommit(cwd, sha) {
   };
 }
 
-function parseRejected(arr) {
-  if (!Array.isArray(arr) || !arr.length) return [];
+function parseRejected(arr: string[] | undefined): RejectedAlternative[] {
+  if (!arr?.length) return [];
   return arr.map((r) => {
     const idx = r.indexOf('::');
     if (idx < 0) return { alternative: r, reason: '' };
@@ -314,29 +339,33 @@ function parseRejected(arr) {
   });
 }
 
-function requireArg(key, flag) {
-  if (args[key] === undefined || args[key] === null || args[key] === '') {
+function requireArg(key: StringArgKey, flag: string): string {
+  const value = args[key];
+  if (typeof value !== 'string' || value === '') {
     throw new Error(`missing ${flag}`);
   }
+  return value;
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase()) as keyof CliArgs;
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
-      out[camel] = true;
+      if (camel === 'noContext' || camel === 'intentFromMessage') out[camel] = true;
       continue;
     }
     if (['rejected', 'linkedBacklog'].includes(camel)) {
-      out[camel] = out[camel] ? [...out[camel], next] : [next];
+      const arrayKey = camel as 'rejected' | 'linkedBacklog';
+      out[arrayKey] = [...(out[arrayKey] ?? []), next];
     } else {
-      out[camel] = next;
+      const stringKey = camel as StringArgKey;
+      out[stringKey] = next;
     }
     i += 1;
   }

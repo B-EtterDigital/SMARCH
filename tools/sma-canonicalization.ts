@@ -56,7 +56,63 @@ const STATUS_BONUS = {
   legacy: -12
 };
 
-export function emptyCanonicalizationReport() {
+interface Thresholds {
+  project_readiness_min: number; compliance_min: number; max_blocked_clone_ratio: number;
+  max_env_gap_ratio: number; max_boundary_violations_per_brick: number;
+  min_recurrent_build_families: number; min_ready_project_ratio: number;
+  max_project_work_bottleneck_ratio: number; max_global_blocked_clone_ratio: number;
+}
+interface Reason { code: string; message: string; current?: number; threshold?: number }
+interface BlockerSummary extends Record<string, number> {
+  brick_count: number; blocked_clone_count: number; manual_review_count: number;
+  guided_count: number; copy_ready_count: number; env_gap_brick_count: number;
+  undeclared_reference_count: number; boundary_violation_count: number;
+  unresolved_local_import_count: number; unowned_local_dependency_count: number;
+  cross_brick_owned_import_count: number; private_cross_brick_import_count: number;
+  manifest_drift_count: number; unmanifested_count: number; oversized_file_count: number;
+  split_opportunity_count: number;
+}
+interface CanonicalRecord extends Record<string, unknown> {
+  id?: string; project?: string; name?: string; kind?: string; status?: string;
+  candidate_key?: string; confidence_label?: string; target_id?: string; target_type?: string;
+  promotion_stage?: string; bottleneck_stage?: string; grade?: string;
+  dominant_feature_cluster?: string | null; dominant_domain?: string | null; dominant_group?: string | null;
+  why?: string | null; source_path?: string; effective_status?: string;
+  score?: number; priority_score?: number; confidence_score?: number; recurrent_project_count?: number;
+  brick_count?: number; count?: number; average_brick_score?: number; missing_count?: number;
+  raw_source_tokens?: number; unmanifested_count?: number; oversized_file_count?: number;
+  split_opportunity_count?: number; undeclared_reference_count?: number;
+  boundary_violation_count?: number; recurrent_candidate_count?: number; candidate_count?: number;
+  readiness?: CanonicalRecord; scanner_report?: CanonicalRecord; refactor_report?: CanonicalRecord;
+  build_report?: CanonicalRecord; compliance_report?: CanonicalRecord; clone_preflight?: CanonicalRecord;
+  env_contract_report?: CanonicalRecord; boundary_report?: CanonicalRecord; manifest_drift?: CanonicalRecord;
+  metrics?: CanonicalRecord; counts?: CanonicalRecord; blocker_summary?: Partial<BlockerSummary>;
+  status_counts?: Record<string, number>; feature_cluster?: CanonicalRecord;
+  projects?: CanonicalRecord[]; bricks?: CanonicalRecord[]; top_candidates?: CanonicalRecord[];
+  duplicate_clusters?: CanonicalRecord[]; highest_risk_bricks?: CanonicalRecord[];
+  highest_gap_bricks?: CanonicalRecord[]; top_violations?: CanonicalRecord[];
+  source_paths?: string[]; blocker_codes?: string[]; warning_codes?: string[];
+  undeclared_env_refs?: string[]; blocker_reasons?: string[];
+}
+interface CanonicalTarget extends CanonicalRecord {
+  target_type: string; project: string; target_id: string; name: string;
+  priority_score: number; promotion_stage: string; confidence_label: string;
+  evidence_summary: CanonicalRecord; blocker_summary: Partial<BlockerSummary>;
+  blocker_reasons: string[]; rank?: number;
+}
+interface ProjectCanonicalizationReport {
+  project: string; project_canonicalization_ready: boolean; bottleneck_stage: string;
+  readiness_score: number; readiness_grade: string; compliance_score: number;
+  compliance_grade: string; counts: Record<string, number>; blocker_summary: BlockerSummary;
+  reasons: Reason[]; top_targets: CanonicalTarget[];
+}
+interface CanonicalizationReport {
+  thresholds: Thresholds; project_canonicalization_ready: boolean; bottleneck_mode: string;
+  reasons: Reason[]; counts: Record<string, number>; top_targets: CanonicalTarget[];
+  projects: ProjectCanonicalizationReport[];
+}
+
+export function emptyCanonicalizationReport(): CanonicalizationReport {
   return {
     thresholds: { ...DEFAULT_THRESHOLDS },
     project_canonicalization_ready: false,
@@ -75,7 +131,7 @@ export function emptyCanonicalizationReport() {
   };
 }
 
-export function buildCanonicalizationReport(registry) {
+export function buildCanonicalizationReport(registry: CanonicalRecord): CanonicalizationReport {
   const report = emptyCanonicalizationReport();
   const scannerReport = registry?.scanner_report || {};
   const readinessProjects = Array.isArray(scannerReport.readiness?.projects)
@@ -116,7 +172,7 @@ export function buildCanonicalizationReport(registry) {
 
   const projectReports = readinessProjects
     .map((projectEntry) => {
-      const project = projectEntry.project;
+      const project = projectEntry.project ?? "";
       const projectBricks = bricksByProject.get(project) || [];
       const projectBuildCandidates = buildsByProject.get(project) || [];
       const duplicateTargets = duplicateTargetsByProject.get(project) || [];
@@ -276,9 +332,13 @@ export function buildCanonicalizationReport(registry) {
   return report;
 }
 
-function buildDuplicateTargetsByProject(duplicateClusters: any[], bricks: any[], cloneRiskByBrick, envGapByBrick, complianceGapByBrick, boundaryCountsByBrick) {
-  const bricksById = new Map(bricks.map((brick) => [brick.id, brick]));
-  const byProject = new Map();
+function buildDuplicateTargetsByProject(
+  duplicateClusters: CanonicalRecord[], bricks: CanonicalRecord[],
+  cloneRiskByBrick: Map<string, CanonicalRecord>, envGapByBrick: Map<string, CanonicalRecord>,
+  complianceGapByBrick: Map<string, CanonicalRecord>, boundaryCountsByBrick: Map<string, number>,
+): Map<string, CanonicalTarget[]> {
+  const bricksById = new Map(bricks.map((brick) => [brick.id ?? "", brick]));
+  const byProject = new Map<string, CanonicalTarget[]>();
 
   for (const cluster of duplicateClusters || []) {
     const stem = String(cluster?.stem || "");
@@ -287,15 +347,16 @@ function buildDuplicateTargetsByProject(duplicateClusters: any[], bricks: any[],
     }
 
     for (const member of cluster.bricks || []) {
-      const brick = bricksById.get(member.id);
+      const brick = bricksById.get(member.id ?? "");
       if (!brick || brick.status === "canonical") {
         continue;
       }
 
-      const cloneRisk = cloneRiskByBrick.get(brick.id);
-      const envGap = envGapByBrick.get(brick.id);
-      const complianceGap = complianceGapByBrick.get(brick.id);
-      const boundaryCount = Number(boundaryCountsByBrick.get(brick.id) || 0);
+      const brickId = brick.id ?? "";
+      const cloneRisk = cloneRiskByBrick.get(brickId);
+      const envGap = envGapByBrick.get(brickId);
+      const complianceGap = complianceGapByBrick.get(brickId);
+      const boundaryCount = Number(boundaryCountsByBrick.get(brickId) || 0);
       const blockerReasons = [];
 
       if (brick.status === "project_bound") {
@@ -328,18 +389,18 @@ function buildDuplicateTargetsByProject(duplicateClusters: any[], bricks: any[],
         (Number(cluster.projects?.length || 0) * 14)
         + (Math.min(Number(cluster.count || 0), 12) * 3)
         + Number(brick.score || 0)
-        + (STATUS_BONUS[brick.status] || 0)
+        + (STATUS_BONUS[brick.status as keyof typeof STATUS_BONUS] ?? 0)
         - (blockerSummary.clone_blocker_count * 5)
         - Math.min(blockerSummary.undeclared_env_ref_count, 10)
         - (blockerSummary.compliance_missing_count * 6)
         - (blockerSummary.boundary_violation_count * 2)
       );
 
-      const target = {
+      const target: CanonicalTarget = {
         target_type: "brick",
-        project: brick.project,
-        target_id: brick.id,
-        name: brick.name || brick.id,
+        project: brick.project ?? "",
+        target_id: brickId,
+        name: brick.name || brickId,
         priority_score: priorityScore,
         promotion_stage: chooseBrickPromotionStage(cluster, blockerReasons),
         confidence_label: Number(cluster.projects?.length || 0) >= 4 ? "high" : "medium",
@@ -356,9 +417,9 @@ function buildDuplicateTargetsByProject(duplicateClusters: any[], bricks: any[],
         blocker_reasons: blockerReasons
       };
 
-      const existing = byProject.get(brick.project) || [];
+      const existing = byProject.get(brick.project ?? "") ?? [];
       existing.push(target);
-      byProject.set(brick.project, existing);
+      byProject.set(brick.project ?? "", existing);
     }
   }
 
@@ -369,7 +430,7 @@ function buildDuplicateTargetsByProject(duplicateClusters: any[], bricks: any[],
   return byProject;
 }
 
-function createBuildTarget(candidate, projectEntry, blockerSummary) {
+function createBuildTarget(candidate: CanonicalRecord, projectEntry: CanonicalRecord, blockerSummary: BlockerSummary): CanonicalTarget {
   const projectBoundMembers = Number(candidate?.status_counts?.project_bound || 0);
   const candidateMembers = Number(candidate?.status_counts?.candidate || 0);
   const canonicalMembers = Number(candidate?.status_counts?.canonical || 0);
@@ -405,9 +466,9 @@ function createBuildTarget(candidate, projectEntry, blockerSummary) {
 
   return {
     target_type: "build",
-    project: candidate.project,
-    target_id: candidate.candidate_key,
-    name: candidate.name,
+    project: candidate.project ?? projectEntry.project ?? "",
+    target_id: candidate.candidate_key ?? "build-candidate",
+    name: candidate.name ?? candidate.candidate_key ?? "build-candidate",
     priority_score: priorityScore,
     promotion_stage: chooseBuildPromotionStage(candidate, projectBoundMembers),
     confidence_label: candidate.confidence_label || "medium",
@@ -433,7 +494,7 @@ function createBuildTarget(candidate, projectEntry, blockerSummary) {
   };
 }
 
-function summarizeProjectBlockers(projectEntry, projectSummary, refactor, brickCount) {
+function summarizeProjectBlockers(projectEntry: CanonicalRecord, projectSummary: CanonicalRecord, refactor: CanonicalRecord, brickCount: number): BlockerSummary {
   const readiness = projectEntry?.readiness || {};
   const metrics = readiness.metrics || {};
   const boundaryReport = projectEntry?.boundary_report || {};
@@ -461,8 +522,8 @@ function summarizeProjectBlockers(projectEntry, projectSummary, refactor, brickC
   };
 }
 
-function buildProjectReasons(projectEntry, blockerSummary, thresholds) {
-  const reasons = [];
+function buildProjectReasons(projectEntry: CanonicalRecord, blockerSummary: BlockerSummary, thresholds: Thresholds): Reason[] {
+  const reasons: Reason[] = [];
   const readiness = Number(projectEntry?.readiness?.score || 0);
   const compliance = Number(projectEntry?.compliance_report?.score || 0);
   const brickCount = Math.max(Number(blockerSummary.brick_count || 0), 1);
@@ -514,7 +575,7 @@ function buildProjectReasons(projectEntry, blockerSummary, thresholds) {
   return reasons;
 }
 
-function isProjectCanonicalizationReady(projectEntry, blockerSummary, thresholds) {
+function isProjectCanonicalizationReady(projectEntry: CanonicalRecord, blockerSummary: BlockerSummary, thresholds: Thresholds): boolean {
   const readiness = Number(projectEntry?.readiness?.score || 0);
   const compliance = Number(projectEntry?.compliance_report?.score || 0);
   const brickCount = Math.max(Number(blockerSummary.brick_count || 0), 1);
@@ -526,7 +587,7 @@ function isProjectCanonicalizationReady(projectEntry, blockerSummary, thresholds
     && ratio(blockerSummary.boundary_violation_count, brickCount) <= thresholds.max_boundary_violations_per_brick;
 }
 
-function chooseBuildPromotionStage(candidate, projectBoundMembers) {
+function chooseBuildPromotionStage(candidate: CanonicalRecord, projectBoundMembers: number): string {
   const recurrence = Number(candidate?.recurrent_project_count || 0);
   const confidence = Number(candidate?.confidence_score || 0);
   if (recurrence >= 3 && confidence >= 85 && projectBoundMembers <= 1) {
@@ -538,7 +599,7 @@ function chooseBuildPromotionStage(candidate, projectBoundMembers) {
   return "refine_before_promote";
 }
 
-function chooseBrickPromotionStage(cluster, blockerReasons) {
+function chooseBrickPromotionStage(cluster: CanonicalRecord, blockerReasons: string[]): string {
   const duplicateProjects = Number(cluster?.projects?.length || 0);
   if (duplicateProjects >= 4 && blockerReasons.length === 0) {
     return "promote_now";
@@ -549,7 +610,7 @@ function chooseBrickPromotionStage(cluster, blockerReasons) {
   return "research_before_promote";
 }
 
-function thresholdReason(code, current, threshold, message) {
+function thresholdReason(code: string, current: number, threshold: number, message: string): Reason {
   return {
     code,
     current,
@@ -558,16 +619,16 @@ function thresholdReason(code, current, threshold, message) {
   };
 }
 
-function compareTargets(left, right) {
+function compareTargets(left: CanonicalTarget, right: CanonicalTarget): number {
   return Number(right.priority_score || 0) - Number(left.priority_score || 0)
     || compareStrings(left.target_type, right.target_type)
     || compareStrings(left.project, right.project)
     || compareStrings(left.name, right.name);
 }
 
-function withProjectBlockers(target, blockerSummary) {
-  const blockerReasons = new Set(target.blocker_reasons || []);
-  const summary: Record<string, any> = {
+function withProjectBlockers(target: CanonicalTarget, blockerSummary: BlockerSummary): CanonicalTarget {
+  const blockerReasons = new Set(target.blocker_reasons);
+  const summary: Partial<BlockerSummary> = {
     ...target.blocker_summary,
     project_blocked_clone_count: Number(blockerSummary.blocked_clone_count || 0),
     project_env_gap_brick_count: Number(blockerSummary.env_gap_brick_count || 0),
@@ -592,21 +653,22 @@ function withProjectBlockers(target, blockerSummary) {
   };
 }
 
-function toMap(entries, key) {
-  const map = new Map();
-  for (const entry of entries || []) {
-    if (entry?.[key]) {
-      map.set(entry[key], entry);
+function toMap(entries: CanonicalRecord[], key: keyof CanonicalRecord): Map<string, CanonicalRecord> {
+  const map = new Map<string, CanonicalRecord>();
+  for (const entry of entries) {
+    const value = entry[key];
+    if (typeof value === "string" && value) {
+      map.set(value, entry);
     }
   }
   return map;
 }
 
-function countByKey(entries, key) {
-  const counts = new Map();
-  for (const entry of entries || []) {
+function countByKey(entries: CanonicalRecord[], key: keyof CanonicalRecord): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
     const value = entry?.[key];
-    if (!value) {
+    if (typeof value !== "string" || !value) {
       continue;
     }
     counts.set(value, (counts.get(value) || 0) + 1);
@@ -614,28 +676,28 @@ function countByKey(entries, key) {
   return counts;
 }
 
-function groupBy(items, keyFn) {
-  const groups = new Map();
-  for (const item of items || []) {
+function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
+  const groups = new Map<K, T[]>();
+  for (const item of items) {
     const key = keyFn(item);
-    const current = groups.get(key) || [];
+    const current = groups.get(key) ?? [];
     current.push(item);
     groups.set(key, current);
   }
   return groups;
 }
 
-function ratio(numerator, denominator) {
+function ratio(numerator: number, denominator: number): number {
   if (!denominator) {
     return 0;
   }
   return Number(numerator || 0) / Number(denominator || 1);
 }
 
-function roundNumber(value) {
+function roundNumber(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function compareStrings(left, right) {
-  return String(left || "").localeCompare(String(right || ""));
+function compareStrings(left: string | undefined, right: string | undefined): number {
+  return (left ?? "").localeCompare(right ?? "");
 }

@@ -35,6 +35,19 @@ import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const SMA_REGISTRY = smaPath('registry');
 
+type CliArgs = {
+  project?: string; title?: string; description?: string; severity?: string; kind?: string;
+  brick?: string; package?: string; file: string[]; id?: string; resolution?: string;
+  status?: string; effort?: string; costTokens?: string; blocksPromotionTo: string[];
+  reuseReceiptId?: string; openedBy?: string; closedBy?: string; json?: boolean; help?: boolean;
+};
+type BacklogEntry = Record<string, unknown> & {
+  id: string; title: string; severity: string; kind: string; status: string;
+};
+type Backlog = {
+  schema_version: string; project: string; generated_at: string; entries: BacklogEntry[];
+};
+
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
 
@@ -61,7 +74,7 @@ Severity: blocker, high, medium, low, nit
 `);
 }
 
-function projectRoot(projectId) {
+function projectRoot(projectId: string): string {
   if (existsSync(resolve(PROJECTS_ROOT, projectId))) return resolve(PROJECTS_ROOT, projectId);
   // case-insensitive lookup (e.g. acme-lang vs acme-lang)
   for (const ent of readdirSync(PROJECTS_ROOT)) {
@@ -72,16 +85,16 @@ function projectRoot(projectId) {
   throw new Error(`project not found: ${projectId}`);
 }
 
-function loadBacklog(projectId) {
+function loadBacklog(projectId: string): Backlog {
   const root = projectRoot(projectId);
   const path = resolve(root, '.smarch/backlog.json');
   if (!existsSync(path)) {
     return { schema_version: '1.0.0', project: projectId, generated_at: new Date().toISOString(), entries: [] };
   }
-  return JSON.parse(readFileSync(path, 'utf8'));
+  return JSON.parse(readFileSync(path, 'utf8')) as Backlog;
 }
 
-function saveBacklog(projectId, data) {
+function saveBacklog(projectId: string, data: Backlog): void {
   const root = projectRoot(projectId);
   const dir = resolve(root, '.smarch');
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -89,7 +102,7 @@ function saveBacklog(projectId, data) {
   writeFileSync(resolve(dir, 'backlog.json'), JSON.stringify(data, null, 2) + '\n');
 }
 
-function nextId(backlog) {
+function nextId(backlog: Backlog): string {
   const nums = backlog.entries
     .map((e) => Number(String(e.id).replace(/[^\d]/g, '')))
     .filter((n) => !Number.isNaN(n));
@@ -104,7 +117,7 @@ function addEntry() {
   }
   const backlog = loadBacklog(args.project);
   const id = nextId(backlog);
-  const entry = {
+  const rawEntry = {
     id,
     title: args.title,
     description: args.description ?? '',
@@ -123,15 +136,16 @@ function addEntry() {
     estimated_effort_hours: args.effort ? Number(args.effort) : undefined,
     estimated_token_cost: args.costTokens ? Number(args.costTokens) : undefined,
   };
-  // strip undefined
-  for (const k of Object.keys(entry)) if (entry[k] === undefined) delete entry[k];
+  const entry = Object.fromEntries(
+    Object.entries(rawEntry).filter(([, value]) => value !== undefined),
+  ) as BacklogEntry;
   backlog.entries.push(entry);
   saveBacklog(args.project, backlog);
   console.log(`opened ${id}: ${args.title}`);
 }
 
 function listEntries() {
-  const backlog = loadBacklog(args.project);
+  const backlog = loadBacklog(requireProject());
   let rows = backlog.entries;
   if (args.severity) rows = rows.filter((e) => e.severity === args.severity);
   if (args.kind) rows = rows.filter((e) => e.kind === args.kind);
@@ -146,27 +160,28 @@ function listEntries() {
 }
 
 function closeEntry() {
-  const backlog = loadBacklog(args.project);
+  const project = requireProject();
+  const backlog = loadBacklog(project);
   const e = backlog.entries.find((x) => x.id === args.id);
   if (!e) { console.error(`not found: ${args.id}`); exit(1); }
   e.status = 'resolved';
   e.closed_at = new Date().toISOString();
   e.closed_by = args.closedBy ?? process.env.USER ?? 'unknown';
   e.resolution = args.resolution ?? '';
-  saveBacklog(args.project, backlog);
+  saveBacklog(project, backlog);
   console.log(`closed ${args.id}`);
 }
 
 function aggregate() {
-  const all = [];
+  const all: Array<BacklogEntry & { project: string }> = [];
   for (const ent of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
     if (!ent.isDirectory()) continue;
     const path = resolve(PROJECTS_ROOT, ent.name, '.smarch/backlog.json');
     if (!existsSync(path)) continue;
-    const data = JSON.parse(readFileSync(path, 'utf8'));
+    const data = JSON.parse(readFileSync(path, 'utf8')) as Backlog;
     for (const e of data.entries) all.push({ project: data.project, ...e });
   }
-  const out: Record<string, any> = {
+  const out: Record<string, unknown> = {
     schema_version: '1.0.0',
     generated_at: new Date().toISOString(),
     total: all.length,
@@ -186,12 +201,12 @@ function stats() {
   const data = args.project
     ? { entries: loadBacklog(args.project).entries.map((e) => ({ project: args.project, ...e })) }
     : (() => {
-        const all = [];
+        const all: Array<BacklogEntry & { project: string }> = [];
         for (const ent of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
           if (!ent.isDirectory()) continue;
           const path = resolve(PROJECTS_ROOT, ent.name, '.smarch/backlog.json');
           if (!existsSync(path)) continue;
-          const d = JSON.parse(readFileSync(path, 'utf8'));
+          const d = JSON.parse(readFileSync(path, 'utf8')) as Backlog;
           for (const e of d.entries) all.push({ project: d.project, ...e });
         }
         return { entries: all };
@@ -202,14 +217,23 @@ function stats() {
   console.log('By status:  ', bucket(data.entries, 'status'));
 }
 
-function bucket(arr, key) {
-  return arr.reduce((m, e) => ((m[e[key]] = (m[e[key]] ?? 0) + 1), m), {});
+function requireProject(): string {
+  if (!args.project) throw new Error('--project is required');
+  return args.project;
 }
 
-function pad(s, n) { return String(s ?? '').slice(0, n).padEnd(n); }
+function bucket<T extends Record<string, unknown>>(arr: T[], key: keyof T): Record<string, number> {
+  return arr.reduce<Record<string, number>>((counts, entry) => {
+    const value = String(entry[key]);
+    counts[value] = (counts[value] ?? 0) + 1;
+    return counts;
+  }, {});
+}
 
-function parseArgs(argv): Record<string, any> {
-  const out: Record<string, any> = { file: [], blocksPromotionTo: [] };
+function pad(s: unknown, n: number): string { return String(s ?? '').slice(0, n).padEnd(n); }
+
+function parseArgs(argv: string[]): CliArgs {
+  const out: CliArgs = { file: [], blocksPromotionTo: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--project') out.project = argv[++i];

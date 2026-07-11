@@ -68,7 +68,7 @@ type CuratedBuild = Omit<StateBuild, 'manifest_path'> & {
   first_actions: string[];
 };
 
-export const defaultCuratedBuildPaths = {
+const defaultCuratedBuildPaths = {
   repoRoot,
   state: defaultPaths.state,
   registry: defaultPaths.registry,
@@ -84,7 +84,7 @@ export function toArray<T>(value: readonly T[] | null | undefined): T[] {
   return Array.isArray(value) ? [...value] : [];
 }
 
-export function normalizePath(value: unknown): string {
+function normalizePath(value: unknown): string {
   return String(value || "").split(path.sep).join("/").replace(/^\.\//, "");
 }
 
@@ -96,7 +96,7 @@ export function uniqueStrings(values: readonly unknown[] | null | undefined): st
   }).map((value) => String(value).trim()).filter(Boolean))];
 }
 
-export function relativeFromRepo(targetPath: string): string {
+function relativeFromRepo(targetPath: string): string {
   return normalizePath(path.relative(repoRoot, targetPath));
 }
 
@@ -104,7 +104,7 @@ export function parseArgs(argv: string[], booleanFlags = ["stdout", "dry-run", "
   return parseFlatArgs(argv, { booleanFlags });
 }
 
-export function selectedBuildIdsFromArgs(args: Partial<CliArgs> = {}): Set<string> {
+function selectedBuildIdsFromArgs(args: Partial<CliArgs> = {}): Set<string> {
   return new Set(
     ([] as unknown[])
       .concat(args.build || [])
@@ -221,7 +221,7 @@ export function summarizeBlockerCodes(entries: readonly Blocker[] | null | undef
     .slice(0, limit);
 }
 
-export function firstActionsForBuild(build: { promotion?: PromotionEntry | null; publishBundle?: PublishBundle | null }): string[] {
+function firstActionsForBuild(build: { promotion?: PromotionEntry | null; publishBundle?: PublishBundle | null }): string[] {
   const actions: string[] = [];
   const push = (value: unknown) => {
     const text = String(value || "").trim();

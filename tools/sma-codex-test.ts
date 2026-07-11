@@ -208,7 +208,7 @@ async function main() {
     onResult: (wrapped) => { void (async () => {
       processed += 1;
       const r = wrapped.result;
-      if (!r.ok) { failed += 1; console.error(`  ${wrapped.id}: ${r.error}`); return; }
+      if (r.ok === false) { failed += 1; console.error(`  ${wrapped.id}: ${r.error}`); return; }
       if (r.fromCache) cacheHits += 1;
       const m = meta.get(wrapped.id);
       if (!m) return;

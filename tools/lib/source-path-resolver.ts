@@ -97,7 +97,7 @@ export function resolveBrickPath(brick: BrickPathInput | null | undefined, proje
 /**
  * Convenience: just the git-relative path (POSIX style), or null.
  */
-export function gitRelativePath(brick: BrickPathInput | null | undefined, projectAbs: string): string | null {
+function gitRelativePath(brick: BrickPathInput | null | undefined, projectAbs: string): string | null {
   const r = resolveBrickPath(brick, projectAbs);
   return r ? r.gitRelativePath : null;
 }

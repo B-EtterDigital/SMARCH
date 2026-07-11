@@ -11,7 +11,7 @@ const HEIGHT = 420;
 const MODULE_COLORS = ["var(--structure)", "var(--muted)"] as const;
 const INITIAL_VIEW: Viewport = { x: 0, y: 0, scale: 1 };
 
-export function layoutGraph(modules: ModuleGraph[]): GraphPoint[] {
+function layoutGraph(modules: ModuleGraph[]): GraphPoint[] {
   const points = modules.map((module, index) => {
     const angle = (index / Math.max(1, modules.length)) * Math.PI * 2 - Math.PI / 2;
     const ring = 112 + (index % 3) * 38;

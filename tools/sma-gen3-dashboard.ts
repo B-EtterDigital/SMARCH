@@ -1445,7 +1445,7 @@ function renderGraphHubRows({ globalGraph, graphStats, moduleGraphStats, actionI
       </tr>`).join('');
 }
 
-function dashboardVisibleLeases(liveLeases: { generated_at: null; active_count: number; by_resource_kind: object; by_agent: object; leases: never[]; _error: string; }|{ generated_at: string|null; active_count: number; by_resource_kind: Record<string,number>; by_agent: Record<string,number>; leases: { lease_id: string; resource_kind: string; resource_id: string; agent_id: string; project: string|null; acquired_at: string; expires_at: string; ttl_remaining_seconds: number; intent: string|undefined; }[]; _error?: undefined; }) {
+function dashboardVisibleLeases(liveLeases: ReturnType<typeof readActiveLeases>) {
   const leases = (liveLeases.leases || []).filter((lease: Partial<{ lease_id: string; resource_kind: string; resource_id: string; agent_id: string; project?: string|null; acquired_at: string; expires_at: string; intent?: string; }>|null|undefined) => !isVolatileSmaRegenLease(lease));
   return {
     ...liveLeases,

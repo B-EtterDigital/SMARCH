@@ -5,6 +5,10 @@ import { spawnSync } from "node:child_process";
 import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery } from "./graph-embeddings.ts";
 import { communitySummaryBlock } from "./graph-summaries.mjs";
 
+/** @typedef {Record<string, unknown> & { data?: Record<string, unknown> }} GraphNode */
+/** @typedef {Record<string, unknown> & { nodes?: GraphNode[], elements?: { nodes?: GraphNode[] } }} Graph */
+/** @typedef {{ backend: string, model: string, embed(texts: string[]): Promise<number[][]> }} Embedder */
+
 const GLOBAL_QUERY_SCRIPT = String.raw`
 import json
 import sys
@@ -62,6 +66,7 @@ function normalizeTags(tags) {
   return [...new Set(values.map((tag) => String(tag).trim()).filter(Boolean))];
 }
 
+/** @param {string} [graphifyPath] */
 function resolveGraphifyLauncher(graphifyPath = "graphify") {
   if (graphifyPath && existsSync(graphifyPath)) return realpathSync(graphifyPath);
   const found = spawnSync("which", [graphifyPath || "graphify"], { encoding: "utf8" });
@@ -72,6 +77,7 @@ function resolveGraphifyLauncher(graphifyPath = "graphify") {
   return realpathSync(launcher);
 }
 
+/** @param {string | undefined} graphifyPath */
 function graphifyPython(graphifyPath) {
   const launcher = resolveGraphifyLauncher(graphifyPath);
   const shebang = readFileSync(launcher, "utf8").split(/\r?\n/, 1)[0];
@@ -82,19 +88,23 @@ function graphifyPython(graphifyPath) {
   throw new Error(`Could not resolve Graphify's Python runtime from ${launcher}.`);
 }
 
-export function globalGraphPath(home = process.env.HOME || homedir()) {
+/** @param {string} [home] */
+function globalGraphPath(home = process.env.HOME || homedir()) {
   return path.join(home, ".graphify", "global-graph.json");
 }
 
+/** @param {Graph} graph */
 function graphNodes(graph) {
   const nodes = graph?.nodes ?? graph?.elements?.nodes;
   return Array.isArray(nodes) ? nodes : [];
 }
 
+/** @param {GraphNode} node */
 function nodeId(node) {
   return String(node?.id ?? node?.data?.id ?? "").trim();
 }
 
+/** @param {GraphNode} node */
 function portfolioTag(node) {
   const repo = String(node?.repo ?? node?.data?.repo ?? "").trim();
   if (repo) return repo;
@@ -102,6 +112,7 @@ function portfolioTag(node) {
   return id.includes("::") ? id.split("::", 1)[0] : "untagged";
 }
 
+/** @param {Graph} graph @param {string[]} tags */
 function allowedNodeIds(graph, tags) {
   if (!tags.length) return undefined;
   const wanted = new Set(tags.map((tag) => tag.toLowerCase()));
@@ -112,7 +123,7 @@ function allowedNodeIds(graph, tags) {
 }
 
 /**
- * @param {{ question?: string, tags?: string | string[], budget?: string | number, home?: string, graphifyPath?: string, embedder?: object }} [options]
+ * @param {{ question?: string, tags?: string | string[], budget?: string | number, home?: string, graphifyPath?: string, embedder?: Embedder }} [options]
  */
 export async function queryGlobalGraph(options = {}) {
   const { question, tags = [], budget = 2000, home, graphifyPath, embedder } = options;
@@ -166,6 +177,7 @@ export async function queryGlobalGraph(options = {}) {
     : traversalOutput;
 }
 
+/** @param {string} tag */
 function fixtureGraph(tag) {
   const semanticNodes = tag === "alpha" ? [
     { id: "session-signin", label: "session-signin", community: "alpha-session", source_snippet: "Establishes a user session." },
@@ -203,6 +215,7 @@ function fixtureGraph(tag) {
   };
 }
 
+/** @param {unknown} condition @param {string} message */
 function assertSelftest(condition, message) {
   if (!condition) throw new Error(`global query selftest failed: ${message}`);
 }

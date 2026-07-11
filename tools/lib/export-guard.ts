@@ -84,7 +84,7 @@ let _index: ExportIndex | null = null;
  * }} ExportAssertionOptions
  */
 
-export function loadLicenseIndex(): ExportIndex {
+function loadLicenseIndex(): ExportIndex {
   if (_index) return _index;
   if (!existsSync(LICENSE_LEDGER)) { _index = buildLicenseIndex([]) as ExportIndex; _index._missing = true; return _index; }
   try {
@@ -99,7 +99,7 @@ export function loadLicenseIndex(): ExportIndex {
 }
 
 /** Resolve each brick id to its openness/visibility; unknown => closed/private. */
-export function resolveComponents(brickIds: readonly string[], project: string | null, index: ExportIndex = loadLicenseIndex()): ExportComponent[] {
+function resolveComponents(brickIds: readonly string[], project: string | null, index: ExportIndex = loadLicenseIndex()): ExportComponent[] {
   return (brickIds || []).map((id) => {
     const row = index.resolve(id, project ?? undefined)?.row;
     const openness: Openness = row?.openness === 'open' || row?.openness === 'source-available' || row?.openness === 'closed'

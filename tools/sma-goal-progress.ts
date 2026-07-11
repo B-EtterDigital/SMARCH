@@ -36,7 +36,7 @@ try {
   if (args.selftest) {
     const report = runGoalProgressSelfTest();
     if (args.json) console.log(JSON.stringify(report, null, 2));
-    else console.log(`goal-progress selftest ok: ${report.summary.failed_then_passed_count} fail→pass recovery, ${report.summary.srs_signal_count} SRS signal`);
+    else console.log(`goal-progress selftest ok: ${String(report.summary.failed_then_passed_count)} fail→pass recovery, ${String(report.summary.srs_signal_count)} SRS signal`);
     exit(0);
   }
   const report = buildGoalProgressReport({
@@ -53,8 +53,8 @@ try {
   if (args.out) writeFileSync(resolve(args.out), `${JSON.stringify(report, null, 2)}\n`);
   else if (args.json) console.log(JSON.stringify(report, null, 2));
   else printSummary(report);
-} catch (err) {
-  console.error(`sma-goal-progress: ${err.message}`);
+} catch (err: unknown) {
+  console.error(`sma-goal-progress: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
@@ -76,35 +76,47 @@ function projectArgs() {
   return projects;
 }
 
-function printSummary(report) {
-  const s = report.summary || {};
+function printSummary(report: ReturnType<typeof buildGoalProgressReport>): void {
+  const s = report.summary;
   console.log('SMA Gen3 Goal Progress');
-  console.log(`window:       ${report.window_hours}h (${report.window_start} → ${report.window_end})`);
-  console.log(`events:       ${s.event_count} across ${s.project_count} project(s), ${s.module_count} module bucket(s)`);
-  console.log(`proof:        ${s.proof_coverage_percent}% coverage, ${s.pass_count}/${s.verification_count} pass, ${s.failed_then_passed_count} fail→pass`);
-  console.log(`hardening:    ${s.hardening_score_percent}% (${s.srs_signal_count} SRS, ${s.graph_signal_count} graph, ${s.collision_signal_count} collision signals)`);
-  console.log(`parallel:     ${s.current_agents_supported} current agent baseline → ${s.future_agents_target} future target`);
-  const top = (report.modules || []).slice(0, 8);
+  console.log(`window:       ${String(report.window_hours)}h (${report.window_start} → ${report.window_end})`);
+  console.log(`events:       ${String(s.event_count)} across ${String(s.project_count)} project(s), ${String(s.module_count)} module bucket(s)`);
+  console.log(`proof:        ${String(s.proof_coverage_percent)}% coverage, ${String(s.pass_count)}/${String(s.verification_count)} pass, ${String(s.failed_then_passed_count)} fail→pass`);
+  console.log(`hardening:    ${String(s.hardening_score_percent)}% (${String(s.srs_signal_count)} SRS, ${String(s.graph_signal_count)} graph, ${String(s.collision_signal_count)} collision signals)`);
+  console.log(`parallel:     ${String(s.current_agents_supported)} current agent baseline → ${String(s.future_agents_target)} future target`);
+  const top = report.modules.slice(0, 8);
   if (top.length) {
     console.log('modules:');
     for (const module of top) {
-      console.log(`  - ${module.project}/${module.id}: ${module.event_count} events, ${module.pass_count} pass, ${module.fail_count} fail, ${module.completion_count} done`);
+      console.log(`  - ${module.project}/${module.id}: ${String(module.event_count)} events, ${String(module.pass_count)} pass, ${String(module.fail_count)} fail, ${String(module.completion_count)} done`);
     }
   }
 }
 
-function asArray(value) {
+function asArray(value: string | string[] | boolean | undefined): string[] {
   if (Array.isArray(value)) return value;
-  if (value === undefined || value === null) return [];
-  return [value];
+  if (value === undefined) return [];
+  return typeof value === 'string' ? [value] : [];
 }
 
-function parseArgs(list): Record<string, any> {
-  const out: Record<string, any> = {};
+interface CliArgs extends Record<string, string | string[] | boolean | undefined> {
+  help?: boolean;
+  h?: boolean;
+  selftest?: boolean;
+  json?: boolean;
+  html?: boolean;
+  out?: string;
+  hours?: string;
+  goalHours?: string;
+  project?: string | string[];
+}
+
+function parseArgs(list: string[]): CliArgs {
+  const out: CliArgs = {};
   for (let i = 0; i < list.length; i += 1) {
     const item = list[i];
     if (!item.startsWith('--')) continue;
-    const key = item.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = item.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
     const next = list[i + 1];
     if (!next || next.startsWith('--')) {
       out[key] = true;

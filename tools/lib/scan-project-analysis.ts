@@ -56,7 +56,7 @@ type Penalty = { points: number; label: string };
 type CardRecord = Record<string, unknown> & { id?: string };
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const ignoredImportExtensions = new Set([
+const ignoredImportExtensions = new Set([
   ".css", ".scss", ".sass", ".less", ".styl",
   ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp", ".ico",
   ".mp3", ".wav", ".ogg", ".mp4", ".webm",
@@ -72,7 +72,7 @@ export function normalizeDuplicateStem(value: unknown): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function normalizeImportSpecifier(specifier: unknown): string {
+function normalizeImportSpecifier(specifier: unknown): string {
   return String(specifier || "")
     .split("?")[0]
     .split("#")[0]
@@ -96,7 +96,7 @@ export function isTestLikePath(value: unknown): boolean {
     || normalized.includes("0000testing/");
 }
 
-export function isTestLikeBrick(brick: CompactBrick | null | undefined): boolean {
+function isTestLikeBrick(brick: CompactBrick | null | undefined): boolean {
   if (!brick) {
     return false;
   }
@@ -112,18 +112,18 @@ export function isTestLikeBrick(brick: CompactBrick | null | undefined): boolean
   return (brick.source_paths || []).some((sourcePath) => isTestLikePath(sourcePath));
 }
 
-export function normalizeBrickGroupKey(value: unknown): string {
+function normalizeBrickGroupKey(value: unknown): string {
   const group = String(value || "");
   const [, relative = ""] = group.split(":");
   return relative.replace(/\/+$/g, "");
 }
 
-export function sharedSourceRoot(brick: CompactBrick | null | undefined): string {
+function sharedSourceRoot(brick: CompactBrick | null | undefined): string {
   const [sourcePath = ""] = brick?.source_paths || [];
   return String(sourcePath || "").replace(/\/+$/g, "");
 }
 
-export function sharesBrickGroupFamily(left: CompactBrick | null | undefined, right: CompactBrick | null | undefined): boolean {
+function sharesBrickGroupFamily(left: CompactBrick | null | undefined, right: CompactBrick | null | undefined): boolean {
   if (!left || !right) {
     return false;
   }
@@ -149,7 +149,7 @@ export function sharesBrickGroupFamily(left: CompactBrick | null | undefined, ri
   ));
 }
 
-export function isCloneTrackableBrick(brick: CompactBrick): boolean {
+function isCloneTrackableBrick(brick: CompactBrick): boolean {
   return brick.status === "candidate"
     || brick.status === "canonical"
     || ["copy_ready", "guided", "semi_automatic"].includes(brick.clone_readiness)
@@ -157,7 +157,7 @@ export function isCloneTrackableBrick(brick: CompactBrick): boolean {
     || (brick.clone_known_traps || []).length > 0;
 }
 
-export function shouldTrackManifestDrift(brick: CompactBrick, files: SourceFile[]): boolean {
+function shouldTrackManifestDrift(brick: CompactBrick, files: SourceFile[]): boolean {
   if ((files || []).length === 0) {
     return false;
   }
@@ -165,7 +165,7 @@ export function shouldTrackManifestDrift(brick: CompactBrick, files: SourceFile[
   return isCloneTrackableBrick(brick);
 }
 
-export function duplicateStemForBrick(brick: CompactBrick): string {
+function duplicateStemForBrick(brick: CompactBrick): string {
   const firstSourcePath = String((brick.source_paths || [])[0] || "");
   const pathStem = normalizeDuplicateStem(path.basename(firstSourcePath));
   const nameStem = normalizeDuplicateStem(brick.name || brick.id);
@@ -230,7 +230,7 @@ export function importResolutionCandidates(basePath: string): string[] {
   return [...new Set(candidates)];
 }
 
-export function importBasePath(projectRoot: string, fromFile: string, specifier: string): string | null {
+function importBasePath(projectRoot: string, fromFile: string, specifier: string): string | null {
   if (specifier.startsWith(".")) {
     return path.resolve(path.dirname(fromFile), specifier);
   }
@@ -250,7 +250,7 @@ export function importBasePath(projectRoot: string, fromFile: string, specifier:
   return null;
 }
 
-export function contextualProjectRoots(projectRoot: string, fromFile: string, leadingSegment = "src"): string[] {
+function contextualProjectRoots(projectRoot: string, fromFile: string, leadingSegment = "src"): string[] {
   const roots = [projectRoot];
   let current = path.dirname(fromFile);
 
@@ -512,7 +512,7 @@ export function extractSupabaseTableRefs(sourceText: string, filePath = ""): str
   return [...names].sort();
 }
 
-export function envRemediationPriority(entry: Pick<RemediationEntry, "effective_status" | "undeclared_env_refs" | "observed_env_variable_count" | "raw_source_tokens">): number {
+function envRemediationPriority(entry: Pick<RemediationEntry, "effective_status" | "undeclared_env_refs" | "observed_env_variable_count" | "raw_source_tokens">): number {
   const blockedWeight = entry.effective_status === "blocked" ? 18 : entry.effective_status === "manual_review" ? 8 : 0;
   return (entry.undeclared_env_refs?.length || 0) * 18
     + (entry.observed_env_variable_count || 0) * 2
@@ -520,7 +520,7 @@ export function envRemediationPriority(entry: Pick<RemediationEntry, "effective_
     + Math.min(24, Math.round((entry.raw_source_tokens || 0) / 12000));
 }
 
-export function rlsRemediationPriority(entry: Pick<RemediationEntry, "effective_status" | "observed_table_refs" | "negative_test_count" | "raw_source_tokens">): number {
+function rlsRemediationPriority(entry: Pick<RemediationEntry, "effective_status" | "observed_table_refs" | "negative_test_count" | "raw_source_tokens">): number {
   const blockedWeight = entry.effective_status === "blocked" ? 16 : entry.effective_status === "manual_review" ? 7 : 0;
   return (entry.observed_table_refs?.length || 0) * 16
     + ((entry.negative_test_count || 0) === 0 ? 12 : 0)
@@ -528,7 +528,7 @@ export function rlsRemediationPriority(entry: Pick<RemediationEntry, "effective_
     + Math.min(24, Math.round((entry.raw_source_tokens || 0) / 12000));
 }
 
-export function boundaryRemediationPriority(entry: Pick<RemediationEntry, "private_cross_import_count" | "cross_brick_owned_import_count" | "unresolved_local_import_count" | "unowned_local_dependency_count" | "raw_source_tokens">): number {
+function boundaryRemediationPriority(entry: Pick<RemediationEntry, "private_cross_import_count" | "cross_brick_owned_import_count" | "unresolved_local_import_count" | "unowned_local_dependency_count" | "raw_source_tokens">): number {
   return (entry.private_cross_import_count || 0) * 60
     + (entry.cross_brick_owned_import_count || 0) * 12
     + (entry.unresolved_local_import_count || 0) * 10
@@ -559,7 +559,7 @@ export function remediationActionProjectPlans<T extends RemediationEntry>(action
     });
 }
 
-export function manifestPathHint(projectRoot: string, sourcePath: string): { absolute_path: string; relative_path: string } | null {
+function manifestPathHint(projectRoot: string, sourcePath: string): { absolute_path: string; relative_path: string } | null {
   for (const candidate of sourcePathCandidates(projectRoot, sourcePath)) {
     if (!isWithinRoot(projectRoot, candidate)) {
       continue;
@@ -574,11 +574,11 @@ export function manifestPathHint(projectRoot: string, sourcePath: string): { abs
   return null;
 }
 
-export function pathRuleMatches(rulePath: string, targetPath: string): boolean {
+function pathRuleMatches(rulePath: string, targetPath: string): boolean {
   return rulePath === targetPath || isWithinRoot(rulePath, targetPath);
 }
 
-export function buildBoundaryRules(projectRoot: string, bricks: CompactBrick[]): { rules: BoundaryRule[]; rulesByBrick: Map<string, BoundaryRule[]> } {
+function buildBoundaryRules(projectRoot: string, bricks: CompactBrick[]): { rules: BoundaryRule[]; rulesByBrick: Map<string, BoundaryRule[]> } {
   const rules: BoundaryRule[] = [];
   const rulesByBrick = new Map<string, BoundaryRule[]>();
   const scopes: Array<[BoundaryScope, "private_paths" | "public_paths" | "owned_paths" | "source_paths"]> = [
@@ -624,15 +624,15 @@ export function buildBoundaryRules(projectRoot: string, bricks: CompactBrick[]):
   return { rules, rulesByBrick };
 }
 
-export function findBoundaryMatch(rules: BoundaryRule[], targetPath: string): BoundaryRule | null {
+function findBoundaryMatch(rules: BoundaryRule[], targetPath: string): BoundaryRule | null {
   return rules.find((rule) => pathRuleMatches(rule.absolute_path, targetPath)) || null;
 }
 
-export function matchesOwnBoundary(targetPath: string, ownRules: BoundaryRule[] = []): boolean {
+function matchesOwnBoundary(targetPath: string, ownRules: BoundaryRule[] = []): boolean {
   return ownRules.some((rule) => pathRuleMatches(rule.absolute_path, targetPath));
 }
 
-export async function collectProjectSourceGraph(projectRoot: string, projectIdValue: string, bricks: CompactBrick[]): Promise<SourceGraph> {
+async function collectProjectSourceGraph(projectRoot: string, projectIdValue: string, bricks: CompactBrick[]): Promise<SourceGraph> {
   const sourceTargets = new Map<string, { absolute_path: string; relative_path: string; brick_ids: Set<string> }>();
   const missingSourcePathMap = new Map<string, { project: string; brick_id: string; path: string }>();
 
@@ -735,7 +735,7 @@ export async function loadCompactCardIndex(): Promise<Map<string, CardRecord>> {
   return index;
 }
 
-export function cardTokenEstimate(card: unknown): number {
+function cardTokenEstimate(card: unknown): number {
   return estimateTokens(JSON.stringify(card || {}));
 }
 
@@ -779,7 +779,7 @@ export function buildDuplicateClusters(bricks: CompactBrick[]) {
     .slice(0, 80);
 }
 
-export function readinessReasons(penalties: Penalty[]): string[] {
+function readinessReasons(penalties: Penalty[]): string[] {
   return penalties
     .filter((penalty) => penalty.points > 0)
     .sort((a, b) => b.points - a.points || a.label.localeCompare(b.label))
@@ -787,7 +787,7 @@ export function readinessReasons(penalties: Penalty[]): string[] {
     .map((penalty) => `${penalty.label} (-${penalty.points})`);
 }
 
-export function boundaryViolationPriority(kind: string): number {
+function boundaryViolationPriority(kind: string): number {
   return {
     private_cross_brick_import: 4,
     unresolved_local_import: 3,

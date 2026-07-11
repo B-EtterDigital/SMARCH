@@ -10,11 +10,81 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
+
 const SCHEMA_VERSION = "1.0.0";
 const DEFAULT_ROOT = "publish";
 const DEFAULT_OUT = "publish/publish-index.generated.json";
 const SKIP_DIRS = new Set([".git", "node_modules", ".next", ".nuxt", ".turbo", "dist", "coverage"]);
 const EXPECTED_FILES = ["bundle.json", "publish-report.json", "manifest.community.json"];
+
+interface PublishArgs { root: string; out: string; stdout: boolean; dryRun: boolean; help: boolean }
+interface ArtifactInput { community_id?: unknown; name?: unknown; type?: unknown; version?: unknown }
+interface DecisionInput {
+  counts?: { blocker?: unknown; warning?: unknown; info?: unknown };
+  status?: unknown;
+  strict_mode?: unknown;
+}
+interface BundleDocument {
+  artifact?: ArtifactInput;
+  decision?: DecisionInput;
+  export_kind?: unknown;
+  export_mode?: unknown;
+  generated_at?: unknown;
+  source_artifact?: { original_id?: unknown };
+}
+interface PublishFinding {
+  category?: string;
+  location?: string;
+  rule_id?: string;
+  scope?: string;
+  severity?: string;
+  summary?: string;
+}
+interface ReportDocument {
+  artifact?: ArtifactInput;
+  decision?: DecisionInput;
+  export_mode?: unknown;
+  findings?: PublishFinding[];
+  generated_at?: unknown;
+  limitations?: unknown[];
+  redaction_summary?: { count?: unknown };
+  root_aliases?: unknown[];
+  scanned_files?: { finding_count?: unknown }[];
+  source_artifact?: { original_id?: unknown };
+}
+interface ManifestDocument {
+  brick?: { id?: unknown; name?: unknown; version?: unknown; visibility?: unknown };
+  build?: { id?: unknown; name?: unknown; version?: unknown; visibility?: unknown };
+  classification?: { risk?: unknown };
+  publishing?: { license?: unknown; publishable?: boolean; redaction_profile?: unknown; visibility?: unknown };
+}
+interface ArtifactSummary { community_id: string; original_id: string | null; name: string; type: string; version: string }
+interface DecisionSummary { status: string; counts: { blocker: number; warning: number; info: number }; strict_mode: boolean }
+interface FindingRule { rule_id: string; severity: string; category: string; summary: string; count: number }
+interface BundleSummary {
+  artifact: ArtifactSummary;
+  artifact_visibility: unknown;
+  bundle_path: string;
+  complete: boolean;
+  decision: DecisionSummary;
+  declared_publishable: boolean | null;
+  finding_counts: { blocker: number; warning: number; info: number; total: number };
+  finding_rules: FindingRule[];
+  license: unknown;
+  publish_safe: boolean;
+  publishing_visibility: unknown;
+  redaction_count: number;
+  risk: unknown;
+  scanned_file_count: number;
+  scanned_finding_count: number;
+  [key: string]: unknown;
+}
+type BundleResult = { ok: true; value: BundleSummary } | { ok: false; reason: string; error?: string };
 
 const HELP_TEXT = `Usage: node tools/sma-publish-index.ts [options]
 
@@ -30,12 +100,12 @@ Options:
   --help          Show this help text
 `;
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
     process.stdout.write(HELP_TEXT);
@@ -43,16 +113,16 @@ async function main() {
   }
 
   const bundleDirs = await collectBundleDirectories(options.root);
-  const bundles = [];
-  const skipped = [];
+  const bundles: BundleSummary[] = [];
+  const skipped: { bundle_path: string; reason: string; error: string | null }[] = [];
 
   for (const bundleDir of bundleDirs) {
     const result = await summarizeBundle(bundleDir, options.root);
-    if (!result.ok) {
+    if (result.ok === false) {
       skipped.push({
         bundle_path: toPosix(path.relative(process.cwd(), bundleDir)),
         reason: result.reason,
-        error: 'error' in result ? result.error || null : null,
+        error: 'error' in result ? orElse(result.error, () => null) : null,
       });
       continue;
     }
@@ -60,7 +130,7 @@ async function main() {
   }
 
   bundles.sort(compareBundleEntries);
-  skipped.sort((left, right) => String(left.bundle_path || "").localeCompare(String(right.bundle_path || "")));
+  skipped.sort((left, right) => (left.bundle_path || "").localeCompare((right.bundle_path || "")));
 
   const document = {
     schema_version: SCHEMA_VERSION,
@@ -82,8 +152,8 @@ async function main() {
   }
 }
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
+function parseArgs(argv: string[]): PublishArgs {
+  const options: PublishArgs = {
     root: path.resolve(process.cwd(), DEFAULT_ROOT),
     out: path.resolve(process.cwd(), DEFAULT_OUT),
     stdout: false,
@@ -120,7 +190,7 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function requireValue(argv, index, flag) {
+function requireValue(argv: string[], index: number, flag: string): string {
   const value = argv[index];
   if (!value || value.startsWith("--")) {
     throw new Error(`Missing value for ${flag}`);
@@ -128,7 +198,7 @@ function requireValue(argv, index, flag) {
   return value;
 }
 
-async function pathExists(targetPath) {
+async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -137,15 +207,15 @@ async function pathExists(targetPath) {
   }
 }
 
-async function collectBundleDirectories(rootPath) {
+async function collectBundleDirectories(rootPath: string): Promise<string[]> {
   const stat = await fs.stat(rootPath).catch(() => null);
-  if (!stat || !stat.isDirectory()) {
+  if (!stat?.isDirectory()) {
     return [];
   }
 
-  const output = [];
+  const output: string[] = [];
 
-  async function walk(currentPath) {
+  async function walk(currentPath: string): Promise<void> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
     const names = new Set(entries.filter((entry) => entry.isFile()).map((entry) => entry.name));
     if (EXPECTED_FILES.some((name) => names.has(name))) {
@@ -163,11 +233,11 @@ async function collectBundleDirectories(rootPath) {
   return [...new Set(output)].sort((left, right) => left.localeCompare(right));
 }
 
-async function summarizeBundle(bundleDir, rootPath) {
+async function summarizeBundle(bundleDir: string, rootPath: string): Promise<BundleResult> {
   const filesPresent = Object.fromEntries(await Promise.all(EXPECTED_FILES.map(async (fileName) => [fileName, await pathExists(path.join(bundleDir, fileName))])));
-  const bundleDoc = await maybeReadJson(path.join(bundleDir, "bundle.json"));
-  const reportDoc = await maybeReadJson(path.join(bundleDir, "publish-report.json"));
-  const manifestDoc = await maybeReadJson(path.join(bundleDir, "manifest.community.json"));
+  const bundleDoc = await maybeReadJson<BundleDocument>(path.join(bundleDir, "bundle.json"));
+  const reportDoc = await maybeReadJson<ReportDocument>(path.join(bundleDir, "publish-report.json"));
+  const manifestDoc = await maybeReadJson<ManifestDocument>(path.join(bundleDir, "manifest.community.json"));
 
   if (!bundleDoc && !reportDoc && !manifestDoc) {
     return { ok: false, reason: "no_publish_files_found" };
@@ -178,29 +248,29 @@ async function summarizeBundle(bundleDir, rootPath) {
   const findingCounts = summarizeFindingCounts(findings);
   const scannedFiles = Array.isArray(reportDoc?.scanned_files) ? reportDoc.scanned_files : [];
   const decision = summarizeDecision(bundleDoc, reportDoc);
-  const summary: Record<string, any> = {
+  const summary: BundleSummary = {
     bundle_path: toPosix(path.relative(process.cwd(), bundleDir)),
     bundle_root: toPosix(path.relative(process.cwd(), rootPath)),
     complete: filesPresent["bundle.json"] && filesPresent["publish-report.json"] && filesPresent["manifest.community.json"],
-    generated_at: firstDefined(bundleDoc?.generated_at, reportDoc?.generated_at) || null,
+    generated_at: orElse(firstDefined(bundleDoc?.generated_at, reportDoc?.generated_at), () => null),
     artifact,
     decision,
     files_present: filesPresent,
-    export_kind: bundleDoc?.export_kind || null,
-    export_mode: firstDefined(bundleDoc?.export_mode, reportDoc?.export_mode) || null,
+    export_kind: orElse(bundleDoc?.export_kind, () => null),
+    export_mode: orElse(firstDefined(bundleDoc?.export_mode, reportDoc?.export_mode), () => null),
     artifact_visibility: inferArtifactVisibility(manifestDoc),
     publishing_visibility: inferPublishingVisibility(manifestDoc),
     declared_publishable: inferDeclaredPublishable(manifestDoc),
     license: inferLicense(manifestDoc),
     redaction_profile: inferRedactionProfile(manifestDoc),
     risk: inferRisk(manifestDoc),
-    redaction_count: Number(reportDoc?.redaction_summary?.count || 0),
+    redaction_count: Number(orElse(reportDoc?.redaction_summary?.count, () => 0)),
     scanned_file_count: scannedFiles.length,
-    scanned_finding_count: scannedFiles.reduce((sum, file) => sum + Number(file?.finding_count || 0), 0),
+    scanned_finding_count: scannedFiles.reduce((sum, file) => sum + Number(orElse(file.finding_count, () => 0)), 0),
     root_alias_count: Array.isArray(reportDoc?.root_aliases) ? reportDoc.root_aliases.length : 0,
     finding_counts: findingCounts,
-    finding_categories: countBy(findings, (entry) => entry?.category || "unknown"),
-    finding_scopes: countBy(findings, (entry) => entry?.scope || "unknown"),
+    finding_categories: countBy(findings, (entry) => orElse(entry.category, () => "unknown")),
+    finding_scopes: countBy(findings, (entry) => orElse(entry.scope, () => "unknown")),
     finding_rules: summarizeFindingRules(findings),
     top_blockers: selectTopFindings(findings, "blocker", 6),
     top_warnings: selectTopFindings(findings, "warning", 4),
@@ -217,37 +287,42 @@ async function summarizeBundle(bundleDir, rootPath) {
   return { ok: true, value: summary };
 }
 
-function summarizeArtifact(bundleDoc, reportDoc, manifestDoc, bundleDir) {
-  const artifact = firstDefined(bundleDoc?.artifact, reportDoc?.artifact, inferArtifactFromManifest(manifestDoc)) || {};
-  const type = firstDefined(artifact?.type, manifestDoc?.build ? "build" : manifestDoc?.brick ? "brick" : "unknown");
-  const communityId = firstDefined(artifact?.community_id, manifestDoc?.build?.id, manifestDoc?.brick?.id, path.basename(bundleDir));
-  const originalArtifactId = firstDefined(
+function summarizeArtifact(
+  bundleDoc: BundleDocument | null,
+  reportDoc: ReportDocument | null,
+  manifestDoc: ManifestDocument | null,
+  bundleDir: string,
+): ArtifactSummary {
+  const artifact = firstDefined(bundleDoc?.artifact, reportDoc?.artifact, inferArtifactFromManifest(manifestDoc)) ?? {};
+  const type = firstDefined(artifact.type, manifestDoc?.build ? "build" : manifestDoc?.brick ? "brick" : "unknown");
+  const communityId = firstDefined(artifact.community_id, manifestDoc?.build?.id, manifestDoc?.brick?.id, path.basename(bundleDir));
+  const originalArtifactId = orElse(firstDefined(
     bundleDoc?.source_artifact?.original_id,
     reportDoc?.source_artifact?.original_id,
-  ) || null;
+  ), () => null);
   const name = firstDefined(
-    artifact?.name,
+    artifact.name,
     manifestDoc?.build?.name,
     manifestDoc?.brick?.name,
     communityId,
   );
   const version = firstDefined(
-    artifact?.version,
+    artifact.version,
     manifestDoc?.build?.version,
     manifestDoc?.brick?.version,
     "0.0.0",
   );
 
   return {
-    community_id: String(communityId || path.basename(bundleDir)),
+    community_id: String(orElse(communityId, () => path.basename(bundleDir))),
     original_id: originalArtifactId ? String(originalArtifactId) : null,
-    name: String(name || communityId || "publish bundle"),
-    type: String(type || "unknown"),
-    version: String(version || "0.0.0"),
+    name: String(orElse(orElse(name, () => (communityId)), () => "publish bundle")),
+    type: String(orElse(type, () => "unknown")),
+    version: String(orElse(version, () => "0.0.0")),
   };
 }
 
-function inferArtifactFromManifest(manifestDoc) {
+function inferArtifactFromManifest(manifestDoc: ManifestDocument | null): ArtifactInput | null {
   if (!manifestDoc || typeof manifestDoc !== "object") return null;
   if (manifestDoc.build?.id) {
     return {
@@ -268,118 +343,115 @@ function inferArtifactFromManifest(manifestDoc) {
   return null;
 }
 
-function summarizeDecision(bundleDoc, reportDoc) {
-  const decision = firstDefined(reportDoc?.decision, bundleDoc?.decision) || {};
+function summarizeDecision(bundleDoc: BundleDocument | null, reportDoc: ReportDocument | null): DecisionSummary {
+  const decision = firstDefined(reportDoc?.decision, bundleDoc?.decision) ?? {};
   const counts = {
-    blocker: Number(decision?.counts?.blocker || 0),
-    warning: Number(decision?.counts?.warning || 0),
-    info: Number(decision?.counts?.info || 0),
+    blocker: Number(orElse(decision.counts?.blocker, () => 0)),
+    warning: Number(orElse(decision.counts?.warning, () => 0)),
+    info: Number(orElse(decision.counts?.info, () => 0)),
   };
   return {
-    status: String(decision?.status || "unknown"),
+    status: String(orElse(decision.status, () => "unknown")),
     counts,
-    strict_mode: Boolean(decision?.strict_mode),
+    strict_mode: Boolean(decision.strict_mode),
   };
 }
 
-function summarizeFindingCounts(findings) {
+function summarizeFindingCounts(findings: PublishFinding[]) {
   return {
-    blocker: findings.filter((entry) => entry?.severity === "blocker").length,
-    warning: findings.filter((entry) => entry?.severity === "warning").length,
-    info: findings.filter((entry) => entry?.severity === "info").length,
+    blocker: findings.filter((entry) => entry.severity === "blocker").length,
+    warning: findings.filter((entry) => entry.severity === "warning").length,
+    info: findings.filter((entry) => entry.severity === "info").length,
     total: findings.length,
   };
 }
 
-function inferArtifactVisibility(manifestDoc) {
-  return firstDefined(manifestDoc?.build?.visibility, manifestDoc?.brick?.visibility) || "unknown";
+function inferArtifactVisibility(manifestDoc: ManifestDocument | null): unknown {
+  return orElse(firstDefined(manifestDoc?.build?.visibility, manifestDoc?.brick?.visibility), () => "unknown");
 }
 
-function inferPublishingVisibility(manifestDoc) {
-  return firstDefined(manifestDoc?.publishing?.visibility) || "unknown";
+function inferPublishingVisibility(manifestDoc: ManifestDocument | null): unknown {
+  return orElse(firstDefined(manifestDoc?.publishing?.visibility), () => "unknown");
 }
 
-function inferDeclaredPublishable(manifestDoc) {
+function inferDeclaredPublishable(manifestDoc: ManifestDocument | null): boolean | null {
   if (typeof manifestDoc?.publishing?.publishable === "boolean") {
     return manifestDoc.publishing.publishable;
   }
   return null;
 }
 
-function inferLicense(manifestDoc) {
-  return firstDefined(manifestDoc?.publishing?.license) || null;
+function inferLicense(manifestDoc: ManifestDocument | null): unknown {
+  return orElse(firstDefined(manifestDoc?.publishing?.license), () => null);
 }
 
-function inferRedactionProfile(manifestDoc) {
-  return firstDefined(manifestDoc?.publishing?.redaction_profile) || null;
+function inferRedactionProfile(manifestDoc: ManifestDocument | null): unknown {
+  return orElse(firstDefined(manifestDoc?.publishing?.redaction_profile), () => null);
 }
 
-function inferRisk(manifestDoc) {
-  return firstDefined(manifestDoc?.classification?.risk) || null;
+function inferRisk(manifestDoc: ManifestDocument | null): unknown {
+  return orElse(firstDefined(manifestDoc?.classification?.risk), () => null);
 }
 
-function selectTopFindings(findings, severity, limit) {
+function selectTopFindings(findings: PublishFinding[], severity: string, limit: number) {
   return findings
-    .filter((entry) => entry?.severity === severity)
+    .filter((entry) => entry.severity === severity)
     .slice(0, limit)
     .map((entry) => ({
-      severity: entry.severity || severity,
-      category: entry.category || "unknown",
-      rule_id: entry.rule_id || "unknown",
-      summary: entry.summary || "Finding recorded.",
-      location: entry.location || null,
-      scope: entry.scope || null,
+      severity: orElse(entry.severity, () => severity),
+      category: orElse(entry.category, () => "unknown"),
+      rule_id: orElse(entry.rule_id, () => "unknown"),
+      summary: orElse(entry.summary, () => "Finding recorded."),
+      location: orElse(entry.location, () => null),
+      scope: orElse(entry.scope, () => null),
     }));
 }
 
-function countBy(items, getKey) {
-  const counts = {};
-  for (const item of items || []) {
-    const key = String(getKey(item) || "unknown");
+function countBy<T>(items: readonly T[], getKey: (item: T) => unknown): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const item of items) {
+    const key = String(orElse(getKey(item), () => "unknown"));
     counts[key] = (counts[key] || 0) + 1;
   }
   return counts;
 }
 
-function summarizeFindingRules(findings) {
-  const rows = new Map();
-  for (const finding of findings || []) {
-    const key = `${finding?.rule_id || "unknown"}:${finding?.severity || "unknown"}`;
-    if (!rows.has(key)) {
-      rows.set(key, {
-        rule_id: finding?.rule_id || "unknown",
-        severity: finding?.severity || "unknown",
-        category: finding?.category || "unknown",
-        summary: finding?.summary || "Finding recorded.",
-        count: 0,
-      });
-    }
-    rows.get(key).count += 1;
+function summarizeFindingRules(findings: PublishFinding[]): FindingRule[] {
+  const rows = new Map<string, FindingRule>();
+  for (const finding of findings) {
+    const key = `${orElse(finding.rule_id, () => "unknown")}:${orElse(finding.severity, () => "unknown")}`;
+    const row: FindingRule = rows.get(key) ?? {
+      rule_id: orElse(finding.rule_id, () => "unknown"),
+      severity: orElse(finding.severity, () => "unknown"),
+      category: orElse(finding.category, () => "unknown"),
+      summary: orElse(finding.summary, () => "Finding recorded."),
+      count: 0,
+    };
+    row.count += 1;
+    rows.set(key, row);
   }
-  return [...rows.values()].sort((left, right) => right.count - left.count || String(left.rule_id || "").localeCompare(String(right.rule_id || "")));
+  return [...rows.values()].sort((left, right) => right.count - left.count || (left.rule_id || "").localeCompare((right.rule_id || "")));
 }
 
-function summarizeIndex(bundles) {
-  const topRules = new Map();
+function summarizeIndex(bundles: BundleSummary[]) {
+  const topRules = new Map<string, FindingRule & { sample_artifacts: string[] }>();
 
   for (const bundle of bundles) {
     for (const finding of bundle.finding_rules || []) {
       const key = `${finding.rule_id || "unknown"}:${finding.severity || "unknown"}`;
-      if (!topRules.has(key)) {
-        topRules.set(key, {
-          rule_id: finding.rule_id || "unknown",
-          severity: finding.severity || "unknown",
-          category: finding.category || "unknown",
-          summary: finding.summary || "Finding recorded.",
-          count: 0,
-          sample_artifacts: [],
-        });
-      }
-      const row = topRules.get(key);
-      row.count += Number(finding.count || 0);
+      const row: FindingRule & { sample_artifacts: string[] } = topRules.get(key) ?? {
+        rule_id: finding.rule_id || "unknown",
+        severity: finding.severity || "unknown",
+        category: finding.category || "unknown",
+        summary: finding.summary || "Finding recorded.",
+        count: 0,
+        sample_artifacts: [],
+      };
+      row.count += (finding.count || 0);
       if (row.sample_artifacts.length < 4 && !row.sample_artifacts.includes(bundle.artifact.community_id)) {
         row.sample_artifacts.push(bundle.artifact.community_id);
       }
+      topRules.set(key, row);
     }
   }
 
@@ -388,36 +460,36 @@ function summarizeIndex(bundles) {
     complete_bundle_count: bundles.filter((entry) => entry.complete).length,
     incomplete_bundle_count: bundles.filter((entry) => !entry.complete).length,
     publish_safe_count: bundles.filter((entry) => entry.publish_safe).length,
-    blocker_bundle_count: bundles.filter((entry) => Number(entry.decision?.counts?.blocker || 0) > 0).length,
-    warning_bundle_count: bundles.filter((entry) => Number(entry.decision?.counts?.warning || 0) > 0).length,
-    by_artifact_type: countBy(bundles, (entry) => entry.artifact?.type || "unknown"),
-    by_original_artifact_type: countBy(bundles, (entry) => entry.artifact?.original_id ? "linked" : "unlinked"),
-    by_decision_status: countBy(bundles, (entry) => entry.decision?.status || "unknown"),
-    by_artifact_visibility: countBy(bundles, (entry) => entry.artifact_visibility || "unknown"),
-    by_publishing_visibility: countBy(bundles, (entry) => entry.publishing_visibility || "unknown"),
-    by_license: countBy(bundles, (entry) => entry.license || "unknown"),
-    by_risk: countBy(bundles, (entry) => entry.risk || "unknown"),
+    blocker_bundle_count: bundles.filter((entry) => (entry.decision.counts.blocker || 0) > 0).length,
+    warning_bundle_count: bundles.filter((entry) => (entry.decision.counts.warning || 0) > 0).length,
+    by_artifact_type: countBy(bundles, (entry) => entry.artifact.type || "unknown"),
+    by_original_artifact_type: countBy(bundles, (entry) => entry.artifact.original_id ? "linked" : "unlinked"),
+    by_decision_status: countBy(bundles, (entry) => entry.decision.status || "unknown"),
+    by_artifact_visibility: countBy(bundles, (entry) => orElse(entry.artifact_visibility, () => "unknown")),
+    by_publishing_visibility: countBy(bundles, (entry) => orElse(entry.publishing_visibility, () => "unknown")),
+    by_license: countBy(bundles, (entry) => orElse(entry.license, () => "unknown")),
+    by_risk: countBy(bundles, (entry) => orElse(entry.risk, () => "unknown")),
     publishable_declared_count: bundles.filter((entry) => entry.declared_publishable === true).length,
-    total_redaction_count: bundles.reduce((sum, entry) => sum + Number(entry.redaction_count || 0), 0),
-    total_scanned_file_count: bundles.reduce((sum, entry) => sum + Number(entry.scanned_file_count || 0), 0),
-    total_scanned_finding_count: bundles.reduce((sum, entry) => sum + Number(entry.scanned_finding_count || 0), 0),
-    total_finding_count: bundles.reduce((sum, entry) => sum + Number(entry.finding_counts?.total || 0), 0),
+    total_redaction_count: bundles.reduce((sum, entry) => sum + (entry.redaction_count || 0), 0),
+    total_scanned_file_count: bundles.reduce((sum, entry) => sum + (entry.scanned_file_count || 0), 0),
+    total_scanned_finding_count: bundles.reduce((sum, entry) => sum + (entry.scanned_finding_count || 0), 0),
+    total_finding_count: bundles.reduce((sum, entry) => sum + (entry.finding_counts.total || 0), 0),
     top_rules: [...topRules.values()]
-      .sort((left, right) => right.count - left.count || String(left.rule_id || "").localeCompare(String(right.rule_id || "")))
+      .sort((left, right) => right.count - left.count || (left.rule_id || "").localeCompare((right.rule_id || "")))
       .slice(0, 12),
   };
 }
 
-async function maybeReadJson(filePath) {
+async function maybeReadJson<T>(filePath: string): Promise<T | null> {
   try {
     const text = await fs.readFile(filePath, "utf8");
-    return JSON.parse(text);
+    return JSON.parse(text) as T;
   } catch {
     return null;
   }
 }
 
-function firstDefined(...values) {
+function firstDefined<T>(...values: (T | null | undefined | "")[]): T | undefined {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== "") {
       return value;
@@ -426,23 +498,27 @@ function firstDefined(...values) {
   return undefined;
 }
 
-function toPosix(value) {
-  return String(value || "").split(path.sep).join("/");
+function toPosix(value: unknown): string {
+  return String(orElse(value, () => "")).split(path.sep).join("/");
 }
 
-function compareBundleEntries(left, right) {
-  return String(left.artifact?.type || "").localeCompare(String(right.artifact?.type || ""))
-    || String(left.decision?.status || "").localeCompare(String(right.decision?.status || ""))
-    || String(left.artifact?.name || "").localeCompare(String(right.artifact?.name || ""))
-    || String(left.bundle_path || "").localeCompare(String(right.bundle_path || ""));
+function compareBundleEntries(left: BundleSummary, right: BundleSummary): number {
+  return (left.artifact.type || "").localeCompare((right.artifact.type || ""))
+    || (left.decision.status || "").localeCompare((right.decision.status || ""))
+    || (left.artifact.name || "").localeCompare((right.artifact.name || ""))
+    || (left.bundle_path || "").localeCompare((right.bundle_path || ""));
 }
 
-function sortJson(value) {
+function sortJson(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortJson);
-  if (!value || typeof value !== "object") return value;
+  if (!isRecord(value)) return value;
   return Object.fromEntries(
     Object.keys(value)
       .sort()
       .map((key) => [key, sortJson(value[key])]),
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

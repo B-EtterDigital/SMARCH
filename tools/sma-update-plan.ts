@@ -21,7 +21,7 @@ const DEFAULT_MAX_CHECKS = 200;
 const DEFAULT_MAX_JOURNAL = 20;
 const SEMVER_RE = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const HASH_RE = /^[A-Fa-f0-9]{7,128}$/;
-const VERIFICATION_RANK = {
+const VERIFICATION_RANK: Record<string, number> = {
   failed: -1,
   unverified: 0,
   candidate: 1,
@@ -45,9 +45,9 @@ Options:
   --stdout                   Print the generated plan JSON to stdout.
   --dry-run                  Do not write --out. Prints to stdout unless suppressed by caller.
   --compact                  Keep the plan machine-readable but trim large detail arrays.
-  --max-placements <n>       Max impacted placements per import in output. Default: ${DEFAULT_MAX_PLACEMENTS}
-  --max-checks <n>           Max expected checks per import in output. Default: ${DEFAULT_MAX_CHECKS}
-  --max-journal <n>          Max journal events per import in output. Default: ${DEFAULT_MAX_JOURNAL}
+  --max-placements <n>       Max impacted placements per import in output. Default: ${String(DEFAULT_MAX_PLACEMENTS)}
+  --max-checks <n>           Max expected checks per import in output. Default: ${String(DEFAULT_MAX_CHECKS)}
+  --max-journal <n>          Max journal events per import in output. Default: ${String(DEFAULT_MAX_JOURNAL)}
   --help                     Show this help.
 
 Examples:
@@ -57,13 +57,33 @@ Examples:
 `;
 
 type JsonRecord = Record<string, unknown>;
-type PlanIssue = { severity: string; code: string; message: string; [key: string]: unknown };
+interface PlanIssue { severity: string; code: string; message: string; [key: string]: unknown }
 type Placement = PlacementMap["placements"][number];
+type PlacementImport = PlacementMap["imports"][number];
 type LockEntry = ImportLock["selected_builds"][number] | ImportLock["resolved_bricks"][number];
-type ImportRecord = JsonRecord & { import_id: string; artifact_type?: string; artifact_id?: string; artifact_name?: string; source_project?: string; contracts?: JsonRecord };
-type ImportsDocument = { imports?: ImportRecord[] };
-type JournalRecord = JsonRecord & { import_id?: string; created_at?: string; timestamp?: string; event_id?: string };
-type EnvBinding = { name: string; surface: string; required: boolean; bound_to: unknown; source: string };
+interface ImportContracts extends JsonRecord { env?: JsonRecord; env_bindings?: unknown }
+interface ImportRecord extends JsonRecord { import_id: string; artifact_type?: string; artifact_id?: string; artifact_name?: string; source_project?: string; contracts?: ImportContracts; verification?: JsonRecord; status?: string; imported_at?: string; source_status?: string; clone_readiness?: string; install_state?: JsonRecord }
+interface ImportsDocument { imports?: ImportRecord[] }
+interface JournalRecord extends JsonRecord { import_id?: string; created_at?: string; timestamp?: string; event_id?: string; event_type?: string; result?: string; from_version?: string; to_version?: string; rollback_ref?: string }
+interface EnvBinding { name: string; surface: string; required: boolean; bound_to: unknown; source: string }
+interface EnvPlanItem { name: string; surface: string; required: boolean; current_state: string; release_state: string; action: string; bound_to: unknown }
+interface Semver { raw: string; major: number; minor: number; patch: number; prerelease: string }
+interface VersionDelta { kind: string; compare: number; major_changed: boolean }
+interface PlacementImpactSummary { total_count: number; replace_in_place_count: number; already_matches_count: number; manual_count: number; blocked_count: number; drifted_count: number }
+interface ExpectedCheck { kind: string; gate: string; required_status: unknown; source: string; description?: string; command?: string | null; name?: string; current_status?: string }
+interface RollbackSnapshot { import_id: string; current: { release_version: string | null; release_hash: string | null } }
+interface ImportSnapshot {
+  import_id: string;
+  artifact_type: string | null;
+  artifact_id: string | null;
+  artifact_name: string | null;
+  source_project: string | null;
+  import_record: ImportRecord;
+  lock_entry: Partial<LockEntry>;
+  placement_import: Partial<PlacementImport>;
+  placements: Placement[];
+  journal_events: JournalRecord[];
+}
 interface UpdatePlanArgs { target: string; smarchRoot: string; release: string; out: string; stdout: boolean; dryRun: boolean; compact: boolean; importIds: string[]; artifactId: string; artifactType: string; maxPlacements: number; maxChecks: number; maxJournal: number; help?: boolean }
 
 function fail(message: string, code = 1): never {
@@ -109,43 +129,9 @@ function parseArgs(argv: string[]): UpdatePlanArgs {
       continue;
     }
 
-    const next = argv[index + 1];
+    const next = argv.at(index + 1);
     if (next === undefined) fail(`missing value for ${arg}`);
-
-    switch (arg) {
-      case "--target":
-        options.target = path.resolve(next);
-        break;
-      case "--smarch-root":
-        options.smarchRoot = path.resolve(next);
-        break;
-      case "--release":
-        options.release = path.resolve(next);
-        break;
-      case "--out":
-        options.out = path.resolve(next);
-        break;
-      case "--import-id":
-        options.importIds.push(next);
-        break;
-      case "--artifact-id":
-        options.artifactId = next;
-        break;
-      case "--artifact-type":
-        options.artifactType = next;
-        break;
-      case "--max-placements":
-        options.maxPlacements = parsePositiveInt(next, "--max-placements");
-        break;
-      case "--max-checks":
-        options.maxChecks = parsePositiveInt(next, "--max-checks");
-        break;
-      case "--max-journal":
-        options.maxJournal = parsePositiveInt(next, "--max-journal");
-        break;
-      default:
-        fail(`unknown argument: ${arg}`);
-    }
+    applyValueOption(options, arg, next);
 
     index += 1;
   }
@@ -156,6 +142,20 @@ function parseArgs(argv: string[]): UpdatePlanArgs {
   }
 
   return options;
+}
+
+function applyValueOption(options: UpdatePlanArgs, arg: string, next: string): void {
+  const pathField = new Map<string, 'target' | 'smarchRoot' | 'release' | 'out'>([
+    ['--target', 'target'], ['--smarch-root', 'smarchRoot'], ['--release', 'release'], ['--out', 'out'],
+  ]).get(arg);
+  if (pathField !== undefined) { options[pathField] = path.resolve(next); return; }
+  if (arg === '--import-id') { options.importIds.push(next); return; }
+  if (arg === '--artifact-id') { options.artifactId = next; return; }
+  if (arg === '--artifact-type') { options.artifactType = next; return; }
+  if (arg === '--max-placements') { options.maxPlacements = parsePositiveInt(next, arg); return; }
+  if (arg === '--max-checks') { options.maxChecks = parsePositiveInt(next, arg); return; }
+  if (arg === '--max-journal') { options.maxJournal = parsePositiveInt(next, arg); return; }
+  fail(`unknown argument: ${arg}`);
 }
 
 function parsePositiveInt(value: unknown, label: string): number {
@@ -172,10 +172,26 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function safeString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value);
+  if (value instanceof Error) return value.message;
+  if (value === null || value === undefined) return "";
+  return JSON.stringify(value);
+}
+
+function stringOr(value: unknown, fallback: string): string {
+  return isNonEmptyString(value) ? value : fallback;
+}
+
+function nullableString(value: unknown): string | null {
+  return isNonEmptyString(value) ? value : null;
+}
+
 function safeArray<T>(value: readonly T[] | null | undefined): T[];
 function safeArray(value: unknown): unknown[];
-function safeArray<T>(value: readonly T[] | unknown): T[] | unknown[] {
-  return Array.isArray(value) ? [...value] : [];
+function safeArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? Array.from(value as unknown[]) : [];
 }
 
 function uniq<T>(values: T[]): T[] {
@@ -185,7 +201,7 @@ function uniq<T>(values: T[]): T[] {
 function uniqStrings(values: unknown): string[] {
   return uniq(
     safeArray(values)
-      .map((value) => (typeof value === "string" ? value.trim() : String(value || "").trim()))
+      .map((value) => safeString(value).trim())
       .filter(Boolean)
   );
 }
@@ -195,7 +211,7 @@ function incrementCounter(map: Record<string, number>, key: string): void {
 }
 
 function artifactIdAliases(value: unknown): string[] {
-  const raw = String(value || "").trim();
+  const raw = safeString(value).trim();
   if (!raw) return [];
   const aliases = new Set([raw]);
   const parts = raw.split(".");
@@ -212,15 +228,15 @@ function artifactIdsMatch(left: unknown, right: unknown): boolean {
 }
 
 function normalizePath(value: unknown): string {
-  return String(value || "").split(path.sep).join("/");
+  return safeString(value).split(path.sep).join("/");
 }
 
 function sortByDateDesc<T extends JsonRecord>(values: T[], key = "created_at"): T[] {
   return [...values].sort((left, right) => {
     const leftRecord = isObject(left.record) ? left.record : {};
     const rightRecord = isObject(right.record) ? right.record : {};
-    const l = Date.parse(String(left[key] || leftRecord[key] || 0));
-    const r = Date.parse(String(right[key] || rightRecord[key] || 0));
+    const l = Date.parse(safeString((left[key] ?? leftRecord[key]) ?? 0));
+    const r = Date.parse(safeString((right[key] ?? rightRecord[key]) ?? 0));
     return r - l;
   });
 }
@@ -235,25 +251,21 @@ async function pathExists(filePath: string): Promise<boolean> {
 }
 
 async function readJsonFile<T>(filePath: string): Promise<T> {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
 }
 
-async function readJsonLines(filePath: string): Promise<Array<{ line_number: number; record: JournalRecord }>> {
-  const records: Array<{ line_number: number; record: JournalRecord }> = [];
+async function readJsonLines(filePath: string): Promise<{ line_number: number; record: JournalRecord }[]> {
+  const records: { line_number: number; record: JournalRecord }[] = [];
   const lines = (await fs.readFile(filePath, "utf8")).split(/\r?\n/);
   for (let index = 0; index < lines.length; index += 1) {
     const trimmed = lines[index].trim();
     if (!trimmed) continue;
     records.push({
       line_number: index + 1,
-      record: JSON.parse(trimmed)
+      record: JSON.parse(trimmed) as JournalRecord
     });
   }
   return records;
-}
-
-function relativeTo(root: string, targetPath: string): string {
-  return normalizePath(path.relative(root, targetPath));
 }
 
 function sha256(value: string | Buffer): string {
@@ -265,15 +277,15 @@ async function sha256File(filePath: string): Promise<string> {
 }
 
 function verificationRank(value: unknown): number {
-  return VERIFICATION_RANK[String(value || "").toLowerCase()] ?? -1;
+  return VERIFICATION_RANK[safeString(value).toLowerCase()] ?? -1;
 }
 
 function compareVerification(left: unknown, right: unknown): number {
   return verificationRank(left) - verificationRank(right);
 }
 
-function parseSemver(value: unknown) {
-  const trimmed = String(value || "").trim();
+function parseSemver(value: unknown): Semver | null {
+  const trimmed = safeString(value).trim();
   if (!SEMVER_RE.test(trimmed)) return null;
   const [core, pre = ""] = trimmed.split("-", 2);
   const [major, minor, patch] = core.split(".").map((part) => Number.parseInt(part, 10));
@@ -293,7 +305,7 @@ function compareSemver(left: unknown, right: unknown): number {
   return a.prerelease.localeCompare(b.prerelease);
 }
 
-function summarizeVersionDelta(currentVersion: unknown, nextVersion: unknown) {
+function summarizeVersionDelta(currentVersion: unknown, nextVersion: unknown): VersionDelta {
   const current = parseSemver(currentVersion);
   const next = parseSemver(nextVersion);
   if (!current || !next) {
@@ -344,25 +356,25 @@ function pushIssue(issues: PlanIssue[], severity: string, code: string, message:
 }
 
 function resolveRelativeToTarget(targetRoot: string, value: unknown, fallback: string): string {
-  const candidate = String(value || "").trim();
+  const candidate = safeString(value).trim();
   if (!candidate) return fallback;
   return path.isAbsolute(candidate) ? path.resolve(candidate) : path.resolve(targetRoot, candidate);
 }
 
-function toRecordMap<T extends JsonRecord>(values: T[], keyField: string): Map<string, T> {
+function toRecordMap<T>(values: T[], keyFn: (value: T) => unknown): Map<string, T> {
   const map = new Map<string, T>();
   for (const value of safeArray(values)) {
-    const key = value?.[keyField];
+    const key = keyFn(value);
     if (!isNonEmptyString(key)) continue;
     map.set(key, value);
   }
   return map;
 }
 
-function groupBy<T extends JsonRecord>(values: T[], keyField: string): Map<string, T[]> {
+function groupBy<T>(values: T[], keyFn: (value: T) => unknown): Map<string, T[]> {
   const map = new Map<string, T[]>();
   for (const value of safeArray(values)) {
-    const key = value?.[keyField];
+    const key = keyFn(value);
     if (!isNonEmptyString(key)) continue;
     const group = map.get(key);
     if (group) group.push(value);
@@ -381,6 +393,13 @@ function clampItems<T>(values: T[], maxItems: number): { items: T[]; truncated: 
 }
 
 function gatherCurrentEnvBindings(importRecord: ImportRecord, placementsForImport: Placement[]): EnvBinding[] {
+  return mergeEnvBindings([
+    ...importEnvBindings(importRecord),
+    ...placementEnvBindings(placementsForImport),
+  ]);
+}
+
+function importEnvBindings(importRecord: ImportRecord): EnvBinding[] {
   const results: EnvBinding[] = [];
   const contracts = isObject(importRecord.contracts) ? importRecord.contracts : {};
   const importEnv = isObject(contracts.env) ? contracts.env : {};
@@ -400,9 +419,9 @@ function gatherCurrentEnvBindings(importRecord: ImportRecord, placementsForImpor
     if (!isObject(variable) || !isNonEmptyString(variable.name)) continue;
     results.push({
       name: variable.name,
-      surface: variable.surface || variable.scope || "server",
+      surface: stringOr(variable.surface, stringOr(variable.scope, "server")),
       required: requiredSet.has(variable.name),
-      bound_to: variable.bound_to || variable.example || null,
+      bound_to: (variable.bound_to ?? variable.example) ?? null,
       source: "import.contracts.env.variables"
     });
   }
@@ -431,19 +450,27 @@ function gatherCurrentEnvBindings(importRecord: ImportRecord, placementsForImpor
     }
   }
 
+  return results;
+}
+
+function placementEnvBindings(placementsForImport: Placement[]): EnvBinding[] {
+  const results: EnvBinding[] = [];
   for (const placement of placementsForImport) {
     for (const binding of safeArray(placement.env_bindings)) {
       if (!isObject(binding) || !isNonEmptyString(binding.name)) continue;
       results.push({
         name: binding.name,
-        surface: binding.surface || "server",
-        required: Boolean(binding.required),
-        bound_to: binding.bound_to || null,
+        surface: stringOr(binding.surface, "server"),
+        required: binding.required,
+        bound_to: binding.bound_to ?? null,
         source: `placement:${placement.placement_id}`
       });
     }
   }
+  return results;
+}
 
+function mergeEnvBindings(results: EnvBinding[]): EnvBinding[] {
   const merged = new Map<string, EnvBinding>();
   for (const binding of results) {
     const key = `${binding.name}::${binding.surface}`;
@@ -452,8 +479,9 @@ function gatherCurrentEnvBindings(importRecord: ImportRecord, placementsForImpor
       continue;
     }
     const current = merged.get(key);
+    if (!current) continue;
     current.required = current.required || binding.required;
-    current.bound_to = current.bound_to || binding.bound_to || null;
+    current.bound_to = (current.bound_to ?? binding.bound_to) ?? null;
     current.source = uniqStrings([current.source, binding.source]).join(", ");
   }
   return [...merged.values()].sort((left, right) => left.name.localeCompare(right.name));
@@ -463,60 +491,65 @@ function summarizeReleaseCandidate(releaseArtifact: Release) {
   if (!isObject(releaseArtifact) || !isObject(releaseArtifact.release)) return null;
   const release = releaseArtifact.release;
   return {
-    artifact_type: release.artifact_type || null,
-    artifact_id: release.artifact_id || null,
-    release_id: release.release_id || null,
-    version: release.version || null,
-    status: release.status || null,
-    channel: release.channel || null,
-    content_hash: release.content_hash || null,
+    artifact_type: nullableString(release.artifact_type),
+    artifact_id: nullableString(release.artifact_id),
+    release_id: nullableString(release.release_id),
+    version: nullableString(release.version),
+    status: nullableString(release.status),
+    channel: nullableString(release.channel),
+    content_hash: nullableString(release.content_hash),
     breaking: Boolean(release.breaking),
-    verification_status: releaseArtifact?.verification?.status || null,
-    rollback_supported: Boolean(releaseArtifact?.verification?.rollback_supported),
-    source_project: release.source_project || null,
-    required_env: uniqStrings(releaseArtifact?.contracts?.required_env),
-    optional_env: uniqStrings(releaseArtifact?.contracts?.optional_env),
-    forbidden_env: uniqStrings(releaseArtifact?.contracts?.forbidden_env),
-    smoke_commands: uniqStrings(releaseArtifact?.verification?.smoke_commands),
-    manual_steps: uniqStrings(releaseArtifact?.migration?.manual_steps),
-    migration_commands: uniqStrings(releaseArtifact?.migration?.commands),
-    rollback_commands: uniqStrings(releaseArtifact?.rollback?.commands),
-    rollback_notes: releaseArtifact?.rollback?.notes || null,
-    dependency_refs: safeArray(releaseArtifact?.contracts?.dependency_refs)
-      .filter((ref) => isObject(ref) && isNonEmptyString(ref.artifact_id) && isNonEmptyString(ref.artifact_type))
+    verification_status: nullableString(releaseArtifact.verification.status),
+    rollback_supported: Boolean(releaseArtifact.verification.rollback_supported),
+    source_project: nullableString(release.source_project),
+    required_env: uniqStrings(releaseArtifact.contracts.required_env),
+    optional_env: uniqStrings(releaseArtifact.contracts.optional_env),
+    forbidden_env: uniqStrings(releaseArtifact.contracts.forbidden_env),
+    smoke_commands: uniqStrings(releaseArtifact.verification.smoke_commands),
+    manual_steps: uniqStrings(releaseArtifact.migration?.manual_steps),
+    migration_commands: uniqStrings(releaseArtifact.migration?.commands),
+    rollback_commands: uniqStrings(releaseArtifact.rollback?.commands),
+    rollback_notes: nullableString(releaseArtifact.rollback?.notes),
+    dependency_refs: safeArray(releaseArtifact.contracts.dependency_refs)
+      .filter(isObject)
+      .filter((ref) => isNonEmptyString(ref.artifact_id) && isNonEmptyString(ref.artifact_type))
       .map((ref) => ({
         artifact_type: ref.artifact_type,
         artifact_id: ref.artifact_id,
         required: Boolean(ref.required),
-        version_range: ref.version_range || null,
-        release_ref: ref.release_ref || null
+        version_range: nullableString(ref.version_range),
+        release_ref: nullableString(ref.release_ref)
       })),
-    artifacts: safeArray(releaseArtifact?.content?.artifacts)
-      .filter((artifact) => isObject(artifact) && isNonEmptyString(artifact.path))
+    artifacts: safeArray(releaseArtifact.content.artifacts)
+      .filter(isObject)
+      .filter((artifact) => isNonEmptyString(artifact.path))
       .map((artifact) => ({
         path: normalizePath(artifact.path),
-        kind: artifact.kind || "file",
-        sha256: HASH_RE.test(String(artifact.sha256 || "")) ? artifact.sha256 : null
+        kind: stringOr(artifact.kind, "file"),
+        sha256: HASH_RE.test((artifact.sha256 || "")) ? artifact.sha256 : null
       })),
-    included_paths: uniqStrings(releaseArtifact?.content?.included_paths).map((entry) => normalizePath(entry)),
-    checks: safeArray(releaseArtifact?.verification?.checks)
-      .filter((check) => isObject(check) && isNonEmptyString(check.name))
+    included_paths: uniqStrings(releaseArtifact.content.included_paths).map((entry) => normalizePath(entry)),
+    checks: safeArray(releaseArtifact.verification.checks)
+      .filter(isObject)
+      .filter((check) => isNonEmptyString(check.name))
       .map((check) => ({
         name: check.name,
-        status: check.status || "skipped",
-        command: check.command || null,
-        evidence_path: check.evidence_path || null
+        status: stringOr(check.status, "skipped"),
+        command: nullableString(check.command),
+        evidence_path: nullableString(check.evidence_path)
       }))
   };
 }
 
-function releaseAppliesToImport(importSnapshot, releaseSummary) {
+type ReleaseSummary = NonNullable<ReturnType<typeof summarizeReleaseCandidate>> & { raw_contract_hashes?: JsonRecord | null };
+
+function releaseAppliesToImport(importSnapshot: Pick<ImportSnapshot, 'artifact_type' | 'artifact_id'>, releaseSummary: ReleaseSummary | null): boolean {
   if (!releaseSummary) return false;
   return importSnapshot.artifact_type === releaseSummary.artifact_type
     && artifactIdsMatch(importSnapshot.artifact_id, releaseSummary.artifact_id);
 }
 
-function matchReleaseArtifactToPlacement(placement, releaseSummary) {
+function matchReleaseArtifactToPlacement(placement: Placement, releaseSummary: ReleaseSummary | null) {
   if (!releaseSummary) {
     return {
       relation: "no_release",
@@ -530,7 +563,7 @@ function matchReleaseArtifactToPlacement(placement, releaseSummary) {
     if (artifact.path === sourcePath) {
       return {
         relation: "exact_path",
-        candidate_sha256: artifact.sha256 || null,
+        candidate_sha256: artifact.sha256 ?? null,
         included: true,
         artifact_kind: artifact.kind
       };
@@ -563,69 +596,35 @@ function matchReleaseArtifactToPlacement(placement, releaseSummary) {
   };
 }
 
-async function collectPlacementImpact({ targetRoot, placement, releaseSummary, trustPolicy }) {
+async function collectPlacementImpact({ targetRoot, placement, releaseSummary, trustPolicy }: { targetRoot: string; placement: Placement; releaseSummary: ReleaseSummary | null; trustPolicy?: unknown }) {
+  const policy = isObject(trustPolicy) ? trustPolicy : {};
   const targetAbsolutePath = path.resolve(targetRoot, placement.target_path || "");
   const exists = await pathExists(targetAbsolutePath);
   const currentHash = exists ? await sha256File(targetAbsolutePath) : null;
-  const recordedHash = placement.target_hash || null;
-  const sourceHash = placement.source_hash || null;
+  const recordedHash = placement.target_hash ?? null;
+  const sourceHash = placement.source_hash ?? null;
   const drifted = Boolean(exists && recordedHash && currentHash && currentHash !== recordedHash);
   const localOverrides = safeArray(placement.local_overrides);
   const overrideCount = localOverrides.length;
-  const requiredAdapterPoints = safeArray(placement.adapter_points).filter((point) => point?.required);
+  const requiredAdapterPoints = safeArray(placement.adapter_points).filter(isObject).filter((point) => point.required);
   const pendingAdapterCount = requiredAdapterPoints.filter((point) => point.status !== "bound").length;
-  const ownership = isObject(placement.ownership) ? placement.ownership : {};
-  const replaceable = ownership.replaceable !== false;
-  const managed = String(ownership.mode || "").toLowerCase() === "managed";
+  const ownership = placement.ownership;
+  const replaceable = ownership.replaceable;
+  const managed = ownership.mode.toLowerCase() === "managed";
   const releaseMatch = matchReleaseArtifactToPlacement(placement, releaseSummary);
-  const reasons = [];
-  let impact = "verify_only";
-
-  if (!exists) {
-    impact = "blocked";
-    reasons.push("target_missing");
-  }
-  if (drifted) {
-    impact = "manual_review";
-    reasons.push("target_drifted");
-  }
-  if (overrideCount > 0) {
-    impact = "manual_review";
-    reasons.push("local_overrides");
-  }
-  if (!managed || !replaceable) {
-    if (impact !== "blocked") impact = "manual_review";
-    reasons.push("non_replaceable_ownership");
-  }
-  if (pendingAdapterCount > 0) {
-    if (impact !== "blocked") impact = "manual_review";
-    reasons.push("pending_adapter_points");
-  }
-  if (releaseSummary) {
-    if (releaseMatch.included === false) {
-      if (impact !== "blocked") impact = "manual_review";
-      reasons.push("placement_not_in_release");
-    } else if (impact === "verify_only") {
-      impact = "replace_in_place";
-    }
-    if (releaseMatch.candidate_sha256 && currentHash && currentHash === releaseMatch.candidate_sha256) {
-      impact = "already_matches_candidate";
-      reasons.push("candidate_hash_matches_current");
-    }
-  }
-  if (trustPolicy?.allow_local_overrides === false && overrideCount > 0) {
-    impact = "blocked";
-    reasons.push("trust_policy_blocks_local_overrides");
-  }
+  const { impact, reasons } = classifyPlacementImpact({
+    exists, drifted, overrideCount, managed, replaceable, pendingAdapterCount,
+    releaseSummary, releaseMatch, currentHash, allowLocalOverrides: policy.allow_local_overrides,
+  });
 
   return {
     placement_id: placement.placement_id || null,
     target_path: placement.target_path || null,
-    kind: placement.kind || null,
+    kind: placement.kind,
     exists,
     ownership: {
-      mode: ownership.mode || null,
-      owner: ownership.owner || null,
+      mode: nullableString(ownership.mode),
+      owner: nullableString(ownership.owner),
       replaceable
     },
     current_hash: currentHash,
@@ -637,9 +636,56 @@ async function collectPlacementImpact({ targetRoot, placement, releaseSummary, t
     release_match: releaseMatch,
     impact,
     reasons: uniqStrings(reasons),
-    local_override_kinds: uniqStrings(localOverrides.map((override) => override?.kind).filter(Boolean))
+    local_override_kinds: uniqStrings(localOverrides.filter(isObject).map((override) => override.kind).filter(Boolean))
   };
 }
+
+function classifyPlacementImpact(input: {
+  exists: boolean; drifted: boolean; overrideCount: number; managed: boolean; replaceable: boolean;
+  pendingAdapterCount: number; releaseSummary: ReleaseSummary | null;
+  releaseMatch: ReturnType<typeof matchReleaseArtifactToPlacement>; currentHash: string | null;
+  allowLocalOverrides: unknown;
+}): { impact: string; reasons: string[] } {
+  const reasons: string[] = [];
+  let impact = "verify_only";
+  if (!input.exists) { impact = "blocked"; reasons.push("target_missing"); }
+  if (input.drifted) { impact = "manual_review"; reasons.push("target_drifted"); }
+  if (input.overrideCount > 0) { impact = "manual_review"; reasons.push("local_overrides"); }
+  if (!input.managed || !input.replaceable) {
+    if (impact !== "blocked") impact = "manual_review";
+    reasons.push("non_replaceable_ownership");
+  }
+  if (input.pendingAdapterCount > 0) {
+    if (impact !== "blocked") impact = "manual_review";
+    reasons.push("pending_adapter_points");
+  }
+  ({ impact } = applyReleaseImpact(input, impact, reasons));
+  if (input.allowLocalOverrides === false && input.overrideCount > 0) {
+    impact = "blocked";
+    reasons.push("trust_policy_blocks_local_overrides");
+  }
+  return { impact, reasons };
+}
+
+function applyReleaseImpact(
+  input: Parameters<typeof classifyPlacementImpact>[0],
+  currentImpact: string,
+  reasons: string[],
+): { impact: string } {
+  if (!input.releaseSummary) return { impact: currentImpact };
+  let impact = currentImpact;
+  if (!input.releaseMatch.included) {
+    if (impact !== "blocked") impact = "manual_review";
+    reasons.push("placement_not_in_release");
+  } else if (impact === "verify_only") impact = "replace_in_place";
+  if (input.releaseMatch.candidate_sha256 && input.currentHash === input.releaseMatch.candidate_sha256) {
+    impact = "already_matches_candidate";
+    reasons.push("candidate_hash_matches_current");
+  }
+  return { impact };
+}
+
+type PlacementImpact = Awaited<ReturnType<typeof collectPlacementImpact>>;
 
 function collectTrustPolicyIssues({
   importSnapshot,
@@ -649,151 +695,86 @@ function collectTrustPolicyIssues({
   envSummary,
   contractDelta,
   placementImpactSummary
-}) {
-  const issues = [];
-  const trustPolicy = isObject(buildLock?.trust_policy) ? buildLock.trust_policy : {};
-  const verificationPolicy = isObject(buildLock?.verification_policy) ? buildLock.verification_policy : {};
-
-  if (Number(lockEntry?.local_overrides || 0) > 0 && trustPolicy.allow_local_overrides === false) {
-    pushIssue(
-      issues,
-      "error",
-      "local_overrides_disallowed",
-      "Local overrides are present but trust_policy.allow_local_overrides is false",
-      { import_id: importSnapshot.import_id, local_overrides: lockEntry.local_overrides }
-    );
-  }
-
-  if (envSummary.missing_required.length > 0 && verificationPolicy.fail_on_missing_env) {
-    pushIssue(
-      issues,
-      "error",
-      "missing_required_env",
-      "Required env bindings are missing for this import",
-      { import_id: importSnapshot.import_id, env_names: envSummary.missing_required }
-    );
-  } else if (envSummary.missing_required.length > 0) {
-    pushIssue(
-      issues,
-      "warning",
-      "missing_required_env",
-      "Required env bindings are missing and must be set before update",
-      { import_id: importSnapshot.import_id, env_names: envSummary.missing_required }
-    );
-  }
-
-  if (placementImpactSummary.drifted_count > 0) {
-    pushIssue(
-      issues,
-      trustPolicy.allow_local_overrides === false ? "error" : "warning",
-      "placement_drift",
-      "One or more managed placements have drifted from their recorded target hash",
-      { import_id: importSnapshot.import_id, drifted_count: placementImpactSummary.drifted_count }
-    );
-  }
-
-  if (placementImpactSummary.blocked_count > 0) {
-    pushIssue(
-      issues,
-      "error",
-      "blocked_placements",
-      "One or more placements cannot be safely replaced automatically",
-      { import_id: importSnapshot.import_id, blocked_count: placementImpactSummary.blocked_count }
-    );
-  }
-
-  if (releaseSummary) {
-    const allowedStatuses = uniqStrings(trustPolicy.allowed_release_statuses);
-    if (allowedStatuses.length > 0 && !allowedStatuses.includes(releaseSummary.status)) {
-      pushIssue(
-        issues,
-        "error",
-        "release_status_disallowed",
-        `Release status "${releaseSummary.status}" is not allowed by trust policy`,
-        { import_id: importSnapshot.import_id, allowed_statuses: allowedStatuses }
-      );
-    }
-
-    if (releaseSummary.status === "yanked" && trustPolicy.fail_on_yanked_release !== false) {
-      pushIssue(
-        issues,
-        "error",
-        "yanked_release",
-        "Trust policy blocks updates to yanked releases",
-        { import_id: importSnapshot.import_id }
-      );
-    }
-
-    if (trustPolicy.fail_on_breaking_upgrade !== false && releaseSummary.breaking) {
-      pushIssue(
-        issues,
-        "error",
-        "breaking_upgrade",
-        "Release is marked as breaking and trust policy blocks automatic breaking upgrades",
-        { import_id: importSnapshot.import_id, release_version: releaseSummary.version }
-      );
-    }
-
-    if (isNonEmptyString(trustPolicy.minimum_verification_status)
-        && compareVerification(releaseSummary.verification_status, trustPolicy.minimum_verification_status) < 0) {
-      pushIssue(
-        issues,
-        "error",
-        "verification_below_policy",
-        `Release verification status "${releaseSummary.verification_status || "unverified"}" is below minimum "${trustPolicy.minimum_verification_status}"`,
-        {
-          import_id: importSnapshot.import_id,
-          minimum_verification_status: trustPolicy.minimum_verification_status
-        }
-      );
-    }
-
-    if (trustPolicy.require_contract_hashes) {
-      const hashes = isObject(releaseSummary.raw_contract_hashes) ? releaseSummary.raw_contract_hashes : null;
-      if (!hashes || Object.keys(hashes).length === 0) {
-        pushIssue(
-          issues,
-          "error",
-          "missing_contract_hashes",
-          "Trust policy requires release contract hashes, but none were provided",
-          { import_id: importSnapshot.import_id }
-        );
-      }
-    }
-
-    if (verificationPolicy.fail_on_contract_delta && contractDelta.changed) {
-      pushIssue(
-        issues,
-        "error",
-        "contract_delta",
-        "Release changes env contract expectations and verification policy blocks contract deltas",
-        { import_id: importSnapshot.import_id, delta: contractDelta }
-      );
-    } else if (contractDelta.changed) {
-      pushIssue(
-        issues,
-        "warning",
-        "contract_delta",
-        "Release changes env contract expectations and needs review",
-        { import_id: importSnapshot.import_id, delta: contractDelta }
-      );
-    }
-  }
-
+}: {
+  importSnapshot: ImportSnapshot;
+  releaseSummary: ReleaseSummary | null;
+  lockEntry: ImportSnapshot['lock_entry'];
+  buildLock: ImportLock;
+  envSummary: ReturnType<typeof buildEnvPlan>;
+  contractDelta: ReturnType<typeof summarizeContractDelta>;
+  placementImpactSummary: PlacementImpactSummary;
+}): PlanIssue[] {
+  const issues: PlanIssue[] = [];
+  collectInstalledTrustIssues(issues, importSnapshot, lockEntry, buildLock, envSummary, placementImpactSummary);
+  if (releaseSummary) collectReleaseTrustIssues(issues, importSnapshot.import_id, releaseSummary, buildLock, contractDelta);
   return issues;
 }
 
-function compareCurrentAlignment(importSnapshot) {
-  const importRecord = isObject(importSnapshot?.import_record) ? importSnapshot.import_record : {};
-  const lockEntry = isObject(importSnapshot?.lock_entry) ? importSnapshot.lock_entry : {};
-  const placementImport = isObject(importSnapshot?.placement_import) ? importSnapshot.placement_import : {};
+function collectInstalledTrustIssues(
+  issues: PlanIssue[], snapshot: ImportSnapshot, lockEntry: ImportSnapshot['lock_entry'], buildLock: ImportLock,
+  envSummary: ReturnType<typeof buildEnvPlan>, impact: PlacementImpactSummary,
+): void {
+  const { trust_policy: trust, verification_policy: verification } = buildLock;
+  if ((lockEntry.local_overrides ?? 0) > 0 && !trust.allow_local_overrides) {
+    pushIssue(issues, "error", "local_overrides_disallowed", "Local overrides are present but trust_policy.allow_local_overrides is false", { import_id: snapshot.import_id, local_overrides: lockEntry.local_overrides });
+  }
+  if (envSummary.missing_required.length > 0) {
+    const severity = verification.fail_on_missing_env ? "error" : "warning";
+    const message = verification.fail_on_missing_env ? "Required env bindings are missing for this import" : "Required env bindings are missing and must be set before update";
+    pushIssue(issues, severity, "missing_required_env", message, { import_id: snapshot.import_id, env_names: envSummary.missing_required });
+  }
+  if (impact.drifted_count > 0) {
+    pushIssue(issues, trust.allow_local_overrides ? "warning" : "error", "placement_drift", "One or more managed placements have drifted from their recorded target hash", { import_id: snapshot.import_id, drifted_count: impact.drifted_count });
+  }
+  if (impact.blocked_count > 0) {
+    pushIssue(issues, "error", "blocked_placements", "One or more placements cannot be safely replaced automatically", { import_id: snapshot.import_id, blocked_count: impact.blocked_count });
+  }
+}
 
-  const lockVsPlacement: Record<string, any> = {
+function collectReleaseTrustIssues(
+  issues: PlanIssue[], importId: string, release: ReleaseSummary, buildLock: ImportLock,
+  contractDelta: ReturnType<typeof summarizeContractDelta>,
+): void {
+  const trust = buildLock.trust_policy;
+  const allowedStatuses = uniqStrings(trust.allowed_release_statuses);
+  if (allowedStatuses.length > 0 && (!release.status || !allowedStatuses.includes(release.status))) {
+    pushIssue(issues, "error", "release_status_disallowed", `Release status "${release.status ?? ""}" is not allowed by trust policy`, { import_id: importId, allowed_statuses: allowedStatuses });
+  }
+  if (release.status === "yanked" && trust.fail_on_yanked_release) pushIssue(issues, "error", "yanked_release", "Trust policy blocks updates to yanked releases", { import_id: importId });
+  if (trust.fail_on_breaking_upgrade && release.breaking) pushIssue(issues, "error", "breaking_upgrade", "Release is marked as breaking and trust policy blocks automatic breaking upgrades", { import_id: importId, release_version: release.version });
+  collectReleaseVerificationIssues(issues, importId, release, buildLock, contractDelta);
+}
+
+function collectReleaseVerificationIssues(
+  issues: PlanIssue[], importId: string, release: ReleaseSummary, buildLock: ImportLock,
+  contractDelta: ReturnType<typeof summarizeContractDelta>,
+): void {
+  const trust = buildLock.trust_policy;
+  const minimum = trust.minimum_verification_status;
+  if (minimum && compareVerification(release.verification_status, minimum) < 0) {
+    pushIssue(issues, "error", "verification_below_policy", `Release verification status "${release.verification_status ?? "unverified"}" is below minimum "${minimum}"`, { import_id: importId, minimum_verification_status: minimum });
+  }
+  const hashes = isObject(release.raw_contract_hashes) ? release.raw_contract_hashes : null;
+  if (trust.require_contract_hashes && (!hashes || Object.keys(hashes).length === 0)) {
+    pushIssue(issues, "error", "missing_contract_hashes", "Trust policy requires release contract hashes, but none were provided", { import_id: importId });
+  }
+  if (!contractDelta.changed) return;
+  const blocked = buildLock.verification_policy.fail_on_contract_delta;
+  const message = blocked ? "Release changes env contract expectations and verification policy blocks contract deltas" : "Release changes env contract expectations and needs review";
+  pushIssue(issues, blocked ? "error" : "warning", "contract_delta", message, { import_id: importId, delta: contractDelta });
+}
+
+function compareCurrentAlignment(importSnapshot: ImportSnapshot) {
+  const importRecord = importSnapshot.import_record;
+  const lockEntry = importSnapshot.lock_entry;
+  const placementImport = importSnapshot.placement_import;
+
+  const lockVsPlacement: JsonRecord = {
     comparable: Object.keys(lockEntry).length > 0 && Object.keys(placementImport).length > 0,
-    artifact_type_match: lockEntry.artifact_type && placementImport.artifact_type ? lockEntry.artifact_type === placementImport.artifact_type : null,
-    artifact_id_match: lockEntry.artifact_id && placementImport.artifact_id ? artifactIdsMatch(lockEntry.artifact_id, placementImport.artifact_id) : null,
-    release_version_match: lockEntry.release_version && placementImport.release_version ? lockEntry.release_version === placementImport.release_version : null,
-    release_hash_match: lockEntry.release_hash && placementImport.release_hash ? lockEntry.release_hash === placementImport.release_hash : null
+    artifact_type_match: compareOptional(lockEntry.artifact_type, placementImport.artifact_type),
+    artifact_id_match: compareOptional(lockEntry.artifact_id, placementImport.artifact_id, artifactIdsMatch),
+    release_version_match: compareOptional(lockEntry.release_version, placementImport.release_version),
+    release_hash_match: compareOptional(lockEntry.release_hash, placementImport.release_hash)
   };
   const comparableFlags = [
     lockVsPlacement.artifact_type_match,
@@ -806,30 +787,36 @@ function compareCurrentAlignment(importSnapshot) {
   return {
     import_vs_lock: {
       comparable: Object.keys(importRecord).length > 0 && Object.keys(lockEntry).length > 0,
-      artifact_type_match: importRecord.artifact_type && lockEntry.artifact_type ? importRecord.artifact_type === lockEntry.artifact_type : null,
-      artifact_id_match: importRecord.artifact_id && lockEntry.artifact_id ? artifactIdsMatch(importRecord.artifact_id, lockEntry.artifact_id) : null
+      artifact_type_match: compareOptional(importRecord.artifact_type, lockEntry.artifact_type),
+      artifact_id_match: compareOptional(importRecord.artifact_id, lockEntry.artifact_id, artifactIdsMatch)
     },
     lock_vs_placement: lockVsPlacement
   };
 }
 
-function createBuildGraphContext(buildLock) {
-  const selectedBuilds = safeArray(buildLock?.selected_builds);
-  const resolvedBricks = safeArray(buildLock?.resolved_bricks);
-  const graphNodes = safeArray(buildLock?.frozen_dependency_graph?.nodes);
-  const graphEdges = safeArray(buildLock?.frozen_dependency_graph?.edges);
-  const selectedBuildsById = toRecordMap(selectedBuilds, "import_id");
-  const resolvedBricksById = toRecordMap(resolvedBricks, "import_id");
-  const nodeById = toRecordMap(graphNodes, "node_id");
-  const outgoing = new Map();
-  const incoming = new Map();
+function compareOptional(left: unknown, right: unknown, matcher: (a: unknown, b: unknown) => boolean = (a, b) => a === b): boolean | null {
+  return left && right ? matcher(left, right) : null;
+}
+
+function createBuildGraphContext(buildLock: ImportLock) {
+  const selectedBuilds = safeArray(buildLock.selected_builds);
+  const resolvedBricks = safeArray(buildLock.resolved_bricks);
+  const graphNodes = safeArray(buildLock.frozen_dependency_graph.nodes);
+  const graphEdges = safeArray(buildLock.frozen_dependency_graph.edges);
+  const selectedBuildsById = toRecordMap(selectedBuilds, (entry) => entry.import_id);
+  const resolvedBricksById = toRecordMap(resolvedBricks, (entry) => entry.import_id);
+  const nodeById = toRecordMap(graphNodes, (entry) => entry.node_id);
+  const outgoing = new Map<string, typeof graphEdges>();
+  const incoming = new Map<string, typeof graphEdges>();
 
   for (const edge of graphEdges) {
     if (!isObject(edge) || !isNonEmptyString(edge.from) || !isNonEmptyString(edge.to)) continue;
-    if (!outgoing.has(edge.from)) outgoing.set(edge.from, []);
-    if (!incoming.has(edge.to)) incoming.set(edge.to, []);
-    outgoing.get(edge.from).push(edge);
-    incoming.get(edge.to).push(edge);
+    const outgoingEdges = outgoing.get(edge.from) ?? [];
+    outgoingEdges.push(edge);
+    outgoing.set(edge.from, outgoingEdges);
+    const incomingEdges = incoming.get(edge.to) ?? [];
+    incomingEdges.push(edge);
+    incoming.set(edge.to, incomingEdges);
   }
 
   return {
@@ -845,10 +832,12 @@ function createBuildGraphContext(buildLock) {
   };
 }
 
-function collectBuildContext(importSnapshot, buildGraph) {
+type BuildGraphContext = ReturnType<typeof createBuildGraphContext>;
+
+function collectBuildContext(importSnapshot: ImportSnapshot, buildGraph: BuildGraphContext) {
   const importId = importSnapshot.import_id;
-  const selectedBuildEntry = buildGraph.selectedBuildsById.get(importId) || null;
-  const resolvedBrickEntry = buildGraph.resolvedBricksById.get(importId) || null;
+  const selectedBuildEntry = buildGraph.selectedBuildsById.get(importId) ?? null;
+  const resolvedBrickEntry = buildGraph.resolvedBricksById.get(importId) ?? null;
   const role = selectedBuildEntry
     ? "selected_build"
     : resolvedBrickEntry
@@ -873,52 +862,45 @@ function collectBuildContext(importSnapshot, buildGraph) {
     role,
     graph_node_present: buildGraph.nodeById.has(importId),
     selected_build_import_ids: uniqueParentBuildIds,
-    selected_build_artifacts: uniqueParentBuildIds.map((buildImportId) => {
-      const entry = buildGraph.selectedBuildsById.get(buildImportId) || buildGraph.nodeById.get(buildImportId) || {};
-      return {
-        import_id: buildImportId,
-        artifact_id: entry.artifact_id || null,
-        verification_status: entry.verification_status || null,
-        trust_tier: entry.trust_tier || null
-      };
-    }),
+    selected_build_artifacts: uniqueParentBuildIds.map((buildImportId) => graphArtifact(buildImportId, buildGraph, "build")),
     resolved_brick_import_ids: role === "selected_build"
       ? resolvedBrickIds
       : resolvedBrickEntry
         ? [importId]
         : [],
     resolved_brick_artifacts: (role === "selected_build" ? resolvedBrickIds : resolvedBrickEntry ? [importId] : [])
-      .map((brickImportId) => {
-        const entry = buildGraph.resolvedBricksById.get(brickImportId) || buildGraph.nodeById.get(brickImportId) || {};
-        return {
-          import_id: brickImportId,
-          artifact_id: entry.artifact_id || null,
-          verification_status: entry.verification_status || null,
-          trust_tier: entry.trust_tier || null
-        };
-      }),
+      .map((brickImportId) => graphArtifact(brickImportId, buildGraph, "brick")),
     direct_dependency_import_ids: uniqStrings(directDependencies.map((edge) => edge.to)),
     direct_dependent_import_ids: uniqStrings(directDependents.map((edge) => edge.from)),
     graph_relations: {
-      outgoing: directDependencies.map((edge) => ({ relation: edge.relation || null, to: edge.to })),
-      incoming: directDependents.map((edge) => ({ relation: edge.relation || null, from: edge.from }))
+      outgoing: directDependencies.map((edge) => ({ relation: edge.relation, to: edge.to })),
+      incoming: directDependents.map((edge) => ({ relation: edge.relation, from: edge.from }))
     }
   };
 }
 
-function summarizeReleaseCompatibility({ importSnapshot, releaseSummary, buildLock, placementImpacts, versionDelta }) {
-  const placementRelations: Record<string, any> = {};
-  for (const placement of placementImpacts) incrementCounter(placementRelations, placement?.release_match?.relation || "no_release");
-  const minimumVerificationStatus = buildLock?.trust_policy?.minimum_verification_status || null;
-  const contractHashesPresent = Boolean(
-    isObject(releaseSummary?.raw_contract_hashes) && Object.keys(releaseSummary.raw_contract_hashes).length > 0
-  );
+function graphArtifact(importId: string, graph: BuildGraphContext, kind: "build" | "brick") {
+  const entry = kind === "build" ? graph.selectedBuildsById.get(importId) : graph.resolvedBricksById.get(importId);
+  const node = graph.nodeById.get(importId);
+  return {
+    import_id: importId,
+    artifact_id: entry?.artifact_id ?? node?.artifact_id ?? null,
+    verification_status: entry?.verification_status ?? null,
+    trust_tier: entry?.trust_tier ?? null
+  };
+}
+
+function summarizeReleaseCompatibility({ importSnapshot, releaseSummary, buildLock, placementImpacts, versionDelta }: { importSnapshot: ImportSnapshot; releaseSummary: ReleaseSummary | null; buildLock: ImportLock; placementImpacts: PlacementImpact[]; versionDelta: VersionDelta }) {
+  const placementRelations: Record<string, number> = {};
+  for (const placement of placementImpacts) incrementCounter(placementRelations, placement.release_match.relation || "no_release");
+  const minimumVerificationStatus = buildLock.trust_policy.minimum_verification_status ?? null;
+  const contractHashesPresent = (isObject(releaseSummary?.raw_contract_hashes) && Object.keys(releaseSummary.raw_contract_hashes).length > 0);
   return {
     current_alignment: compareCurrentAlignment(importSnapshot),
     candidate_alignment: releaseSummary ? {
       artifact_match: releaseAppliesToImport(importSnapshot, releaseSummary),
-      allowed_status: uniqStrings(buildLock?.trust_policy?.allowed_release_statuses).length > 0
-        ? uniqStrings(buildLock?.trust_policy?.allowed_release_statuses).includes(releaseSummary.status)
+      allowed_status: uniqStrings(buildLock.trust_policy.allowed_release_statuses).length > 0
+        ? Boolean(releaseSummary.status && uniqStrings(buildLock.trust_policy.allowed_release_statuses).includes(releaseSummary.status))
         : null,
       minimum_verification_status: minimumVerificationStatus,
       meets_minimum_verification: minimumVerificationStatus
@@ -942,11 +924,11 @@ function summarizeReleaseCompatibility({ importSnapshot, releaseSummary, buildLo
   };
 }
 
-function buildEnvPlan(currentBindings, releaseSummary) {
+function buildEnvPlan(currentBindings: EnvBinding[], releaseSummary: ReleaseSummary | null) {
   const releaseRequired = new Set(uniqStrings(releaseSummary?.required_env));
   const releaseOptional = new Set(uniqStrings(releaseSummary?.optional_env));
   const releaseForbidden = new Set(uniqStrings(releaseSummary?.forbidden_env));
-  const currentNames = new Set<string>(currentBindings.map((binding) => binding.name) as string[]);
+  const currentNames = new Set<string>(currentBindings.map((binding) => binding.name));
   const allNames = new Set<string>([
     ...currentNames,
     ...releaseRequired,
@@ -954,38 +936,9 @@ function buildEnvPlan(currentBindings, releaseSummary) {
     ...releaseForbidden
   ]);
 
-  const items = [];
-  for (const name of [...allNames].sort((left, right) => left.localeCompare(right))) {
-    const current = currentBindings.filter((binding) => binding.name === name);
-    const envValue = process.env[name];
-    const present = isNonEmptyString(envValue) || current.some((binding) => isNonEmptyString(binding.bound_to));
-    const releaseState = releaseForbidden.has(name)
-      ? "forbidden"
-      : releaseRequired.has(name)
-        ? "required"
-        : releaseOptional.has(name)
-          ? "optional"
-          : releaseSummary
-            ? "removed"
-            : "unknown";
-
-    let action = "none";
-    if (releaseState === "required" && !present) action = "set_before_update";
-    else if (releaseState === "forbidden" && present) action = "remove_before_update";
-    else if (releaseState === "removed" && current.length > 0) action = "review_unused_binding";
-    else if (releaseState === "required" || releaseState === "optional") action = "verify_binding";
-    else if (!releaseSummary && current.length > 0) action = current.some((binding) => binding.required) && !present ? "set_before_update" : "verify_binding";
-
-    items.push({
-      name,
-      surface: current[0]?.surface || "server",
-      required: current.some((binding) => binding.required) || releaseState === "required",
-      current_state: present ? "present" : current.length > 0 ? "missing" : "undeclared",
-      release_state: releaseState,
-      action,
-      bound_to: current.find((binding) => binding.bound_to)?.bound_to || null
-    });
-  }
+  const sets = { required: releaseRequired, optional: releaseOptional, forbidden: releaseForbidden };
+  const items = [...allNames].sort((left, right) => left.localeCompare(right))
+    .map((name) => buildEnvPlanItem(name, currentBindings, sets, Boolean(releaseSummary)));
 
   return {
     items,
@@ -996,7 +949,43 @@ function buildEnvPlan(currentBindings, releaseSummary) {
   };
 }
 
-function summarizeContractDelta(importRecord, releaseSummary) {
+function buildEnvPlanItem(
+  name: string,
+  bindings: EnvBinding[],
+  sets: { required: Set<string>; optional: Set<string>; forbidden: Set<string> },
+  hasRelease: boolean,
+): EnvPlanItem {
+  const current = bindings.filter((binding) => binding.name === name);
+  const present = isNonEmptyString(process.env[name]) || current.some((binding) => isNonEmptyString(binding.bound_to));
+  const releaseState = releaseEnvState(name, sets, hasRelease);
+  return {
+    name,
+    surface: current.at(0)?.surface ?? "server",
+    required: current.some((binding) => binding.required) || releaseState === "required",
+    current_state: present ? "present" : current.length > 0 ? "missing" : "undeclared",
+    release_state: releaseState,
+    action: envPlanAction(releaseState, present, current, hasRelease),
+    bound_to: current.find((binding) => binding.bound_to)?.bound_to ?? null,
+  };
+}
+
+function releaseEnvState(name: string, sets: { required: Set<string>; optional: Set<string>; forbidden: Set<string> }, hasRelease: boolean): string {
+  if (sets.forbidden.has(name)) return "forbidden";
+  if (sets.required.has(name)) return "required";
+  if (sets.optional.has(name)) return "optional";
+  return hasRelease ? "removed" : "unknown";
+}
+
+function envPlanAction(state: string, present: boolean, current: EnvBinding[], hasRelease: boolean): string {
+  if (state === "required" && !present) return "set_before_update";
+  if (state === "forbidden" && present) return "remove_before_update";
+  if (state === "removed" && current.length > 0) return "review_unused_binding";
+  if (state === "required" || state === "optional") return "verify_binding";
+  if (!hasRelease && current.length > 0) return current.some((binding) => binding.required) && !present ? "set_before_update" : "verify_binding";
+  return "none";
+}
+
+function summarizeContractDelta(importRecord: ImportRecord, releaseSummary: ReleaseSummary | null) {
   if (!releaseSummary) {
     return {
       changed: false,
@@ -1007,15 +996,15 @@ function summarizeContractDelta(importRecord, releaseSummary) {
     };
   }
 
-  const envName = (value) => {
+  const envName = (value: unknown): string => {
     if (typeof value === "string") return value;
     if (isObject(value) && isNonEmptyString(value.name)) return value.name;
     return "";
   };
 
-  const currentRequired = new Set(uniqStrings(safeArray(importRecord?.contracts?.env?.required).map(envName)));
-  const currentDeclared = new Set(uniqStrings(importRecord?.contracts?.env_bindings));
-  for (const variable of safeArray(importRecord?.contracts?.env?.variables)) {
+  const currentRequired = new Set(uniqStrings(safeArray(importRecord.contracts?.env?.required).map(envName)));
+  const currentDeclared = new Set(uniqStrings(importRecord.contracts?.env_bindings));
+  for (const variable of safeArray(importRecord.contracts?.env?.variables)) {
     const name = envName(variable);
     if (name) currentDeclared.add(name);
   }
@@ -1038,127 +1027,89 @@ function summarizeContractDelta(importRecord, releaseSummary) {
   };
 }
 
-function buildExpectedChecks({ importRecord, buildLock, releaseSummary, maxChecks }) {
-  const verificationPolicy = isObject(buildLock?.verification_policy) ? buildLock.verification_policy : {};
-  const checks = [];
-  const requiredStatus = verificationPolicy.required_check_status || "warning";
-
-  if (verificationPolicy.run_import_resolution) {
-    checks.push({
-      kind: "import_resolution",
-      gate: "post_update",
-      required_status: requiredStatus,
-      source: "lock.verification_policy",
-      description: "Resolve imports and runtime providers against the updated placements"
-    });
-  }
-  if (verificationPolicy.run_env_truthing) {
-    checks.push({
-      kind: "env_truthing",
-      gate: "pre_update",
-      required_status: requiredStatus,
-      source: "lock.verification_policy",
-      description: "Verify required env bindings are present and forbidden env bindings are absent"
-    });
-  }
-  if (verificationPolicy.run_rls_truthing) {
-    checks.push({
-      kind: "rls_truthing",
-      gate: "post_update",
-      required_status: requiredStatus,
-      source: "lock.verification_policy",
-      description: "Re-check RLS and authz assumptions after the update"
-    });
-  }
-
-  if (verificationPolicy.run_declared_tests) {
-    for (const command of uniqStrings(importRecord?.verification?.test_commands)) {
-      checks.push({
-        kind: "declared_test_command",
-        gate: "post_update",
-        required_status: requiredStatus,
-        source: "import.verification.test_commands",
-        command
-      });
-    }
-  }
-
-  for (const command of uniqStrings(releaseSummary?.smoke_commands)) {
-    checks.push({
-      kind: "release_smoke_command",
-      gate: "post_update",
-      required_status: requiredStatus,
-      source: "release.verification.smoke_commands",
-      command
-    });
-  }
-
-  for (const check of safeArray(releaseSummary?.checks)) {
-    checks.push({
-      kind: "release_check",
-      gate: "post_update",
-      required_status: requiredStatus,
-      source: "release.verification.checks",
-      name: check.name,
-      command: check.command || null,
-      current_status: check.status
-    });
-  }
-
-  for (const item of uniqStrings(buildLock?.verification_policy?.post_install_checks)) {
-    checks.push({
-      kind: "post_install_checklist",
-      gate: "manual",
-      required_status: "warning",
-      source: "lock.verification_policy.post_install_checks",
-      description: item
-    });
-  }
-
-  for (const command of uniqStrings(releaseSummary?.migration_commands)) {
-    checks.push({
-      kind: "migration_command",
-      gate: "post_update",
-      required_status: requiredStatus,
-      source: "release.migration.commands",
-      command
-    });
-  }
-
-  for (const step of uniqStrings(releaseSummary?.manual_steps)) {
-    checks.push({
-      kind: "manual_migration_step",
-      gate: "manual",
-      required_status: "warning",
-      source: "release.migration.manual_steps",
-      description: step
-    });
-  }
+function buildExpectedChecks({ importRecord, buildLock, releaseSummary, maxChecks }: { importRecord: ImportRecord; buildLock: ImportLock; releaseSummary: ReleaseSummary | null; maxChecks: number }) {
+  const verificationPolicy = buildLock.verification_policy;
+  const requiredStatus = verificationPolicy.required_check_status;
+  const checks = [
+    ...policyExpectedChecks(importRecord, buildLock, requiredStatus),
+    ...releaseExpectedChecks(releaseSummary, requiredStatus),
+  ];
 
   const deduped = dedupeBy(checks, (check) => JSON.stringify([
     check.kind,
-    check.command || "",
-    check.name || "",
-    check.description || "",
+    check.command ?? "",
+    check.name ?? "",
+    check.description ?? "",
     check.gate || ""
   ]));
   const { items, truncated } = clampItems(deduped, maxChecks);
   return { items, truncated, total: deduped.length };
 }
 
-function buildRollbackGuidance({ targetRoot, importSnapshot, journalEvents, releaseSummary, placementImpacts }) {
-  const successfulEvents = sortByDateDesc(journalEvents.filter((event) => UPDATE_RESULT_SUCCESS.has(String(event?.record?.result || ""))));
-  const anchorEvent = successfulEvents[0]?.record || null;
-  const anchorVersion = anchorEvent?.to_version || importSnapshot.current.release_version || null;
-  const hasReleaseRollback = uniqStrings(releaseSummary?.rollback_commands).length > 0 || isNonEmptyString(releaseSummary?.rollback_notes);
+function policyExpectedChecks(importRecord: ImportRecord, buildLock: ImportLock, requiredStatus: unknown): ExpectedCheck[] {
+  const policy = buildLock.verification_policy;
+  const checks: ExpectedCheck[] = [];
+  const add = (enabled: boolean | undefined, kind: string, gate: string, description: string): void => {
+    if (enabled) checks.push({ kind, gate, required_status: requiredStatus, source: "lock.verification_policy", description });
+  };
+  add(policy.run_import_resolution, "import_resolution", "post_update", "Resolve imports and runtime providers against the updated placements");
+  add(policy.run_env_truthing, "env_truthing", "pre_update", "Verify required env bindings are present and forbidden env bindings are absent");
+  add(policy.run_rls_truthing, "rls_truthing", "post_update", "Re-check RLS and authz assumptions after the update");
+  if (policy.run_declared_tests) {
+    for (const command of uniqStrings(importRecord.verification?.test_commands)) {
+      checks.push({ kind: "declared_test_command", gate: "post_update", required_status: requiredStatus, source: "import.verification.test_commands", command });
+    }
+  }
+  for (const description of uniqStrings(policy.post_install_checks)) {
+    checks.push({ kind: "post_install_checklist", gate: "manual", required_status: "warning", source: "lock.verification_policy.post_install_checks", description });
+  }
+  return checks;
+}
+
+function releaseExpectedChecks(release: ReleaseSummary | null, requiredStatus: unknown): ExpectedCheck[] {
+  const checks: ExpectedCheck[] = [];
+  for (const command of uniqStrings(release?.smoke_commands)) checks.push({ kind: "release_smoke_command", gate: "post_update", required_status: requiredStatus, source: "release.verification.smoke_commands", command });
+  for (const check of safeArray(release?.checks)) checks.push({ kind: "release_check", gate: "post_update", required_status: requiredStatus, source: "release.verification.checks", name: check.name, command: check.command ?? null, current_status: check.status });
+  for (const command of uniqStrings(release?.migration_commands)) checks.push({ kind: "migration_command", gate: "post_update", required_status: requiredStatus, source: "release.migration.commands", command });
+  for (const description of uniqStrings(release?.manual_steps)) checks.push({ kind: "manual_migration_step", gate: "manual", required_status: "warning", source: "release.migration.manual_steps", description });
+  return checks;
+}
+
+function buildRollbackGuidance({ targetRoot, importSnapshot, journalEvents, releaseSummary, placementImpacts }: { targetRoot: string; importSnapshot: RollbackSnapshot; journalEvents: { record: JournalRecord }[]; releaseSummary: ReleaseSummary | null; placementImpacts: PlacementImpact[] }) {
   const impactedPaths = uniqStrings(placementImpacts.map((placement) => placement.target_path).filter(Boolean));
+  const anchorEvent = latestSuccessfulJournalEvent(journalEvents);
+  const releaseCommands = uniqStrings(releaseSummary?.rollback_commands);
+  const actions = rollbackActions(targetRoot, impactedPaths);
+  for (const command of releaseCommands) {
+    actions.push({ kind: "release_rollback_command", description: command, command });
+  }
+  return {
+    status: rollbackStatus(anchorEvent !== null, releaseCommands.length > 0 || isNonEmptyString(releaseSummary?.rollback_notes), impactedPaths.length),
+    anchor_event_id: anchorEvent?.event_id ?? null,
+    anchor_result: anchorEvent?.result ?? null,
+    current_release_version: anchorEvent?.to_version ?? importSnapshot.current.release_version,
+    current_release_hash: importSnapshot.current.release_hash ?? null,
+    rollback_supported_by_release: releaseSummary?.rollback_supported ?? false,
+    notes: rollbackNotes(importSnapshot.import_id, anchorEvent, releaseSummary?.rollback_notes),
+    actions
+  };
+}
 
-  let status = "partial";
-  if (anchorEvent && hasReleaseRollback) status = "ready";
-  else if (anchorEvent || impactedPaths.length > 0) status = "partial";
-  else status = "weak";
+function latestSuccessfulJournalEvent(events: { record: JournalRecord }[]): JournalRecord | null {
+  const successful = events.filter((event) => UPDATE_RESULT_SUCCESS.has(event.record.result ?? ""));
+  return sortByDateDesc(successful).at(0)?.record ?? null;
+}
 
-  const actions = [
+function rollbackNotes(importId: string, anchor: JournalRecord | null, releaseNotes: string | null | undefined): string[] {
+  return uniqStrings([
+    releaseNotes ?? "",
+    anchor ? `Use journal event ${String(anchor.event_id)} as the rollback anchor for ${importId}` : "",
+    anchor ? "" : "No prior successful journal event was found for this import."
+  ]);
+}
+
+function rollbackActions(targetRoot: string, impactedPaths: string[]) {
+  return [
     {
       kind: "restore_target_paths",
       description: "Restore impacted target paths from version control or the current installed release snapshot",
@@ -1180,53 +1131,19 @@ function buildRollbackGuidance({ targetRoot, importSnapshot, journalEvents, rele
       command: `node tools/sma-import-verify.ts --target ${targetRoot}`
     }
   ];
-
-  for (const command of uniqStrings(releaseSummary?.rollback_commands)) {
-    actions.push({
-      kind: "release_rollback_command",
-      description: command,
-      command
-    });
-  }
-
-  return {
-    status,
-    anchor_event_id: anchorEvent?.event_id || null,
-    anchor_result: anchorEvent?.result || null,
-    current_release_version: anchorVersion,
-    current_release_hash: importSnapshot.current.release_hash || null,
-    rollback_supported_by_release: Boolean(releaseSummary?.rollback_supported),
-    notes: uniqStrings([
-      releaseSummary?.rollback_notes || "",
-      anchorEvent ? `Use journal event ${anchorEvent.event_id} as the rollback anchor for ${importSnapshot.import_id}` : "",
-      !anchorEvent ? "No prior successful journal event was found for this import." : ""
-    ]),
-    actions
-  };
 }
 
-function buildDecision({ releaseSummary, issues, placementImpactSummary, envSummary, versionDelta }) {
+function rollbackStatus(hasAnchor: boolean, hasReleaseRollback: boolean, impactedPathCount: number): string {
+  if (hasAnchor && hasReleaseRollback) return "ready";
+  return hasAnchor || impactedPathCount > 0 ? "partial" : "weak";
+}
+
+function buildDecision({ releaseSummary, issues, placementImpactSummary, envSummary, versionDelta }: { releaseSummary: ReleaseSummary | null; issues: PlanIssue[]; placementImpactSummary: PlacementImpactSummary; envSummary: ReturnType<typeof buildEnvPlan>; versionDelta: VersionDelta }) {
   const hasErrors = issues.some((issue) => issue.severity === "error");
   const hasWarnings = issues.some((issue) => issue.severity === "warning");
-  const hasManualSignals = placementImpactSummary.manual_count > 0
-    || placementImpactSummary.drifted_count > 0
-    || envSummary.forbidden_present.length > 0
-    || envSummary.missing_required.length > 0
-    || Boolean(releaseSummary?.manual_steps?.length);
-
-  let status = "safe";
-  if (hasErrors) status = "blocked";
-  else if (hasWarnings || hasManualSignals || !releaseSummary) status = "manual";
-
-  const reasons = [];
-  if (!releaseSummary) reasons.push("no_release_artifact");
-  if (versionDelta.kind === "same") reasons.push("same_version");
-  if (versionDelta.major_changed) reasons.push("major_version_change");
-  if (placementImpactSummary.blocked_count > 0) reasons.push("blocked_placements");
-  if (placementImpactSummary.manual_count > 0) reasons.push("manual_review_placements");
-  if (envSummary.missing_required.length > 0) reasons.push("missing_required_env");
-  if (envSummary.forbidden_present.length > 0) reasons.push("forbidden_env_present");
-  for (const issue of issues) reasons.push(issue.code);
+  const hasManualSignals = manualDecisionSignals(releaseSummary, placementImpactSummary, envSummary);
+  const status = hasErrors ? "blocked" : hasWarnings || hasManualSignals || !releaseSummary ? "manual" : "safe";
+  const reasons = decisionReasons(releaseSummary, placementImpactSummary, envSummary, versionDelta, issues);
 
   return {
     status,
@@ -1235,373 +1152,348 @@ function buildDecision({ releaseSummary, issues, placementImpactSummary, envSumm
   };
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
-  if (options.help) {
-    console.log(HELP_TEXT);
-    return;
-  }
+function manualDecisionSignals(release: ReleaseSummary | null, impact: PlacementImpactSummary, env: ReturnType<typeof buildEnvPlan>): boolean {
+  return impact.manual_count > 0 || impact.drifted_count > 0
+    || env.forbidden_present.length > 0 || env.missing_required.length > 0
+    || Boolean(release?.manual_steps.length);
+}
 
+function decisionReasons(
+  release: ReleaseSummary | null, impact: PlacementImpactSummary, env: ReturnType<typeof buildEnvPlan>,
+  versionDelta: VersionDelta, issues: PlanIssue[],
+): string[] {
+  const reasons: string[] = issues.map((issue) => issue.code);
+  if (!release) reasons.push("no_release_artifact");
+  if (versionDelta.kind === "same") reasons.push("same_version");
+  if (versionDelta.major_changed) reasons.push("major_version_change");
+  if (impact.blocked_count > 0) reasons.push("blocked_placements");
+  if (impact.manual_count > 0) reasons.push("manual_review_placements");
+  if (env.missing_required.length > 0) reasons.push("missing_required_env");
+  if (env.forbidden_present.length > 0) reasons.push("forbidden_env_present");
+  return uniqStrings(reasons);
+}
+
+async function loadPlanningContext(options: UpdatePlanArgs) {
   const targetRoot = path.resolve(options.target);
   const smarchRoot = options.smarchRoot || path.resolve(targetRoot, ".smarch");
   const buildLockPath = path.resolve(smarchRoot, "build-lock.json");
   if (!(await pathExists(buildLockPath))) fail(`missing build-lock.json at ${buildLockPath}`);
-
   const buildLock = await readJsonFile<ImportLock>(buildLockPath);
-  const importsPath = resolveRelativeToTarget(
-    targetRoot,
-    buildLock?.lock?.imports_path,
-    path.resolve(smarchRoot, "imports.json")
-  );
-  const placementsPath = resolveRelativeToTarget(
-    targetRoot,
-    buildLock?.lock?.placements_path,
-    path.resolve(smarchRoot, "placements.json")
-  );
-  const updateJournalPath = resolveRelativeToTarget(
-    targetRoot,
-    buildLock?.lock?.update_journal_path,
-    path.resolve(smarchRoot, "update-journal.jsonl")
-  );
-
+  const importsPath = resolveRelativeToTarget(targetRoot, buildLock.lock.imports_path, path.resolve(smarchRoot, "imports.json"));
+  const placementsPath = resolveRelativeToTarget(targetRoot, buildLock.lock.placements_path, path.resolve(smarchRoot, "placements.json"));
+  const updateJournalPath = resolveRelativeToTarget(targetRoot, buildLock.lock.update_journal_path, path.resolve(smarchRoot, "update-journal.jsonl"));
   if (!(await pathExists(importsPath))) fail(`missing imports.json at ${importsPath}`);
   if (!(await pathExists(placementsPath))) fail(`missing placements.json at ${placementsPath}`);
-
   const importsDoc = await readJsonFile<ImportsDocument>(importsPath);
   const placementsDoc = await readJsonFile<PlacementMap>(placementsPath);
   const journalRecords = await (await pathExists(updateJournalPath) ? readJsonLines(updateJournalPath) : Promise.resolve([]));
-
   const releaseArtifact = options.release ? await readJsonFile<Release>(options.release) : null;
-  const releaseSummary = releaseArtifact ? {
-    ...summarizeReleaseCandidate(releaseArtifact),
-    raw_contract_hashes: isObject(releaseArtifact?.contracts?.hashes) ? releaseArtifact.contracts.hashes : null
+  const releaseCandidate = releaseArtifact ? summarizeReleaseCandidate(releaseArtifact) : null;
+  const releaseSummary: ReleaseSummary | null = releaseCandidate ? {
+    ...releaseCandidate,
+    raw_contract_hashes: isObject(releaseArtifact?.contracts.hashes) ? releaseArtifact.contracts.hashes : null,
   } : null;
   const buildGraph = createBuildGraphContext(buildLock);
+  const lockEntries = [...safeArray(buildLock.selected_builds), ...safeArray(buildLock.resolved_bricks)];
+  return { targetRoot, smarchRoot, buildLockPath, buildLock, importsPath, placementsPath, updateJournalPath,
+    importsDoc, placementsDoc, journalRecords, releaseSummary, buildGraph, lockEntries };
+}
 
-  const lockEntries = [
-    ...safeArray(buildLock?.selected_builds),
-    ...safeArray(buildLock?.resolved_bricks)
-  ];
-  const lockByImportId = toRecordMap(lockEntries, "import_id");
-  const placementImportsByImportId = toRecordMap(placementsDoc?.imports, "import_id");
-  const placementsByImportId = groupBy(placementsDoc?.placements, "import_id");
-  const journalByImportId = groupBy(journalRecords.map((entry) => ({ ...entry.record, _line_number: entry.line_number })), "import_id");
+type PlanningContext = Awaited<ReturnType<typeof loadPlanningContext>>;
 
-  const importIds = new Set();
-  for (const entry of safeArray(importsDoc?.imports)) if (isNonEmptyString(entry.import_id)) importIds.add(entry.import_id);
-  for (const entry of safeArray(placementsDoc?.imports)) if (isNonEmptyString(entry.import_id)) importIds.add(entry.import_id);
-  for (const entry of lockEntries) if (isNonEmptyString(entry.import_id)) importIds.add(entry.import_id);
-
-  const importSnapshots = [...importIds].map((importId) => {
-    const importRecord = safeArray(importsDoc?.imports).find((entry) => entry.import_id === importId) || {};
-    const lockEntry = lockByImportId.get(importId) || {};
-    const placementImport = placementImportsByImportId.get(importId) || {};
-    const placementsForImport = placementsByImportId.get(importId) || [];
-    const journalForImport = journalByImportId.get(importId) || [];
-
+function buildImportSnapshots(context: PlanningContext): ImportSnapshot[] {
+  const { importsDoc, placementsDoc, journalRecords, lockEntries } = context;
+  const lockByImportId = toRecordMap(lockEntries, (entry) => entry.import_id);
+  const placementImportsByImportId = toRecordMap(placementsDoc.imports, (entry) => entry.import_id);
+  const placementsByImportId = groupBy(placementsDoc.placements, (entry) => entry.import_id);
+  const journalByImportId = groupBy(journalRecords.map((entry) => ({ ...entry.record, _line_number: entry.line_number })), (entry) => entry.import_id);
+  const importIds = new Set<string>();
+  for (const entry of safeArray(importsDoc.imports)) importIds.add(entry.import_id);
+  for (const entry of placementsDoc.imports) importIds.add(entry.import_id);
+  for (const entry of lockEntries) importIds.add(entry.import_id);
+  return [...importIds].map((importId): ImportSnapshot => {
+    const importRecord = safeArray(importsDoc.imports).find((entry) => entry.import_id === importId) ?? { import_id: importId };
+    const lockEntry: Partial<LockEntry> = lockByImportId.get(importId) ?? {};
+    const placementImport: Partial<PlacementImport> = placementImportsByImportId.get(importId) ?? {};
     return {
       import_id: importId,
-      artifact_type: importRecord.artifact_type || placementImport.artifact_type || lockEntry.artifact_type || null,
-      artifact_id: importRecord.artifact_id || placementImport.artifact_id || lockEntry.artifact_id || null,
-      artifact_name: importRecord.artifact_name || null,
-      source_project: importRecord.source_project || lockEntry.source_project || null,
-      import_record: importRecord,
-      lock_entry: lockEntry,
-      placement_import: placementImport,
-      placements: placementsForImport,
-      journal_events: sortByDateDesc(journalForImport)
+      artifact_type: importRecord.artifact_type ?? placementImport.artifact_type ?? lockEntry.artifact_type ?? null,
+      artifact_id: importRecord.artifact_id ?? placementImport.artifact_id ?? lockEntry.artifact_id ?? null,
+      artifact_name: importRecord.artifact_name ?? null, source_project: importRecord.source_project ?? lockEntry.source_project ?? null,
+      import_record: importRecord, lock_entry: lockEntry, placement_import: placementImport,
+      placements: placementsByImportId.get(importId) ?? [],
+      journal_events: sortByDateDesc(journalByImportId.get(importId) ?? []),
     };
-  }).filter((snapshot) => isNonEmptyString(snapshot.import_id));
-
-  const selectedImports = importSnapshots.filter((snapshot) => {
-    if (options.importIds.length > 0 && !options.importIds.includes(snapshot.import_id)) return false;
-    const effectiveArtifactId = options.artifactId || releaseSummary?.artifact_id || "";
-    const effectiveArtifactType = options.artifactType || releaseSummary?.artifact_type || "";
-    if (effectiveArtifactId && !artifactIdsMatch(snapshot.artifact_id, effectiveArtifactId)) return false;
-    if (effectiveArtifactType && snapshot.artifact_type !== effectiveArtifactType) return false;
-    return true;
   });
+}
 
-  const plans = [];
-  for (const snapshot of selectedImports) {
-    const buildContext = collectBuildContext(snapshot, buildGraph);
-    const currentBindings = gatherCurrentEnvBindings(snapshot.import_record, snapshot.placements);
-    const exactRelease = releaseAppliesToImport(snapshot, releaseSummary) ? releaseSummary : null;
-    const envSummary = buildEnvPlan(currentBindings, exactRelease);
-    const contractDelta = summarizeContractDelta(snapshot.import_record, exactRelease);
-    const placementImpactsAll = [];
-    for (const placement of snapshot.placements) {
-      placementImpactsAll.push(await collectPlacementImpact({
-        targetRoot,
-        placement,
-        releaseSummary: exactRelease,
-        trustPolicy: buildLock?.trust_policy
-      }));
-    }
+async function planImport(snapshot: ImportSnapshot, context: PlanningContext, options: UpdatePlanArgs) {
+  const { targetRoot, buildLock, releaseSummary, buildGraph } = context;
+  const exactRelease = releaseAppliesToImport(snapshot, releaseSummary) ? releaseSummary : null;
+  const envSummary = buildEnvPlan(gatherCurrentEnvBindings(snapshot.import_record, snapshot.placements), exactRelease);
+  const contractDelta = summarizeContractDelta(snapshot.import_record, exactRelease);
+  const placementImpacts = await Promise.all(snapshot.placements.map((placement) => collectPlacementImpact({
+    targetRoot, placement, releaseSummary: exactRelease, trustPolicy: buildLock.trust_policy,
+  })));
+  const impactSummary = summarizePlacementImpacts(placementImpacts);
+  const trustIssues = collectTrustPolicyIssues({ importSnapshot: snapshot, releaseSummary: exactRelease,
+    lockEntry: snapshot.lock_entry, buildLock, envSummary, contractDelta, placementImpactSummary: impactSummary });
+  const currentVersion = snapshot.lock_entry.release_version ?? snapshot.placement_import.release_version ?? "";
+  const versionDelta = summarizeVersionDelta(currentVersion, exactRelease?.version ?? currentVersion);
+  const expectedChecks = buildExpectedChecks({ importRecord: snapshot.import_record, buildLock, releaseSummary: exactRelease,
+    maxChecks: options.compact ? Math.min(25, options.maxChecks) : options.maxChecks });
+  const decision = buildDecision({ releaseSummary: exactRelease, issues: trustIssues, placementImpactSummary: impactSummary, envSummary, versionDelta });
+  const rollback = buildRollbackGuidance({ targetRoot, importSnapshot: rollbackSnapshot(snapshot),
+    journalEvents: snapshot.journal_events.map((record) => ({ record })), releaseSummary: exactRelease, placementImpacts });
+  const compatibility = summarizeReleaseCompatibility({ importSnapshot: snapshot, releaseSummary: exactRelease,
+    buildLock, placementImpacts, versionDelta });
+  return formatImportPlan(snapshot, exactRelease, options, { envSummary, contractDelta, placementImpacts,
+    impactSummary, trustIssues, versionDelta, expectedChecks, decision, rollback, compatibility,
+    buildContext: collectBuildContext(snapshot, buildGraph) });
+}
 
-    const placementImpactSummary = {
-      total_count: placementImpactsAll.length,
-      replace_in_place_count: placementImpactsAll.filter((placement) => placement.impact === "replace_in_place").length,
-      already_matches_count: placementImpactsAll.filter((placement) => placement.impact === "already_matches_candidate").length,
-      manual_count: placementImpactsAll.filter((placement) => placement.impact === "manual_review").length,
-      blocked_count: placementImpactsAll.filter((placement) => placement.impact === "blocked").length,
-      drifted_count: placementImpactsAll.filter((placement) => placement.drifted).length
-    };
+function summarizePlacementImpacts(placements: PlacementImpact[]): PlacementImpactSummary {
+  return {
+    total_count: placements.length,
+    replace_in_place_count: placements.filter((item) => item.impact === "replace_in_place").length,
+    already_matches_count: placements.filter((item) => item.impact === "already_matches_candidate").length,
+    manual_count: placements.filter((item) => item.impact === "manual_review").length,
+    blocked_count: placements.filter((item) => item.impact === "blocked").length,
+    drifted_count: placements.filter((item) => item.drifted).length,
+  };
+}
 
-    const trustIssues = collectTrustPolicyIssues({
-      importSnapshot: snapshot,
-      releaseSummary: exactRelease,
-      lockEntry: snapshot.lock_entry,
-      buildLock,
-      envSummary,
-      contractDelta,
-      placementImpactSummary
-    });
+function rollbackSnapshot(snapshot: ImportSnapshot): RollbackSnapshot {
+  return { import_id: snapshot.import_id, current: {
+    release_version: snapshot.lock_entry.release_version ?? snapshot.placement_import.release_version ?? null,
+    release_hash: snapshot.lock_entry.release_hash ?? snapshot.placement_import.release_hash ?? null,
+  } };
+}
 
-    const versionDelta = summarizeVersionDelta(
-      snapshot.lock_entry.release_version || snapshot.placement_import.release_version || "",
-      exactRelease?.version || snapshot.lock_entry.release_version || snapshot.placement_import.release_version || ""
-    );
-    const expectedChecks = buildExpectedChecks({
-      importRecord: snapshot.import_record,
-      buildLock,
-      releaseSummary: exactRelease,
-      maxChecks: options.compact ? Math.min(25, options.maxChecks) : options.maxChecks
-    });
-    const decision = buildDecision({
-      releaseSummary: exactRelease,
-      issues: trustIssues,
-      placementImpactSummary,
-      envSummary,
-      versionDelta
-    });
-    const rollbackGuidance = buildRollbackGuidance({
-      targetRoot,
-      importSnapshot: {
-        import_id: snapshot.import_id,
-        current: {
-          release_version: snapshot.lock_entry.release_version || snapshot.placement_import.release_version || null,
-          release_hash: snapshot.lock_entry.release_hash || snapshot.placement_import.release_hash || null
-        }
-      },
-      journalEvents: snapshot.journal_events.map((event) => ({ record: event })),
-      releaseSummary: exactRelease,
-      placementImpacts: placementImpactsAll
-    });
-    const releaseCompatibility = summarizeReleaseCompatibility({
-      importSnapshot: snapshot,
-      releaseSummary: exactRelease,
-      buildLock,
-      placementImpacts: placementImpactsAll,
-      versionDelta
-    });
+interface ImportPlanParts {
+  envSummary: ReturnType<typeof buildEnvPlan>;
+  contractDelta: ReturnType<typeof summarizeContractDelta>;
+  placementImpacts: PlacementImpact[];
+  impactSummary: PlacementImpactSummary;
+  trustIssues: PlanIssue[];
+  versionDelta: VersionDelta;
+  expectedChecks: ReturnType<typeof buildExpectedChecks>;
+  decision: ReturnType<typeof buildDecision>;
+  rollback: ReturnType<typeof buildRollbackGuidance>;
+  compatibility: ReturnType<typeof summarizeReleaseCompatibility>;
+  buildContext: ReturnType<typeof collectBuildContext>;
+}
 
-    const placementList = clampItems(
-      placementImpactsAll,
-      options.compact ? Math.min(40, options.maxPlacements) : options.maxPlacements
-    );
-    const journalList = clampItems(
-      snapshot.journal_events.map((event) => ({
-        event_id: event.event_id || null,
-        event_type: event.event_type || null,
-        created_at: event.created_at || null,
-        result: event.result || null,
-        from_version: event.from_version || null,
-        to_version: event.to_version || null,
-        rollback_ref: event.rollback_ref || null
-      })),
-      options.compact ? Math.min(8, options.maxJournal) : options.maxJournal
-    );
+function formatImportPlan(
+  snapshot: ImportSnapshot,
+  release: ReleaseSummary | null,
+  options: UpdatePlanArgs,
+  parts: ImportPlanParts,
+) {
+  const placements = clampItems(parts.placementImpacts, options.compact ? Math.min(40, options.maxPlacements) : options.maxPlacements);
+  const journal = clampItems(snapshot.journal_events.map(journalEventSummary), options.compact ? Math.min(8, options.maxJournal) : options.maxJournal);
+  return {
+    import_id: snapshot.import_id,
+    artifact_type: snapshot.artifact_type,
+    artifact_id: snapshot.artifact_id,
+    artifact_name: snapshot.artifact_name,
+    source_project: snapshot.source_project,
+    current: currentImportState(snapshot),
+    candidate: release ? releaseCandidateState(release) : null,
+    build_context: parts.buildContext,
+    release_compatibility: parts.compatibility,
+    decision: parts.decision,
+    version_delta: parts.versionDelta,
+    trust_policy_issues: parts.trustIssues,
+    env_bindings: parts.envSummary.items,
+    impacts: importImpactCounts(snapshot, parts),
+    impacted_placements: placements.items,
+    impacted_placements_truncated: placements.truncated,
+    contract_delta: parts.contractDelta,
+    expected_checks: parts.expectedChecks.items,
+    expected_checks_truncated: parts.expectedChecks.truncated,
+    journal_context: { events: journal.items, truncated: journal.truncated },
+    rollback_guidance: parts.rollback
+  };
+}
 
-    plans.push({
-      import_id: snapshot.import_id,
-      artifact_type: snapshot.artifact_type,
-      artifact_id: snapshot.artifact_id,
-      artifact_name: snapshot.artifact_name,
-      source_project: snapshot.source_project,
-      current: {
-        status: snapshot.import_record.status || snapshot.placement_import.status || null,
-        imported_at: snapshot.import_record.imported_at || snapshot.placement_import.imported_at || null,
-        release_version: snapshot.lock_entry.release_version || snapshot.placement_import.release_version || null,
-        release_hash: snapshot.lock_entry.release_hash || snapshot.placement_import.release_hash || null,
-        source_status: snapshot.import_record.source_status || null,
-        clone_readiness: snapshot.import_record.clone_readiness || null,
-        verification_status: snapshot.lock_entry.verification_status || null,
-        trust_tier: snapshot.lock_entry.trust_tier || null,
-        local_overrides: Number(snapshot.lock_entry.local_overrides || 0),
-        install_state: isObject(snapshot.import_record.install_state) ? snapshot.import_record.install_state : {}
-      },
-      candidate: exactRelease ? {
-        artifact_type: exactRelease.artifact_type,
-        artifact_id: exactRelease.artifact_id,
-        release_id: exactRelease.release_id,
-        version: exactRelease.version,
-        status: exactRelease.status,
-        channel: exactRelease.channel,
-        content_hash: exactRelease.content_hash,
-        verification_status: exactRelease.verification_status,
-        breaking: exactRelease.breaking,
-        rollback_supported: exactRelease.rollback_supported
-      } : null,
-      build_context: buildContext,
-      release_compatibility: releaseCompatibility,
-      decision,
-      version_delta: versionDelta,
-      trust_policy_issues: trustIssues,
-      env_bindings: envSummary.items,
-      impacts: {
-        placement_count: placementImpactSummary.total_count,
-        replace_in_place_count: placementImpactSummary.replace_in_place_count,
-        already_matches_count: placementImpactSummary.already_matches_count,
-        manual_count: placementImpactSummary.manual_count,
-        blocked_count: placementImpactSummary.blocked_count,
-        drifted_count: placementImpactSummary.drifted_count,
-        env_binding_count: envSummary.items.length,
-        expected_check_count: expectedChecks.total,
-        journal_event_count: snapshot.journal_events.length
-      },
-      impacted_placements: placementList.items,
-      impacted_placements_truncated: placementList.truncated,
-      contract_delta: contractDelta,
-      expected_checks: expectedChecks.items,
-      expected_checks_truncated: expectedChecks.truncated,
-      journal_context: {
-        events: journalList.items,
-        truncated: journalList.truncated
-      },
-      rollback_guidance: rollbackGuidance
-    });
-  }
+function currentImportState(snapshot: ImportSnapshot) {
+  return {
+    status: snapshot.import_record.status ?? snapshot.placement_import.status ?? null,
+    imported_at: snapshot.import_record.imported_at ?? snapshot.placement_import.imported_at ?? null,
+    release_version: snapshot.lock_entry.release_version ?? snapshot.placement_import.release_version ?? null,
+    release_hash: snapshot.lock_entry.release_hash ?? snapshot.placement_import.release_hash ?? null,
+    source_status: snapshot.import_record.source_status ?? null,
+    clone_readiness: snapshot.import_record.clone_readiness ?? null,
+    verification_status: snapshot.lock_entry.verification_status ?? null,
+    trust_tier: snapshot.lock_entry.trust_tier ?? null,
+    local_overrides: snapshot.lock_entry.local_overrides ?? 0,
+    install_state: isObject(snapshot.import_record.install_state) ? snapshot.import_record.install_state : {}
+  };
+}
 
-  const globalIssues = dedupeBy(
-    plans.flatMap((plan) => safeArray(plan.trust_policy_issues)),
-    (issue) => JSON.stringify([issue.code, issue.import_id || "", issue.message])
-  );
-  const globalChecks = dedupeBy(
-    plans.flatMap((plan) => safeArray(plan.expected_checks)),
-    (check) => JSON.stringify([check.kind, check.command || "", check.name || "", check.description || "", check.gate || ""])
-  );
+function releaseCandidateState(release: ReleaseSummary) {
+  return {
+    artifact_type: release.artifact_type, artifact_id: release.artifact_id, release_id: release.release_id,
+    version: release.version, status: release.status, channel: release.channel, content_hash: release.content_hash,
+    verification_status: release.verification_status, breaking: release.breaking,
+    rollback_supported: release.rollback_supported
+  };
+}
 
-  const counts = {
+function importImpactCounts(snapshot: ImportSnapshot, parts: ImportPlanParts) {
+  return {
+    placement_count: parts.impactSummary.total_count,
+    replace_in_place_count: parts.impactSummary.replace_in_place_count,
+    already_matches_count: parts.impactSummary.already_matches_count,
+    manual_count: parts.impactSummary.manual_count,
+    blocked_count: parts.impactSummary.blocked_count,
+    drifted_count: parts.impactSummary.drifted_count,
+    env_binding_count: parts.envSummary.items.length,
+    expected_check_count: parts.expectedChecks.total,
+    journal_event_count: snapshot.journal_events.length
+  };
+}
+
+function journalEventSummary(event: JournalRecord) {
+  return {
+    event_id: event.event_id ?? null, event_type: event.event_type ?? null,
+    created_at: event.created_at ?? null, result: event.result ?? null,
+    from_version: event.from_version ?? null, to_version: event.to_version ?? null,
+    rollback_ref: event.rollback_ref ?? null
+  };
+}
+
+type ImportPlan = Awaited<ReturnType<typeof planImport>>;
+
+function selectImports(snapshots: ImportSnapshot[], release: ReleaseSummary | null, options: UpdatePlanArgs): ImportSnapshot[] {
+  const artifactId = options.artifactId || (release?.artifact_id ?? "");
+  const artifactType = options.artifactType || (release?.artifact_type ?? "");
+  return snapshots.filter((snapshot) => {
+    if (options.importIds.length > 0 && !options.importIds.includes(snapshot.import_id)) return false;
+    if (artifactId && !artifactIdsMatch(snapshot.artifact_id, artifactId)) return false;
+    return !artifactType || snapshot.artifact_type === artifactType;
+  });
+}
+
+function planCounts(plans: ImportPlan[], issueCount: number, checkCount: number) {
+  const count = (predicate: (plan: ImportPlan) => boolean): number => plans.filter(predicate).length;
+  return {
     import_count: plans.length,
-    impacted_import_count: plans.filter((plan) => plan.impacts.placement_count > 0).length,
+    impacted_import_count: count((plan) => plan.impacts.placement_count > 0),
     placement_count: plans.reduce((sum, plan) => sum + plan.impacts.placement_count, 0),
     env_binding_count: plans.reduce((sum, plan) => sum + plan.impacts.env_binding_count, 0),
-    trust_issue_count: globalIssues.length,
-    expected_check_count: globalChecks.length,
-    selected_build_count: plans.filter((plan) => plan.build_context?.role === "selected_build").length,
-    resolved_brick_count: plans.filter((plan) => plan.build_context?.role === "resolved_brick").length,
-    standalone_import_count: plans.filter((plan) => plan.build_context?.role === "standalone").length,
-    safe_count: plans.filter((plan) => plan.decision.status === "safe").length,
-    manual_count: plans.filter((plan) => plan.decision.status === "manual").length,
-    blocked_count: plans.filter((plan) => plan.decision.status === "blocked").length
+    trust_issue_count: issueCount,
+    expected_check_count: checkCount,
+    selected_build_count: count((plan) => plan.build_context.role === "selected_build"),
+    resolved_brick_count: count((plan) => plan.build_context.role === "resolved_brick"),
+    standalone_import_count: count((plan) => plan.build_context.role === "standalone"),
+    safe_count: count((plan) => plan.decision.status === "safe"),
+    manual_count: count((plan) => plan.decision.status === "manual"),
+    blocked_count: count((plan) => plan.decision.status === "blocked")
   };
+}
 
-  const hasExplicitSelection = Boolean(
-    releaseSummary
-    || options.importIds.length > 0
-    || options.artifactId
-    || options.artifactType
-  );
-  if (counts.import_count === 0 && hasExplicitSelection) {
-    globalIssues.push(makeIssue(
-      releaseSummary ? "error" : "warning",
-      "no_matching_imports",
-      releaseSummary
-        ? "No installed import matches the selected release artifact."
-        : "No installed import matches the requested selector.",
-      {
-        artifact_id: options.artifactId || releaseSummary?.artifact_id || null,
-        artifact_type: options.artifactType || releaseSummary?.artifact_type || null
-      }
-    ));
-  }
-  counts.trust_issue_count = globalIssues.length;
+function aggregatePlans(plans: ImportPlan[], release: ReleaseSummary | null, options: UpdatePlanArgs) {
+  const issues = dedupeBy(plans.flatMap((plan) => plan.trust_policy_issues),
+    (issue) => JSON.stringify([issue.code, issue.import_id ?? "", issue.message]));
+  const checks = dedupeBy(plans.flatMap((plan) => plan.expected_checks),
+    (check) => JSON.stringify([check.kind, check.command ?? "", check.name ?? "", check.description ?? "", check.gate]));
+  const explicit = release !== null || options.importIds.length > 0 || Boolean(options.artifactId) || Boolean(options.artifactType);
+  const counts = planCounts(plans, issues.length, checks.length);
+  if (counts.import_count === 0 && explicit) issues.push(noMatchingImportsIssue(release, options));
+  counts.trust_issue_count = issues.length;
+  const overallStatus = counts.import_count === 0 && explicit
+    ? (release ? "blocked" : "manual")
+    : counts.blocked_count > 0 ? "blocked" : counts.manual_count > 0 ? "manual" : "safe";
+  return { issues, checks, counts, overallStatus };
+}
 
-  const overallStatus = counts.import_count === 0 && hasExplicitSelection
-    ? (releaseSummary ? "blocked" : "manual")
-    : counts.blocked_count > 0
-      ? "blocked"
-      : counts.manual_count > 0
-        ? "manual"
-        : "safe";
-  const output = {
+function noMatchingImportsIssue(release: ReleaseSummary | null, options: UpdatePlanArgs): PlanIssue {
+  return makeIssue(release ? "error" : "warning", "no_matching_imports",
+    release ? "No installed import matches the selected release artifact." : "No installed import matches the requested selector.",
+    { artifact_id: options.artifactId || (release?.artifact_id ?? null), artifact_type: options.artifactType || (release?.artifact_type ?? null) });
+}
+
+type PlanAggregate = ReturnType<typeof aggregatePlans>;
+
+function buildPlanOutput(context: PlanningContext, options: UpdatePlanArgs, snapshots: ImportSnapshot[], plans: ImportPlan[], aggregate: PlanAggregate) {
+  return {
     schema: PLAN_SCHEMA,
     schema_version: SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
-    planner: {
-      tool: "tools/sma-update-plan.ts",
-      mode: releaseSummary ? "release_update" : "baseline_preflight",
-      dry_run: Boolean(options.dryRun),
-      compact: Boolean(options.compact)
-    },
-    target: {
-      root: targetRoot,
-      smarch_root: smarchRoot,
-      imports_path: importsPath,
-      build_lock_path: buildLockPath,
-      placements_path: placementsPath,
-      update_journal_path: updateJournalPath
-    },
-    selection: {
-      import_ids: options.importIds,
-      artifact_id: options.artifactId || releaseSummary?.artifact_id || null,
-      artifact_type: options.artifactType || releaseSummary?.artifact_type || null,
-      matched_import_count: plans.length,
-      available_import_count: importSnapshots.length,
-      build_context: {
-        selected_build_count_in_lock: buildGraph.selectedBuildIds.size,
-        resolved_brick_count_in_lock: buildGraph.resolvedBrickIds.size,
-        matched_selected_build_count: plans.filter((plan) => plan.build_context?.role === "selected_build").length,
-        matched_resolved_brick_count: plans.filter((plan) => plan.build_context?.role === "resolved_brick").length,
-        graph_node_count: buildGraph.graphNodeCount,
-        graph_edge_count: buildGraph.graphEdgeCount
-      }
-    },
-    trust_policy: {
-      allowed_release_statuses: uniqStrings(buildLock?.trust_policy?.allowed_release_statuses),
-      minimum_verification_status: buildLock?.trust_policy?.minimum_verification_status || null,
-      require_contract_hashes: Boolean(buildLock?.trust_policy?.require_contract_hashes),
-      allow_local_overrides: Boolean(buildLock?.trust_policy?.allow_local_overrides),
-      fail_on_yanked_release: Boolean(buildLock?.trust_policy?.fail_on_yanked_release),
-      fail_on_breaking_upgrade: Boolean(buildLock?.trust_policy?.fail_on_breaking_upgrade),
-      fail_on_missing_env: Boolean(buildLock?.verification_policy?.fail_on_missing_env),
-      fail_on_contract_delta: Boolean(buildLock?.verification_policy?.fail_on_contract_delta)
-    },
-    release_candidate: releaseSummary ? {
-      artifact_type: releaseSummary.artifact_type,
-      artifact_id: releaseSummary.artifact_id,
-      release_id: releaseSummary.release_id,
-      version: releaseSummary.version,
-      status: releaseSummary.status,
-      channel: releaseSummary.channel,
-      content_hash: releaseSummary.content_hash,
-      verification_status: releaseSummary.verification_status,
-      breaking: releaseSummary.breaking,
-      rollback_supported: releaseSummary.rollback_supported,
-      source_project: releaseSummary.source_project,
-      path: options.release
-    } : null,
-    summary: {
-      overall_status: overallStatus,
-      ...counts
-    },
-    trust_policy_issues: globalIssues,
-    expected_checks: options.compact ? globalChecks.slice(0, 50) : globalChecks,
+    planner: { tool: "tools/sma-update-plan.ts", mode: context.releaseSummary ? "release_update" : "baseline_preflight", dry_run: options.dryRun, compact: options.compact },
+    target: targetSummary(context),
+    selection: selectionSummary(context, options, snapshots, plans),
+    trust_policy: trustPolicySummary(context.buildLock),
+    release_candidate: context.releaseSummary ? { ...releaseCandidateState(context.releaseSummary), source_project: context.releaseSummary.source_project, path: options.release } : null,
+    summary: { overall_status: aggregate.overallStatus, ...aggregate.counts },
+    trust_policy_issues: aggregate.issues,
+    expected_checks: options.compact ? aggregate.checks.slice(0, 50) : aggregate.checks,
     imports: plans
   };
+}
 
+function targetSummary(context: PlanningContext) {
+  return {
+    root: context.targetRoot, smarch_root: context.smarchRoot, imports_path: context.importsPath,
+    build_lock_path: context.buildLockPath, placements_path: context.placementsPath,
+    update_journal_path: context.updateJournalPath
+  };
+}
+
+function selectionSummary(context: PlanningContext, options: UpdatePlanArgs, snapshots: ImportSnapshot[], plans: ImportPlan[]) {
+  return {
+    import_ids: options.importIds,
+    artifact_id: options.artifactId || (context.releaseSummary?.artifact_id ?? null),
+    artifact_type: options.artifactType || (context.releaseSummary?.artifact_type ?? null),
+    matched_import_count: plans.length,
+    available_import_count: snapshots.length,
+    build_context: {
+      selected_build_count_in_lock: context.buildGraph.selectedBuildIds.size,
+      resolved_brick_count_in_lock: context.buildGraph.resolvedBrickIds.size,
+      matched_selected_build_count: plans.filter((plan) => plan.build_context.role === "selected_build").length,
+      matched_resolved_brick_count: plans.filter((plan) => plan.build_context.role === "resolved_brick").length,
+      graph_node_count: context.buildGraph.graphNodeCount,
+      graph_edge_count: context.buildGraph.graphEdgeCount
+    }
+  };
+}
+
+function trustPolicySummary(buildLock: ImportLock) {
+  return {
+    allowed_release_statuses: uniqStrings(buildLock.trust_policy.allowed_release_statuses),
+    minimum_verification_status: buildLock.trust_policy.minimum_verification_status ?? null,
+    require_contract_hashes: buildLock.trust_policy.require_contract_hashes,
+    allow_local_overrides: buildLock.trust_policy.allow_local_overrides,
+    fail_on_yanked_release: Boolean(buildLock.trust_policy.fail_on_yanked_release),
+    fail_on_breaking_upgrade: Boolean(buildLock.trust_policy.fail_on_breaking_upgrade),
+    fail_on_missing_env: buildLock.verification_policy.fail_on_missing_env,
+    fail_on_contract_delta: Boolean(buildLock.verification_policy.fail_on_contract_delta)
+  };
+}
+
+async function emitPlan(output: ReturnType<typeof buildPlanOutput>, options: UpdatePlanArgs): Promise<void> {
   const json = JSON.stringify(output, null, 2);
   if (options.out && !options.dryRun) {
     await fs.mkdir(path.dirname(options.out), { recursive: true });
     await fs.writeFile(options.out, json);
   }
-  if (options.stdout || !options.out || options.dryRun) {
-    console.log(json);
-  }
+  if (options.stdout || !options.out || options.dryRun) console.log(json);
 }
 
-main().catch((error) => {
-  console.error(error?.stack || String(error));
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+  if (options.help) { console.log(HELP_TEXT); return; }
+  const context = await loadPlanningContext(options);
+  const snapshots = buildImportSnapshots(context);
+  const selected = selectImports(snapshots, context.releaseSummary, options);
+  const plans = await Promise.all(selected.map((snapshot) => planImport(snapshot, context, options)));
+  const aggregate = aggregatePlans(plans, context.releaseSummary, options);
+  await emitPlan(buildPlanOutput(context, options, snapshots, plans, aggregate), options);
+}
+
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });

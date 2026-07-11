@@ -36,7 +36,7 @@ export const defaultPaths = {
   buildIndex: path.resolve(repoRoot, "builds/build-index.generated.json"),
 };
 
-export async function readJson<T = unknown>(filePath: string): Promise<T> {
+async function readJson<T = unknown>(filePath: string): Promise<T> {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
@@ -72,7 +72,7 @@ export async function loadAdoptionContext(options: AdoptionOptions = {}) {
   };
 }
 
-export function tokenize(value: unknown): string[] {
+function tokenize(value: unknown): string[] {
   return String(value || "")
     .toLowerCase()
     .replace(/[^a-z0-9+/_-]+/g, " ")
@@ -81,7 +81,7 @@ export function tokenize(value: unknown): string[] {
     .filter((token) => token.length >= 2 && !STOPWORDS.has(token));
 }
 
-export function overlapScore(query: unknown, fields: unknown[]): { score: number; matches: string[] } {
+function overlapScore(query: unknown, fields: unknown[]): { score: number; matches: string[] } {
   const queryTokens = new Set(tokenize(query));
   if (queryTokens.size === 0) return { score: 0, matches: [] };
 
@@ -102,7 +102,7 @@ export function overlapScore(query: unknown, fields: unknown[]): { score: number
   };
 }
 
-export function uniqueStrings(values: unknown[]): string[] {
+function uniqueStrings(values: unknown[]): string[] {
   return [...new Set((Array.isArray(values) ? values : []).flatMap((value) => {
     if (Array.isArray(value)) return value;
     if (value == null) return [];
@@ -114,7 +114,7 @@ export function findProject(state: AdoptionState | null | undefined, projectId: 
   return (state?.projects || []).find((project) => String(project.project) === String(projectId)) || null;
 }
 
-export function findCanonicalizationTarget(state: AdoptionState | null | undefined, query: unknown): CanonicalTarget | null {
+function findCanonicalizationTarget(state: AdoptionState | null | undefined, query: unknown): CanonicalTarget | null {
   const needle = String(query || "").toLowerCase().trim();
   if (!needle) return null;
 
@@ -243,7 +243,7 @@ export function formatJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-export function formatReasonList(reasons: Reason[]): string {
+function formatReasonList(reasons: Reason[]): string {
   return (reasons || []).map((reason) => {
     if (typeof reason === "string") return `- ${reason}`;
     return `- ${reason.message || reason.code || "reason"}`;

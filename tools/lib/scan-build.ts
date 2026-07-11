@@ -43,7 +43,7 @@ export const complianceDimensionDefinitions = [
   { key: "security_clean", label: "Security clean", weight: 5 }
 ];
 
-export const genericBuildTokens = new Set([
+const genericBuildTokens = new Set([
   "api",
   "app",
   "apps",
@@ -124,7 +124,7 @@ export function emptyComplianceReport(project: string | null = null): Compliance
   };
 }
 
-export function emptyBuildReport(project: string | null = null): ProjectBuildReport {
+function emptyBuildReport(project: string | null = null): ProjectBuildReport {
   return {
     ...(project ? { project } : {}),
     candidate_count: 0,
@@ -206,7 +206,7 @@ export function finalizeComplianceReport(report: ComplianceReport) {
   };
 }
 
-export function normalizeBuildToken(value: unknown): string {
+function normalizeBuildToken(value: unknown): string {
   return String(value || "")
     .toLowerCase()
     .replace(/\.(ts|tsx|js|jsx|mjs|cjs|py|rb|go|rs|java|kt|swift|php|cs|sql|json|md|mdx)$/i, "")
@@ -215,7 +215,7 @@ export function normalizeBuildToken(value: unknown): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function isMeaningfulBuildToken(value: unknown): boolean {
+function isMeaningfulBuildToken(value: unknown): boolean {
   const token = normalizeBuildToken(value);
 
   if (!token || token.length < 3) {
@@ -229,7 +229,7 @@ export function isMeaningfulBuildToken(value: unknown): boolean {
   return !genericBuildTokens.has(token);
 }
 
-export function titleCaseBuildToken(value: unknown): string {
+function titleCaseBuildToken(value: unknown): string {
   return String(value || "")
     .split(/[-_/]+/)
     .filter(Boolean)
@@ -237,15 +237,15 @@ export function titleCaseBuildToken(value: unknown): string {
     .join(" ");
 }
 
-export function normalizedKindFamily(kind: unknown): string {
+function normalizedKindFamily(kind: unknown): string {
   return String(kind || "unknown").replace(/_(module|file)$/, "");
 }
 
-export function primarySourcePath(brick: ScanBrick): string {
+function primarySourcePath(brick: ScanBrick): string {
   return String((brick.source_paths || [])[0] || "");
 }
 
-export function meaningfulDomainTokens(brick: ScanBrick): string[] {
+function meaningfulDomainTokens(brick: ScanBrick): string[] {
   const tokens: string[] = [];
 
   for (const entry of brick.domain || []) {
@@ -261,7 +261,7 @@ export function meaningfulDomainTokens(brick: ScanBrick): string[] {
   return tokens.slice(0, 3);
 }
 
-export function featureTokenForBrick(brick: ScanBrick): string {
+function featureTokenForBrick(brick: ScanBrick): string {
   const cluster = brick.feature_cluster;
 
   if (cluster && typeof cluster === "object") {
@@ -271,7 +271,7 @@ export function featureTokenForBrick(brick: ScanBrick): string {
   return normalizeBuildToken(cluster);
 }
 
-export function pathSignalTokensForBrick(brick: ScanBrick): string[] {
+function pathSignalTokensForBrick(brick: ScanBrick): string[] {
   const sourcePath = primarySourcePath(brick);
 
   if (!sourcePath) {
@@ -306,7 +306,7 @@ export function pathSignalTokensForBrick(brick: ScanBrick): string[] {
   return [...new Set(signals.filter((signal) => isMeaningfulBuildToken(signal) || signal.includes("-")))].slice(0, 3);
 }
 
-export function buildSignalsForBrick(brick: ScanBrick): BuildSignal[] {
+function buildSignalsForBrick(brick: ScanBrick): BuildSignal[] {
   const signals: BuildSignal[] = [];
   const seen = new Set<string>();
   const pushSignal = (type: BuildSignalType, value: unknown) => {
@@ -349,7 +349,7 @@ export function buildSignalsForBrick(brick: ScanBrick): BuildSignal[] {
   return signals;
 }
 
-export function buildSignalWeight(type: BuildSignalType, groupSize: number): number {
+function buildSignalWeight(type: BuildSignalType, groupSize: number): number {
   const base = {
     group: 5,
     feature: 4,
@@ -360,7 +360,7 @@ export function buildSignalWeight(type: BuildSignalType, groupSize: number): num
   return Math.max(1, base - Math.floor(Math.max(0, groupSize - 2) / 5));
 }
 
-export function buildSignalGroupLimit(type: BuildSignalType): number {
+function buildSignalGroupLimit(type: BuildSignalType): number {
   return {
     group: 18,
     feature: 12,
@@ -369,11 +369,11 @@ export function buildSignalGroupLimit(type: BuildSignalType): number {
   }[type] || 10;
 }
 
-export function buildPairKey(leftId: string, rightId: string): string {
+function buildPairKey(leftId: string, rightId: string): string {
   return leftId < rightId ? `${leftId}\0${rightId}` : `${rightId}\0${leftId}`;
 }
 
-export function buildCandidateName(candidate: Pick<BuildCandidate, "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">): string {
+function buildCandidateName(candidate: Pick<BuildCandidate, "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">): string {
   const primary = candidate.dominant_feature_cluster
     || candidate.dominant_domain
     || candidate.dominant_path_root
@@ -386,13 +386,13 @@ export function buildCandidateName(candidate: Pick<BuildCandidate, "dominant_fea
   return `${label} Build Candidate`;
 }
 
-export function confidenceLabel(score: number): string {
+function confidenceLabel(score: number): string {
   if (score >= 80) return "high";
   if (score >= 60) return "medium";
   return "low";
 }
 
-export function candidateRecurrenceKey(candidate: Pick<BuildCandidate, "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">): string {
+function candidateRecurrenceKey(candidate: Pick<BuildCandidate, "dominant_feature_cluster" | "dominant_domain" | "dominant_path_root" | "dominant_group">): string {
   const ordered = [
     candidate.dominant_feature_cluster,
     candidate.dominant_domain,
@@ -403,7 +403,7 @@ export function candidateRecurrenceKey(candidate: Pick<BuildCandidate, "dominant
   return unique.slice(0, 2).join("::") || "capability";
 }
 
-export function summarizeBuildCandidate(projectIdValue: string, bricks: ScanBrick[], sharedSignals: BuildSignal[]): BuildCandidate {
+function summarizeBuildCandidate(projectIdValue: string, bricks: ScanBrick[], sharedSignals: BuildSignal[]): BuildCandidate {
   const featureCounts = new Map<string, number>();
   const domainCounts = new Map<string, number>();
   const pathCounts = new Map<string, number>();

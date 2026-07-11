@@ -230,7 +230,7 @@ async function main() {
     onResult: (wrapped) => {
       processed += 1;
       const r = wrapped.result;
-      if (r.ok) {
+      if (r.ok === true) {
         if (r.fromCache) cacheHits += 1;
         const item = items.find((x) => x.id === wrapped.id);
         if (!item) return;

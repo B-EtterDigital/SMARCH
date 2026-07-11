@@ -18,9 +18,9 @@ import { McpToolError } from "./contract.mjs";
 /** @typedef {Record<string, unknown> & { status?: string | null }} Verification */
 /** @typedef {Record<string, unknown> & { target_id?: string | null, project?: string | null, name?: string | null, promotion_stage?: string | null, priority_score?: number | null }} CanonicalTarget */
 /** @typedef {Record<string, unknown> & { top_targets?: CanonicalTarget[] }} Canonicalization */
-/** @typedef {Record<string, unknown> & { id?: string | null, name?: string | null, project?: string | null, kind?: string | null, path?: string | null, manifest_path?: string | null, domain?: string[], domains?: string[], source_paths?: string[], status?: string | null, risk?: string | null, score?: number | string | null, health?: Health, verification?: Verification[], clone_readiness?: string | null, data_classes?: string[], env_contract?: ContractStatus, rls_contract?: ContractStatus }} Brick */
+/** @typedef {Record<string, unknown> & { id?: string, name?: string, project?: string, kind?: string, path?: string, manifest_path?: string, domain?: string[], domains?: string[], source_paths?: string[], status?: string, risk?: string, score?: number | string, health?: Health, verification?: Verification[], clone_readiness?: string, data_classes?: string[], env_contract?: ContractStatus, rls_contract?: ContractStatus }} Brick */
 /** @typedef {Record<string, unknown> & { required?: unknown, status?: unknown }} ContractStatus */
-/** @typedef {Record<string, unknown> & { project?: unknown, canonicalization?: Canonicalization, top_actions?: Action[], quality_queue?: Action[] }} Project */
+/** @typedef {Record<string, unknown> & { project?: string, canonicalization?: Canonicalization, top_actions?: Action[], quality_queue?: Action[] }} Project */
 /** @typedef {Record<string, unknown> & { code?: unknown, reason?: unknown, name?: unknown }} Action */
 /** @typedef {Record<string, unknown> & { build_id?: unknown, artifact_id?: unknown, name?: unknown, project?: unknown, source_project?: unknown, readiness_score?: unknown, installable?: boolean, verified_ready?: boolean, publish_ready?: boolean, top_blockers?: Blocker[], verification_top_blockers?: Blocker[], promotion_blockers?: Blocker[] }} Build */
 /** @typedef {string | (Record<string, unknown> & { code?: unknown })} Blocker */
@@ -71,16 +71,20 @@ export async function loadRegistryContext() {
   let registry = null;
 
   if (existsSync(statePath) && existsSync(registryPath)) {
-    ({ state, registry } = await loadStateAndRegistry({
+    const loaded = /** @type {{ state: State, registry: Registry }} */ (/** @type {unknown} */ (await loadStateAndRegistry({
       cwd: root,
       statePath,
       registryPath,
-    }));
+    })));
+    state = loaded.state;
+    registry = loaded.registry;
   } else {
-    [state, registry] = await Promise.all([
+    const loaded = await Promise.all([
       maybeReadJson(statePath),
       maybeReadJson(registryPath),
     ]);
+    state = /** @type {State | null} */ (loaded[0]);
+    registry = /** @type {Registry | null} */ (loaded[1]);
   }
 
   if (!registry) {
@@ -158,7 +162,7 @@ export function trustFields(brick, state = {}) {
  * @param {Brick} brick
  * @param {State} [state]
  */
-export function brickSummary(brick, state = {}) {
+function brickSummary(brick, state = {}) {
   const trust = trustFields(brick, state);
   return {
     id: brick?.id || null,
@@ -221,7 +225,8 @@ export function searchBricks({ registry, state }, options = {}) {
  */
 export function getBrick({ registry }, query) {
   const exact = (registry?.bricks || []).find((brick) => String(brick?.id) === String(query));
-  return exact || findBrick(registry, query);
+  const adoptionRegistry = /** @type {Parameters<typeof findBrick>[0]} */ (/** @type {unknown} */ (registry));
+  return exact || findBrick(adoptionRegistry, query);
 }
 
 /**
@@ -230,7 +235,9 @@ export function getBrick({ registry }, query) {
  * @returns {Build | null}
  */
 export function getBuild({ state, buildIndex }, query) {
-  return /** @type {Build | null} */ (findCuratedBuild(state, buildIndex, query));
+  const adoptionState = /** @type {Parameters<typeof findCuratedBuild>[0]} */ (/** @type {unknown} */ (state));
+  const adoptionBuildIndex = /** @type {Parameters<typeof findCuratedBuild>[1]} */ (/** @type {unknown} */ (buildIndex));
+  return /** @type {Build | null} */ (findCuratedBuild(adoptionState, adoptionBuildIndex, query));
 }
 
 /**
@@ -239,7 +246,8 @@ export function getBuild({ state, buildIndex }, query) {
  * @returns {Project | null}
  */
 export function getProject({ state }, projectId) {
-  return /** @type {Project | null} */ (findProject(state, projectId));
+  const adoptionState = /** @type {Parameters<typeof findProject>[0]} */ (/** @type {unknown} */ (state));
+  return /** @type {Project | null} */ (findProject(adoptionState, projectId));
 }
 
 /**

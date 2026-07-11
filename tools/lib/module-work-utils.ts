@@ -20,6 +20,17 @@ interface GuardedAssignment {
   module_id?: unknown;
 }
 
+export interface ExternalActiveModuleLeaseGroup {
+  module_id?: string;
+  held_resource?: string;
+  held_lease_id?: string;
+  held_by?: string | null;
+  held_match?: string;
+  slot_count: number;
+  agent_slots: number[];
+  dispatch_bricks: string[];
+}
+
 interface BlockedSummary {
   dirty_scope_blocked_unclaimed?: unknown;
   held_blocked_unclaimed?: unknown;
@@ -70,11 +81,8 @@ export function blockedReasonCounts(assignments: GuardedAssignment[] | null | un
   return counts;
 }
 
-export function externalActiveModuleLeaseGroups(assignments: GuardedAssignment[] | null | undefined) {
-  const groups = new Map<string, {
-    module_id: unknown; held_resource: unknown; held_lease_id: unknown; held_by: unknown;
-    held_match: unknown; slot_count: number; agent_slots: unknown[]; dispatch_bricks: unknown[];
-  }>();
+export function externalActiveModuleLeaseGroups(assignments: GuardedAssignment[] | null | undefined): ExternalActiveModuleLeaseGroup[] {
+  const groups = new Map<string, ExternalActiveModuleLeaseGroup>();
   for (const item of assignments || []) {
     if (!item?.launch_blocked || item.claimed) continue;
     if (item.held_match !== 'module-related-active-lease') continue;
@@ -86,11 +94,11 @@ export function externalActiveModuleLeaseGroups(assignments: GuardedAssignment[]
     ].join('\u0000');
     if (!groups.has(key)) {
       groups.set(key, {
-        module_id: item.module_id || null,
-        held_resource: item.held_resource || null,
-        held_lease_id: item.held_lease_id || null,
-        held_by: item.held_by || null,
-        held_match: item.held_match || null,
+        module_id: item.module_id == null ? undefined : String(item.module_id),
+        held_resource: item.held_resource == null ? undefined : String(item.held_resource),
+        held_lease_id: item.held_lease_id == null ? undefined : String(item.held_lease_id),
+        held_by: item.held_by == null ? null : String(item.held_by),
+        held_match: item.held_match == null ? undefined : String(item.held_match),
         slot_count: 0,
         agent_slots: [],
         dispatch_bricks: [],
@@ -98,8 +106,8 @@ export function externalActiveModuleLeaseGroups(assignments: GuardedAssignment[]
     }
     const group = groups.get(key)!;
     group.slot_count += 1;
-    if (item.agent_slot !== null && item.agent_slot !== undefined) group.agent_slots.push(item.agent_slot);
-    if (item.brick) group.dispatch_bricks.push(item.brick);
+    if (item.agent_slot !== null && item.agent_slot !== undefined) group.agent_slots.push(number(item.agent_slot));
+    if (item.brick) group.dispatch_bricks.push(String(item.brick));
   }
   return [...groups.values()].map((group) => ({
     ...group,

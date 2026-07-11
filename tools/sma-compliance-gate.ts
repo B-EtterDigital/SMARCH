@@ -27,6 +27,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -35,6 +41,18 @@ const argv = new Set(rawArgs);
 const GATE = argv.has('--gate') || argv.has('--strict');
 const STRICT = argv.has('--strict');
 const JSON_OUT = argv.has('--json');
+
+type ComplianceControl = (typeof import('./lib/compliance-controls.ts').COMPLIANCE_CONTROLS)[number];
+type ComplianceContext = Parameters<ComplianceControl['detect']>[0];
+type ComplianceResult = ReturnType<ComplianceControl['detect']>;
+type ComplianceStatus = ComplianceResult['status'];
+type EvaluatedControl = ComplianceResult & { control: ComplianceControl };
+type GateContext = ComplianceContext & {
+  repoRoot: string;
+  applicationFileCount: number;
+  manifestCount: number;
+};
+interface ComplianceHit { file: string; line: string }
 
 // --root <path> scans an external project (framework use). Without it, the gate
 // self-detects the repo it lives in (in-project use). One portable checker.
@@ -79,19 +97,20 @@ async function* walk(dir: string): AsyncGenerator<string> {
 }
 
 // Build the repo context the control detectors run against.
-async function buildContext() {
+async function buildContext(): Promise<GateContext> {
   // Index files under the dirs the controls reference (bounded for speed).
   const SEARCH_ROOTS = ['src', 'supabase', 'website', 'scripts', 'docs', 'legal'];
-  const files = [];
+  const files: string[] = [];
   for (const root of SEARCH_ROOTS) {
     const abs = path.join(REPO_ROOT, root);
     if (!existsSync(abs)) continue;
     for await (const f of walk(abs)) files.push(f);
   }
-  const cache = new Map();
-  const readCached = (relOrAbs) => {
+  const cache = new Map<string, string>();
+  const readCached = (relOrAbs: string): string => {
     const abs = path.isAbsolute(relOrAbs) ? relOrAbs : path.join(REPO_ROOT, relOrAbs);
-    if (cache.has(abs)) return cache.get(abs);
+    const cached = cache.get(abs);
+    if (cached !== undefined) return cached;
     let text = '';
     try { text = readFileSync(abs, 'utf-8'); } catch { text = ''; }
     cache.set(abs, text);
@@ -106,20 +125,21 @@ async function buildContext() {
     repoRoot: REPO_ROOT,
     applicationFileCount,
     manifestCount,
-    fileExists: (rel) => existsSync(path.join(REPO_ROOT, rel)),
-    readFile: (rel) => readCached(rel),
-    hasScript: (name) => {
+    fileExists: (rel: string) => existsSync(path.join(REPO_ROOT, rel)),
+    readFile: (rel: string) => readCached(rel),
+    hasScript: (name: string) => {
       try {
-        const pkg = JSON.parse(readCached('package.json') || '{}');
-        return Boolean(pkg.scripts && pkg.scripts[name]);
+        const pkg: unknown = JSON.parse(readCached('package.json') || '{}');
+        if (!isRecord(pkg) || !isRecord(pkg.scripts)) return false;
+        return Boolean(pkg.scripts[name]);
       } catch { return false; }
     },
     /** grep(dirs, regex) → [{ file, line }] across indexed text files under dirs.
      *  Test/spec files are excluded — they are not real implementations and
      *  would otherwise produce false "covered" results. */
-    grep: (dirs, regex) => {
+    grep: (dirs: string | string[], regex: RegExp): ComplianceHit[] => {
       const wantDirs = (Array.isArray(dirs) ? dirs : [dirs]).map((d) => path.join(REPO_ROOT, d));
-      const hits = [];
+      const hits: ComplianceHit[] = [];
       for (const f of files) {
         if (!wantDirs.some((d) => f.startsWith(d))) continue;
         if (/(__tests__|__mocks__)\/|\.test\.|\.spec\.|\.stories\./.test(f)) continue;
@@ -145,10 +165,10 @@ async function countFiles(dir: string, include: (file: string) => boolean): Prom
   return count;
 }
 
-const STATUS_ORDER = { missing: 0, partial: 1, covered: 2 };
-const ICON = { covered: '✅', partial: '🟡', missing: '❌' };
+const STATUS_ORDER: Record<ComplianceStatus, number> = { missing: 0, partial: 1, covered: 2 };
+const ICON: Record<ComplianceStatus, string> = { covered: '✅', partial: '🟡', missing: '❌' };
 
-async function main() {
+async function main(): Promise<void> {
   const ctx = await buildContext();
   if (ctx.applicationFileCount === 0 && ctx.manifestCount === 0) {
     const warning = 'nothing to check; run npm run scan to discover manifests, then rerun this gate';
@@ -169,15 +189,15 @@ async function main() {
 
   const { COMPLIANCE_CONTROLS } = await import('./lib/compliance-controls.ts');
 
-  /** @type {Array<{control: any, status: string, evidence?: string, note?: string}>} */
-  const results = COMPLIANCE_CONTROLS.map((control) => {
-    let r;
+  const results: EvaluatedControl[] = COMPLIANCE_CONTROLS.map((control) => {
+    let result: ComplianceResult;
     try {
-      r = control.detect(ctx) || { status: 'missing' };
-    } catch (err) {
-      r = { status: 'missing', note: `detector error: ${err.message}` };
+      const detected = control.detect(ctx) as ComplianceResult | null | undefined;
+      result = detected ?? { status: 'missing' };
+    } catch (error: unknown) {
+      result = { status: 'missing', note: `detector error: ${errorMessage(error)}` };
     }
-    return { control, ...r };
+    return { control, ...result };
   });
 
   const blockersMissing = results.filter((r) => r.control.severity === 'blocker' && r.status !== 'covered');
@@ -220,7 +240,7 @@ async function main() {
       if (r.status !== 'covered') console.log(`        → ${r.control.remediation}`);
     }
     const c = results.filter((r) => r.status === 'covered').length;
-    console.log(`\n  ${c}/${results.length} controls covered · ${blockersMissing.length} blocker(s) unmet · ${requiredUnmet.length} required unmet`);
+    console.log(`\n  ${String(c)}/${String(results.length)} controls covered · ${String(blockersMissing.length)} blocker(s) unmet · ${String(requiredUnmet.length)} required unmet`);
     if (blockersMissing.length) {
       console.log(`  RELEASE BLOCKED: ${blockersMissing.map((r) => r.control.id).join(', ')}`);
     }
@@ -234,7 +254,15 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error('sma-compliance failed:', e);
+main().catch((error: unknown) => {
+  console.error('sma-compliance failed:', errorMessage(error));
   process.exit(2);
 });
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

@@ -20,7 +20,7 @@ export function formatNumber(value: Scalar) {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
 }
 
-export function tokenize(value: Scalar): string[] {
+function tokenize(value: Scalar): string[] {
   return [...new Set(
     String(value || "")
       .toLowerCase()
@@ -29,7 +29,7 @@ export function tokenize(value: Scalar): string[] {
   )];
 }
 
-export function tokenOverlapScore(queryTokens: readonly string[], ...parts: readonly Scalar[]): number {
+function tokenOverlapScore(queryTokens: readonly string[], ...parts: readonly Scalar[]): number {
   if (!Array.isArray(queryTokens) || queryTokens.length === 0) return 0;
   const haystack = new Set(tokenize(parts.filter(Boolean).join(" ")));
   let score = 0;

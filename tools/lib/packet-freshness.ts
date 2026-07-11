@@ -9,8 +9,8 @@
  */
 import { createHash } from 'node:crypto';
 
-export const DEFAULT_PACKET_MAX_AGE_SECONDS = 900;
-export const PACKET_LEASE_FINGERPRINT_ALGORITHM = 'sha256:active-leases-v1';
+const DEFAULT_PACKET_MAX_AGE_SECONDS = 900;
+const PACKET_LEASE_FINGERPRINT_ALGORITHM = 'sha256:active-leases-v1';
 
 const TRANSIENT_LEASE_KINDS = new Set(['registry-regen', 'state-regen', 'wiki-regen']);
 
@@ -68,7 +68,7 @@ export function packetLeaseFingerprint(activeLeases: PacketLeaseSource, { projec
   };
 }
 
-export function normalizePacketLeases(activeLeases: PacketLeaseSource, { project = null }: { project?: string | null } = {}): NormalizedPacketLease[] {
+function normalizePacketLeases(activeLeases: PacketLeaseSource, { project = null }: { project?: string | null } = {}): NormalizedPacketLease[] {
   const projectFilter = normalizeString(project);
   const source = Array.isArray(activeLeases)
     ? activeLeases
@@ -157,7 +157,7 @@ export function assertFreshPacketReport(report: PacketReport, {
 
 export function formatPacketFreshness(freshness: PacketFreshness): string {
   const age = freshness.age_seconds === null ? 'unknown age' : `${freshness.age_seconds}s old`;
-  const lease = freshness.lease_fingerprint || {};
+  const lease = freshness.lease_fingerprint;
   const leaseInfo = lease.packet_hash
     ? `lease ${shortHash(lease.packet_hash)}${freshness.lease_stale ? ', active leases changed' : ''}`
     : null;
@@ -176,7 +176,7 @@ function packetFreshnessReason(freshness: PacketFreshness): string {
     reasons.push(`${age}; max ${freshness.max_age_seconds}s`);
   }
   if (freshness.lease_stale) {
-    const lease = freshness.lease_fingerprint || {};
+    const lease = freshness.lease_fingerprint;
     reasons.push(`active leases changed ${shortHash(lease.packet_hash)} -> ${shortHash(lease.current_hash)}`);
   }
   return reasons.join('; ') || 'unknown freshness failure';

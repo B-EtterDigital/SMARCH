@@ -92,6 +92,42 @@ function executeBlock(block, index, total, tempRoot, env) {
   return false;
 }
 
+/** @param {string[]} args */
+function gitPaths(args) {
+  const result = spawnSync("git", args, {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024
+  });
+  if (result.status !== 0 || result.error) {
+    const detail = tail([result.stdout, result.stderr].filter(Boolean).join("\n"));
+    throw new Error(`Unable to snapshot the current checkout${detail ? `: ${detail}` : ""}`);
+  }
+  return String(result.stdout || "").split("\0").filter(Boolean);
+}
+
+/**
+ * Keep block 1's real clone/install proof, then make later blocks evaluate the
+ * current Git-visible workspace. On CI this is a no-op copy of HEAD; locally it
+ * includes task changes without requiring an evaluator-only commit.
+ * @param {string} checkout
+ */
+async function overlayCurrentCheckout(checkout) {
+  const deleted = new Set(gitPaths(["ls-files", "-z", "--deleted"]));
+  const files = gitPaths(["ls-files", "-z", "--cached", "--others", "--exclude-standard"]);
+
+  for (const relativePath of deleted) {
+    await fs.rm(path.join(checkout, relativePath), { recursive: true, force: true });
+  }
+  for (const relativePath of files) {
+    if (deleted.has(relativePath)) continue;
+    const source = path.join(REPO_ROOT, relativePath);
+    const target = path.join(checkout, relativePath);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.copyFile(source, target);
+  }
+}
+
 async function runJourney() {
   const markdown = await fs.readFile(QUICKSTART_PATH, "utf8");
   const blocks = parseBashBlocks(markdown);
@@ -120,6 +156,8 @@ async function runJourney() {
     for (let index = 0; index < blocks.length; index += 1) {
       if (!executeBlock(blocks[index], index, blocks.length, tempRoot, env)) {
         failures += 1;
+      } else if (index === 0) {
+        await overlayCurrentCheckout(checkout);
       }
     }
   } finally {

@@ -2,16 +2,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { DASH_API_MAX_ROWS, DashboardApiError, runReadHandler, validateQuery } from "./core.mjs";
 
-export const CONFLICTS_SCOPE = "dashboard:conflicts:read";
-export const CONFLICTS_CONTRACT = Object.freeze({ method: "GET", path: "/api/conflicts", idempotent: true, retry: "safe with exponential backoff after 502/504", timeout_ms: 500, max_rows: DASH_API_MAX_ROWS });
+const CONFLICTS_SCOPE = "dashboard:conflicts:read";
+const CONFLICTS_CONTRACT = Object.freeze({ method: "GET", path: "/api/conflicts", idempotent: true, retry: "safe with exponential backoff after 502/504", timeout_ms: 500, max_rows: DASH_API_MAX_ROWS });
 
 /** @typedef {{ kind?: string, actor_id?: string, decision_rationale?: string, brick_id?: string, event_id?: string, timestamp?: string, project?: string, intent?: string, _source_brick?: string }} ConflictEvent */
 /** @typedef {{ limit: number, days: number, status: "all" | "open" | "resolved", project?: string }} ConflictQuery */
 /** @typedef {{ event_id: string, timestamp: string, project: string, brick_id: string, agents: string[], intent: string, status: "open" | "resolved" }} Conflict */
 /** @typedef {{ root: string, principal: { subject: string, scopes: string[] }, query: URLSearchParams, requestId?: string, telemetry?: (event: Record<string, unknown>) => void, timeoutMs?: number, load?: (input: ConflictQuery) => Promise<unknown> }} ConflictsHandlerOptions */
 
-/** @param {URLSearchParams} query */
-export function validateConflictsQuery(query) {
+/** @param {URLSearchParams} query @returns {ConflictQuery} */
+function validateConflictsQuery(query) {
   const validated = validateQuery(query, {
     limit: { type: "integer", min: 1, max: DASH_API_MAX_ROWS, default: 200 },
     days: { type: "integer", min: 1, max: 365, default: 30 },
@@ -26,8 +26,9 @@ export function validateConflictsQuery(query) {
   else if (status === "open") typedStatus = "open";
   else if (status === "resolved") typedStatus = "resolved";
   else throw new DashboardApiError("DASH_API_VALIDATION");
-  const project = validated.project;
-  if (project !== undefined && typeof project !== "string") throw new DashboardApiError("DASH_API_VALIDATION");
+  const rawProject = validated.project;
+  if (rawProject !== undefined && typeof rawProject !== "string") throw new DashboardApiError("DASH_API_VALIDATION");
+  const project = typeof rawProject === "string" ? rawProject : undefined;
   return { limit: validated.limit, days: validated.days, status: typedStatus, project };
 }
 
@@ -81,7 +82,7 @@ async function readConflictEvents(directory) {
 }
 
 /** @param {string} smaRoot @param {ConflictQuery} input */
-export async function loadConflicts(smaRoot, input) {
+async function loadConflicts(smaRoot, input) {
   const events = await readConflictEvents(path.join(smaRoot, ".smarch", "agent-context"));
   /** @type {Map<string, Conflict[]>} */
   const openByBrick = new Map();

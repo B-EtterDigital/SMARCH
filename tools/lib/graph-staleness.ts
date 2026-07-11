@@ -22,7 +22,7 @@ type GraphFreshness = {
  * @param {object|null|undefined} moduleTarget Module target with an id or name.
  * @returns {string[]} Normalized, non-empty ownership globs.
  */
-export function moduleOwnershipGlobs(gen3Config: Gen3Config | null | undefined, moduleTarget: ModuleTarget | null | undefined): string[] {
+function moduleOwnershipGlobs(gen3Config: Gen3Config | null | undefined, moduleTarget: ModuleTarget | null | undefined): string[] {
   try {
     const modules = Array.isArray(gen3Config?.modules) ? gen3Config.modules : [];
     const wantedIds = new Set([moduleTarget?.id, moduleTarget?.name]
@@ -45,7 +45,7 @@ export function moduleOwnershipGlobs(gen3Config: Gen3Config | null | undefined, 
  * @param {string[]} patterns Positive and negated source glob patterns.
  * @returns {number|null} Newest matching mtime in milliseconds, or null when no file matches.
  */
-export function newestMatchingSourceMtime(projectRoot: string, patterns: string[]): number | null {
+function newestMatchingSourceMtime(projectRoot: string, patterns: string[]): number | null {
   try {
     const normalizedPatterns = patterns.map((item) => {
       const negated = item.startsWith("!");

@@ -1,7 +1,7 @@
-import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { runWorkforceProcess } from "./process-runner.mjs";
 
 const DEFAULT_TIMEOUT_MS = 600_000;
 
@@ -27,54 +27,6 @@ export function buildClaudeArgs({ model, effort, schema, readOnly = false } = {}
   if (schema) args.push("--json-schema", schemaJson(schema));
   if (readOnly) args.push("--permission-mode", "plan");
   return args;
-}
-
-/**
- * @typedef {{
- *   code: number | null,
- *   stdout: string,
- *   stderr: string,
- *   timedOut: boolean,
- *   closeSignal?: NodeJS.Signals | null,
- *   error?: Error & { code?: string }
- * }} ProcessResult
- */
-
-/**
- * @param {string[]} args
- * @param {string} input
- * @param {{ timeoutMs: number, signal?: AbortSignal, cwd?: string }} options
- * @returns {Promise<ProcessResult>}
- */
-function runProcess(args, input, { timeoutMs, signal, cwd }) {
-  return new Promise((resolve) => {
-    const child = spawn("claude", args, { env: process.env, cwd });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    let timedOut = false;
-
-    /** @param {ProcessResult} result */
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", abort);
-      resolve(result);
-    };
-    const abort = () => {
-      timedOut = true;
-      child.kill("SIGKILL");
-    };
-    const timer = setTimeout(abort, timeoutMs);
-    signal?.addEventListener("abort", abort, { once: true });
-
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
-    child.on("error", (error) => finish({ code: null, stdout, stderr, error, timedOut }));
-    child.on("close", (code, closeSignal) => finish({ code, stdout, stderr, closeSignal, timedOut }));
-    child.stdin.end(input);
-  });
 }
 
 /**
@@ -104,7 +56,7 @@ export async function execute(packet, {
     };
   }
 
-  const result = await runProcess(args, packetPrompt(packet), { timeoutMs, signal, cwd });
+  const result = await runWorkforceProcess("claude", args, packetPrompt(packet), { timeoutMs, signal, cwd });
   let parsed;
   try { parsed = JSON.parse(result.stdout); } catch {}
   const usage = parsed?.usage || {};

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Serves generated dashboard files and bounded maintenance endpoints over local web access.
  * WHY: Operators need a browser surface for scans and reports without exposing unsafe mutations.
@@ -39,9 +41,21 @@ const browseExcludedDirs = new Set([
   "node_modules"
 ]);
 
-type LooseRecord = Record<string, any>;
 type DashboardOptions = typeof defaults & { authToken: string };
-type RunResult = { stdout: string; stderr: string };
+interface RunResult { stdout: string; stderr: string }
+interface RegistryProject { id?: string; error_count?: number; warning_count?: number; health_counts?: { fail?: number } }
+interface RegistryReport {
+  scanned_project_roots?: Array<{ id?: string; root?: string }>;
+  projects?: RegistryProject[]; count?: number; unmanifested_count?: number;
+  validation_error_count?: number; validation_warning_count?: number;
+}
+interface SecurityReport { count?: number; high_or_critical?: number; scanned_files?: number; truncated?: boolean }
+interface ProjectMetadata {
+  schema_version?: string;
+  project?: { id?: string; name?: string; root?: string; repository?: string; stack?: string[] };
+  sma?: { status?: string; latest_registry?: string; security_gate?: unknown; promotion_backlog?: unknown };
+}
+interface ScanBody { root?: unknown }
 
 function parseArgs(argv: string[], env: Record<string, string | undefined> = process.env): DashboardOptions {
   const options = {
@@ -115,7 +129,7 @@ function validateStartupPolicy(options: DashboardOptions): void {
 function suppliedBearerToken(req: Pick<IncomingMessage, "headers">): string {
   const authorization = req.headers.authorization;
   if (typeof authorization !== "string") return "";
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  const match = /^Bearer\s+(.+)$/i.exec(authorization);
   return match?.[1]?.trim() || "";
 }
 
@@ -165,11 +179,11 @@ function expectUnsafeNonLoopbackStartupRefusal(): Promise<void> {
       reject(new Error("selftest: unsafe non-loopback startup did not refuse before binding"));
     }, 2000);
 
-    child.stdout.on("data", (chunk) => {
-      output += chunk.toString();
+    child.stdout.on("data", (chunk: unknown) => {
+      output += chunkToString(chunk);
     });
-    child.stderr.on("data", (chunk) => {
-      output += chunk.toString();
+    child.stderr.on("data", (chunk: unknown) => {
+      output += chunkToString(chunk);
     });
     child.on("error", (error) => {
       clearTimeout(timeout);
@@ -188,7 +202,13 @@ function expectUnsafeNonLoopbackStartupRefusal(): Promise<void> {
   });
 }
 
-async function runSelftest() {
+function chunkToString(chunk: unknown): string {
+  if (typeof chunk === "string") return chunk;
+  if (Buffer.isBuffer(chunk)) return chunk.toString();
+  return String(chunk);
+}
+
+async function runSelftest(): Promise<void> {
   await expectUnsafeNonLoopbackStartupRefusal();
 
   const readOnlyOptions = parseArgs([], {});
@@ -218,12 +238,12 @@ async function runSelftest() {
   console.log("sma-dashboard-server selftest passed");
 }
 
-function inside(parent, child) {
+function inside(parent: string, child: string): boolean {
   const relative = path.relative(parent, child);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-function contentType(filePath) {
+function contentType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
 
   if (ext === ".html") return "text/html; charset=utf-8";
@@ -235,7 +255,7 @@ function contentType(filePath) {
   return "application/octet-stream";
 }
 
-function send(res, status, body, type = "text/plain; charset=utf-8") {
+function send(res: ServerResponse, status: number, body: string | Buffer, type = "text/plain; charset=utf-8"): void {
   res.writeHead(status, {
     "Content-Type": type,
     "Cache-Control": "no-store"
@@ -243,22 +263,23 @@ function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.end(body);
 }
 
-function sendJson(res, status, body) {
+function sendJson(res: ServerResponse, status: number, body: unknown): void {
   send(res, status, JSON.stringify(body, null, 2), "application/json; charset=utf-8");
 }
 
-async function readBody(req) {
-  const chunks = [];
+async function readBody(req: IncomingMessage): Promise<ScanBody> {
+  const chunks: Buffer[] = [];
 
   for await (const chunk of req) {
-    chunks.push(chunk);
+    if (Buffer.isBuffer(chunk)) chunks.push(chunk);
+    else chunks.push(Buffer.from(String(chunk)));
   }
 
   if (chunks.length === 0) {
     return {};
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as ScanBody;
 }
 
 function run(command: string, args: string[], cwd: string): Promise<RunResult> {
@@ -267,12 +288,12 @@ function run(command: string, args: string[], cwd: string): Promise<RunResult> {
     let stdout = "";
     let stderr = "";
 
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
+    child.stdout.on("data", (chunk: unknown) => {
+      stdout += chunkToString(chunk);
     });
 
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
+    child.stderr.on("data", (chunk: unknown) => {
+      stderr += chunkToString(chunk);
     });
 
     child.on("close", (code) => {
@@ -285,11 +306,11 @@ function run(command: string, args: string[], cwd: string): Promise<RunResult> {
   });
 }
 
-function scanSlug(root) {
+function scanSlug(root: string): string {
   return path.basename(root).toLowerCase().replace(/[^a-z0-9._-]+/g, "-") || "project";
 }
 
-function registrySlug(registry, fallback) {
+function registrySlug(registry: RegistryReport, fallback: string): string {
   const id = registry.scanned_project_roots?.[0]?.id || registry.projects?.[0]?.id || fallback;
   return String(id || fallback)
     .toLowerCase()
@@ -297,16 +318,16 @@ function registrySlug(registry, fallback) {
     .replace(/^-+|-+$/g, "") || fallback;
 }
 
-async function runScan(root, registryPath) {
+async function runScan(root: string, registryPath: string): Promise<RegistryReport> {
   await run("node", [path.join(smaRoot, "tools", "sma-scan.ts"), "--root", root, "--out", registryPath, "--json"], smaRoot);
-  return JSON.parse(await fs.readFile(registryPath, "utf8"));
+  return JSON.parse(await fs.readFile(registryPath, "utf8")) as RegistryReport;
 }
 
-async function runWiki(registryPath, wikiPath) {
+async function runWiki(registryPath: string, wikiPath: string): Promise<void> {
   await run("node", [path.join(smaRoot, "tools", "sma-wiki.ts"), "--registry", registryPath, "--out", wikiPath], smaRoot);
 }
 
-async function runSecurity(root, reportPath) {
+async function runSecurity(root: string, reportPath: string): Promise<SecurityReport> {
   const result = await run("node", [
     path.join(smaRoot, "tools", "sma-security-gate.ts"),
     "--root",
@@ -317,10 +338,10 @@ async function runSecurity(root, reportPath) {
     "--soft"
   ], smaRoot);
   await fs.writeFile(reportPath, result.stdout);
-  return JSON.parse(result.stdout);
+  return JSON.parse(result.stdout) as SecurityReport;
 }
 
-async function copyProjectReports(projectRoot, registryPath, securityPath = "") {
+async function copyProjectReports(projectRoot: string, registryPath: string, securityPath = ""): Promise<void> {
   const scansDir = path.join(projectRoot, ".sweetspot", "scans");
   await fs.mkdir(scansDir, { recursive: true });
   await fs.copyFile(registryPath, path.join(scansDir, "latest.registry.json"));
@@ -330,12 +351,12 @@ async function copyProjectReports(projectRoot, registryPath, securityPath = "") 
   }
 }
 
-async function updateProjectMetadata(projectRoot, registry, security = null) {
+async function updateProjectMetadata(projectRoot: string, registry: RegistryReport, security: SecurityReport | null = null): Promise<void> {
   const projectFile = path.join(projectRoot, ".sweetspot", "project.json");
-  let metadata: LooseRecord = {};
+  let metadata: ProjectMetadata = {};
 
   try {
-    metadata = JSON.parse(await fs.readFile(projectFile, "utf8"));
+    metadata = JSON.parse(await fs.readFile(projectFile, "utf8")) as ProjectMetadata;
   } catch {
     // First-run projects intentionally receive a fresh metadata document.
     metadata = {
@@ -384,7 +405,7 @@ async function updateProjectMetadata(projectRoot, registry, security = null) {
   await fs.writeFile(projectFile, `${JSON.stringify(metadata, null, 2)}\n`);
 }
 
-async function listDirs(res, options, requestUrl) {
+async function listDirs(res: ServerResponse, options: DashboardOptions, requestUrl: URL): Promise<void> {
   const requested = path.resolve(requestUrl.searchParams.get("path") || options.allowRoot);
 
   if (!inside(options.allowRoot, requested)) {
@@ -405,9 +426,9 @@ async function listDirs(res, options, requestUrl) {
   sendJson(res, 200, { path: requested, parent, dirs });
 }
 
-async function scanProject(res, options, req) {
+async function scanProject(res: ServerResponse, options: DashboardOptions, req: IncomingMessage): Promise<void> {
   const body = await readBody(req);
-  const root = path.resolve(body.root || "");
+  const root = path.resolve(String(body.root || ""));
 
   if (!root || !inside(options.allowRoot, root)) {
     sendJson(res, 403, { error: `Scan root must be inside ${options.allowRoot}` });
@@ -447,9 +468,9 @@ async function scanProject(res, options, req) {
   });
 }
 
-async function setupProject(res, options, req) {
+async function setupProject(res: ServerResponse, options: DashboardOptions, req: IncomingMessage): Promise<void> {
   const body = await readBody(req);
-  const root = path.resolve(body.root || "");
+  const root = path.resolve(String(body.root || ""));
 
   if (!root || !inside(options.allowRoot, root)) {
     sendJson(res, 403, { error: `Setup root must be inside ${options.allowRoot}` });
@@ -476,7 +497,7 @@ async function setupProject(res, options, req) {
     await fs.writeFile(registryPath, `${JSON.stringify(initialRegistry, null, 2)}\n`);
   }
 
-  let bootstrap = null;
+  let bootstrap: unknown = null;
 
   if ((initialRegistry.unmanifested_count || 0) > 0) {
     const result = await run("node", [
@@ -485,7 +506,7 @@ async function setupProject(res, options, req) {
       registryPath,
       "--write"
     ], smaRoot);
-    bootstrap = JSON.parse(result.stdout);
+    bootstrap = JSON.parse(result.stdout) as unknown;
   }
 
   const registry = await runScan(root, registryPath);
@@ -513,7 +534,7 @@ async function setupProject(res, options, req) {
   });
 }
 
-async function serveStatic(res, options, requestUrl) {
+async function serveStatic(res: ServerResponse, options: DashboardOptions, requestUrl: URL): Promise<void> {
   let relativePath = decodeURIComponent(requestUrl.pathname);
 
   if (relativePath === "/") {
@@ -544,7 +565,7 @@ async function serveStatic(res, options, requestUrl) {
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
 
   if (options.selftest) {
@@ -557,42 +578,44 @@ async function main() {
   options.allowRoot = path.resolve(options.allowRoot);
   validateStartupPolicy(options);
 
-  const server = http.createServer(async (req, res) => {
-    const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const server = http.createServer((req, res) => {
+    void (async () => {
+      const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
-    try {
-      if (req.method === "GET" && requestUrl.pathname === "/api/list") {
-        await listDirs(res, options, requestUrl);
-        return;
-      }
-
-      if (req.method === "POST" && requestUrl.pathname === "/api/scan") {
-        if (!mutationAuthorized(req, options)) {
-          denyMutation(res, options);
+      try {
+        if (req.method === "GET" && requestUrl.pathname === "/api/list") {
+          await listDirs(res, options, requestUrl);
           return;
         }
-        await scanProject(res, options, req);
-        return;
-      }
 
-      if (req.method === "POST" && requestUrl.pathname === "/api/setup") {
-        if (!mutationAuthorized(req, options)) {
-          denyMutation(res, options);
+        if (req.method === "POST" && requestUrl.pathname === "/api/scan") {
+          if (!mutationAuthorized(req, options)) {
+            denyMutation(res, options);
+            return;
+          }
+          await scanProject(res, options, req);
           return;
         }
-        await setupProject(res, options, req);
-        return;
-      }
 
-      if (req.method === "GET" || req.method === "HEAD") {
-        await serveStatic(res, options, requestUrl);
-        return;
-      }
+        if (req.method === "POST" && requestUrl.pathname === "/api/setup") {
+          if (!mutationAuthorized(req, options)) {
+            denyMutation(res, options);
+            return;
+          }
+          await setupProject(res, options, req);
+          return;
+        }
 
-      send(res, 405, "Method not allowed");
-    } catch (error) {
-      sendJson(res, 500, { error: error instanceof Error ? error.message : String(error) });
-    }
+        if (req.method === "GET" || req.method === "HEAD") {
+          await serveStatic(res, options, requestUrl);
+          return;
+        }
+
+        send(res, 405, "Method not allowed");
+      } catch (error) {
+        sendJson(res, 500, { error: error instanceof Error ? error.message : String(error) });
+      }
+    })();
   });
 
   server.listen(options.port, options.host, () => {

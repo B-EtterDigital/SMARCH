@@ -24,16 +24,16 @@
 // Openness — the legal "can this be redistributed / opened" axis.
 // Ranks ascend from most-restrictive to least-restrictive. Meet = min rank.
 // ---------------------------------------------------------------------------
-export const OPENNESS = ['closed', 'source-available', 'open'] as const;
+const OPENNESS = ['closed', 'source-available', 'open'] as const;
 const OPENNESS_RANK = new Map<string, number>(OPENNESS.map((v, i) => [v, i]));
 
 // ---------------------------------------------------------------------------
 // Visibility — the access-tier axis. Meet = min rank.
 // ---------------------------------------------------------------------------
-export const VISIBILITY = ['private', 'internal', 'community', 'public'] as const;
+const VISIBILITY = ['private', 'internal', 'community', 'public'] as const;
 const VISIBILITY_RANK = new Map<string, number>(VISIBILITY.map((v, i) => [v, i]));
 
-export const LICENSE_TIERS = ['open', 'commercial'] as const;
+const LICENSE_TIERS = ['open', 'commercial'] as const;
 
 type Openness = typeof OPENNESS[number];
 type Visibility = typeof VISIBILITY[number];
@@ -107,7 +107,7 @@ const UNKNOWN_LICENSE: Omit<LicenseClassification, 'spdx'> = { class: 'unknown',
  * Strips noise words ("license", "version") and punctuation so
  * "Apache License 2.0" and "Apache-2.0" resolve the same.
  */
-export function normalizeSpdx(raw: unknown): string | null {
+function normalizeSpdx(raw: unknown): string | null {
   if (!raw || typeof raw !== 'string') return null;
   const s = raw.trim()
     .replace(/\blicen[cs]e\b/gi, '')
@@ -365,7 +365,7 @@ export function checkComposition(declared: CompositionDeclaration, components: r
   };
 }
 
-export function opennessOfLicense(license: unknown): Openness {
+function opennessOfLicense(license: unknown): Openness {
   return classifyLicense(license).openness;
 }
 

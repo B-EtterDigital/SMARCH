@@ -211,7 +211,7 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
 /**
  * Per-project merge proposals — open vs resolved.
  */
-export function readProjectMergeProposals(projectRoot: string): { open_count: number; resolved_count: number; proposals: MergeProposal[] } {
+function readProjectMergeProposals(projectRoot: string): { open_count: number; resolved_count: number; proposals: MergeProposal[] } {
   const dir = resolve(projectRoot, '.smarch/merge-proposals');
   if (!existsSync(dir)) {
     return { open_count: 0, resolved_count: 0, proposals: [] };

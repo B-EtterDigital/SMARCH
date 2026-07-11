@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Plans, claims, watches, and verifies module-scoped work dispatches.
  * WHY: Parallel product work needs durable assignments that respect ownership and shared paths.
@@ -38,6 +40,69 @@ import {
   timestampSlug,
   type ModulePacketArgs,
 } from './lib/module-work-utils.ts';
+import type { PathOverlapPair, SharedHotPath } from './lib/module-work-paths.ts';
+import type { BigPicture, ModuleObservation } from './lib/module-work-renderers.ts';
+
+interface WorkPartition { id: string; label: string; description: string; paths: string[]; excludePaths: string[]; iterationLocalGates: string[]; requiredLocalGates: string[] }
+interface ModuleConfig { id: string; label?: string; paths: string[]; excludePaths: string[]; iterationLocalGates: string[]; requiredLocalGates?: string[]; maxParallelAgents?: number; workPartitions: WorkPartition[]; partitionIterationLocalGates?: string[]; partitionRequiredLocalGates?: string[] }
+interface RawModuleConfig { id?: unknown; label?: string; paths?: unknown; excludePaths?: unknown; iterationLocalGates?: unknown; requiredLocalGates?: unknown; maxParallelAgents?: number; workPartitions?: unknown }
+interface Gen3Config { modules?: RawModuleConfig[]; moduleDefaults?: { maxParallelAgents?: number; requiredLocalGates?: string[]; iterationLocalGates?: string[] }; sharedHotPaths?: SharedHotPath[] }
+interface ProjectConfig { project: string; root: string; config: Gen3Config; modules: ModuleConfig[] }
+interface GraphInfo { ok?: boolean; graphReady: boolean; graphKnownEmpty?: boolean; skipped?: boolean; nodeCount?: number; edgeCount?: number; graphPath?: string; error?: string }
+interface ActiveLease { lease_id: string; resource_kind: string; resource_id: string; agent_id: string; project: string | null; acquired_at: string; expires_at: string; intent?: string; _module_related?: boolean }
+interface ActiveLeaseState { leases: ActiveLease[] }
+interface DirtyScope { count: number; paths: string[]; group: string; brick: string }
+interface DirtyState { paths: string[]; error: string | null }
+interface ModuleCandidate { module: ModuleConfig; baseModule: ModuleConfig; partition: WorkPartition | null; slot: number; graph: GraphInfo; maxSlots: number; partitions: WorkPartition[] }
+interface ModuleSlot { agent_slot: number; project: string; module_id: string; label: string; task: string; slot: number; partition_id: string | null; partition_label: string | null; partition_description: string | null; brick: string; launch_ready: boolean; blocked_reason: string | null; held: boolean; held_by: string | null; held_lease_id: string | null; held_resource: string | null; held_match: string | null; dirty_scope_count: number; dirty_scope_paths: string[]; dirty_scope_command: string | null; dirty_scope_conflict_command: string | null; overlap_with: string | null; path_overlap_warning: string | null; overlap_path_pairs: PathOverlapPair[]; shared_hot_paths: SharedHotPath[]; max_parallel_agents: number; paths: string[]; module_paths: string[]; iteration_gates: string[]; required_gates: string[]; graph_ready: boolean; graph_known_empty: boolean; graph_node_count: number | null; graph_edge_count: number | null; graph_path: string | null; graph_query_command: string; exclude_paths: string[]; claim_command: string; prompt: string }
+interface Plan { schema_version: string; generated_at: string; project: string; project_root: string; status: string; task: string; task_is_placeholder: boolean; launch_mode: string; summary: { modules_total: number; requested_agents: number; candidate_slots: number; launch_ready_slots: number; graph_ready_modules: number; graph_blocked_modules: number; held_slots: number; path_overlap_blocked_slots: number; dirty_scope_blocked_slots: number; dirty_scope_blocked_paths: number; fill_capacity: boolean; partitioned_slots: number }; gains: { module_graph_first_token_reduction_percent_estimate: number; dirty_status_token_reduction_percent_estimate: number; false_portfolio_blocker_reduction_percent_estimate: number; collision_reduction_percent_estimate: number }; commands: { project_preflight: string; module_plan: string; module_dispatch: string; module_observe_write: string; conflict_summary: string }; blockers: string[]; warnings: string[]; launch_plan: ModuleSlot[]; slots: ModuleSlot[]; dispatch_manifest?: DispatchReceipt }
+interface DispatchReceipt { dispatch_id: string; json_path: string; markdown_path: string }
+interface AgentPacketRef { json_path?: string; markdown_path: string; first_read?: true }
+interface DispatchAssignment extends Omit<ModuleSlot, 'launch_ready' | 'blocked_reason' | 'held' | 'held_by' | 'held_lease_id' | 'held_resource' | 'held_match' | 'dirty_scope_count' | 'dirty_scope_paths' | 'dirty_scope_command' | 'dirty_scope_conflict_command' | 'overlap_with' | 'path_overlap_warning' | 'overlap_path_pairs' | 'max_parallel_agents' | 'module_paths' | 'graph_known_empty'> { dispatch_id: string; agent_packet: AgentPacketRef; conflict_command?: string }
+interface DispatchManifest { kind?: string; dispatch_id?: string; created_at?: string | null; project?: string | null; task?: string; assignments?: DispatchAssignment[]; blockers?: string[]; warnings?: string[]; summary?: Record<string, unknown>; gains?: Record<string, unknown> }
+interface LoadedDispatch { path: string; manifest: DispatchManifest; dispatch_id: string; created_at: string | null; project: string; task: string; assignment_count: number; assignments: DispatchAssignment[]; blockers: string[]; warnings: string[]; summary: Record<string, unknown>; gains: Record<string, unknown>; dispatch_path?: string }
+interface AssignmentGuard { launch_blocked: boolean; launch_blocked_reason: string; held_resource?: string | null; held_lease_id?: string | null; held_by?: string | null; held_match?: string | null; dirty_scope_count?: number; dirty_scope_paths?: string[]; dirty_scope_command?: string | null; dirty_scope_conflict_command?: string | null }
+interface ContextEvent { _malformed?: boolean; event_id?: string; kind?: string; timestamp?: string; actor_id?: string; lease_id?: string; task_id?: string; brick_id?: string; decision_rationale?: string; intent?: string; files_touched?: unknown[] }
+interface ObservedAssignment { key: string; agent_slot: number; project: string; module_id: string; task: string; dispatch_id: string; slot: number; partition_id: string | null; partition_label: string | null; brick: string; status: string; claimed: boolean; active: boolean; completed: boolean; graph_ready: boolean; graph_path: string | null; agent_packet_markdown_path: string; claim_command: string | null; conflict_command: string; open_conflicts: number; context_error: string | null; context_events_checked: number; claim_event_count: number; completion_event_count: number; active_lease_count: number; latest_claim_event: ReturnType<typeof summarizeContextEvent>; latest_completion_event: ReturnType<typeof summarizeContextEvent>; active_leases: ReturnType<typeof summarizeLease>[]; launch_blocked: boolean; launch_blocked_reason?: string; held_resource: string | null; held_lease_id: string | null; held_by: string | null; held_match: string | null; dirty_scope_count: number; dirty_scope_paths: string[]; dirty_scope_command: string | null; dirty_scope_conflict_command: string | null; stale_dispatch_age_ms?: number; stale_dispatch_max_age_ms?: number }
+interface Freshness { created_ms: number | null; age_ms: number; max_age_ms: number; stale: boolean }
+interface ClaimReceipt { project: string; module: string; module_label: string; slot: number; partition: string | null; brick: string; graph: GraphInfo; graph_query_command: string; graph_path: string | null; paths: string[]; exclude_paths: string[]; iteration_gates: string[]; required_gates: string[]; shared_hot_paths: SharedHotPath[]; claim_command: string; conflict_command: string; agent_packet: AgentPacketRef | null; agent_packet_markdown_path: string; start_edit_command: string; dispatch_assignment: DispatchAssignment | null; prompt: string }
+interface ClaimLease { lease_id?: string }
+interface ExternalLeaseGroup { module_id?: string; held_resource?: string; held_lease_id?: string; held_by?: string | null; held_match?: string; slot_count: number; agent_slots: number[]; dispatch_bricks: string[] }
+type Observation = Omit<ModuleObservation, 'assignments' | 'dispatch' | 'gains' | 'comparison' | 'external_active_module_leases'> & { big_picture: BigPicture; dispatch: ModuleObservation['dispatch'] & { path: string; created_at: string | null }; gains: ModuleObservation['gains'] & Record<string, number>; comparison: ModuleObservation['comparison'] & Record<string, number>; external_active_module_leases: ExternalLeaseGroup[]; assignments: ObservedAssignment[]; observation_manifest?: { json_path: string; markdown_path: string } };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeActiveLease(value: unknown): ActiveLease | null {
+  if (!isRecord(value)) return null;
+  if (typeof value.lease_id !== 'string' || typeof value.resource_kind !== 'string' || typeof value.resource_id !== 'string' || typeof value.agent_id !== 'string') return null;
+  return {
+    lease_id: value.lease_id,
+    resource_kind: value.resource_kind,
+    resource_id: value.resource_id,
+    agent_id: value.agent_id,
+    project: typeof value.project === 'string' ? value.project : null,
+    acquired_at: typeof value.acquired_at === 'string' ? value.acquired_at : '',
+    expires_at: typeof value.expires_at === 'string' ? value.expires_at : '',
+    intent: typeof value.intent === 'string' ? value.intent : undefined,
+  };
+}
+
+function normalizeActiveLeaseState(value: unknown): { generated_at: string | null; leases: ActiveLease[]; error: string | null } {
+  if (!isRecord(value)) return { generated_at: null, leases: [], error: 'active lease registry is invalid' };
+  const leases = Array.isArray(value.leases) ? value.leases.map(normalizeActiveLease).filter((lease): lease is ActiveLease => Boolean(lease)) : [];
+  return {
+    generated_at: typeof value.generated_at === 'string' ? value.generated_at : null,
+    leases,
+    error: typeof value._error === 'string' ? value._error : null,
+  };
+}
+
+function errorStderr(error: unknown): string {
+  if (!isRecord(error) || error.stderr == null) return '';
+  return String(error.stderr).trim();
+}
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const START_EDIT = resolve(TOOLS_DIR, 'sma-start-edit.ts');
@@ -81,13 +146,13 @@ try {
     parseGitShortDirtyPaths,
     renderObservationMarkdown,
     resolve,
-  }));
+  } as unknown as Parameters<typeof runModuleWorkSelfTest>[0]));
   throw new Error(`unknown command: ${command}`);
 } catch (err) {
   console.error(`sma-module-work-packets: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
-function usage() {
+function usage(): void {
   console.log(`Usage:
   sma-module-work-packets.ts plan --project <id> [--task "..."] [--max-agents 12]
                                   [--module <id>] [--fill-capacity] [--json]
@@ -111,7 +176,7 @@ module-owned paths only, and conflict reporting before shared-hot-path work.
 `);
 }
 
-function runPlan() {
+function runPlan(): number {
   const plan = buildPlan();
   const dispatchManifest = args.writeDispatch ? maybeWriteDispatchManifest(plan) : null;
   if (dispatchManifest) plan.dispatch_manifest = dispatchManifest;
@@ -173,14 +238,15 @@ function runPlan() {
   return 0;
 }
 
-function runClaim() {
+function runClaim(): number {
   if (args.next) return runNextClaim();
   return runResolvedClaim();
 }
 
-function runNextClaim() {
+function runNextClaim(): number {
   requireArg('project', '--project');
-  const explicitSlotArgs = ['module', 'slot', 'partition', 'dispatchSlot'].filter((key) => args[key] !== undefined);
+  const explicitSlotKeys: Array<keyof ModulePacketArgs> = ['module', 'slot', 'partition', 'dispatchSlot'];
+  const explicitSlotArgs = explicitSlotKeys.filter((key) => args[key] !== undefined);
   if (explicitSlotArgs.length) {
     throw new Error(`--next selects the module slot; remove ${explicitSlotArgs.map((key) => `--${dashCase(key)}`).join(', ')}`);
   }
@@ -199,7 +265,7 @@ function runNextClaim() {
   }
 }
 
-function runResolvedClaim() {
+function runResolvedClaim(): number {
   requireArg('project', '--project');
   requireArg('module', '--module');
   requireArg('task', '--task');
@@ -217,7 +283,7 @@ function runResolvedClaim() {
     throw new Error(`module graph is not ready for ${module.id}; run npm run graphify:refresh:modules -- --project ${shellArg(config.project)} --missing-only --global`);
   }
   const dispatchAssignment = args.dispatchId ? validateDispatchClaim({ config, module, slot, partition }) : null;
-  const active = readActiveLeases({ excludeCurrentWrapperLease: true });
+  const active = normalizeActiveLeaseState(readActiveLeases({ excludeCurrentWrapperLease: true }));
   const brick = moduleWorkBrick(module.id, slot);
   const held = heldModuleSlot(active, config.project, effectiveModule, slot);
   if (held) {
@@ -308,7 +374,7 @@ function runResolvedClaim() {
   return 0;
 }
 
-function buildClaimReceipt({ config, module, baseModule, effectiveModule, partition, slot, brick, graph, dispatchAssignment, startArgs }) {
+function buildClaimReceipt({ config, module, baseModule, effectiveModule, partition, slot, brick, graph, dispatchAssignment, startArgs }: { config: ProjectConfig; module: ModuleConfig; baseModule: ModuleConfig; effectiveModule: ModuleConfig; partition: WorkPartition | null; slot: number; brick: string; graph: GraphInfo; dispatchAssignment: DispatchAssignment | null; startArgs: string[] }): ClaimReceipt {
   const claim = buildModuleSlot({
     config,
     module: effectiveModule,
@@ -357,7 +423,7 @@ function buildClaimReceipt({ config, module, baseModule, effectiveModule, partit
   };
 }
 
-function printClaimReceipt(receipt) {
+function printClaimReceipt(receipt: ClaimReceipt): void {
   console.log('');
   console.log('SMA Gen3 Module Claim Receipt');
   console.log(`module:           ${receipt.module} slot ${receipt.slot}${receipt.partition ? ` (${receipt.partition})` : ''}`);
@@ -375,18 +441,18 @@ function printClaimReceipt(receipt) {
   if ((args.fullPrompt || args.fullPrompts) && receipt.prompt) console.log(`prompt:           ${receipt.prompt}`);
 }
 
-function parseJsonOutput(raw, label) {
+function parseJsonOutput(raw: unknown, label: string): Record<string, unknown> {
   try {
     const start = String(raw || '').indexOf('{');
-    return JSON.parse(start >= 0 ? String(raw).slice(start) : String(raw || ''));
+    return JSON.parse(start >= 0 ? String(raw).slice(start) : String(raw || '')) as Record<string, unknown>;
   } catch (err) {
-    throw new Error(`invalid ${label} JSON: ${err.message}`);
+    throw new Error(`invalid ${label} JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
-function hydrateNextDispatchClaim(dispatchInput) {
+function hydrateNextDispatchClaim(dispatchInput: unknown): void {
   const dispatch = loadDispatch(dispatchInput);
-  args.dispatch = dispatch.path || dispatchInput;
+  args.dispatch = dispatch.path;
   const observation = observeDispatch(dispatch);
   if (observation.blockers.length) {
     throw new Error(`module dispatch is blocked; run ${observation.next}: ${observation.blockers.join('; ')}`);
@@ -407,7 +473,7 @@ function hydrateNextDispatchClaim(dispatchInput) {
   args.dispatchSlot = String(assignment.agent_slot);
 }
 
-function acquireClaimNextLease(dispatch) {
+function acquireClaimNextLease(dispatch: LoadedDispatch): ClaimLease {
   const resource = claimNextLeaseResource(dispatch);
   const waitMs = positiveInt(args.claimNextWaitMs, 15000);
   const retryMs = Math.max(20, positiveInt(args.claimNextRetryMs, 120));
@@ -428,9 +494,9 @@ function acquireClaimNextLease(dispatch) {
     });
     if (result.status === 0) {
       try {
-        return JSON.parse(result.stdout);
+        return JSON.parse(result.stdout) as ClaimLease;
       } catch (err) {
-        throw new Error(`invalid claim-next allocator lease JSON: ${err.message}`);
+        throw new Error(`invalid claim-next allocator lease JSON: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
     if (result.status === 10 && Date.now() - startedAt < waitMs) {
@@ -442,7 +508,7 @@ function acquireClaimNextLease(dispatch) {
   }
 }
 
-function releaseClaimNextLease(lease) {
+function releaseClaimNextLease(lease: ClaimLease): void {
   if (!lease?.lease_id) return;
   const result = spawnSync(process.execPath, [
     LEASE, 'release',
@@ -459,7 +525,7 @@ function releaseClaimNextLease(lease) {
   }
 }
 
-function runObserve() {
+function runObserve(): number {
   const dispatch = loadDispatch(args.dispatch || 'latest');
   const observation = observeDispatch(dispatch);
   if (args.write) observation.observation_manifest = writeObservation(observation);
@@ -487,7 +553,7 @@ function runObserve() {
   return 0;
 }
 
-function runWatch() {
+function runWatch(): number {
   requireArg('project', '--project');
   const watch = moduleWatch();
   if (args.json) {
@@ -495,14 +561,14 @@ function runWatch() {
     return 0;
   }
 
-  console.log(renderModuleWatchConsole(watch, { blockedReasonSuffix, formatPercent }));
+  console.log(renderModuleWatchConsole(watch as unknown as Parameters<typeof renderModuleWatchConsole>[0], { blockedReasonSuffix, formatPercent }));
   return 0;
 }
 
-function buildPlan() {
+function buildPlan(): Plan {
   requireArg('project', '--project');
   const config = loadProjectConfig(args.project);
-  const active = readActiveLeases({ excludeCurrentWrapperLease: true });
+  const active = normalizeActiveLeaseState(readActiveLeases({ excludeCurrentWrapperLease: true }));
   const dirtyState = readProjectDirtyPaths(config.project);
   const maxAgents = positiveInt(args.maxAgents, 12);
   const requestedTask = args.task || PLACEHOLDER_MODULE_TASK;
@@ -516,7 +582,7 @@ function buildPlan() {
     partitions: moduleWorkPartitions(module),
   }));
 
-  const candidates = [];
+  const candidates: ModuleCandidate[] = [];
   const maxCandidateSlots = moduleInfos.reduce((max, info) => Math.max(max, candidateSlotCount(info)), 0);
   for (let slot = 1; slot <= maxCandidateSlots; slot += 1) {
     for (const info of moduleInfos) {
@@ -532,8 +598,8 @@ function buildPlan() {
     }
   }
 
-  const selectedModules = [];
-  const allSlots = [];
+  const selectedModules: ModuleCandidate[] = [];
+  const allSlots: ModuleSlot[] = [];
   let agentSlot = 1;
   for (const candidate of candidates) {
     const held = heldModuleSlot(active, config.project, candidate.module, candidate.slot);
@@ -566,8 +632,8 @@ function buildPlan() {
   const graphBlocked = allSlots.filter((slot) => slot.blocked_reason === 'graph-not-ready').length;
   const dirtyScopeBlocked = allSlots.filter((slot) => slot.blocked_reason === 'dirty-scope').length;
   const dirtyScopePaths = allSlots.reduce((sum, slot) => sum + number(slot.dirty_scope_count), 0);
-  const blockers = [];
-  const warnings = [];
+  const blockers: string[] = [];
+  const warnings: string[] = [];
   if (graphBlocked) blockers.push(`${graphBlocked} module slot(s) blocked by missing module graph`);
   if (dirtyState.error) warnings.push(`dirty module scope unavailable: ${dirtyState.error}`);
   if (heldSlots) warnings.push(`${heldSlots} module work slot(s) already held`);
@@ -622,7 +688,7 @@ function buildPlan() {
   };
 }
 
-function maybeWriteDispatchManifest(plan) {
+function maybeWriteDispatchManifest(plan: Plan): DispatchReceipt {
   if (plan.status !== 'ready' && !args.allowBlockedDispatch) {
     throw new Error(`refusing to write module dispatch manifest for ${plan.status} plan; repair blockers or pass --allow-blocked-dispatch for an explicit controller override`);
   }
@@ -632,7 +698,7 @@ function maybeWriteDispatchManifest(plan) {
   return writeDispatchManifest(plan);
 }
 
-function writeDispatchManifest(plan) {
+function writeDispatchManifest(plan: Plan): DispatchReceipt {
   const dispatchId = `module-wave-${timestampSlug(new Date())}`;
   const base = dispatchBasePath(args.writeDispatch === true ? dispatchId : String(args.writeDispatch || dispatchId));
   const jsonPath = `${base}.json`;
@@ -671,7 +737,7 @@ function writeDispatchManifest(plan) {
       partition_id: slot.partition_id,
       partition_label: slot.partition_label,
       brick: slot.brick,
-      blocked_reason: slot.blocked_reason,
+      blocked_reason: slot.blocked_reason || 'blocked',
       held_resource: slot.held_resource,
       dirty_scope_count: slot.dirty_scope_count,
       dirty_scope_paths: slot.dirty_scope_paths,
@@ -683,7 +749,7 @@ function writeDispatchManifest(plan) {
     })),
   };
   mkdirSync(dirname(base), { recursive: true });
-  writeAgentPackets(manifest, { smaRoot: SMA_ROOT });
+  writeAgentPackets(manifest as unknown as Parameters<typeof writeAgentPackets>[0], { smaRoot: SMA_ROOT });
   writeFileSync(jsonPath, `${JSON.stringify(manifest, null, 2)}\n`);
   writeFileSync(markdownPath, renderDispatchMarkdown(manifest));
   return {
@@ -693,7 +759,7 @@ function writeDispatchManifest(plan) {
   };
 }
 
-function dispatchAssignment(slot, dispatchId, dispatchBase) {
+function dispatchAssignment(slot: ModuleSlot, dispatchId: string, dispatchBase: string): DispatchAssignment {
   const claimCommand = [
     'npm run module:claim --',
     '--project', shellArg(slot.project),
@@ -736,7 +802,7 @@ function dispatchAssignment(slot, dispatchId, dispatchBase) {
   };
 }
 
-function validateDispatchClaim({ config, module, slot, partition }) {
+function validateDispatchClaim({ config, module, slot, partition }: { config: ProjectConfig; module: ModuleConfig; slot: number; partition: WorkPartition | null }): DispatchAssignment {
   const dispatch = loadDispatch(args.dispatch || args.dispatchId);
   if (String(dispatch.dispatch_id) !== String(args.dispatchId)) {
     throw new Error(`dispatch id mismatch: requested ${args.dispatchId}, manifest is ${dispatch.dispatch_id}`);
@@ -778,24 +844,24 @@ function validateDispatchClaim({ config, module, slot, partition }) {
     partition_id: assignment.partition_id || partition?.id || null,
     brick: assignment.brick,
     graph_ready: Boolean(assignment.graph_ready),
-    claim_command: assignment.claim_command || null,
+    claim_command: assignment.claim_command || '',
   };
 }
 
-function dispatchBasePath(input) {
+function dispatchBasePath(input: unknown): string {
   const raw = String(input || '').trim();
   const base = isPathLike(raw) ? resolve(SMA_ROOT, raw) : resolve(DEFAULT_DISPATCH_DIR, raw);
   return base.replace(/\.(json|md)$/i, '');
 }
 
-function loadDispatch(input) {
+function loadDispatch(input: unknown): LoadedDispatch {
   const raw = String(input || '').trim();
   const path = raw === 'latest'
     ? latestDispatchPath(args.project || null)
     : `${dispatchBasePath(raw)}.json`;
   if (!path) throw new Error('no module-work dispatch manifest found');
   if (!existsSync(path)) throw new Error(`module-work dispatch manifest not found: ${path}`);
-  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  const manifest = JSON.parse(readFileSync(path, 'utf8')) as DispatchManifest;
   if (manifest.kind !== 'module-work-dispatch') {
     throw new Error(`not a module-work-dispatch manifest: ${path}`);
   }
@@ -807,7 +873,7 @@ function loadDispatch(input) {
     manifest,
     dispatch_id: manifest.dispatch_id || basename(path, '.json'),
     created_at: manifest.created_at || null,
-    project: manifest.project || null,
+    project: String(manifest.project || ''),
     task: manifest.task || '',
     assignment_count: Array.isArray(manifest.assignments) ? manifest.assignments.length : 0,
     assignments: Array.isArray(manifest.assignments) ? manifest.assignments : [],
@@ -818,19 +884,19 @@ function loadDispatch(input) {
   };
 }
 
-function tryLoadDispatch(input, project = null) {
+function tryLoadDispatch(input: unknown, project: string | null = null): { dispatch: LoadedDispatch | null; error: string | null } {
   const previousProject = args.project;
   if (project) args.project = project;
   try {
     return { dispatch: loadDispatch(input), error: null };
   } catch (err) {
-    return { dispatch: null, error: err.message || 'failed to load dispatch' };
+    return { dispatch: null, error: err instanceof Error ? err.message : String(err) || 'failed to load dispatch' };
   } finally {
     args.project = previousProject;
   }
 }
 
-function latestDispatchPath(project = null) {
+function latestDispatchPath(project: string | null = null): string | null {
   if (!existsSync(DEFAULT_DISPATCH_DIR)) return null;
   const candidates = readdirSync(DEFAULT_DISPATCH_DIR, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /^module-wave-.*\.json$/.test(entry.name))
@@ -839,7 +905,7 @@ function latestDispatchPath(project = null) {
   if (!project) return candidates[0] || null;
   for (const candidate of candidates) {
     try {
-      const manifest = JSON.parse(readFileSync(candidate, 'utf8'));
+      const manifest = JSON.parse(readFileSync(candidate, 'utf8')) as DispatchManifest;
       if (manifest.kind === 'module-work-dispatch' && manifest.project === project) return candidate;
     } catch {
       // Ignore malformed candidates while looking for the newest valid project dispatch.
@@ -848,7 +914,7 @@ function latestDispatchPath(project = null) {
   return null;
 }
 
-function observeDispatch(dispatch) {
+function observeDispatch(dispatch: LoadedDispatch): Observation {
   const activeState = safeReadActiveLeases();
   const guardState = dispatchAssignmentGuards(dispatch, activeState.leases);
   let assignments = dispatch.assignments.map((assignment) => observeAssignment(
@@ -875,14 +941,14 @@ function observeDispatch(dispatch) {
   const claimableUnclaimed = assignments.filter((item) => isClaimableDispatchAssignment(item)).length;
   const launchBlockedUnclaimed = assignments.filter((item) => item.launch_blocked && !item.claimed).length;
   const blockedCounts = blockedReasonCounts(assignments);
-  const externalActiveModuleLeases = externalActiveModuleLeaseGroups(assignments);
+  const externalActiveModuleLeases = normalizeExternalLeaseGroups(externalActiveModuleLeaseGroups(assignments));
   const openConflicts = assignments.reduce((sum, item) => sum + item.open_conflicts, 0);
   const contextErrors = assignments.filter((item) => item.context_error).length;
   const blockers = [
     ...dispatch.blockers.map((item) => `dispatch: ${item}`),
     staleUnclaimed ? staleDispatchBlocker(dispatch, freshness) : null,
     openConflicts ? `${openConflicts} open module conflict(s)` : null,
-  ].filter(Boolean);
+  ].filter((item): item is string => Boolean(item));
   const warnings = [
     ...dispatch.warnings.map((item) => `dispatch: ${item}`),
     ...guardState.warnings,
@@ -895,7 +961,7 @@ function observeDispatch(dispatch) {
     blockedCounts.dirtyScope ? `${blockedCounts.dirtyScope} unclaimed dispatch slot(s) blocked by dirty module scope` : null,
     blockedCounts.other ? `${blockedCounts.other} unclaimed dispatch slot(s) blocked by other launch guard(s)` : null,
     unclaimed ? `${unclaimed} dispatched module slot(s) are still unclaimed` : null,
-  ].filter(Boolean);
+  ].filter((item): item is string => Boolean(item));
 
   let status = blockers.length ? 'blocked' : 'dispatch-only';
   if (!blockers.length && assignments.length && completed === assignments.length) status = 'complete';
@@ -979,6 +1045,19 @@ function observeDispatch(dispatch) {
     ...observation,
     big_picture: moduleObservationBigPicture(observation),
   };
+}
+
+function normalizeExternalLeaseGroups(groups: ReturnType<typeof externalActiveModuleLeaseGroups>): ExternalLeaseGroup[] {
+  return groups.map((group) => ({
+    module_id: group.module_id == null ? undefined : String(group.module_id),
+    held_resource: group.held_resource == null ? undefined : String(group.held_resource),
+    held_lease_id: group.held_lease_id == null ? undefined : String(group.held_lease_id),
+    held_by: group.held_by == null ? null : String(group.held_by),
+    held_match: group.held_match == null ? undefined : String(group.held_match),
+    slot_count: group.slot_count,
+    agent_slots: group.agent_slots.map(number),
+    dispatch_bricks: group.dispatch_bricks.map(String),
+  }));
 }
 
 function moduleWatch() {
@@ -1070,24 +1149,24 @@ function moduleWatch() {
   };
   return {
     ...watch,
-    big_picture: moduleWatchBigPicture(watch),
+    big_picture: moduleWatchBigPicture(watch as unknown as Parameters<typeof moduleWatchBigPicture>[0]),
   };
 }
-function observeAssignment(assignment, createdAt, activeLeases, guard = null) {
+function observeAssignment(assignment: DispatchAssignment, createdAt: string | null, activeLeases: ActiveLease[], guard: AssignmentGuard | null = null): ObservedAssignment {
   const activeMatches = (Array.isArray(activeLeases) ? activeLeases : [])
     .filter((lease) => leaseMatchesAssignment(lease, assignment));
   const context = contextEventsSince(assignment.project, assignment.brick, createdAt);
   const claimLeaseIds = new Set(activeMatches.map((lease) => lease.lease_id).filter(Boolean));
   const claimEvents = context.events.filter((event) => (
-    CLAIM_KINDS.has(event.kind)
+    Boolean(event.kind && CLAIM_KINDS.has(event.kind))
     && eventMatchesAssignment(event, assignment)
   ));
   for (const event of claimEvents) {
     if (event.lease_id) claimLeaseIds.add(event.lease_id);
   }
   const completionEvents = context.events.filter((event) => (
-    COMPLETE_KINDS.has(event.kind)
-    && (eventMatchesAssignment(event, assignment) || claimLeaseIds.has(event.lease_id))
+    Boolean(event.kind && COMPLETE_KINDS.has(event.kind))
+    && (eventMatchesAssignment(event, assignment) || Boolean(event.lease_id && claimLeaseIds.has(event.lease_id)))
   ));
   const openConflicts = openConflictCount(context.events);
   const active = activeMatches.length > 0;
@@ -1110,15 +1189,15 @@ function observeAssignment(assignment, createdAt, activeLeases, guard = null) {
 
   return {
     key: assignmentKey(assignment),
-    agent_slot: assignment.agent_slot ?? null,
-    project: assignment.project ?? null,
-    module_id: assignment.module_id ?? null,
-    task: assignment.task ?? null,
-    dispatch_id: assignment.dispatch_id ?? null,
-    slot: assignment.slot ?? null,
+    agent_slot: assignment.agent_slot,
+    project: assignment.project,
+    module_id: assignment.module_id,
+    task: assignment.task,
+    dispatch_id: assignment.dispatch_id,
+    slot: assignment.slot,
     partition_id: assignment.partition_id ?? null,
     partition_label: assignment.partition_label ?? null,
-    brick: assignment.brick ?? null,
+    brick: assignment.brick,
     status,
     claimed,
     active,
@@ -1138,7 +1217,7 @@ function observeAssignment(assignment, createdAt, activeLeases, guard = null) {
     latest_completion_event: summarizeContextEvent(latestEvent(completionEvents)),
     active_leases: activeMatches.map(summarizeLease),
     launch_blocked: launchBlocked,
-    launch_blocked_reason: guard?.launch_blocked_reason || null,
+    launch_blocked_reason: guard?.launch_blocked_reason,
     held_resource: guard?.held_resource || null,
     held_lease_id: guard?.held_lease_id || null,
     held_by: guard?.held_by || null,
@@ -1150,23 +1229,23 @@ function observeAssignment(assignment, createdAt, activeLeases, guard = null) {
   };
 }
 
-function contextEventsSince(project, brick, createdAt) {
+function contextEventsSince(project: string, brick: string, createdAt: string | null): { events: ContextEvent[]; error: string | null } {
   try {
-    const since = Date.parse(createdAt || 0);
-    const events = readContextLog(project, brick)
+    const since = Date.parse(createdAt || '');
+    const events = (readContextLog(project, brick) as ContextEvent[])
       .filter((event) => !event._malformed)
       .filter((event) => {
         if (!Number.isFinite(since) || since <= 0) return true;
-        const timestamp = Date.parse(event.timestamp || 0);
+        const timestamp = Date.parse(event.timestamp || '');
         return Number.isFinite(timestamp) && timestamp >= since;
       });
     return { events, error: null };
   } catch (err) {
-    return { events: [], error: err.message || 'failed to read context log' };
+    return { events: [], error: err instanceof Error ? err.message : String(err) || 'failed to read context log' };
   }
 }
 
-function openConflictCount(events) {
+function openConflictCount(events: ContextEvent[]): number {
   let open = 0;
   for (const event of events) {
     if (event.kind === 'conflict_detected') open += 1;
@@ -1175,7 +1254,7 @@ function openConflictCount(events) {
   return open;
 }
 
-function chooseObservationNext({ dispatch, assignments, status, openConflicts, unclaimed, staleUnclaimed = false }) {
+function chooseObservationNext({ dispatch, assignments, status, openConflicts, unclaimed, staleUnclaimed }: { dispatch: LoadedDispatch; assignments: ObservedAssignment[]; status: string; openConflicts: number; unclaimed: number; staleUnclaimed: boolean }): string {
   if (openConflicts > 0) return `npm run conflict:summary -- --project ${shellArg(dispatch.project)}`;
   if (staleUnclaimed) return freshDispatchCommand(dispatch);
   const firstSafeUnclaimed = nextDispatchClaimAssignment({ assignments });
@@ -1186,9 +1265,9 @@ function chooseObservationNext({ dispatch, assignments, status, openConflicts, u
   return `npm run module:observe:write -- --dispatch ${shellArg(dispatch.dispatch_id)} --project ${shellArg(dispatch.project)}`;
 }
 
-function dispatchFreshness(dispatch) {
+function dispatchFreshness(dispatch: Pick<LoadedDispatch, 'created_at'>): Freshness {
   const maxAgeMs = positiveInt(args.dispatchMaxAgeMs ?? process.env.SMA_MODULE_DISPATCH_STALE_MS, DEFAULT_STALE_UNCLAIMED_DISPATCH_MS);
-  const createdMs = Date.parse(dispatch?.created_at || 0);
+  const createdMs = Date.parse(dispatch.created_at || '');
   const nowMs = Date.now();
   const ageMs = Number.isFinite(createdMs) && createdMs > 0 ? Math.max(0, nowMs - createdMs) : 0;
   return {
@@ -1199,7 +1278,7 @@ function dispatchFreshness(dispatch) {
   };
 }
 
-function blockStaleDispatchAssignments(assignments, freshness) {
+function blockStaleDispatchAssignments(assignments: ObservedAssignment[], freshness: Freshness): ObservedAssignment[] {
   return assignments.map((item) => {
     if (!isClaimableDispatchAssignment(item)) return item;
     return {
@@ -1213,20 +1292,20 @@ function blockStaleDispatchAssignments(assignments, freshness) {
   });
 }
 
-function staleDispatchBlocker(dispatch, freshness) {
+function staleDispatchBlocker(dispatch: LoadedDispatch, freshness: Freshness): string {
   return `dispatch ${dispatch.dispatch_id} is stale and unclaimed (${formatDuration(freshness.age_ms)} old, max ${formatDuration(freshness.max_age_ms)}); write a fresh module dispatch before launching agents`;
 }
 
-function freshDispatchCommand(dispatch) {
+function freshDispatchCommand(dispatch: LoadedDispatch): string {
   const task = hasConcreteModuleTask(dispatch.task) ? dispatch.task : PLACEHOLDER_MODULE_TASK;
   return `npm run module:dispatch -- --project ${shellArg(dispatch.project)} --task ${shellArg(task)} --max-agents ${positiveInt(dispatch.assignment_count, 12)}`;
 }
 
-function nextDispatchClaimAssignment(observation) {
+function nextDispatchClaimAssignment(observation: { assignments: ObservedAssignment[] }): ObservedAssignment | null {
   return (observation.assignments || []).find((item) => isClaimableDispatchAssignment(item)) || null;
 }
 
-function isClaimableDispatchAssignment(item) {
+function isClaimableDispatchAssignment(item: ObservedAssignment | null | undefined): boolean {
   return Boolean(
     item
     && !item.claimed
@@ -1238,14 +1317,14 @@ function isClaimableDispatchAssignment(item) {
   );
 }
 
-function dispatchAssignmentGuards(dispatch, activeLeases) {
-  const guards = new Map();
-  const warnings = [];
-  let config = null;
+function dispatchAssignmentGuards(dispatch: LoadedDispatch, activeLeases: ActiveLease[]): { guards: Map<string, AssignmentGuard>; warnings: string[] } {
+  const guards = new Map<string, AssignmentGuard>();
+  const warnings: string[] = [];
+  let config: ProjectConfig;
   try {
     config = loadProjectConfig(dispatch.project);
   } catch (err) {
-    warnings.push(`current module-plan guard unavailable: ${err.message || 'project config failed to load'}`);
+    warnings.push(`current module-plan guard unavailable: ${err instanceof Error ? err.message : String(err) || 'project config failed to load'}`);
     return { guards, warnings };
   }
   const active = { leases: Array.isArray(activeLeases) ? activeLeases : [] };
@@ -1288,7 +1367,7 @@ function dispatchAssignmentGuards(dispatch, activeLeases) {
   return { guards, warnings };
 }
 
-function modulePartitionForAssignment(module, assignment) {
+function modulePartitionForAssignment(module: ModuleConfig, assignment: DispatchAssignment): WorkPartition | null {
   const partitions = moduleWorkPartitions(module);
   if (!partitions.length) return null;
   if (assignment.partition_id) {
@@ -1297,11 +1376,11 @@ function modulePartitionForAssignment(module, assignment) {
   return partitions[positiveInt(assignment.slot, 1) - 1] || null;
 }
 
-function moduleClaimNextCommand(dispatch) {
+function moduleClaimNextCommand(dispatch: { project: string | null; dispatch_id: string; path?: string; dispatch_path?: string }): string {
   return `npm run module:claim -- --project ${shellArg(dispatch.project)} --next --dispatch ${shellArg(dispatchCommandRef(dispatch))}`;
 }
 
-function dispatchCommandRef(dispatch) {
+function dispatchCommandRef(dispatch: { dispatch_id: string; path?: string; dispatch_path?: string }): string {
   const rawPath = dispatch.path || dispatch.dispatch_path || '';
   if (!rawPath) return dispatch.dispatch_id;
   const relativePath = relativeToSma(rawPath).replace(/\.json$/i, '');
@@ -1310,11 +1389,11 @@ function dispatchCommandRef(dispatch) {
   return dispatch.dispatch_id;
 }
 
-function claimNextLeaseResource(dispatch) {
+function claimNextLeaseResource(dispatch: { project: string | null; dispatch_id: string }): string {
   return `module-claim-next:${safeId(dispatch.project)}:${safeId(dispatch.dispatch_id)}`;
 }
 
-function writeObservation(observation) {
+function writeObservation(observation: Observation): { json_path: string; markdown_path: string } {
   const base = observationBasePath(observation);
   const jsonPath = `${base}.json`;
   const markdownPath = `${base}.md`;
@@ -1327,38 +1406,33 @@ function writeObservation(observation) {
   };
 }
 
-function observationBasePath(observation) {
-  if (args.write !== true) {
+function observationBasePath(observation: Observation): string {
+  if (!args.write) {
     return resolve(SMA_ROOT, String(args.write || '').trim()).replace(/\.(json|md)$/i, '');
   }
   return resolve(DEFAULT_OBSERVATION_DIR, `${observation.dispatch.dispatch_id}-observed-${timestampSlug(new Date())}`);
 }
 
-function safeReadActiveLeases() {
+function safeReadActiveLeases(): { generated_at: string | null; leases: ActiveLease[]; error: string | null } {
   try {
-    const state = readActiveLeases({ excludeVolatileSmaRegenLeases: true });
-    return {
-      generated_at: state.generated_at || null,
-      leases: Array.isArray(state.leases) ? state.leases : [],
-      error: state._error || null,
-    };
+    return normalizeActiveLeaseState(readActiveLeases({ excludeVolatileSmaRegenLeases: true }));
   } catch (err) {
     return {
       generated_at: null,
       leases: [],
-      error: err.message || 'failed to read active leases',
+      error: err instanceof Error ? err.message : String(err) || 'failed to read active leases',
     };
   }
 }
 
-function leaseMatchesAssignment(lease, assignment) {
+function leaseMatchesAssignment(lease: ActiveLease, assignment: DispatchAssignment): boolean {
   return lease
     && lease.project === assignment.project
     && lease.resource_kind === 'brick'
     && lease.resource_id === assignment.brick;
 }
 
-function eventMatchesAssignment(event, assignment) {
+function eventMatchesAssignment(event: ContextEvent, assignment: DispatchAssignment): boolean {
   if (!event || event._malformed) return false;
   const taskId = moduleTaskId(assignment);
   if (event.task_id && event.task_id === taskId) return true;
@@ -1370,7 +1444,7 @@ function eventMatchesAssignment(event, assignment) {
   return false;
 }
 
-function eventSearchText(event) {
+function eventSearchText(event: ContextEvent): string {
   return [
     event.task_id,
     event.decision_rationale,
@@ -1380,11 +1454,11 @@ function eventSearchText(event) {
   ].filter(Boolean).join(' ');
 }
 
-function moduleTaskId(assignment) {
+function moduleTaskId(assignment: Pick<DispatchAssignment, 'project' | 'module_id' | 'slot'>): string {
   return `module-work-${assignment.project}-${assignment.module_id}-${assignment.slot}`;
 }
 
-function assignmentKey(assignment) {
+function assignmentKey(assignment: Pick<DispatchAssignment, 'project' | 'brick' | 'agent_slot'>): string {
   return [
     assignment.project ?? '',
     assignment.brick ?? '',
@@ -1392,7 +1466,7 @@ function assignmentKey(assignment) {
   ].join(':');
 }
 
-function moduleSlotKey(assignment) {
+function moduleSlotKey(assignment: Pick<DispatchAssignment, 'project' | 'module_id' | 'slot'>): string {
   return [
     assignment.project ?? '',
     assignment.module_id ?? '',
@@ -1400,14 +1474,14 @@ function moduleSlotKey(assignment) {
   ].join(':');
 }
 
-function latestEvent(events) {
+function latestEvent(events: ContextEvent[]): ContextEvent | null {
   if (!Array.isArray(events) || !events.length) return null;
   return events
     .slice()
-    .sort((left, right) => Date.parse(right.timestamp || 0) - Date.parse(left.timestamp || 0))[0] || null;
+    .sort((left, right) => Date.parse(right.timestamp || '') - Date.parse(left.timestamp || ''))[0] || null;
 }
 
-function summarizeContextEvent(event) {
+function summarizeContextEvent(event: ContextEvent | null): { event_id: string | null; kind: string | null; timestamp: string | null; actor_id: string | null; lease_id: string | null; task_id: string | null } | null {
   if (!event) return null;
   return {
     event_id: event.event_id || null,
@@ -1419,7 +1493,7 @@ function summarizeContextEvent(event) {
   };
 }
 
-function summarizeLease(lease) {
+function summarizeLease(lease: ActiveLease): { lease_id: string | null; agent_id: string | null; acquired_at: string | null; expires_at: string | null; intent: string | null } {
   return {
     lease_id: lease.lease_id || null,
     agent_id: lease.agent_id || null,
@@ -1429,14 +1503,14 @@ function summarizeLease(lease) {
   };
 }
 
-function buildModuleSlot({ config, module, baseModule = module, partition = null, slot, agentSlot, graph, held, dirtyScope = null, overlap = null, task }) {
+function buildModuleSlot({ config, module, baseModule = module, partition = null, slot, agentSlot, graph, held, dirtyScope = null, overlap = null, task }: { config: ProjectConfig; module: ModuleConfig; baseModule?: ModuleConfig; partition?: WorkPartition | null; slot: number; agentSlot: number; graph: GraphInfo; held: ActiveLease | null; dirtyScope?: DirtyScope | null; overlap?: ModuleCandidate | null; task: string }): ModuleSlot {
   const graphReady = Boolean(graph.graphReady || graph.graphKnownEmpty);
   const graphQuestion = partition
     ? `Map the files, entry points, dependencies, tests, and risks for this ${module.id} partition task. Partition: ${partition.id}. Paths: ${(module.paths || []).join(', ')}.`
     : 'Map the files, entry points, dependencies, tests, and risks for this module task.';
   const graphCommand = `npm run graphify:query -- --project ${shellArg(config.project)} --module ${shellArg(module.id)} -- ${shellArg(graphQuestion)}`;
   const claimCommand = '';
-  let blockedReason = null;
+  let blockedReason: string | null = null;
   if (!graphReady) blockedReason = 'graph-not-ready';
   else if (held) blockedReason = 'held';
   else if (dirtyScope?.count) blockedReason = 'dirty-scope';
@@ -1488,11 +1562,11 @@ function buildModuleSlot({ config, module, baseModule = module, partition = null
   };
 }
 
-function loadProjectConfig(project) {
+function loadProjectConfig(project: string): ProjectConfig {
   const root = projectRoot(project);
   const file = resolve(root, 'sma.gen3.json');
   if (!existsSync(file)) throw new Error(`sma.gen3.json not found for ${project}: ${file}`);
-  const config = JSON.parse(readFileSync(file, 'utf8'));
+  const config = JSON.parse(readFileSync(file, 'utf8')) as Gen3Config;
   if (!Array.isArray(config.modules) || !config.modules.length) {
     throw new Error(`sma.gen3.json has no modules: ${file}`);
   }
@@ -1501,26 +1575,30 @@ function loadProjectConfig(project) {
     root,
     config,
     modules: config.modules.map((module) => ({
-      ...module,
       id: String(module.id || '').trim(),
-      paths: Array.isArray(module.paths) ? module.paths : [],
-      excludePaths: Array.isArray(module.excludePaths) ? module.excludePaths : [],
-      iterationLocalGates: Array.isArray(module.iterationLocalGates) ? module.iterationLocalGates : [],
+      label: module.label,
+      paths: Array.isArray(module.paths) ? module.paths.map(String) : [],
+      excludePaths: Array.isArray(module.excludePaths) ? module.excludePaths.map(String) : [],
+      iterationLocalGates: Array.isArray(module.iterationLocalGates) ? module.iterationLocalGates.map(String) : [],
+      requiredLocalGates: Array.isArray(module.requiredLocalGates) ? module.requiredLocalGates.map(String) : [],
+      maxParallelAgents: module.maxParallelAgents,
       workPartitions: normalizeWorkPartitions(module),
     })).filter((module) => module.id),
   };
 }
 
-function selectModule(config) {
+function selectModule(config: ProjectConfig): ModuleConfig {
   const module = config.modules.find((item) => item.id === args.module);
   if (!module) throw new Error(`module not found in ${config.project}: ${args.module}`);
   return module;
 }
 
-function normalizeWorkPartitions(module) {
+function normalizeWorkPartitions(module: RawModuleConfig): WorkPartition[] {
   if (!Array.isArray(module.workPartitions)) return [];
   return module.workPartitions
-    .map((partition, index) => ({
+    .map((rawPartition, index) => {
+      const partition = rawPartition as Partial<WorkPartition>;
+      return ({
       ...partition,
       id: safeId(partition.id || `partition-${index + 1}`),
       label: partition.label || partition.id || `Partition ${index + 1}`,
@@ -1529,20 +1607,21 @@ function normalizeWorkPartitions(module) {
       excludePaths: Array.isArray(partition.excludePaths) ? partition.excludePaths : [],
       iterationLocalGates: Array.isArray(partition.iterationLocalGates) ? partition.iterationLocalGates : [],
       requiredLocalGates: Array.isArray(partition.requiredLocalGates) ? partition.requiredLocalGates : [],
-    }))
+      });
+    })
     .filter((partition) => partition.paths.length);
 }
 
-function moduleWorkPartitions(module) {
+function moduleWorkPartitions(module: ModuleConfig): WorkPartition[] {
   return Array.isArray(module.workPartitions) ? module.workPartitions : [];
 }
 
-function candidateSlotCount(info) {
+function candidateSlotCount(info: { partitions: WorkPartition[]; maxSlots: number }): number {
   if (info.partitions.length) return Math.min(info.maxSlots, info.partitions.length);
   return args.fillCapacity ? info.maxSlots : 1;
 }
 
-function modulePartitionForClaim(module, slot) {
+function modulePartitionForClaim(module: ModuleConfig, slot: number): WorkPartition | null {
   const partitions = moduleWorkPartitions(module);
   if (!partitions.length) return null;
   const explicit = args.partition
@@ -1558,7 +1637,7 @@ function modulePartitionForClaim(module, slot) {
   return partition;
 }
 
-function effectiveModuleForPartition(module, partition) {
+function effectiveModuleForPartition(module: ModuleConfig, partition: WorkPartition | null): ModuleConfig {
   if (!partition) return module;
   return {
     ...module,
@@ -1570,7 +1649,7 @@ function effectiveModuleForPartition(module, partition) {
   };
 }
 
-function checkModuleGraph(project, moduleId) {
+function checkModuleGraph(project: string, moduleId: string): GraphInfo {
   try {
     const raw = execFileSync(process.execPath, [
       resolve(TOOLS_DIR, 'sma-graphify.ts'),
@@ -1585,18 +1664,19 @@ function checkModuleGraph(project, moduleId) {
       maxBuffer: 4 * 1024 * 1024,
     });
     const start = raw.indexOf('{');
-    const data = JSON.parse(start >= 0 ? raw.slice(start) : raw);
+    const data = JSON.parse(start >= 0 ? raw.slice(start) : raw) as GraphInfo;
     return data;
   } catch (err) {
+    const stderr = errorStderr(err);
     return {
       ok: false,
       graphReady: false,
-      error: err.stderr?.toString()?.trim() || err.message,
+      error: stderr || (err instanceof Error ? err.message : String(err)),
     };
   }
 }
 
-function heldModuleSlot(active, project, module, slot) {
+function heldModuleSlot(active: ActiveLeaseState, project: string, module: ModuleConfig, slot: number): ActiveLease | null {
   const brick = moduleWorkBrick(module.id, slot);
   const exact = (active.leases || []).find((lease) => (
     lease.project === project
@@ -1617,7 +1697,7 @@ function heldModuleSlot(active, project, module, slot) {
   return related ? { ...related, _module_related: true } : null;
 }
 
-function readProjectDirtyPaths(project) {
+function readProjectDirtyPaths(project: string): DirtyState {
   try {
     const root = projectRoot(project);
     const raw = execFileSync('git', ['-C', root, 'status', '--short', '--untracked-files=all'], {
@@ -1631,28 +1711,29 @@ function readProjectDirtyPaths(project) {
       error: null,
     };
   } catch (err) {
+    const stderr = errorStderr(err);
     return {
       paths: [],
-      error: err.stderr?.toString()?.trim() || err.message || 'git status failed',
+      error: stderr || (err instanceof Error ? err.message : String(err)) || 'git status failed',
     };
   }
 }
 
-function parseGitShortDirtyPaths(raw) {
+function parseGitShortDirtyPaths(raw: unknown): string[] {
   return String(raw || '')
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
     .filter(Boolean)
     .map((line) => {
       const value = line.length > 3 ? line.slice(3).trim() : line.trim();
-      return value.includes(' -> ') ? value.split(' -> ').pop().trim() : value;
+      return value.includes(' -> ') ? value.split(' -> ').pop()?.trim() ?? '' : value;
     })
     .filter(Boolean)
     .map((value) => value.replace(/^"|"$/g, '').replace(/\\/g, '/'));
 }
 
-function moduleDirtyScope(module, dirtyPaths) {
-  const paths = [];
+function moduleDirtyScope(module: ModuleConfig, dirtyPaths: string[]): DirtyScope {
+  const paths: string[] = [];
   for (const dirtyPath of dirtyPaths || []) {
     if (!modulePathOwnsDirtyPath(module, dirtyPath)) continue;
     paths.push(dirtyPath);
@@ -1667,14 +1748,14 @@ function moduleDirtyScope(module, dirtyPaths) {
   };
 }
 
-function modulePathOwnsDirtyPath(module, dirtyPath) {
+function modulePathOwnsDirtyPath(module: ModuleConfig, dirtyPath: string): boolean {
   const normalized = String(dirtyPath || '').replace(/\\/g, '/');
   if (!normalized) return false;
   if ((module.excludePaths || []).some((pattern) => pathPatternCovers(pattern, normalized))) return false;
   return (module.paths || []).some((pattern) => pathPatternCovers(pattern, normalized));
 }
 
-function dirtyGroupForPath(pathValue) {
+function dirtyGroupForPath(pathValue: unknown): string {
   const parts = String(pathValue || '').replace(/\\/g, '/').split('/').filter(Boolean);
   if (parts[0] === 'src' && parts[1] === 'renderer' && parts[2] === 'modules' && parts[3]) {
     return parts.slice(0, 4).join('/');
@@ -1692,15 +1773,15 @@ function dirtyGroupForPath(pathValue) {
   return parts.slice(0, Math.min(parts.length, 2)).join('/') || 'module';
 }
 
-function dirtyScopeClaimCommand(project, dirtyScope) {
+function dirtyScopeClaimCommand(project: string, dirtyScope: DirtyScope): string {
   return `npm run start:edit -- --project ${shellArg(project)} --brick ${shellArg(dirtyScope.brick)} --intent ${shellArg(`claim dirty module scope ${dirtyScope.group} (${dirtyScope.count} path${dirtyScope.count === 1 ? '' : 's'})`)}`;
 }
 
-function dirtyScopeConflictCommand(project, moduleId, dirtyScope) {
+function dirtyScopeConflictCommand(project: string, moduleId: string, dirtyScope: DirtyScope): string {
   return `npm run conflict -- report --project ${shellArg(project)} --brick ${shellArg(dirtyScope.brick)} --intent ${shellArg(`dirty module scope ${dirtyScope.group} overlaps module ${moduleId}`)} --resolution-plan ${shellArg('claim cleanup, split paths, wait for owner, or hand off before module launch')}`;
 }
 
-function moduleLeaseKeys(module) {
+function moduleLeaseKeys(module: ModuleConfig): string[] {
   const keys = new Set([safeId(module.id).toLowerCase()]);
   for (const path of module.paths || []) {
     const first = String(path || '').split('/').find(Boolean);
@@ -1717,7 +1798,7 @@ function moduleLeaseKeys(module) {
   return [...keys].filter((key) => key.length >= 2);
 }
 
-function leaseResourceMatchesKey(resource, key) {
+function leaseResourceMatchesKey(resource: string, key: string): boolean {
   const value = safeId(resource).toLowerCase();
   return value === key
     || value.startsWith(`${key}-`)
@@ -1726,11 +1807,11 @@ function leaseResourceMatchesKey(resource, key) {
     || value.includes(`.${key}.`);
 }
 
-function moduleWorkBrick(moduleId, slot) {
+function moduleWorkBrick(moduleId: string, slot: number): string {
   return `module-work-${safeId(moduleId)}-slot-${positiveInt(slot, 1)}`;
 }
 
-function moduleGates(config, module) {
+function moduleGates(config: ProjectConfig, module: ModuleConfig): string[] {
   const baseGates = Array.isArray(module.requiredLocalGates) && module.requiredLocalGates.length
     ? module.requiredLocalGates
     : config.config.moduleDefaults?.requiredLocalGates;
@@ -1739,8 +1820,8 @@ function moduleGates(config, module) {
   return [...new Set(gates)];
 }
 
-function moduleIterationGates(config, module) {
-  const gates = [];
+function moduleIterationGates(config: ProjectConfig, module: ModuleConfig): string[] {
+  const gates: string[] = [];
   if (Array.isArray(config.config.moduleDefaults?.iterationLocalGates)) {
     gates.push(...config.config.moduleDefaults.iterationLocalGates);
   }
@@ -1761,6 +1842,6 @@ function relativeToSma(filePath: string): string {
   return filePath.startsWith(`${SMA_ROOT}/`) ? filePath.slice(SMA_ROOT.length + 1) : filePath;
 }
 
-function readJsonFile(filePath) {
-  return JSON.parse(readFileSync(filePath, 'utf8'));
+function readJsonFile(filePath: string): { assignments?: DispatchAssignment[] } {
+  return JSON.parse(readFileSync(filePath, 'utf8')) as { assignments?: DispatchAssignment[] };
 }

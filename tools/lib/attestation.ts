@@ -67,10 +67,10 @@ type SpdxPackage = {
   versionInfo?: string;
 };
 
-export const IN_TOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
-export const SLSA_PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
-export const BUILDER_ID = 'https://sma.local/brick-scanner';
-export const BUILD_TYPE = 'https://sma.local/brick-scan/v1';
+const IN_TOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
+const SLSA_PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
+const BUILDER_ID = 'https://sma.local/brick-scanner';
+const BUILD_TYPE = 'https://sma.local/brick-scan/v1';
 
 const NOASSERTION = 'NOASSERTION';
 const EPOCH = '1970-01-01T00:00:00Z'; // deterministic fallback when no timestamp given

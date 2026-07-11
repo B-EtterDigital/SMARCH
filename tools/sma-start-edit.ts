@@ -9,7 +9,7 @@
  * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 
-import { argv, exit, env } from 'node:process';
+import { argv, exit } from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +18,58 @@ const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 const LEASE = resolve(TOOLS_DIR, 'sma-lease.ts');
 const CONFLICT = resolve(TOOLS_DIR, 'sma-conflict.ts');
 const DIRTY = resolve(TOOLS_DIR, 'sma-dirty-baseline.ts');
+
+interface StartEditArgs extends Record<string, string | string[] | boolean | undefined> {
+  linkedBacklog: string[];
+  file: string[];
+  help?: boolean;
+  project?: string;
+  brick?: string;
+  intent?: string;
+  ttl?: string;
+  rationale?: string;
+  task?: string;
+  session?: string;
+  actorKind?: string;
+  model?: string;
+  noDirtyBaseline?: boolean;
+  json?: boolean;
+}
+
+interface LeaseReceipt {
+  lease_id: string;
+  resource_kind: string;
+  resource_id: string;
+  expires_at: string;
+}
+
+interface ContextReceipt {
+  event_id: string;
+}
+
+interface DirtySummary {
+  dirty_count?: number;
+  modified_count?: number;
+  untracked_count?: number;
+}
+
+interface DirtyBaselineReceipt {
+  ok: boolean;
+  id?: string | null;
+  label?: string | null;
+  created_at?: string | null;
+  summary?: DirtySummary | null;
+  error?: string;
+}
+
+interface DirtyBaselineJson {
+  baseline?: {
+    id?: string;
+    label?: string;
+    created_at?: string;
+    summary?: DirtySummary;
+  };
+}
 
 const args = parseArgs(argv.slice(2));
 
@@ -43,18 +95,18 @@ try {
   if (args.session) acquireArgs.push('--session', args.session);
   if (args.actorKind) acquireArgs.push('--actor-kind', args.actorKind);
   if (args.model) acquireArgs.push('--model', args.model);
-  for (const id of args.linkedBacklog ?? []) acquireArgs.push('--linked-backlog', id);
+  for (const id of args.linkedBacklog) acquireArgs.push('--linked-backlog', id);
 
   const res = spawnSync('node', acquireArgs, { encoding: 'utf8' });
   if (res.status !== 0) {
-    process.stderr.write(res.stderr ?? '');
+    process.stderr.write(res.stderr);
     if (res.status === 10) {
       const report = reportConflict();
-      if (!report.ok) exit(report.status || 11);
+      if ('status' in report) exit(report.status || 11);
     }
     exit(res.status ?? 1);
   }
-  const lease = JSON.parse(res.stdout);
+  const lease = JSON.parse(res.stdout) as LeaseReceipt;
 
   // The acquire above already auto-stamped a `lease_acquired` event. Now add
   // an `edit_planned` event so the next agent reading the log sees the actual
@@ -73,16 +125,16 @@ try {
   if (args.session) contextArgs.push('--session', args.session);
   if (args.actorKind) contextArgs.push('--actor-kind', args.actorKind);
   if (args.model) contextArgs.push('--model', args.model);
-  for (const id of args.linkedBacklog ?? []) contextArgs.push('--linked-backlog', id);
-  for (const file of args.file ?? []) contextArgs.push('--file', file);
+  for (const id of args.linkedBacklog) contextArgs.push('--linked-backlog', id);
+  for (const file of args.file) contextArgs.push('--file', file);
 
   const ctxRes = spawnSync('node', contextArgs, { encoding: 'utf8' });
   if (ctxRes.status !== 0) {
-    process.stderr.write(ctxRes.stderr ?? '');
+    process.stderr.write(ctxRes.stderr);
     console.error('[start-edit] WARN: context append failed; lease is held but log is incomplete');
     exit(ctxRes.status ?? 1);
   }
-  const event = JSON.parse(ctxRes.stdout);
+  const event = JSON.parse(ctxRes.stdout) as ContextReceipt;
   const dirtyBaseline = args.noDirtyBaseline ? null : captureDirtyBaseline(lease.lease_id);
 
   if (args.json) {
@@ -92,7 +144,7 @@ try {
     console.log(`[start-edit] expires ${lease.expires_at}`);
     console.log(`[start-edit] logged  ${event.event_id} (edit_planned)`);
     if (dirtyBaseline?.ok) {
-      console.log(`[start-edit] dirty baseline ${dirtyBaseline.id}: ${formatDirtyCounts(dirtyBaseline.summary)}`);
+      console.log(`[start-edit] dirty baseline ${dirtyBaseline.id ?? 'unknown'}: ${formatDirtyCounts(dirtyBaseline.summary ?? null)}`);
     } else if (dirtyBaseline?.error) {
       console.log(`[start-edit] dirty baseline skipped: ${dirtyBaseline.error}`);
     }
@@ -100,50 +152,50 @@ try {
     console.log('When done, finish with:');
     console.log(`  sma end-edit --lease ${lease.lease_id} --project ${args.project} --brick ${args.brick} --intent "<what you ended up doing>"`);
   }
-} catch (err) {
-  console.error(`sma-start-edit: ${err.message}`);
+} catch (err: unknown) {
+  console.error(`sma-start-edit: ${err instanceof Error ? err.message : String(err)}`);
   exit(1);
 }
 
-function reportConflict() {
-  const conflictArgs = [
+function reportConflict(): { ok: true } | { ok: false; status: number } {
+  const conflictArgs: string[] = [
     CONFLICT, 'report',
-    '--project', args.project,
-    '--brick', args.brick,
+    '--project', String(args.project),
+    '--brick', String(args.brick),
     '--resource-kind', 'brick',
-    '--resource', args.brick,
-    '--intent', args.intent,
+    '--resource', String(args.brick),
+    '--intent', String(args.intent),
     '--resolution-plan', 'back off, inspect the holder intent, and retry after release or explicit handoff',
   ];
   if (args.session) conflictArgs.push('--session', args.session);
   if (args.task) conflictArgs.push('--task', args.task);
   if (args.actorKind) conflictArgs.push('--actor-kind', args.actorKind);
   if (args.model) conflictArgs.push('--model', args.model);
-  for (const file of args.file ?? []) conflictArgs.push('--file', file);
+  for (const file of args.file) conflictArgs.push('--file', file);
   const conflict = spawnSync('node', conflictArgs, { encoding: 'utf8' });
   if (conflict.status !== 0) {
-    process.stderr.write(conflict.stderr ?? '');
+    process.stderr.write(conflict.stderr);
     console.error('[start-edit] ERROR: conflict report failed; lease collision was not logged');
-    console.error(`[start-edit] manual report command: node ${CONFLICT} report --project ${args.project} --brick ${args.brick} --resource-kind brick --resource ${args.brick} --intent ${shellArg(args.intent)} --resolution-plan ${shellArg('back off, inspect the holder intent, and retry after release or explicit handoff')}`);
+    console.error(`[start-edit] manual report command: node ${CONFLICT} report --project ${args.project ?? ''} --brick ${args.brick ?? ''} --resource-kind brick --resource ${args.brick ?? ''} --intent ${shellArg(args.intent)} --resolution-plan ${shellArg('back off, inspect the holder intent, and retry after release or explicit handoff')}`);
     return { ok: false, status: conflict.status ?? 11 };
   }
-  process.stderr.write(conflict.stdout ?? '');
+  process.stderr.write(conflict.stdout);
   return { ok: true };
 }
 
-function captureDirtyBaseline(label) {
+function captureDirtyBaseline(label: string): DirtyBaselineReceipt {
   const res = spawnSync('node', [
     DIRTY,
     'save',
-    '--project', args.project,
+    '--project', String(args.project),
     '--label', label,
     '--json',
   ], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
   if (res.status !== 0) {
-    return { ok: false, error: firstLine(res.stderr) || `exit ${res.status ?? 1}` };
+    return { ok: false, error: firstLine(res.stderr) || `exit ${String(res.status ?? 1)}` };
   }
   try {
-    const parsed = JSON.parse(res.stdout);
+    const parsed = JSON.parse(res.stdout) as DirtyBaselineJson;
     return {
       ok: true,
       id: parsed.baseline?.id ?? null,
@@ -151,22 +203,30 @@ function captureDirtyBaseline(label) {
       created_at: parsed.baseline?.created_at ?? null,
       summary: parsed.baseline?.summary ?? null,
     };
-  } catch (err) {
-    return { ok: false, error: `invalid dirty baseline JSON: ${err.message}` };
+  } catch (err: unknown) {
+    return { ok: false, error: `invalid dirty baseline JSON: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
 
-function formatDirtyCounts(summary) {
+function formatDirtyCounts(summary: DirtySummary | null): string {
   if (!summary) return 'unknown dirty state';
-  return `${summary.dirty_count ?? 0} dirty (${summary.modified_count ?? 0} modified, ${summary.untracked_count ?? 0} untracked)`;
+  return `${String(summary.dirty_count ?? 0)} dirty (${String(summary.modified_count ?? 0)} modified, ${String(summary.untracked_count ?? 0)} untracked)`;
 }
 
-function firstLine(value) {
-  return String(value || '').split(/\r?\n/).find((line) => line.trim())?.trim() || '';
+function firstLine(value: unknown): string {
+  return stringifyUnknown(value).split(/\r?\n/).find((line) => line.trim())?.trim() ?? '';
 }
 
-function shellArg(value) {
-  return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
+function shellArg(value: unknown): string {
+  return `'${stringifyUnknown(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function stringifyUnknown(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
+  if (value instanceof Error) return value.message;
+  if (value === null || value === undefined) return '';
+  return JSON.stringify(value);
 }
 
 function usage() {
@@ -182,15 +242,15 @@ Pair with sma end-edit to release + record edit_applied/decision.
 `);
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = { linkedBacklog: [], file: [] };
+function parseArgs(list: string[]): StartEditArgs {
+  const out: StartEditArgs = { linkedBacklog: [], file: [] };
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (a === '--help' || a === '-h') { out.help = true; continue; }
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[i + 1];
+    const camel = key.replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
+    const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) { out[camel] = true; continue; }
     if (camel === 'linkedBacklog') out.linkedBacklog.push(next);

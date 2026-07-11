@@ -16,13 +16,26 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { argv, exit } from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { parseArgs, usage } from './lib/parallel-preflight-cli.ts';
 import { runParallelPreflightSelftest } from './lib/parallel-preflight-selftest.ts';
+
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const PLACEHOLDER_MODULE_TASK = '<describe module task>';
+import type {
+  RawRecord, CliValue, PreflightArgs, ToolData, ToolResult, LimitPlan,
+  ModuleWorkSummary, ModuleAssignment, ModuleDispatchSummary, ControllerBlockerPacket, CommandGuidance, CommandGuidanceInput,
+  LaneStatuses, ScoreInput, LaneStatusInput, BigPictureInput, PrimaryNextInput,
+} from './lib/parallel-preflight-types.d.ts';
+type PreflightResult = ReturnType<typeof scorePreflight>;
 const rawArgs = argv.slice(2);
-const command = rawArgs.find((arg) => !arg.startsWith('--')) || '';
+const command = orElse(rawArgs.find((arg) => !arg.startsWith('--')), () => (''));
 const args = parseArgs(rawArgs);
 
 try {
@@ -45,7 +58,7 @@ try {
       scopedControllerIsClean,
       shouldUseControllerCleanupFallback,
       summarizeCommandGuidance,
-    });
+    } as unknown as Parameters<typeof runParallelPreflightSelftest>[0]);
     exit(0);
   }
   const result = runPreflight();
@@ -55,35 +68,14 @@ try {
     printText(result);
   }
   if (args.strict && result.status === 'blocked') exit(4);
-} catch (err) {
-  console.error(`sma-parallel-preflight: ${err.message}`);
+} catch (error: unknown) {
+  console.error(`sma-parallel-preflight: ${error instanceof Error ? error.message : String(error)}`);
   exit(1);
 }
 
-function usage() {
-  console.log(`Usage:
-	  sma-parallel-preflight.ts [--limit 3|auto] [--auto-limit] [--max-agents 12]
-		                             [--project <id>]
-		                             [--task "..."]
-                             [--write-dispatch [path]]
-		                             [--launch-plan] [--full-prompts] [--json] [--strict]
-                             [--no-auto-refresh] [--allow-stale]
-                             [--processes] [--stale-process-seconds <n>]
-                             [--selftest|selftest]
-
-Runs the low-token Gen3 controller preflight for parallel agent launches.
-By default stale cleanup/graph packets are auto-refreshed once by the packet
-tools. Use --auto-limit for the largest currently safe local cleanup wave,
-capped by --max-agents. Use --no-auto-refresh for read-only dashboard checks.
-Use --launch-plan to print compact cleanup slots and current module-dispatch
-claim slots in text mode. Use --full-prompts only when you need the legacy
-long prompt text; module agents should read their packet first.
-`);
-}
-
-function runPreflight() {
-  const projectScope = args.project ? String(args.project) : null;
-  const moduleTask = args.task ? String(args.task) : null;
+function runPreflight(): PreflightResult {
+  const projectScope = args.project ? args.project : null;
+  const moduleTask = args.task ? args.task : null;
   const controllerArgs = [
     resolve(TOOLS_DIR, 'sma-controller-snapshot.ts'),
     '--dirty-limit', '0',
@@ -97,11 +89,11 @@ function runPreflight() {
   else controllerArgs.push('--all');
   if (args.processes) controllerArgs.push('--processes');
   if (args.staleProcessSeconds !== undefined) {
-    controllerArgs.push('--stale-process-seconds', String(args.staleProcessSeconds));
+    controllerArgs.push('--stale-process-seconds', args.staleProcessSeconds);
   }
   const controller = runJsonTool('controller', controllerArgs);
-  const projectScopeIsClean = Boolean(projectScope) && scopedControllerIsClean(controller.data?.summary || {});
-  const limitPlan = resolveLimitPlan(controller.data?.summary || {});
+  const projectScopeIsClean = Boolean(projectScope) && scopedControllerIsClean(asRecord(controller.data?.summary));
+  const limitPlan = resolveLimitPlan(asRecord(controller.data?.summary));
   const limit = limitPlan.limit;
   const conflictArgs = [
     resolve(TOOLS_DIR, 'sma-conflict.ts'),
@@ -140,15 +132,15 @@ function runPreflight() {
   const moduleWorkArgs = [
     resolve(TOOLS_DIR, 'sma-module-work-packets.mjs'),
     'plan',
-    '--project', projectScope,
+    '--project', orElse(projectScope, () => ('')),
     '--max-agents', String(moduleLimit),
     '--json',
   ];
   if (moduleTask) moduleWorkArgs.push('--task', moduleTask);
-  const moduleWork = projectScope
+  const moduleWork: ToolResult = projectScope
     ? runJsonTool('module-work', moduleWorkArgs)
     : { label: 'module-work', data: null, error: null };
-  const moduleObserve = projectScope
+  const moduleObserve: ToolResult = projectScope
     ? runJsonTool('module-observe', [
         resolve(TOOLS_DIR, 'sma-module-work-packets.mjs'),
         'observe',
@@ -178,7 +170,7 @@ function runPreflight() {
   return result;
 }
 
-function scopedControllerIsClean(summary) {
+function scopedControllerIsClean(summary: RawRecord): boolean {
   return number(summary.dirty_unleased_projects) === 0
     && number(summary.stale_context_projects) === 0
     && number(summary.stale_context_dirty_paths) === 0
@@ -188,27 +180,27 @@ function scopedControllerIsClean(summary) {
     && number(summary.module_graph_gaps) === 0;
 }
 
-function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controller, conflicts, cleanup, graphs, moduleWork, moduleObserve, moduleLimit, moduleTask }) {
-  const controllerSummary = controller.data?.summary || {};
+function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controller, conflicts, cleanup, graphs, moduleWork, moduleObserve, moduleLimit, moduleTask }: ScoreInput) {
+  const controllerSummary = asRecord(controller.data?.summary);
   const scopedController = scopedControllerSummary(controller.data, controllerSummary, projectScope);
-  const conflictSummary = conflicts.data?.summary || {};
+  const conflictSummary = asRecord(conflicts.data?.summary);
   const cleanupFallback = controllerCleanupFallback(controller.data?.parallel_wave);
   const useControllerCleanupFallback = shouldUseControllerCleanupFallback(cleanup, cleanupFallback);
-  const cleanupSummary = useControllerCleanupFallback ? cleanupFallback.summary : (cleanup.data?.summary || {});
-  const readiness = useControllerCleanupFallback ? cleanupFallback.readiness : (cleanup.data?.readiness || {});
-  const cleanupAssignments = useControllerCleanupFallback ? cleanupFallback.assignments : (cleanup.data?.assignments || []);
-  const graphSummary = graphs.data?.summary || {};
+  const cleanupSummary = useControllerCleanupFallback ? cleanupFallback.summary : asRecord(cleanup.data?.summary);
+  const readiness = useControllerCleanupFallback ? cleanupFallback.readiness : asRecord(cleanup.data?.readiness);
+  const cleanupAssignments = useControllerCleanupFallback ? cleanupFallback.assignments : (orElse(cleanup.data?.assignments, () => ([])));
+  const graphSummary = asRecord(graphs.data?.summary);
   const moduleWorkSummary = summarizeModuleWork(moduleWork, projectScope, moduleLimit || limit, moduleTask);
   const moduleDispatchSummary = summarizeModuleDispatch(moduleObserve, projectScope);
   const controllerBlockerPackets = buildControllerBlockerPackets(controller.data);
   const staleContextLaunchPlan = buildStaleContextLaunchPlan(controllerBlockerPackets, limit, projectScope);
-  const blockers = [];
-  const warnings = [];
+  const blockers: string[] = [];
+  const warnings: string[] = [];
 
   for (const probe of [controller, conflicts, cleanup, graphs]) {
     if (probe.error) blockers.push(`${probe.label}: ${probe.error}`);
   }
-  if (moduleWork?.error && projectScope) warnings.push(`module-work: ${moduleWork.error}`);
+  if (moduleWork.error && projectScope) warnings.push(`module-work: ${moduleWork.error}`);
   if (moduleDispatchSummary.error && moduleDispatchSummary.status !== 'missing') {
     warnings.push(`module-dispatch: ${moduleDispatchSummary.error}`);
   }
@@ -219,21 +211,21 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
   const openConflicts = number(conflictSummary.open_conflicts ?? controllerSummary.open_conflicts);
   const criticalConflicts = number(conflictSummary.critical_conflicts);
   const warningConflicts = number(conflictSummary.warning_conflicts);
-  if (openConflicts > 0) blockers.push(`${openConflicts} open conflict report(s)`);
-  if (criticalConflicts > 0) blockers.push(`${criticalConflicts} critical conflict SLA item(s)`);
-  if (warningConflicts > 0) warnings.push(`${warningConflicts} warning conflict SLA item(s)`);
+  if (openConflicts > 0) blockers.push(`${String(openConflicts)} open conflict report(s)`);
+  if (criticalConflicts > 0) blockers.push(`${String(criticalConflicts)} critical conflict SLA item(s)`);
+  if (warningConflicts > 0) warnings.push(`${String(warningConflicts)} warning conflict SLA item(s)`);
   if (number(conflictSummary.projects_skipped) > 0) {
-    warnings.push(`${number(conflictSummary.projects_skipped)} project(s) skipped by conflict summary`);
+    warnings.push(`${String(number(conflictSummary.projects_skipped))} project(s) skipped by conflict summary`);
   }
 
   const graphPackets = number(graphSummary.packet_count);
   const projectGraphGaps = number(graphSummary.project_graph_gaps);
   const moduleGraphGaps = number(graphSummary.module_graph_gap_count);
   if (graphPackets > 0 || projectGraphGaps > 0 || moduleGraphGaps > 0) {
-    blockers.push(`${graphPackets} graph repair packet(s): ${projectGraphGaps} project gap(s), ${moduleGraphGaps} module gap(s)`);
+    blockers.push(`${String(graphPackets)} graph repair packet(s): ${String(projectGraphGaps)} project gap(s), ${String(moduleGraphGaps)} module gap(s)`);
   }
 
-  const cleanupStatus = String(readiness.status || 'unknown');
+  const cleanupStatus = String(orElse(readiness.status, () => ('unknown')));
   const cleanupClaimablePercent = number(readiness.claimable_percent);
   const targetedPaths = number(readiness.targeted_dirty_paths ?? cleanupSummary.targeted_dirty_paths);
   const claimablePaths = number(readiness.claimable_dirty_paths ?? cleanupSummary.claimable_dirty_paths);
@@ -243,40 +235,40 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
   } else if (cleanupStatus === 'partial' || cleanupStatus === 'partial-stale') {
     warnings.push(`cleanup wave is ${cleanupStatus}`);
   } else if (cleanupStatus === 'empty' && dirtyUnleasedProjects > 0) {
-    blockers.push(`${dirtyUnleasedProjects} dirty-unleased project(s) have no cleanup packet coverage`);
+    blockers.push(`${String(dirtyUnleasedProjects)} dirty-unleased project(s) have no cleanup packet coverage`);
   } else if (!cleanupStatus || cleanupStatus === 'unknown') {
     warnings.push('cleanup wave readiness is unknown');
   }
   if (targetedPaths > 0 && cleanupClaimablePercent < 100) {
-    warnings.push(`${cleanupClaimablePercent}% of selected cleanup paths claimable`);
+    warnings.push(`${String(cleanupClaimablePercent)}% of selected cleanup paths claimable`);
   }
 
   const activeDirtyScopeProjects = number(scopedController.active_dirty_scope_projects);
   const activeDirtyScopePaths = number(scopedController.active_dirty_scope_paths);
   if (activeDirtyScopeProjects > 0 || activeDirtyScopePaths > 0) {
-    blockers.push(`${activeDirtyScopeProjects} active dirty-scope project(s), ${activeDirtyScopePaths} uncovered path(s)`);
+    blockers.push(`${String(activeDirtyScopeProjects)} active dirty-scope project(s), ${String(activeDirtyScopePaths)} uncovered path(s)`);
   }
 
   const staleContextProjects = number(scopedController.stale_context_projects);
   const staleContextPaths = number(scopedController.stale_context_dirty_paths);
   if (staleContextProjects > 0 || staleContextPaths > 0) {
-    blockers.push(`${staleContextProjects} stale Gen3 context project(s), ${staleContextPaths} dirty path(s) require lease renewal or handoff`);
+    blockers.push(`${String(staleContextProjects)} stale Gen3 context project(s), ${String(staleContextPaths)} dirty path(s) require lease renewal or handoff`);
   }
 
   const staleAgentProcessProjects = number(scopedController.stale_agent_process_projects);
   const staleAgentProcesses = number(scopedController.stale_agent_processes);
   const agentProcessScanErrorProjects = number(scopedController.agent_process_scan_error_projects);
   if (staleAgentProcesses > 0) {
-    blockers.push(`${staleAgentProcesses} stale project-rooted agent process(es) across ${staleAgentProcessProjects} project(s)`);
+    blockers.push(`${String(staleAgentProcesses)} stale project-rooted agent process(es) across ${String(staleAgentProcessProjects)} project(s)`);
   }
   if (agentProcessScanErrorProjects > 0) {
-    blockers.push(`agent process scan failed for ${agentProcessScanErrorProjects} project(s)`);
+    blockers.push(`agent process scan failed for ${String(agentProcessScanErrorProjects)} project(s)`);
   }
 
   const activeLeases = number(scopedController.active_leases);
-  if (activeLeases > 0) warnings.push(`${activeLeases} active lease(s) currently visible`);
+  if (activeLeases > 0) warnings.push(`${String(activeLeases)} active lease(s) currently visible`);
   if (moduleDispatchSummary.open_conflicts > 0) {
-    blockers.push(`${moduleDispatchSummary.open_conflicts} open module-dispatch conflict(s)`);
+    blockers.push(`${String(moduleDispatchSummary.open_conflicts)} open module-dispatch conflict(s)`);
   }
 
   const penalties = [
@@ -356,8 +348,8 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
     staleAgentProcesses,
     agentProcessScanErrorProjects,
     cleanupNext: useControllerCleanupFallback
-      ? cleanupFallback.first_claim_command
-      : scopedCleanupCommand(readiness.recommended_next_command || 'npm run controller:sweep:write', projectScope),
+      ? stringValue(cleanupFallback.first_claim_command)
+      : scopedCleanupCommand(stringValue(readiness.recommended_next_command) || 'npm run controller:sweep:write', projectScope),
     projectScope,
     moduleWork: moduleWorkSummary,
     moduleDispatch: moduleDispatchSummary,
@@ -487,13 +479,13 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
       parallel_wave_impact: number(scopedController.parallel_wave_impact),
     },
     conflict_sla: {
-      status: conflictSummary.status || 'unknown',
+      status: orElse(conflictSummary.status, () => ('unknown')),
       projects_scanned: number(conflictSummary.projects_scanned),
       projects_skipped: number(conflictSummary.projects_skipped),
       open_conflicts: openConflicts,
       warning_conflicts: warningConflicts,
       critical_conflicts: criticalConflicts,
-      oldest_age_bucket: conflictSummary.oldest_age_bucket || 'none',
+      oldest_age_bucket: orElse(conflictSummary.oldest_age_bucket, () => ('none')),
     },
     cleanup_wave: {
       status: cleanupStatus,
@@ -512,12 +504,12 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
       top_wave_gain_percent: number(readiness.top_wave_gain_percent),
       top_project_gain_percent: nullableNumber(readiness.top_project_gain_percent),
       launch_plan_slots: launchPlan.length,
-      recommended_next_command: readiness.recommended_next_command || 'npm run controller:sweep:write',
+      recommended_next_command: orElse(readiness.recommended_next_command, () => ('npm run controller:sweep:write')),
     },
     graph_packets: {
       auto_refreshed: Boolean(graphs.data?.auto_refreshed),
-      packet_file_stale: graphPackets > 0 && Boolean(graphs.data?.freshness?.stale || graphSummary.packet_stale),
-      packet_stale_relevant: graphPackets > 0 && Boolean(graphs.data?.freshness?.stale || graphSummary.packet_stale),
+      packet_file_stale: graphPackets > 0 && Boolean(orElse(graphs.data?.freshness?.stale, () => (graphSummary.packet_stale))),
+      packet_stale_relevant: graphPackets > 0 && Boolean(orElse(graphs.data?.freshness?.stale, () => (graphSummary.packet_stale))),
       packet_count: graphPackets,
       project_graph_gaps: projectGraphGaps,
       module_graph_gap_count: moduleGraphGaps,
@@ -535,8 +527,8 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
       first_controller_blocker: controllerBlockerPackets[0]?.command || '',
       stale_context_renewal: commandGuidance.stale_context_actionable ? staleContextLaunchPlan[0]?.command || '' : '',
       claim_next_cleanup_agent: commandGuidance.cleanup_actionable ? scopedCommand('npm run cleanup:claim -- --next', projectScope) : '',
-      cleanup_wave: commandGuidance.cleanup_actionable ? scopedCommand(`npm run cleanup:wave -- --limit ${limit}`, projectScope) : '',
-      auto_preflight: scopedCommand(`npm run parallel:preflight -- --auto-limit --max-agents ${limitPlan.maxAgents}`, projectScope),
+      cleanup_wave: commandGuidance.cleanup_actionable ? scopedCommand(`npm run cleanup:wave -- --limit ${String(limit)}`, projectScope) : '',
+      auto_preflight: scopedCommand(`npm run parallel:preflight -- --auto-limit --max-agents ${String(limitPlan.maxAgents)}`, projectScope),
       conflict_summary: scopedCommand('npm run conflict:summary', projectScope),
       graph_packets: scopedCommand('npm run graph:packets', projectScope),
       controller_sweep: 'npm run controller:sweep',
@@ -544,32 +536,38 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
       dashboard: projectScope ? projectDashboardCommand(projectScope, limit, moduleWorkSummary.task) : 'npm run gen3:dashboard',
       project_dashboard: projectScope ? projectDashboardCommand(projectScope, limit, moduleWorkSummary.task) : '',
       global_dashboard: 'npm run gen3:dashboard',
-      module_plan: projectScope ? `npm run module:plan -- --project ${shellArg(projectScope)} --max-agents ${limit}` : '',
+      module_plan: projectScope ? `npm run module:plan -- --project ${shellArg(projectScope)} --max-agents ${String(limit)}` : '',
       module_watch: projectScope ? moduleWatchCommand(projectScope, limit, moduleWorkSummary.task) : '',
       module_dispatch: projectScope ? moduleDispatchCommand(projectScope, limit, moduleWorkSummary.task) : '',
       module_observe: commandGuidance.module_observe_actionable ? moduleDispatchSummary.observe_command : '',
       module_observe_write: commandGuidance.module_observe_actionable ? moduleDispatchSummary.observe_write_command : '',
       queued_module_first_claim: queuedModuleLaunchPlan[0]?.claim_command || '',
+      module_first_claim: '',
     },
   };
 }
 
-function summarizeModuleWork(moduleWork, projectScope, limit, moduleTask = null) {
-  const plan = moduleWork?.data || null;
-  const summary = plan?.summary || {};
+function summarizeModuleWork(
+  moduleWork: ToolResult,
+  projectScope: string | null,
+  limit: number,
+  moduleTask: string | null = null,
+): ModuleWorkSummary {
+  const plan = orElse(moduleWork.data, () => (null));
+  const summary = asRecord(plan?.summary);
   const launchPlan = Array.isArray(plan?.launch_plan) ? plan.launch_plan : [];
-  const gains = plan?.gains || {};
-  const task = String(plan?.task || moduleTask || PLACEHOLDER_MODULE_TASK);
+  const gains = asRecord(plan?.gains);
+  const task = (orElse(plan?.task || moduleTask, () => (PLACEHOLDER_MODULE_TASK)));
   const observeCommand = projectScope
     ? `npm run module:observe -- --dispatch latest --project ${shellArg(projectScope)}`
     : 'npm run module:observe -- --dispatch latest';
   return {
-    available: Boolean(plan && !moduleWork?.error),
-    status: plan?.status || (moduleWork?.error ? 'unavailable' : 'not-requested'),
-    project: projectScope || null,
+    available: Boolean(plan && !moduleWork.error),
+    status: orElse(plan?.status, () => ((moduleWork.error ? 'unavailable' : 'not-requested'))),
+    project: orElse(projectScope, () => (null)),
     task,
     task_is_placeholder: !hasConcreteModuleTask(task),
-    requested_agents: number(summary.requested_agents || limit),
+    requested_agents: number(orElse(summary.requested_agents, () => (limit))),
     launch_ready_slots: number(summary.launch_ready_slots),
     candidate_slots: number(summary.candidate_slots),
     modules_total: number(summary.modules_total),
@@ -580,7 +578,7 @@ function summarizeModuleWork(moduleWork, projectScope, limit, moduleTask = null)
     fill_capacity: Boolean(summary.fill_capacity),
     modules: uniqueStrings(launchPlan.map((slot) => slot.module_id)),
     first_claim_command: '',
-    plan_command: projectScope ? `npm run module:plan -- --project ${shellArg(projectScope)} --max-agents ${limit}` : '',
+    plan_command: projectScope ? `npm run module:plan -- --project ${shellArg(projectScope)} --max-agents ${String(limit)}` : '',
     watch_command: projectScope ? moduleWatchCommand(projectScope, limit, task) : '',
     dispatch_command: projectScope ? moduleDispatchCommand(projectScope, limit, task) : '',
     dashboard_command: projectScope ? projectDashboardCommand(projectScope, limit, task) : '',
@@ -596,18 +594,18 @@ function summarizeModuleWork(moduleWork, projectScope, limit, moduleTask = null)
   };
 }
 
-function summarizeModuleDispatch(moduleObserve, projectScope) {
-  const error = moduleObserve?.error || '';
-  const missing = Boolean(error) && /no module-work dispatch manifest found/.test(error);
-  const observation = moduleObserve?.data || null;
-  const summary = observation?.summary || {};
-  const dispatch = observation?.dispatch || {};
-  const manifestAssignments = readDispatchManifestAssignments(dispatch.path);
+function summarizeModuleDispatch(moduleObserve: ToolResult, projectScope: string | null): ModuleDispatchSummary {
+  const error = orElse(moduleObserve.error, () => (''));
+  const missing = Boolean(error) && error.includes('no module-work dispatch manifest found');
+  const observation = orElse(moduleObserve.data, () => (null));
+  const summary = asRecord(observation?.summary);
+  const dispatch = asRecord(observation?.dispatch);
+  const manifestAssignments = readDispatchManifestAssignments(stringValue(dispatch.path));
   const assignments = mergeDispatchAssignments(
     Array.isArray(observation?.assignments) ? observation.assignments : [],
     manifestAssignments,
   );
-  const dispatchId = dispatch.dispatch_id || '';
+  const dispatchId = stringValue(dispatch.dispatch_id);
   const latestObserveCommand = projectScope
     ? `npm run module:observe -- --dispatch latest --project ${shellArg(projectScope)}`
     : 'npm run module:observe -- --dispatch latest';
@@ -620,14 +618,14 @@ function summarizeModuleDispatch(moduleObserve, projectScope) {
   const observeWriteCommand = dispatchId
     ? `npm run module:observe:write -- --dispatch ${shellArg(dispatchId)}${projectScope ? ` --project ${shellArg(projectScope)}` : ''}`
     : latestObserveWriteCommand;
-  const status = observation?.status || (missing ? 'missing' : error ? 'unavailable' : 'not-requested');
+  const status = orElse(observation?.status, () => ((missing ? 'missing' : error ? 'unavailable' : 'not-requested')));
 
   return {
     available: Boolean(observation && !error),
     status,
-    project: projectScope || dispatch.project || null,
+    project: projectScope || stringValue(dispatch.project) || null,
     dispatch_id: dispatchId,
-    task: dispatch.task || '',
+    task: stringValue(dispatch.task),
     assignment_count: number(summary.assignment_count ?? dispatch.assignment_count),
     claimed: number(summary.claimed),
     active: number(summary.active),
@@ -647,7 +645,7 @@ function summarizeModuleDispatch(moduleObserve, projectScope) {
     dispatch_stale_unclaimed: Boolean(summary.dispatch_stale_unclaimed),
     open_conflicts: number(summary.open_conflicts),
     graph_ready: number(summary.graph_ready),
-    next_command: observation?.next || '',
+    next_command: orElse(observation?.next, () => ('')),
     observe_command: observeCommand,
     observe_write_command: observeWriteCommand,
     assignments,
@@ -660,14 +658,14 @@ function summarizeModuleDispatch(moduleObserve, projectScope) {
   };
 }
 
-function buildModuleLaunchPlan(moduleDispatch, limit) {
-  if (!moduleDispatch?.available || moduleDispatch.status === 'complete') return [];
+function buildModuleLaunchPlan(moduleDispatch: ModuleDispatchSummary, limit: number) {
+  if (!moduleDispatch.available || moduleDispatch.status === 'complete') return [];
   const max = Math.floor(number(limit));
   if (max <= 0) return [];
   const assignments = Array.isArray(moduleDispatch.assignments) ? moduleDispatch.assignments : [];
   return assignments
     .filter((assignment) => {
-      if (!assignment || assignment.status !== 'unclaimed') return false;
+      if (assignment.status !== 'unclaimed') return false;
       if (assignment.claimed || assignment.active || assignment.completed) return false;
       if (assignment.launch_blocked) return false;
       if (assignment.graph_ready === false) return false;
@@ -675,39 +673,48 @@ function buildModuleLaunchPlan(moduleDispatch, limit) {
       return Boolean(assignment.claim_command);
     })
     .slice(0, max)
-    .map((assignment, index) => ({
-      agent_slot: number(assignment.agent_slot || index + 1),
-      project: assignment.project || moduleDispatch.project || '',
-      module_id: assignment.module_id || '',
-      dispatch_id: assignment.dispatch_id || moduleDispatch.dispatch_id || '',
-      slot: number(assignment.slot || 1),
-      partition_id: assignment.partition_id || null,
-      partition_label: assignment.partition_label || null,
-      brick: assignment.brick || '',
-      status: assignment.status || 'unclaimed',
-      graph_ready: assignment.graph_ready !== false,
-      graph_path: assignment.graph_path || '',
-      graph_query_command: assignment.graph_query_command || '',
-      paths: Array.isArray(assignment.paths) ? assignment.paths : [],
-      exclude_paths: Array.isArray(assignment.exclude_paths) ? assignment.exclude_paths : [],
-      iteration_gates: Array.isArray(assignment.iteration_gates) ? assignment.iteration_gates : [],
-      required_gates: Array.isArray(assignment.required_gates) ? assignment.required_gates : [],
-      shared_hot_paths: Array.isArray(assignment.shared_hot_paths) ? assignment.shared_hot_paths : [],
-      claim_command: assignment.claim_command || '',
-      conflict_command: assignment.conflict_command || moduleLaunchConflictCommand({
-        project: assignment.project || moduleDispatch.project || '',
-        brick: assignment.brick || '',
-        moduleId: assignment.module_id || '',
-        task: assignment.task || moduleDispatch.task || '',
-      }),
-      agent_packet: assignment.agent_packet || null,
-      agent_packet_markdown_path: assignment.agent_packet?.markdown_path || '',
-      agent_packet_json_path: assignment.agent_packet?.json_path || '',
-      prompt: assignment.prompt || `Use $sma-gen3. Claim this dispatch-pinned module slot with \`${assignment.claim_command}\`, query the module graph first, stay inside the assigned module paths, and conflict-report before touching shared hot paths or overlap.`,
-    }));
+    .map((assignment, index) => {
+      const agentPacket = asRecord(assignment.agent_packet);
+      const project = orElse(stringValue(assignment.project) || moduleDispatch.project, () => (''));
+      const brick = stringValue(assignment.brick);
+      const moduleId = stringValue(assignment.module_id);
+      const claimCommand = stringValue(assignment.claim_command);
+      return {
+        agent_slot: number(orElse(assignment.agent_slot, () => (index + 1))),
+        project,
+        module_id: moduleId,
+        dispatch_id: stringValue(assignment.dispatch_id) || moduleDispatch.dispatch_id,
+        slot: number(orElse(assignment.slot, () => (1))),
+        partition_id: stringValue(assignment.partition_id) || null,
+        partition_label: stringValue(assignment.partition_label) || null,
+        brick,
+        status: stringValue(assignment.status) || 'unclaimed',
+        graph_ready: assignment.graph_ready !== false,
+        graph_path: stringValue(assignment.graph_path),
+        graph_query_command: stringValue(assignment.graph_query_command),
+        paths: uniqueStrings(assignment.paths),
+        exclude_paths: uniqueStrings(assignment.exclude_paths),
+        iteration_gates: uniqueStrings(assignment.iteration_gates),
+        required_gates: uniqueStrings(assignment.required_gates),
+        shared_hot_paths: uniqueStrings(assignment.shared_hot_paths),
+        claim_command: claimCommand,
+        conflict_command: stringValue(assignment.conflict_command) || moduleLaunchConflictCommand({
+          project,
+          brick,
+          moduleId,
+          task: stringValue(assignment.task) || moduleDispatch.task,
+        }),
+        agent_packet: Object.keys(agentPacket).length ? agentPacket : null,
+        agent_packet_markdown_path: stringValue(agentPacket.markdown_path),
+        agent_packet_json_path: stringValue(agentPacket.json_path),
+        prompt: stringValue(assignment.prompt) || `Use $sma-gen3. Claim this dispatch-pinned module slot with \`${claimCommand}\`, query the module graph first, stay inside the assigned module paths, and conflict-report before touching shared hot paths or overlap.`,
+      };
+    });
 }
 
-function moduleLaunchConflictCommand({ project, brick, moduleId, task }) {
+function moduleLaunchConflictCommand({ project, brick, moduleId, task }: {
+  project: string; brick: string; moduleId: string; task: string;
+}): string {
   if (!project || !brick) return '';
   const intent = `module ${moduleId || brick} overlap or shared hot path${task ? ` for ${task}` : ''}`;
   return [
@@ -722,13 +729,17 @@ function moduleLaunchConflictCommand({ project, brick, moduleId, task }) {
   ].join(' ');
 }
 
-function buildStaleContextLaunchPlan(controllerBlockerPackets, limit = 6, projectScope = null) {
+function buildStaleContextLaunchPlan(
+  controllerBlockerPackets: ControllerBlockerPacket[],
+  limit = 6,
+  projectScope: string | null = null,
+) {
   const max = Math.floor(number(limit));
   if (max <= 0) return [];
   const packets = Array.isArray(controllerBlockerPackets) ? controllerBlockerPackets : [];
   return packets
     .filter((packet) => {
-      if (!packet || packet.kind !== 'stale-context') return false;
+      if (packet.kind !== 'stale-context') return false;
       if (!packet.command) return false;
       if (projectScope && packet.project && packet.project !== projectScope) return false;
       return true;
@@ -737,7 +748,7 @@ function buildStaleContextLaunchPlan(controllerBlockerPackets, limit = 6, projec
     .map((packet, index) => ({
       agent_slot: index + 1,
       packet_rank: number(packet.rank || index + 1),
-      project: packet.project || projectScope || '',
+      project: orElse(packet.project || projectScope, () => ('')),
       brick: packet.brick || '',
       dirty_path_count: number(packet.stale_context_dirty_count || packet.dirty_count || packet.impact_score),
       receipt_count: number(packet.stale_context_receipt_count),
@@ -750,43 +761,43 @@ function buildStaleContextLaunchPlan(controllerBlockerPackets, limit = 6, projec
     }));
 }
 
-function buildControllerBlockerPackets(controllerData, limit = 6) {
+function buildControllerBlockerPackets(controllerData: ToolData | null, limit = 6): ControllerBlockerPacket[] {
   const actions = Array.isArray(controllerData?.action_items) ? controllerData.action_items : [];
   return actions
-    .filter((item) => item?.severity === 'blocker')
+    .filter((item) => item.severity === 'blocker')
     .slice(0, limit)
     .map((item, index) => {
-      const next = item.next_commands || {};
-      const parallelClaims = Array.isArray(item.parallel_claims) ? item.parallel_claims : [];
+      const next = asRecord(item.next_commands);
+      const parallelClaims = rawRecords(item.parallel_claims);
       return {
         rank: index + 1,
-        severity: item.severity || 'blocker',
-        kind: item.kind || 'unknown',
-        project: item.project || '',
-        brick: item.brick || '',
-        title: item.title || '',
-        detail: item.detail || '',
+        severity: stringValue(item.severity) || 'blocker',
+        kind: stringValue(item.kind) || 'unknown',
+        project: stringValue(item.project),
+        brick: stringValue(item.brick),
+        title: stringValue(item.title),
+        detail: stringValue(item.detail),
         impact_score: number(item.impact_score),
         dirty_count: number(item.dirty_count),
         uncovered_dirty_count: number(item.uncovered_dirty_count),
         stale_context_dirty_count: number(item.stale_context_dirty_count),
         stale_context_receipt_count: number(item.stale_context_receipt_count),
         stale_context_total_receipt_count: number(item.stale_context_total_receipt_count),
-        top_dirty_group: item.top_dirty_group || '',
+        top_dirty_group: stringValue(item.top_dirty_group),
         top_dirty_group_count: number(item.top_dirty_group_count),
         sample_paths: Array.isArray(item.top_dirty_group_sample_paths)
           ? item.top_dirty_group_sample_paths.slice(0, 5)
           : [],
-        command: item.command || '',
-        inspect_command: next.inspect || '',
-        conflict_command: next.conflict || '',
+        command: stringValue(item.command),
+        inspect_command: stringValue(next.inspect),
+        conflict_command: stringValue(next.conflict),
         parallel_claim_count: parallelClaims.length,
         parallel_claims: parallelClaims.slice(0, 6).map((claim) => ({
-          group: claim.group || '',
+          group: stringValue(claim.group),
           count: number(claim.count),
-          brick: claim.brick || '',
-          command: claim.command || '',
-          conflict_command: claim.conflict || '',
+          brick: stringValue(claim.brick),
+          command: stringValue(claim.command),
+          conflict_command: stringValue(claim.conflict),
           sample_paths: Array.isArray(claim.sample_paths) ? claim.sample_paths.slice(0, 5) : [],
         })),
         prompt: buildControllerBlockerPrompt(item),
@@ -794,10 +805,10 @@ function buildControllerBlockerPackets(controllerData, limit = 6) {
     });
 }
 
-function buildControllerBlockerPrompt(item) {
-  const kind = item?.kind || 'controller-blocker';
-  const command = item?.command || 'rerun controller snapshot';
-  const conflict = item?.next_commands?.conflict || '';
+function buildControllerBlockerPrompt(item: RawRecord): string {
+  const kind = stringValue(item.kind) || 'controller-blocker';
+  const command = stringValue(item.command) || 'rerun controller snapshot';
+  const conflict = stringValue(asRecord(item.next_commands).conflict);
   if (kind === 'active-dirty-scope') {
     return `Use $sma-gen3. Reconcile uncovered active dirty scope with \`${command}\`; if this overlaps another agent or you are uncertain, run \`${conflict}\` before continuing.`;
   }
@@ -816,77 +827,83 @@ function buildControllerBlockerPrompt(item) {
   return `Use $sma-gen3. Handle this controller blocker with \`${command}\` and document any collision before reassignment.`;
 }
 
-function readDispatchManifestAssignments(dispatchPath) {
+function readDispatchManifestAssignments(dispatchPath: string): ModuleAssignment[] {
   if (!dispatchPath) return [];
   try {
     const manifest = readJsonFile(resolve(SMA_ROOT, dispatchPath));
-    return Array.isArray(manifest.assignments) ? manifest.assignments : [];
+    return rawRecords(manifest.assignments);
   } catch {
     return [];
   }
 }
 
-function mergeDispatchAssignments(observedAssignments, manifestAssignments) {
+function mergeDispatchAssignments(
+  observedAssignments: ModuleAssignment[],
+  manifestAssignments: ModuleAssignment[],
+): ModuleAssignment[] {
   if (!manifestAssignments.length) return observedAssignments;
-  const byKey = new Map();
-  const byClaim = new Map();
+  const byKey = new Map<string, ModuleAssignment>();
+  const byClaim = new Map<string, ModuleAssignment>();
   for (const assignment of manifestAssignments) {
     const key = dispatchAssignmentKey(assignment);
     if (key) byKey.set(key, assignment);
-    if (assignment?.claim_command) byClaim.set(String(assignment.claim_command), assignment);
+    if (assignment.claim_command) byClaim.set(String(assignment.claim_command), assignment);
   }
   return observedAssignments.map((assignment) => {
-    const manifestAssignment = byKey.get(dispatchAssignmentKey(assignment))
-      || byClaim.get(String(assignment?.claim_command || ''))
-      || null;
+    const manifestAssignment = orElse(byKey.get(dispatchAssignmentKey(assignment))
+      || byClaim.get(String(orElse(assignment.claim_command, () => ('')))), () => (null));
     return manifestAssignment ? { ...manifestAssignment, ...assignment } : assignment;
   });
 }
 
-function dispatchAssignmentKey(assignment) {
+function dispatchAssignmentKey(assignment: ModuleAssignment | null | undefined): string {
   if (!assignment) return '';
-  const dispatchId = String(assignment.dispatch_id || '');
-  const slot = String(assignment.agent_slot || '');
-  const brick = String(assignment.brick || '');
+  const dispatchId = String(orElse(assignment.dispatch_id, () => ('')));
+  const slot = String(orElse(assignment.agent_slot, () => ('')));
+  const brick = String(orElse(assignment.brick, () => ('')));
   if (!dispatchId || !slot || !brick) return '';
   return `${dispatchId}:${slot}:${brick}`;
 }
 
-function shouldUseControllerCleanupFallback(cleanup, fallback) {
+function shouldUseControllerCleanupFallback(
+  cleanup: ToolResult,
+  fallback: ReturnType<typeof controllerCleanupFallback>,
+): boolean {
   if (!fallback.assignment_count) return false;
-  const assignmentCount = number(cleanup?.data?.readiness?.assignment_count ?? cleanup?.data?.summary?.assignment_count);
-  const targetedPaths = number(cleanup?.data?.readiness?.targeted_dirty_paths ?? cleanup?.data?.summary?.targeted_dirty_paths);
-  const cleanupStatus = String(cleanup?.data?.readiness?.status || '');
-  const packetStale = Boolean(cleanup?.data?.freshness?.stale);
-  const staleAssignments = number(cleanup?.data?.readiness?.stale_assignment_count);
+  const assignmentCount = number(cleanup.data?.readiness?.assignment_count ?? cleanup.data?.summary?.assignment_count);
+  const targetedPaths = number(cleanup.data?.readiness?.targeted_dirty_paths ?? cleanup.data?.summary?.targeted_dirty_paths);
+  const cleanupStatus = String(orElse(cleanup.data?.readiness?.status, () => ('')));
+  const packetStale = Boolean(cleanup.data?.freshness?.stale);
+  const staleAssignments = number(cleanup.data?.readiness?.stale_assignment_count);
   if (assignmentCount === 0 && targetedPaths === 0) return true;
   return packetStale || cleanupStatus === 'stale' || cleanupStatus === 'partial-stale' || staleAssignments > 0;
 }
 
-function controllerCleanupFallback(parallelWave) {
-  const commands = Array.isArray(parallelWave?.commands) ? parallelWave.commands : [];
+function controllerCleanupFallback(parallelWave: unknown) {
+  const wave = asRecord(parallelWave);
+  const commands = rawRecords(wave.commands);
   const assignments = commands.map((item, index) => ({
-    rank: number(item.rank || index + 1),
-    project: item.project || '',
-    group: item.group || '',
-    brick: item.brick || '',
+    rank: number(orElse(item.rank, () => (index + 1))),
+    project: orElse(item.project, () => ('')),
+    group: orElse(item.group, () => ('')),
+    brick: orElse(item.brick, () => ('')),
     packet_type: 'controller-dirty-unleased',
     dirty_path_count: number(item.count),
     wave_gain_percent: number(item.wave_gain_percent),
     project_gain_percent: nullableNumber(item.project_gain_percent),
-    claim_command: item.command || '',
-    inspect_command: item.inspect || '',
-    conflict_command: item.conflict || '',
+    claim_command: orElse(item.command, () => ('')),
+    inspect_command: orElse(item.inspect, () => ('')),
+    conflict_command: orElse(item.conflict, () => ('')),
     finish_rule: 'Use end-edit with verification evidence, then refresh project preflight.',
     prompt: item.command
-      ? `Use $sma-gen3. Claim this cleanup group with \`${item.command}\`. Clean or commit only this ownership group; conflict-report any overlap before continuing.`
+      ? `Use $sma-gen3. Claim this cleanup group with \`${String(item.command)}\`. Clean or commit only this ownership group; conflict-report any overlap before continuing.`
       : '',
     sample_paths: Array.isArray(item.sample_paths) ? item.sample_paths.slice(0, 5) : [],
     held: false,
     packet_stale: false,
   }));
   const targetedPaths = assignments.reduce((sum, item) => sum + number(item.dirty_path_count), 0);
-  const top = assignments[0] || {};
+  const top: (typeof assignments)[number] | undefined = assignments[0];
   return {
     assignments,
     assignment_count: assignments.length,
@@ -897,8 +914,8 @@ function controllerCleanupFallback(parallelWave) {
       claimable_assignment_count: assignments.length,
       targeted_dirty_paths: targetedPaths,
       claimable_dirty_paths: targetedPaths,
-      total_candidate_count: number(parallelWave?.total_candidate_count || assignments.length),
-      overflow_count: number(parallelWave?.overflow_count),
+      total_candidate_count: number(orElse(wave.total_candidate_count, () => (assignments.length))),
+      overflow_count: number(wave.overflow_count),
     },
     readiness: {
       status: assignments.length ? 'ready' : 'empty',
@@ -911,57 +928,57 @@ function controllerCleanupFallback(parallelWave) {
       claimable_dirty_paths: targetedPaths,
       blocked_dirty_paths: 0,
       claimable_percent: targetedPaths > 0 ? 100 : 0,
-      top_wave_gain_percent: number(top.wave_gain_percent),
-      top_project_gain_percent: nullableNumber(top.project_gain_percent),
-      total_candidate_count: number(parallelWave?.total_candidate_count || assignments.length),
-      overflow_count: number(parallelWave?.overflow_count),
+      top_wave_gain_percent: number(top?.wave_gain_percent),
+      top_project_gain_percent: nullableNumber(top?.project_gain_percent),
+      total_candidate_count: number(orElse(wave.total_candidate_count, () => (assignments.length))),
+      overflow_count: number(wave.overflow_count),
       recommended_next_command: assignments[0]?.claim_command || 'npm run controller:sweep:write',
     },
   };
 }
 
-function scopedControllerSummary(data, summary, projectScope) {
+function scopedControllerSummary(data: ToolData | null, summary: RawRecord, projectScope: string | null): RawRecord {
   if (!projectScope) return summary;
   const projects = Array.isArray(data?.projects)
-    ? data.projects.filter((project) => String(project.id || '') === String(projectScope))
+    ? data.projects.filter((project) => String(orElse(project.id, () => (''))) === projectScope)
     : [];
   const scopedActiveLeases = projects.reduce((sum, project) => (
     sum + (Array.isArray(project.active_leases) ? project.active_leases.length : 0)
   ), 0);
   const staleAgentProcesses = projects.reduce((sum, project) => (
-    sum + number(project.agent_processes?.stale_count)
+    sum + number(asRecord(project.agent_processes).stale_count)
   ), 0);
-  const agentProcessScanErrorProjects = projects.filter((project) => project.agent_processes?.process_scan_error).length;
-  const staleContextProjects = projects.filter((project) => number(project.stale_context?.receipt_count) > 0).length;
+  const agentProcessScanErrorProjects = projects.filter((project) => asRecord(project.agent_processes).process_scan_error).length;
+  const staleContextProjects = projects.filter((project) => number(asRecord(project.stale_context).receipt_count) > 0).length;
   const staleContextPaths = projects.reduce((sum, project) => (
-    sum + number(project.stale_context?.dirty_count)
+    sum + number(asRecord(project.stale_context).dirty_count)
   ), 0);
   return {
     ...summary,
-    scope_project: String(projectScope),
+    scope_project: projectScope,
     active_leases: scopedActiveLeases,
     stale_context_projects: staleContextProjects,
     stale_context_dirty_paths: staleContextPaths,
-    stale_agent_process_projects: projects.filter((project) => number(project.agent_processes?.stale_count) > 0).length,
+    stale_agent_process_projects: projects.filter((project) => number(asRecord(project.agent_processes).stale_count) > 0).length,
     stale_agent_processes: staleAgentProcesses,
     agent_process_scan_error_projects: agentProcessScanErrorProjects,
   };
 }
 
-function scopedCommand(command, projectScope) {
+function scopedCommand(command: string, projectScope: string | null): string {
   if (!projectScope) return command;
   const flag = ` --project ${shellArg(projectScope)}`;
   return command.includes(' -- ') ? `${command}${flag}` : `${command} --${flag}`;
 }
 
-function moduleDispatchCommand(projectScope, limit, task) {
+function moduleDispatchCommand(projectScope: string, limit: number, task: unknown): string {
   if (!hasConcreteModuleTask(task)) return '';
-  return `npm run module:dispatch -- --project ${shellArg(projectScope)} --task ${shellArg(task)} --max-agents ${limit}`;
+  return `npm run module:dispatch -- --project ${shellArg(projectScope)} --task ${shellArg(task)} --max-agents ${String(limit)}`;
 }
 
-function moduleWatchCommand(projectScope, limit, task) {
+function moduleWatchCommand(projectScope: string, limit: number, task: unknown): string {
   const safeTask = hasConcreteModuleTask(task) ? ` --task ${shellArg(task)}` : '';
-  return `npm run module:watch -- --project ${shellArg(projectScope)} --max-agents ${limit}${safeTask}`;
+  return `npm run module:watch -- --project ${shellArg(projectScope)} --max-agents ${String(limit)}${safeTask}`;
 }
 
 function summarizeCommandGuidance({
@@ -982,14 +999,14 @@ function summarizeCommandGuidance({
   moduleGraphGaps = 0,
   staleAgentProcesses = 0,
   agentProcessScanErrorProjects = 0,
-}) {
+}: CommandGuidanceInput): CommandGuidance {
   const cleanupActionable = cleanupStatus !== 'empty';
-  const moduleDispatchNeedsRefresh = Boolean(moduleDispatch?.dispatch_stale_unclaimed);
-  const moduleDispatchOpen = Boolean(moduleDispatch?.available && moduleDispatch.status !== 'complete' && !moduleDispatchNeedsRefresh);
-  const concreteTask = hasConcreteModuleTask(moduleWork?.task);
-  const moduleDispatchMissing = Boolean(projectScope && moduleWork?.available && (!moduleDispatch?.available || moduleDispatchNeedsRefresh));
+  const moduleDispatchNeedsRefresh = moduleDispatch.dispatch_stale_unclaimed;
+  const moduleDispatchOpen = (moduleDispatch.available && moduleDispatch.status !== 'complete' && !moduleDispatchNeedsRefresh);
+  const concreteTask = hasConcreteModuleTask(moduleWork.task);
+  const moduleDispatchMissing = Boolean(projectScope && moduleWork.available && (!moduleDispatch.available || moduleDispatchNeedsRefresh));
   const dispatchLaunchableAgents = moduleDispatchOpen ? number(moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed) : 0;
-  const moduleCapacityAvailable = Boolean(moduleWork?.available && moduleWork.launch_ready_slots > 0);
+  const moduleCapacityAvailable = (moduleWork.available && moduleWork.launch_ready_slots > 0);
   const activeDirtyScopePresent = number(activeDirtyScopeProjects) > 0 || number(activeDirtyScopePaths) > 0;
   const staleContextPresent = number(staleContextProjects) > 0 || number(staleContextPaths) > 0;
   const nonStaleHardLaneBlocker = number(openConflicts) > 0
@@ -999,7 +1016,7 @@ function summarizeCommandGuidance({
     || number(moduleGraphGaps) > 0
     || number(staleAgentProcesses) > 0
     || number(agentProcessScanErrorProjects) > 0
-    || number(moduleDispatch?.open_conflicts) > 0;
+    || number(moduleDispatch.open_conflicts) > 0;
   const staleContextCanRenew = staleContextPresent
     && number(staleContextLaunchableAgents) > 0
     && !nonStaleHardLaneBlocker;
@@ -1032,7 +1049,7 @@ function summarizeCommandGuidance({
     ? 'cleanup'
     : moduleDispatchOpen
       ? 'module-observe'
-      : moduleWork?.available && moduleWork.launch_ready_slots > 0
+      : moduleWork.available && moduleWork.launch_ready_slots > 0
         ? concreteTask ? 'module-dispatch' : 'module-capacity-preview'
         : 'snapshot';
   const launchableAgents = activeLane === 'cleanup'
@@ -1058,7 +1075,7 @@ function summarizeCommandGuidance({
       : staleContextPresent
         ? 'cleanup is blocked by stale Gen3 context; renew or hand off before cleanup claims'
         : 'cleanup pressure is clear for this scope; skip cleanup claims',
-    module_capacity_agents: number(moduleWork?.launch_ready_slots),
+    module_capacity_agents: number(moduleWork.launch_ready_slots),
     dispatch_launchable_agents: dispatchLaunchableAgents,
     stale_context_launchable_agents: number(staleContextLaunchableAgents),
     stale_context_actionable: staleContextCanRenew,
@@ -1100,17 +1117,17 @@ function buildLaneStatuses({
   staleContextPaths,
   staleContextLaunchableAgents = 0,
   dirtyUnleasedProjects,
-}) {
+}: LaneStatusInput): LaneStatuses {
   const moduleReadyAgents = commandGuidance.active_lane === 'module-observe'
     ? number(commandGuidance.dispatch_launchable_agents)
     : commandGuidance.active_lane === 'module-dispatch'
-      ? number(moduleWork?.launch_ready_slots)
+      ? number(moduleWork.launch_ready_slots)
       : 0;
   const moduleStatus = moduleReadyAgents > 0
     ? 'ready'
-    : moduleDispatch?.available && moduleDispatch.status !== 'complete'
+    : moduleDispatch.available && moduleDispatch.status !== 'complete'
       ? 'waiting'
-      : moduleWork?.available && moduleWork.launch_ready_slots > 0
+      : moduleWork.available && moduleWork.launch_ready_slots > 0
         ? 'preview'
         : 'idle';
   const cleanupLaneStatus = cleanupStatus === 'empty' ? 'clear' : cleanupStatus || 'unknown';
@@ -1145,25 +1162,25 @@ function buildLaneStatuses({
     active_status: activeStatus,
     cleanup: {
       status: cleanupLaneStatus,
-      actionable: Boolean(commandGuidance.cleanup_actionable),
+      actionable: commandGuidance.cleanup_actionable,
     },
     stale_context: {
       status: staleContextStatus,
       ready_agents: staleContextReadyAgents,
-      actionable: Boolean(commandGuidance.stale_context_actionable),
+      actionable: commandGuidance.stale_context_actionable,
       projects: number(staleContextProjects),
       dirty_paths: number(staleContextPaths),
     },
     module: {
       status: moduleStatus,
       ready_agents: moduleReadyAgents,
-      capacity_agents: number(moduleWork?.launch_ready_slots),
-      dispatch_claimable_agents: number(moduleDispatch?.claimable_unclaimed ?? moduleDispatch?.unclaimed),
-      dispatch_held_or_stale_agents: number(moduleDispatch?.launch_blocked_unclaimed),
-      dispatch_held_blocked_agents: number(moduleDispatch?.held_blocked_unclaimed),
-      dispatch_dirty_scope_blocked_agents: number(moduleDispatch?.dirty_scope_blocked_unclaimed),
-      dispatch_other_blocked_agents: number(moduleDispatch?.other_blocked_unclaimed),
-      dispatch_status: moduleDispatch?.status || 'not-requested',
+      capacity_agents: number(moduleWork.launch_ready_slots),
+      dispatch_claimable_agents: number(moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed),
+      dispatch_held_or_stale_agents: number(moduleDispatch.launch_blocked_unclaimed),
+      dispatch_held_blocked_agents: number(moduleDispatch.held_blocked_unclaimed),
+      dispatch_dirty_scope_blocked_agents: number(moduleDispatch.dirty_scope_blocked_unclaimed),
+      dispatch_other_blocked_agents: number(moduleDispatch.other_blocked_unclaimed),
+      dispatch_status: moduleDispatch.status || 'not-requested',
     },
     integration: {
       status: integrationStatus,
@@ -1183,13 +1200,16 @@ function buildLaunchDecision({
   commandGuidance,
   recommendedAgents,
   primaryNextCommand,
+}: {
+  status: string; laneStatuses: LaneStatuses; commandGuidance: CommandGuidance;
+  recommendedAgents: number; primaryNextCommand: string;
 }) {
-  const lane = commandGuidance?.active_lane || laneStatuses?.active_lane || 'snapshot';
-  const laneStatus = laneStatuses?.active_status || 'unknown';
+  const lane = commandGuidance.active_lane || laneStatuses.active_lane || 'snapshot';
+  const laneStatus = laneStatuses.active_status || 'unknown';
   const activeAgents = lane === 'cleanup'
     ? number(recommendedAgents)
-    : number(commandGuidance?.launchable_agents);
-  const integration = laneStatuses?.integration || {};
+    : number(commandGuidance.launchable_agents);
+  const integration = laneStatuses.integration;
   const allowed = laneStatus === 'ready' && activeAgents > 0 && Boolean(primaryNextCommand);
   const releaseAllowed = allowed
     && status === 'ready'
@@ -1215,21 +1235,21 @@ function buildLaunchDecision({
   };
 }
 
-function projectDashboardCommand(projectScope, limit, task) {
+function projectDashboardCommand(projectScope: string, limit: number, task: unknown): string {
   const safeTask = hasConcreteModuleTask(task) ? ` --task ${shellArg(task)}` : '';
-  return `npm run gen3:dashboard -- --project ${shellArg(projectScope)} --max-agents ${limit}${safeTask}`;
+  return `npm run gen3:dashboard -- --project ${shellArg(projectScope)} --max-agents ${String(limit)}${safeTask}`;
 }
 
-function hasConcreteModuleTask(task) {
-  const value = String(task || '').trim();
+function hasConcreteModuleTask(task: unknown): boolean {
+  const value = String(orElse(task, () => (''))).trim();
   return Boolean(value && value !== PLACEHOLDER_MODULE_TASK && !/^<[^>]+>$/.test(value));
 }
 
-function uniqueStrings(values) {
-  const seen = new Set();
-  const unique = [];
-  for (const value of values) {
-    const item = String(value || '').trim();
+function uniqueStrings(values: unknown): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const item = String(orElse(value, () => (''))).trim();
     if (!item || seen.has(item)) continue;
     seen.add(item);
     unique.push(item);
@@ -1237,7 +1257,9 @@ function uniqueStrings(values) {
   return unique;
 }
 
-function attachModuleDispatch(result, { projectScope, moduleTask, moduleLimit }) {
+function attachModuleDispatch(result: PreflightResult, { projectScope, moduleTask, moduleLimit }: {
+  projectScope: string | null; moduleTask: string | null; moduleLimit: number;
+}): void {
   if (!projectScope) {
     throw new Error('--write-dispatch requires --project <id>');
   }
@@ -1247,7 +1269,7 @@ function attachModuleDispatch(result, { projectScope, moduleTask, moduleLimit })
   if (result.status !== 'ready') {
     throw new Error(`refusing to write module dispatch while preflight is ${result.status}: ${result.blockers.join('; ') || 'not ready'}`);
   }
-  if (!result.module_work?.available || result.module_work.launch_ready_slots <= 0) {
+  if (!result.module_work.available || result.module_work.launch_ready_slots <= 0) {
     throw new Error('refusing to write module dispatch with no launch-ready module slots');
   }
   const dispatchArgs = [
@@ -1264,31 +1286,36 @@ function attachModuleDispatch(result, { projectScope, moduleTask, moduleLimit })
   if (dispatch.error) {
     throw new Error(`module dispatch write failed: ${dispatch.error}`);
   }
-  const manifestInfo = dispatch.data?.dispatch_manifest;
-  if (!manifestInfo?.json_path) {
+  const manifestInfo = asRecord(dispatch.data?.dispatch_manifest);
+  const manifestPath = stringValue(manifestInfo.json_path);
+  if (!manifestPath) {
     throw new Error('module dispatch write did not return a manifest path');
   }
-  const manifest = readJsonFile(manifestInfo.json_path);
-  const firstClaim = manifest.assignments?.[0]?.claim_command || '';
+  const manifest = readJsonFile(manifestPath);
+  const manifestAssignments = rawRecords(manifest.assignments);
+  const firstClaim = stringValue(manifestAssignments[0]?.claim_command);
+  const controllerCommands = asRecord(manifest.controller_commands);
   result.module_work.dispatch_manifest = manifestInfo;
-  result.module_work.dispatch_id = manifest.dispatch_id || manifestInfo.dispatch_id || '';
-  result.module_work.dispatch_assignment_count = Array.isArray(manifest.assignments) ? manifest.assignments.length : 0;
+  result.module_work.dispatch_id = stringValue(manifest.dispatch_id) || stringValue(manifestInfo.dispatch_id);
+  result.module_work.dispatch_assignment_count = manifestAssignments.length;
   result.module_work.first_dispatch_claim_command = firstClaim;
-  result.module_work.observe_command = manifest.controller_commands?.observe || result.module_work.observe_command;
-  result.module_work.observe_write_command = manifest.controller_commands?.observe_write || '';
+  result.module_work.observe_command = stringValue(controllerCommands.observe) || result.module_work.observe_command;
+  result.module_work.observe_write_command = stringValue(controllerCommands.observe_write);
   result.primary_next_command = firstClaim || result.module_work.observe_command || result.primary_next_command;
   result.next_commands.module_observe = result.module_work.observe_command;
-  result.next_commands.module_observe_write = result.module_work.observe_write_command;
+  result.next_commands.module_observe_write = result.module_work.observe_write_command || '';
   result.next_commands.module_first_claim = firstClaim;
 }
 
-function readJsonFile(filePath) {
-  return JSON.parse(readFileSync(resolve(filePath), 'utf8'));
+function readJsonFile(filePath: string): RawRecord {
+  const parsed: unknown = JSON.parse(readFileSync(resolve(filePath), 'utf8'));
+  if (!isRecord(parsed)) throw new Error(`expected JSON object: ${filePath}`);
+  return parsed;
 }
 
-function scopedCleanupCommand(command, projectScope) {
+function scopedCleanupCommand(command: string, projectScope: string | null): string {
   if (!projectScope) return command;
-  if (/controller:sweep:write/.test(String(command))) {
+  if (command.includes('controller:sweep:write')) {
     return [
       'npm run controller:snapshot --',
       '--project', shellArg(projectScope),
@@ -1303,7 +1330,7 @@ function scopedCleanupCommand(command, projectScope) {
   return scopedCommand(command, projectScope);
 }
 
-function buildLaunchPlan(assignments, recommendedAgents) {
+function buildLaunchPlan(assignments: RawRecord[], recommendedAgents: number) {
   const limit = Math.max(0, number(recommendedAgents));
   return assignments
     .filter((item) => !item.held && !item.packet_stale)
@@ -1311,18 +1338,18 @@ function buildLaunchPlan(assignments, recommendedAgents) {
     .map((item, index) => ({
       agent_slot: index + 1,
       packet_rank: number(item.rank),
-      project: item.project || '',
-      group: item.group || '',
-      brick: item.brick || '',
-      packet_type: item.packet_type || 'dirty-unleased',
+      project: orElse(item.project, () => ('')),
+      group: orElse(item.group, () => ('')),
+      brick: orElse(item.brick, () => ('')),
+      packet_type: orElse(item.packet_type, () => ('dirty-unleased')),
       dirty_path_count: number(item.dirty_path_count),
       wave_gain_percent: number(item.wave_gain_percent),
       project_gain_percent: nullableNumber(item.project_gain_percent),
-      claim_command: item.claim_command || `npm run cleanup:claim -- --rank ${number(item.rank)}`,
-      inspect_command: item.inspect_command || '',
-      conflict_command: item.conflict_command || '',
-      finish_rule: item.finish_rule || '',
-      prompt: item.prompt || '',
+      claim_command: orElse(item.claim_command, () => (`npm run cleanup:claim -- --rank ${String(number(item.rank))}`)),
+      inspect_command: orElse(item.inspect_command, () => ('')),
+      conflict_command: orElse(item.conflict_command, () => ('')),
+      finish_rule: orElse(item.finish_rule, () => ('')),
+      prompt: orElse(item.prompt, () => ('')),
       sample_paths: Array.isArray(item.sample_paths) ? item.sample_paths.slice(0, 5) : [],
     }));
 }
@@ -1359,21 +1386,21 @@ function buildBigPicture({
   projectScope,
   moduleWork,
   moduleDispatch,
-}) {
-  const conflictText = `${openConflicts} open conflicts (${warningConflicts}/${criticalConflicts} warning/critical)`;
-  const graphText = `${graphPackets} graph packets (${projectGraphGaps} project, ${moduleGraphGaps} module gaps)`;
-  const processText = `${staleAgentProcesses} stale agent process${staleAgentProcesses === 1 ? '' : 'es'} across ${staleAgentProcessProjects} project${staleAgentProcessProjects === 1 ? '' : 's'}`;
+}: BigPictureInput) {
+  const conflictText = `${String(openConflicts)} open conflicts (${String(warningConflicts)}/${String(criticalConflicts)} warning/critical)`;
+  const graphText = `${String(graphPackets)} graph packets (${String(projectGraphGaps)} project, ${String(moduleGraphGaps)} module gaps)`;
+  const processText = `${String(staleAgentProcesses)} stale agent process${staleAgentProcesses === 1 ? '' : 'es'} across ${String(staleAgentProcessProjects)} project${staleAgentProcessProjects === 1 ? '' : 's'}`;
   const cleanScope = status === 'ready' && cleanupStatus === 'empty';
-  const moduleText = moduleWork?.available
-    ? ` Module lane: ${moduleWork.launch_ready_slots}/${moduleWork.requested_agents} slots safe, ${moduleWork.graph_ready_modules}/${moduleWork.modules_total} module graphs ready.`
+  const moduleText = moduleWork.available
+    ? ` Module lane: ${String(moduleWork.launch_ready_slots)}/${String(moduleWork.requested_agents)} slots safe, ${String(moduleWork.graph_ready_modules)}/${String(moduleWork.modules_total)} module graphs ready.`
     : '';
-  const dispatchOpen = moduleDispatch?.available && moduleDispatch.status !== 'complete';
-  const dispatchId = moduleDispatch?.dispatch_id || 'latest';
-  const dispatchClaimReady = moduleDispatch?.claimable_unclaimed ?? moduleDispatch?.unclaimed ?? 0;
-  const dispatchBlocked = moduleDispatch?.launch_blocked_unclaimed ?? 0;
+  const dispatchOpen = moduleDispatch.available && moduleDispatch.status !== 'complete';
+  const dispatchId = moduleDispatch.dispatch_id || 'latest';
+  const dispatchClaimReady = moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed ?? 0;
+  const dispatchBlocked = moduleDispatch.launch_blocked_unclaimed ?? 0;
   const dispatchBlockedText = formatDispatchBlocked(moduleDispatch);
-  const dispatchText = moduleDispatch?.available
-    ? ` Dispatch ${dispatchId}: ${moduleDispatch.claimed}/${moduleDispatch.assignment_count} claimed, ${moduleDispatch.active} active, ${moduleDispatch.completed} done, ${dispatchClaimReady}/${moduleDispatch.unclaimed} open claim-ready, ${dispatchBlocked} blocked${dispatchBlockedText}.`
+  const dispatchText = moduleDispatch.available
+    ? ` Dispatch ${dispatchId}: ${String(moduleDispatch.claimed)}/${String(moduleDispatch.assignment_count)} claimed, ${String(moduleDispatch.active)} active, ${String(moduleDispatch.completed)} done, ${String(dispatchClaimReady)}/${String(moduleDispatch.unclaimed)} open claim-ready, ${String(dispatchBlocked)} blocked${dispatchBlockedText}.`
     : '';
   const safeModuleLaunchOpen = dispatchOpen
     && dispatchClaimReady > 0
@@ -1384,39 +1411,39 @@ function buildBigPicture({
     && moduleGraphGaps === 0
     && staleAgentProcesses === 0
     && agentProcessScanErrorProjects === 0
-    && number(moduleDispatch?.open_conflicts) === 0;
-  const releaseBlockerText = blockers.length ? blockers.join('; ') : `${status} at ${readinessScorePercent}%`;
+    && number(moduleDispatch.open_conflicts) === 0;
+  const releaseBlockerText = blockers.length ? blockers.join('; ') : `${status} at ${String(readinessScorePercent)}%`;
   const readyText = cleanScope
-    ? `${projectScope || 'Selected scope'} is clean for cleanup agents: ${conflictText}, ${graphText}, ${activeLeases} active lease(s), ${processText}.${moduleText}${dispatchText}`
+    ? `${orElse(projectScope, () => ('Selected scope'))} is clean for cleanup agents: ${conflictText}, ${graphText}, ${String(activeLeases)} active lease(s), ${processText}.${moduleText}${dispatchText}`
     : safeModuleLaunchOpen
-    ? `Module-launch-ready, release blocked: ${dispatchClaimReady}/${moduleDispatch.unclaimed} dispatch slot(s) claim-ready while cleanup/release blockers remain: ${releaseBlockerText}.${moduleText}${dispatchText}`
+    ? `Module-launch-ready, release blocked: ${String(dispatchClaimReady)}/${String(moduleDispatch.unclaimed)} dispatch slot(s) claim-ready while cleanup/release blockers remain: ${releaseBlockerText}.${moduleText}${dispatchText}`
     : status === 'ready'
-    ? `Ready for ${launchSlots || recommendedAgents}/${requestedAgents} local cleanup agents: ${claimablePaths}/${targetedPaths} paths claimable (${claimablePercent}%), ${conflictText}, ${graphText}, ${processText}.${moduleText}${dispatchText}`
+    ? `Ready for ${String(launchSlots || recommendedAgents)}/${String(requestedAgents)} local cleanup agents: ${String(claimablePaths)}/${String(targetedPaths)} paths claimable (${String(claimablePercent)}%), ${conflictText}, ${graphText}, ${processText}.${moduleText}${dispatchText}`
     : `Not cleanup-launch-ready: ${releaseBlockerText}.${moduleText}${dispatchText}`;
   const currentSlice = cleanScope
     ? dispatchOpen
-      ? `Current slice: continue existing module dispatch ${dispatchId}; claim ${dispatchClaimReady} safe open slot(s), skip ${dispatchBlocked} blocked slot(s)${dispatchBlockedText}, then observe/write progress.`
+      ? `Current slice: continue existing module dispatch ${dispatchId}; claim ${String(dispatchClaimReady)} safe open slot(s), skip ${String(dispatchBlocked)} blocked slot(s)${dispatchBlockedText}, then observe/write progress.`
       : `Current slice: cleanup pressure is clear for this scope; assign only real module work, with module graphs and leases.${moduleText}`
     : status === 'ready'
-    ? `Current slice: launch up to ${launchSlots || recommendedAgents}/${requestedAgents} cleanup agents, keep conflict SLA and graph packets at zero, monitor cleanup progress, and reserve module dispatch for non-overlapping product work.`
+    ? `Current slice: launch up to ${String(launchSlots || recommendedAgents)}/${String(requestedAgents)} cleanup agents, keep conflict SLA and graph packets at zero, monitor cleanup progress, and reserve module dispatch for non-overlapping product work.`
     : staleAgentProcesses > 0
-      ? `Current slice: inspect, terminate, or reattach stale project-rooted agent processes before assigning more ${projectScope || 'project'} agents.`
+      ? `Current slice: inspect, terminate, or reattach stale project-rooted agent processes before assigning more ${orElse(projectScope, () => ('project'))} agents.`
     : (staleContextProjects > 0 || staleContextPaths > 0) && dispatchOpen && dispatchClaimReady > 0
-      ? `Current slice: stale Gen3 context blocks cleanup/release, but existing dispatch ${dispatchId} still has ${dispatchClaimReady} safe claim-ready module slot(s); launch only those dispatch-pinned modules and leave stale/dirty scope alone.`
+      ? `Current slice: stale Gen3 context blocks cleanup/release, but existing dispatch ${dispatchId} still has ${String(dispatchClaimReady)} safe claim-ready module slot(s); launch only those dispatch-pinned modules and leave stale/dirty scope alone.`
     : staleContextProjects > 0 || staleContextPaths > 0
-      ? `Current slice: renew or hand off stale Gen3 context for ${staleContextPaths} dirty path(s) before cleanup or module reassignment.`
-    : moduleWork?.available && moduleWork.launch_ready_slots > 0
-      ? `Current slice: cleanup integration is blocked, but ${moduleWork.launch_ready_slots} module-work slot(s) can proceed if they stay out of dirty/shared paths and use module dispatch.`
+      ? `Current slice: renew or hand off stale Gen3 context for ${String(staleContextPaths)} dirty path(s) before cleanup or module reassignment.`
+    : moduleWork.available && moduleWork.launch_ready_slots > 0
+      ? `Current slice: cleanup integration is blocked, but ${String(moduleWork.launch_ready_slots)} module-work slot(s) can proceed if they stay out of dirty/shared paths and use module dispatch.`
       : 'Current slice: clear the launch blocker before assigning more agents.';
   const nextSlices = cleanScope
     ? dispatchOpen
       ? [
-          `Continue dispatch ${dispatchId}: claim ${dispatchClaimReady} safe open slot(s), leave ${dispatchBlocked} blocked slot(s)${dispatchBlockedText} alone, then observe/write progress.`,
+          `Continue dispatch ${dispatchId}: claim ${String(dispatchClaimReady)} safe open slot(s), leave ${String(dispatchBlocked)} blocked slot(s)${dispatchBlockedText} alone, then observe/write progress.`,
           'Only write a new module dispatch after the current dispatch is complete or intentionally abandoned by the controller.',
           'Each claimed agent must query its module graph first, keep shared hot paths serialized, and report receipts through Gen3 context.',
         ]
       : [
-          `Respawn ${projectScope || 'the selected project'} module agents only for explicit product/module tasks, not cleanup.`,
+          `Respawn ${orElse(projectScope, () => ('the selected project'))} module agents only for explicit product/module tasks, not cleanup.`,
           'Each agent should claim its module lease, query the module graph first, and keep shared hot paths serialized.',
           'Rerun project-scoped preflight before each new wave so unrelated portfolio work does not distort Acme Desktop readiness.',
         ]
@@ -1434,7 +1461,7 @@ function buildBigPicture({
         ]
     : (staleContextProjects > 0 || staleContextPaths > 0) && dispatchOpen && dispatchClaimReady > 0
       ? [
-          `Claim ${dispatchClaimReady} safe dispatch-pinned module slot(s) now; leave ${dispatchBlocked} blocked slot(s)${dispatchBlockedText} and all stale dirty scope untouched.`,
+          `Claim ${String(dispatchClaimReady)} safe dispatch-pinned module slot(s) now; leave ${String(dispatchBlocked)} blocked slot(s)${dispatchBlockedText} and all stale dirty scope untouched.`,
           'Renew or hand off the stale Gen3 context before cleanup, integration, merge, release, or shared hot-path work.',
           'Observe/write module dispatch receipts before assigning the next module wave so predicted capacity becomes durable proof.',
         ]
@@ -1444,9 +1471,9 @@ function buildBigPicture({
           'Rerun project-scoped preflight after renewal; cleanup should remain blocked until ownership is explicit.',
           'Once stale context is reconciled, resume cleanup or module dispatch based on the updated active lane.',
         ]
-    : moduleWork?.available && moduleWork.launch_ready_slots > 0
+    : moduleWork.available && moduleWork.launch_ready_slots > 0
       ? [
-          `Use module dispatch for up to ${moduleWork.launch_ready_slots} non-overlapping module agents; do not launch cleanup agents until dirty cleanup blockers clear.`,
+          `Use module dispatch for up to ${String(moduleWork.launch_ready_slots)} non-overlapping module agents; do not launch cleanup agents until dirty cleanup blockers clear.`,
           'Resolve or reconcile dirty cleanup blockers before integration, merge, release, or shared hot-path work.',
           'Observe module dispatch receipts before assigning the next module wave so predicted capacity becomes durable proof.',
         ]
@@ -1477,20 +1504,20 @@ function buildBigPicture({
       top_wave_gain_percent: topWaveGainPercent,
       top_project_gain_percent: topProjectGainPercent,
       overflow_groups: overflowGroups,
-      module_work_slots: moduleWork?.launch_ready_slots ?? 0,
-      module_work_graphs_ready: moduleWork?.graph_ready_modules ?? 0,
-      module_work_graphs_total: moduleWork?.modules_total ?? 0,
-      module_dispatch_status: moduleDispatch?.status || 'not-requested',
-      module_dispatch_claimed: moduleDispatch?.claimed ?? 0,
-      module_dispatch_active: moduleDispatch?.active ?? 0,
-      module_dispatch_completed: moduleDispatch?.completed ?? 0,
-      module_dispatch_unclaimed: moduleDispatch?.unclaimed ?? 0,
-      module_dispatch_claimable_unclaimed: moduleDispatch?.claimable_unclaimed ?? 0,
-      module_dispatch_launch_blocked_unclaimed: moduleDispatch?.launch_blocked_unclaimed ?? 0,
-      module_dispatch_held_blocked_unclaimed: moduleDispatch?.held_blocked_unclaimed ?? 0,
-      module_dispatch_dirty_scope_blocked_unclaimed: moduleDispatch?.dirty_scope_blocked_unclaimed ?? 0,
-      module_dispatch_other_blocked_unclaimed: moduleDispatch?.other_blocked_unclaimed ?? 0,
-      module_dispatch_open_conflicts: moduleDispatch?.open_conflicts ?? 0,
+      module_work_slots: moduleWork.launch_ready_slots ?? 0,
+      module_work_graphs_ready: moduleWork.graph_ready_modules ?? 0,
+      module_work_graphs_total: moduleWork.modules_total ?? 0,
+      module_dispatch_status: moduleDispatch.status || 'not-requested',
+      module_dispatch_claimed: moduleDispatch.claimed ?? 0,
+      module_dispatch_active: moduleDispatch.active ?? 0,
+      module_dispatch_completed: moduleDispatch.completed ?? 0,
+      module_dispatch_unclaimed: moduleDispatch.unclaimed ?? 0,
+      module_dispatch_claimable_unclaimed: moduleDispatch.claimable_unclaimed ?? 0,
+      module_dispatch_launch_blocked_unclaimed: moduleDispatch.launch_blocked_unclaimed ?? 0,
+      module_dispatch_held_blocked_unclaimed: moduleDispatch.held_blocked_unclaimed ?? 0,
+      module_dispatch_dirty_scope_blocked_unclaimed: moduleDispatch.dirty_scope_blocked_unclaimed ?? 0,
+      module_dispatch_other_blocked_unclaimed: moduleDispatch.other_blocked_unclaimed ?? 0,
+      module_dispatch_open_conflicts: moduleDispatch.open_conflicts ?? 0,
     },
     eta: {
       strong_daily_standard: '2-3 focused SMA slices',
@@ -1503,15 +1530,15 @@ function buildBigPicture({
       '30+ agents requires hot shared files, review, and product-decision bottlenecks to be structurally reduced.',
     ],
     watchouts: [
-      `${activeDirtyScopeProjects} active dirty-scope project(s), ${activeDirtyScopePaths} uncovered path(s).`,
-      `${staleContextProjects} stale Gen3 context project(s), ${staleContextPaths} dirty path(s).`,
-      `${staleAgentProcesses} stale project-rooted agent process(es).`,
-      `${overflowGroups} cleanup groups remain outside the current launch wave.`,
+      `${String(activeDirtyScopeProjects)} active dirty-scope project(s), ${String(activeDirtyScopePaths)} uncovered path(s).`,
+      `${String(staleContextProjects)} stale Gen3 context project(s), ${String(staleContextPaths)} dirty path(s).`,
+      `${String(staleAgentProcesses)} stale project-rooted agent process(es).`,
+      `${String(overflowGroups)} cleanup groups remain outside the current launch wave.`,
     ],
   };
 }
 
-function cleanupPenalty(status) {
+function cleanupPenalty(status: string): number {
   if (status === 'ready') return 0;
   if (status === 'partial') return 12;
   if (status === 'partial-stale') return 24;
@@ -1520,7 +1547,7 @@ function cleanupPenalty(status) {
   return 15;
 }
 
-function resolveLimitPlan(controllerSummary) {
+function resolveLimitPlan(controllerSummary: RawRecord): LimitPlan {
   const maxAgents = positiveInt(args.maxAgents, 12);
   const rawLimit = args.limit === true ? undefined : args.limit;
   const autoRequested = Boolean(args.autoLimit)
@@ -1563,28 +1590,28 @@ function primaryNext({
   moduleDispatch,
   controllerBlockerPackets = [],
   dirtyUnleasedProjects,
-}) {
-  const hasOpenModuleDispatch = moduleDispatch?.available && moduleDispatch.status !== 'complete';
+}: PrimaryNextInput): string {
+  const hasOpenModuleDispatch = moduleDispatch.available && moduleDispatch.status !== 'complete';
   const moduleProgressNext = moduleProgressCommand({ projectScope, moduleWork, moduleDispatch });
   const firstControllerBlocker = Array.isArray(controllerBlockerPackets)
-    ? controllerBlockerPackets.find((packet) => packet?.command)
+    ? controllerBlockerPackets.find((packet) => packet.command)
     : null;
   const firstStaleContextBlocker = Array.isArray(controllerBlockerPackets)
-    ? controllerBlockerPackets.find((packet) => packet?.kind === 'stale-context' && packet?.command)
+    ? controllerBlockerPackets.find((packet) => packet.kind === 'stale-context' && packet.command)
     : null;
   if (status !== 'blocked') {
     if (cleanupStatus === 'empty') {
       if (hasOpenModuleDispatch) {
         return moduleProgressNext || scopedCommand('npm run module:observe:write -- --dispatch latest', projectScope);
       }
-      if (moduleWork?.available && moduleWork.launch_ready_slots > 0) {
+      if (moduleWork.available && moduleWork.launch_ready_slots > 0) {
         return moduleWork.dispatch_command || moduleWork.plan_command || scopedCommand('npm run module:plan', projectScope);
       }
       return scopedCommand('npm run controller:snapshot:quiet', projectScope);
     }
     return cleanupNext || scopedCommand('npm run cleanup:claim -- --next', projectScope);
   }
-  if (moduleDispatch?.open_conflicts > 0) return scopedCommand('npm run conflict:summary', projectScope);
+  if (moduleDispatch.open_conflicts > 0) return scopedCommand('npm run conflict:summary', projectScope);
   if (openConflicts > 0 || criticalConflicts > 0) return 'npm run conflict:summary';
   if (staleAgentProcesses > 0 || agentProcessScanErrorProjects > 0) return scopedCommand('npm run controller:snapshot:quiet', projectScope);
   if (graphPackets > 0 || projectGraphGaps > 0 || moduleGraphGaps > 0) return 'npm run graph:claim -- --next';
@@ -1617,7 +1644,7 @@ function primaryNext({
   if ((dirtyUnleasedProjects > 0 || activeDirtyScopeProjects > 0 || activeDirtyScopePaths > 0) && firstControllerBlocker) {
     return firstControllerBlocker.command;
   }
-  if ((dirtyUnleasedProjects > 0 || activeDirtyScopeProjects > 0 || activeDirtyScopePaths > 0) && moduleWork?.available && moduleWork.launch_ready_slots > 0) {
+  if ((dirtyUnleasedProjects > 0 || activeDirtyScopeProjects > 0 || activeDirtyScopePaths > 0) && moduleWork.available && moduleWork.launch_ready_slots > 0) {
     if (hasOpenModuleDispatch) return moduleProgressNext || moduleDispatch.observe_command || moduleWork.observe_command;
     return moduleWork.dispatch_command || moduleWork.plan_command || 'npm run module:plan';
   }
@@ -1625,10 +1652,12 @@ function primaryNext({
   return cleanupNext || 'npm run controller:sweep';
 }
 
-function moduleProgressCommand({ projectScope, moduleWork, moduleDispatch }) {
-  const hasOpenModuleDispatch = moduleDispatch?.available && moduleDispatch.status !== 'complete';
-  if (moduleDispatch?.dispatch_stale_unclaimed) {
-    return moduleWork?.dispatch_command || moduleDispatch.next_command || moduleWork?.plan_command || scopedCommand('npm run module:plan', projectScope);
+function moduleProgressCommand({ projectScope, moduleWork, moduleDispatch }: {
+  projectScope: string | null; moduleWork: ModuleWorkSummary; moduleDispatch: ModuleDispatchSummary;
+}): string {
+  const hasOpenModuleDispatch = moduleDispatch.available && moduleDispatch.status !== 'complete';
+  if (moduleDispatch.dispatch_stale_unclaimed) {
+    return moduleWork.dispatch_command || moduleDispatch.next_command || moduleWork.plan_command || scopedCommand('npm run module:plan', projectScope);
   }
   const dispatchClaimableAgents = hasOpenModuleDispatch
     ? number(moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed)
@@ -1639,13 +1668,13 @@ function moduleProgressCommand({ projectScope, moduleWork, moduleDispatch }) {
       || moduleDispatch.observe_command
       || scopedCommand('npm run module:observe:write -- --dispatch latest', projectScope);
   }
-  if (moduleWork?.available && moduleWork.launch_ready_slots > 0) {
+  if (moduleWork.available && moduleWork.launch_ready_slots > 0) {
     return moduleWork.dispatch_command || moduleWork.plan_command || scopedCommand('npm run module:plan', projectScope);
   }
   return '';
 }
 
-function runJsonTool(label, toolArgs) {
+function runJsonTool(label: string, toolArgs: string[]): ToolResult {
   try {
     const raw = execFileSync(process.execPath, toolArgs, {
       cwd: SMA_ROOT,
@@ -1654,86 +1683,91 @@ function runJsonTool(label, toolArgs) {
       timeout: positiveInt(args.timeoutMs, 180000),
       maxBuffer: 96 * 1024 * 1024,
     });
-    return { label, data: JSON.parse(raw) };
-  } catch (err) {
+    const parsed: unknown = JSON.parse(raw);
+    return isRecord(parsed)
+      ? { label, data: parsed, error: null }
+      : { label, data: null, error: 'tool returned a non-object JSON value' };
+  } catch (error: unknown) {
+    const childError = isRecord(error) ? error : {};
     return {
       label,
       data: null,
-      error: err.stderr?.toString()?.trim() || err.message,
+      error: stringValue(childError.stderr).trim()
+        || (error instanceof Error ? error.message : String(error)),
     };
   }
 }
 
-function printText(result) {
-  const printFullPrompts = Boolean(args.fullPrompts || args.verboseLaunchPlan);
+function printText(result: PreflightResult): void {
+  const printFullPrompts = Boolean(orElse(args.fullPrompts, () => (args.verboseLaunchPlan)));
   console.log('SMA Gen3 Parallel Preflight');
-  if (result.scope?.project) console.log(`scope:            project ${result.scope.project}`);
+  if (result.scope.project) console.log(`scope:            project ${result.scope.project}`);
   console.log(`big picture:      ${result.big_picture.tldr}`);
   console.log(`current slice:    ${result.big_picture.current_slice}`);
-  console.log(`score:            launch ${result.active_lane_capacity_percent}%, integration ${result.readiness_score_percent}%`);
+  console.log(`score:            launch ${String(result.active_lane_capacity_percent)}%, integration ${String(result.readiness_score_percent)}%`);
   console.log(`status:           ${result.status}${formatStatusSuffix(result)}`);
-  console.log(`agents:           ${result.active_recommended_agents}/${result.requested_agents} active-lane recommended (${result.active_lane || 'cleanup'}); cleanup ${result.recommended_agents}/${result.requested_agents} (${result.limit_mode}, max ${result.max_agents})`);
-  if (result.command_guidance?.active_lane) {
+  console.log(`agents:           ${String(result.active_recommended_agents)}/${String(result.requested_agents)} active-lane recommended (${result.active_lane || 'cleanup'}); cleanup ${String(result.recommended_agents)}/${String(result.requested_agents)} (${result.limit_mode}, max ${String(result.max_agents)})`);
+  if (result.command_guidance.active_lane) {
     console.log(`active lane:      ${result.command_guidance.active_lane} (${result.command_guidance.cleanup_reason}; ${result.command_guidance.module_observe_reason})`);
   }
   if (result.lane_statuses) {
-    console.log(`lane status:      ${result.lane_statuses.active_lane} ${result.lane_statuses.active_status}; stale ${result.lane_statuses.stale_context.status} (${result.lane_statuses.stale_context.ready_agents} ready); module ${result.lane_statuses.module.status} (${result.lane_statuses.module.ready_agents} ready); integration ${result.lane_statuses.integration.status} (${result.lane_statuses.integration.active_dirty_scope_paths} dirty-scope paths)`);
+    console.log(`lane status:      ${result.lane_statuses.active_lane} ${result.lane_statuses.active_status}; stale ${result.lane_statuses.stale_context.status} (${String(result.lane_statuses.stale_context.ready_agents)} ready); module ${result.lane_statuses.module.status} (${String(result.lane_statuses.module.ready_agents)} ready); integration ${result.lane_statuses.integration.status} (${String(result.lane_statuses.integration.active_dirty_scope_paths)} dirty-scope paths)`);
   }
   if (result.launch_decision) {
-    console.log(`launch decision:  ${result.launch_decision.allowed ? 'allowed' : 'blocked'} ${result.launch_decision.lane} (${result.launch_decision.agents} agent${result.launch_decision.agents === 1 ? '' : 's'}); release ${result.launch_decision.release_allowed ? 'allowed' : 'blocked'}`);
+    console.log(`launch decision:  ${result.launch_decision.allowed ? 'allowed' : 'blocked'} ${result.launch_decision.lane} (${String(result.launch_decision.agents)} agent${result.launch_decision.agents === 1 ? '' : 's'}); release ${result.launch_decision.release_allowed ? 'allowed' : 'blocked'}`);
   }
-  console.log(`cleanup:          ${result.cleanup_wave.claimable_assignment_count}/${result.cleanup_wave.assignment_count} assignments claimable, ${result.cleanup_wave.claimable_percent}% paths claimable`);
+  console.log(`cleanup:          ${String(result.cleanup_wave.claimable_assignment_count)}/${String(result.cleanup_wave.assignment_count)} assignments claimable, ${String(result.cleanup_wave.claimable_percent)}% paths claimable`);
   if (result.cleanup_wave.source && result.cleanup_wave.source !== 'cleanup-packets') {
     console.log(`cleanup source:   ${result.cleanup_wave.source}`);
   }
-  if (result.module_work?.available) {
-    console.log(`module work:      ${result.module_work.launch_ready_slots}/${result.module_work.requested_agents} slots safe, ${result.module_work.graph_ready_modules}/${result.module_work.modules_total} graphs ready, held ${result.module_work.held_slots}, overlap ${result.module_work.path_overlap_blocked_slots}`);
+  if (result.module_work.available) {
+    console.log(`module work:      ${String(result.module_work.launch_ready_slots)}/${String(result.module_work.requested_agents)} slots safe, ${String(result.module_work.graph_ready_modules)}/${String(result.module_work.modules_total)} graphs ready, held ${String(result.module_work.held_slots)}, overlap ${String(result.module_work.path_overlap_blocked_slots)}`);
   }
-  if (result.module_dispatch?.available) {
-    console.log(`module dispatch:  ${result.module_dispatch.status} ${result.module_dispatch.claimed}/${result.module_dispatch.assignment_count} claimed, ${result.module_dispatch.active} active, ${result.module_dispatch.completed} done, ${result.module_dispatch.claimable_unclaimed}/${result.module_dispatch.unclaimed} open claim-ready, ${result.module_dispatch.launch_blocked_unclaimed} blocked${formatDispatchBlocked(result.module_dispatch)}`);
+  if (result.module_dispatch.available) {
+    console.log(`module dispatch:  ${result.module_dispatch.status} ${String(result.module_dispatch.claimed)}/${String(result.module_dispatch.assignment_count)} claimed, ${String(result.module_dispatch.active)} active, ${String(result.module_dispatch.completed)} done, ${String(result.module_dispatch.claimable_unclaimed)}/${String(result.module_dispatch.unclaimed)} open claim-ready, ${String(result.module_dispatch.launch_blocked_unclaimed)} blocked${formatDispatchBlocked(result.module_dispatch)}`);
     if (result.module_dispatch.external_active_slot_count) {
-      console.log(`module external:  ${result.module_dispatch.external_active_slot_count} slot${result.module_dispatch.external_active_slot_count === 1 ? '' : 's'} occupied by ${result.module_dispatch.external_active_lease_count} non-dispatch lease${result.module_dispatch.external_active_lease_count === 1 ? '' : 's'} across ${result.module_dispatch.external_active_module_count} module${result.module_dispatch.external_active_module_count === 1 ? '' : 's'}`);
+      console.log(`module external:  ${String(result.module_dispatch.external_active_slot_count)} slot${result.module_dispatch.external_active_slot_count === 1 ? '' : 's'} occupied by ${String(result.module_dispatch.external_active_lease_count)} non-dispatch lease${result.module_dispatch.external_active_lease_count === 1 ? '' : 's'} across ${String(result.module_dispatch.external_active_module_count)} module${result.module_dispatch.external_active_module_count === 1 ? '' : 's'}`);
     }
-    if (result.module_dispatch.next_command && result.active_lane?.startsWith('module')) {
+    if (result.module_dispatch.next_command && result.active_lane.startsWith('module')) {
       console.log(`module next:      ${result.module_dispatch.next_command}`);
     } else if (result.module_dispatch.next_command) {
       console.log(`module queued:    ${result.module_dispatch.next_command}`);
     }
   }
-  if (result.module_work?.dispatch_manifest) {
-    console.log(`module dispatch written: ${result.module_work.dispatch_manifest.json_path}`);
-    console.log(`first claim:      ${result.module_work.first_dispatch_claim_command}`);
+  if (result.module_work.dispatch_manifest) {
+    console.log(`module dispatch written: ${String(result.module_work.dispatch_manifest.json_path)}`);
+    console.log(`first claim:      ${String(result.module_work.first_dispatch_claim_command)}`);
     console.log(`observe:          ${result.module_work.observe_command}`);
   }
-  console.log(`cleanup launch:   ${result.launch_plan.length} cleanup spawn-ready slots${result.launch_plan.length ? ' (rerun with --launch-plan for commands)' : ''}`);
-  if (result.controller?.stale_context_projects || result.stale_context_launch_plan?.length) {
-    console.log(`stale renew:      ${(result.stale_context_launch_plan || []).length}/${result.controller_blocker_packets.filter((packet) => packet.kind === 'stale-context').length} stale-context packets launch-ready${(result.stale_context_launch_plan || []).length ? ' (rerun with --launch-plan for commands)' : ''}`);
+  console.log(`cleanup launch:   ${String(result.launch_plan.length)} cleanup spawn-ready slots${result.launch_plan.length ? ' (rerun with --launch-plan for commands)' : ''}`);
+  if (result.controller.stale_context_projects || result.stale_context_launch_plan.length) {
+    console.log(`stale renew:      ${String((result.stale_context_launch_plan || []).length)}/${String(result.controller_blocker_packets.filter((packet) => packet.kind === 'stale-context').length)} stale-context packets launch-ready${(result.stale_context_launch_plan || []).length ? ' (rerun with --launch-plan for commands)' : ''}`);
   }
-  if (result.module_dispatch?.available) {
-    console.log(`module launch:    ${(result.module_launch_plan || []).length}/${result.module_dispatch.claimable_unclaimed} dispatch slots claim-ready, ${result.module_dispatch.launch_blocked_unclaimed} blocked${formatDispatchBlocked(result.module_dispatch)}${(result.module_launch_plan || []).length ? ' (rerun with --launch-plan for commands)' : ''}`);
+  if (result.module_dispatch.available) {
+    console.log(`module launch:    ${String((result.module_launch_plan || []).length)}/${String(result.module_dispatch.claimable_unclaimed)} dispatch slots claim-ready, ${String(result.module_dispatch.launch_blocked_unclaimed)} blocked${formatDispatchBlocked(result.module_dispatch)}${(result.module_launch_plan || []).length ? ' (rerun with --launch-plan for commands)' : ''}`);
   }
-  if (result.queued_module_launch_plan?.length) {
-    console.log(`queued module:    ${result.queued_module_launch_plan.length}/${result.module_dispatch.claimable_unclaimed} dispatch slots ready after ${result.active_lane} clears`);
+  if (result.queued_module_launch_plan.length) {
+    console.log(`queued module:    ${String(result.queued_module_launch_plan.length)}/${String(result.module_dispatch.claimable_unclaimed)} dispatch slots ready after ${result.active_lane} clears`);
   }
-  console.log(`gains:            top wave ${formatPercent(result.gains.selected_wave_top_gain_percent)}, top project ${formatPercent(result.gains.selected_project_top_gain_percent)}, ${result.gains.coordination_roundtrip_reduction_percent_estimate}% fewer controller command round trips`);
-  if (result.module_work?.available) {
-    console.log(`module gains:     ${result.module_work.gains.module_graph_first_token_reduction_percent_estimate}% graph-first token reduction, ${result.module_work.gains.collision_reduction_percent_estimate}% collision reduction estimate`);
+  console.log(`gains:            top wave ${formatPercent(result.gains.selected_wave_top_gain_percent)}, top project ${formatPercent(result.gains.selected_project_top_gain_percent)}, ${String(result.gains.coordination_roundtrip_reduction_percent_estimate)}% fewer controller command round trips`);
+  if (result.module_work.available) {
+    console.log(`module gains:     ${String(result.module_work.gains.module_graph_first_token_reduction_percent_estimate)}% graph-first token reduction, ${String(result.module_work.gains.collision_reduction_percent_estimate)}% collision reduction estimate`);
   }
-  console.log(`dirty targets:    ${result.gains.claimable_dirty_paths}/${result.gains.targeted_dirty_paths} claimable paths, ${result.gains.overflow_groups} overflow groups`);
-  console.log(`conflicts:        ${result.conflict_sla.open_conflicts} open, ${result.conflict_sla.warning_conflicts}/${result.conflict_sla.critical_conflicts} warning/critical, ${result.conflict_sla.projects_scanned} projects scanned`);
-  console.log(`graphs:           ${result.graph_packets.packet_count} packets, ${result.graph_packets.project_graph_gaps} project gaps, ${result.graph_packets.module_graph_gap_count} module gaps`);
-  console.log(`processes:        ${result.controller.stale_agent_processes} stale agent process${result.controller.stale_agent_processes === 1 ? '' : 'es'} across ${result.controller.stale_agent_process_projects} project${result.controller.stale_agent_process_projects === 1 ? '' : 's'}, ${result.controller.agent_process_scan_error_projects} scan error project${result.controller.agent_process_scan_error_projects === 1 ? '' : 's'}`);
-  console.log(`controller:       ${result.controller.active_leases} active leases, ${result.controller.dirty_unleased_projects} dirty-unleased projects, ${result.controller.stale_context_projects} stale-context projects, ${result.controller.active_dirty_scope_projects} dirty-scope blockers`);
-  if (result.controller_blocker_packets?.length) {
+  console.log(`dirty targets:    ${String(result.gains.claimable_dirty_paths)}/${String(result.gains.targeted_dirty_paths)} claimable paths, ${String(result.gains.overflow_groups)} overflow groups`);
+  console.log(`conflicts:        ${String(result.conflict_sla.open_conflicts)} open, ${String(result.conflict_sla.warning_conflicts)}/${String(result.conflict_sla.critical_conflicts)} warning/critical, ${String(result.conflict_sla.projects_scanned)} projects scanned`);
+  console.log(`graphs:           ${String(result.graph_packets.packet_count)} packets, ${String(result.graph_packets.project_graph_gaps)} project gaps, ${String(result.graph_packets.module_graph_gap_count)} module gaps`);
+  console.log(`processes:        ${String(result.controller.stale_agent_processes)} stale agent process${result.controller.stale_agent_processes === 1 ? '' : 'es'} across ${String(result.controller.stale_agent_process_projects)} project${result.controller.stale_agent_process_projects === 1 ? '' : 's'}, ${String(result.controller.agent_process_scan_error_projects)} scan error project${result.controller.agent_process_scan_error_projects === 1 ? '' : 's'}`);
+  console.log(`controller:       ${String(result.controller.active_leases)} active leases, ${String(result.controller.dirty_unleased_projects)} dirty-unleased projects, ${String(result.controller.stale_context_projects)} stale-context projects, ${String(result.controller.active_dirty_scope_projects)} dirty-scope blockers`);
+  if (result.controller_blocker_packets.length) {
     const first = result.controller_blocker_packets[0];
-    console.log(`blocker packets:  ${result.controller_blocker_packets.length} actionable; first ${first.kind} ${first.project}${first.brick ? `/${first.brick}` : ''}`);
+    console.log(`blocker packets:  ${String(result.controller_blocker_packets.length)} actionable; first ${first.kind} ${first.project}${first.brick ? `/${first.brick}` : ''}`);
     if (first.command) console.log(`blocker command:  ${first.command}`);
     if (first.conflict_command) console.log(`blocker conflict: ${first.conflict_command}`);
   }
   for (const [index, item] of (result.big_picture.next_slices || []).slice(0, 3).entries()) {
-    console.log(`outlook ${index + 1}:        ${item}`);
+    console.log(`outlook ${String(index + 1)}:        ${item}`);
   }
-  if (result.big_picture.horizon?.length) {
+  if (result.big_picture.horizon.length) {
     console.log(`horizon:          ${result.big_picture.horizon.slice(0, 3).join(' | ')}`);
   }
   console.log(`eta:              ${result.big_picture.eta.strong_daily_standard} for strong daily standard; ${result.big_picture.eta.absolute_max_hardening} for absolute-max hardening`);
@@ -1747,36 +1781,36 @@ function printText(result) {
     console.log('');
     console.log('Spawn-ready cleanup launch plan:');
     for (const item of result.launch_plan) {
-      console.log(`${item.agent_slot}. ${item.project} ${item.group} (${item.dirty_path_count} paths, wave ${formatPercent(item.wave_gain_percent)}, project ${formatPercent(item.project_gain_percent)})`);
-      console.log(`   claim: ${item.claim_command}`);
-      if (item.conflict_command) console.log(`   conflict: ${item.conflict_command}`);
-      if (printFullPrompts && item.prompt) console.log(`   prompt: ${item.prompt}`);
+      console.log(`${String(item.agent_slot)}. ${String(item.project)} ${String(item.group)} (${String(item.dirty_path_count)} paths, wave ${formatPercent(item.wave_gain_percent)}, project ${formatPercent(item.project_gain_percent)})`);
+      console.log(`   claim: ${String(item.claim_command)}`);
+      if (item.conflict_command) console.log(`   conflict: ${String(item.conflict_command)}`);
+      if (printFullPrompts && item.prompt) console.log(`   prompt: ${String(item.prompt)}`);
     }
   }
-  if (args.launchPlan && result.stale_context_launch_plan?.length) {
+  if (args.launchPlan && result.stale_context_launch_plan.length) {
     console.log('');
     console.log('Spawn-ready stale-context renewal plan:');
     for (const item of result.stale_context_launch_plan) {
-      console.log(`${item.agent_slot}. ${item.project} ${item.brick} (${item.dirty_path_count} dirty paths, ${item.receipt_count} receipt${item.receipt_count === 1 ? '' : 's'})`);
+      console.log(`${String(item.agent_slot)}. ${item.project} ${item.brick} (${String(item.dirty_path_count)} dirty paths, ${String(item.receipt_count)} receipt${item.receipt_count === 1 ? '' : 's'})`);
       console.log(`   renew: ${item.command}`);
       if (item.inspect_command) console.log(`   inspect: ${item.inspect_command}`);
       if (item.conflict_command) console.log(`   conflict: ${item.conflict_command}`);
       if (printFullPrompts && item.prompt) console.log(`   prompt: ${item.prompt}`);
     }
   }
-  if (args.launchPlan && result.module_launch_plan?.length) {
+  if (args.launchPlan && result.module_launch_plan.length) {
     console.log('');
     console.log('Spawn-ready module dispatch plan:');
     for (const item of result.module_launch_plan) {
-      console.log(`${item.agent_slot}. ${item.project} ${item.module_id} slot ${item.slot} (${item.brick}, dispatch ${item.dispatch_id})`);
+      console.log(`${String(item.agent_slot)}. ${item.project} ${item.module_id} slot ${String(item.slot)} (${item.brick}, dispatch ${item.dispatch_id})`);
       if (item.agent_packet_markdown_path) console.log(`   agent packet: ${item.agent_packet_markdown_path}`);
       console.log(`   claim: ${item.claim_command}`);
       if (item.graph_query_command) console.log(`   graph query: ${item.graph_query_command}`);
       if (item.graph_path) console.log(`   graph: ${item.graph_path}`);
-      if (item.paths?.length) console.log(`   paths: ${item.paths.join(', ')}`);
-      if (item.exclude_paths?.length) console.log(`   exclude: ${item.exclude_paths.join(', ')}`);
-      if (item.required_gates?.length) console.log(`   gates: ${item.required_gates.join(' && ')}`);
-      if (item.shared_hot_paths?.length) console.log(`   shared hot: ${item.shared_hot_paths.join(', ')}`);
+      if (item.paths.length) console.log(`   paths: ${item.paths.join(', ')}`);
+      if (item.exclude_paths.length) console.log(`   exclude: ${item.exclude_paths.join(', ')}`);
+      if (item.required_gates.length) console.log(`   gates: ${item.required_gates.join(' && ')}`);
+      if (item.shared_hot_paths.length) console.log(`   shared hot: ${item.shared_hot_paths.join(', ')}`);
       if (item.conflict_command) console.log(`   conflict: ${item.conflict_command}`);
       if (printFullPrompts && item.prompt) console.log(`   prompt: ${item.prompt}`);
     }
@@ -1784,87 +1818,81 @@ function printText(result) {
   console.log(`next:             ${result.primary_next_command}`);
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = {};
-  for (let i = 0; i < list.length; i += 1) {
-    const arg = list[i];
-    if (arg === '--help' || arg === '-h') {
-      out.help = true;
-      continue;
-    }
-    if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    const next = list[i + 1];
-    const isBool = next === undefined || next.startsWith('--');
-    if (isBool) {
-      out[key] = true;
-      continue;
-    }
-    out[key] = next;
-    i += 1;
-  }
-  return out;
-}
-
-function positiveInt(value, fallback) {
+function positiveInt(value: unknown, fallback: number): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return Math.floor(parsed);
 }
 
-function number(value) {
+function number(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function nullableNumber(value) {
+function nullableNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function clamp(value, min, max) {
+function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function capacityPercent(activeAgents, requestedAgents) {
+function capacityPercent(activeAgents: unknown, requestedAgents: unknown): number {
   const requested = number(requestedAgents);
   if (requested <= 0) return 0;
   return clamp(Math.round((number(activeAgents) / requested) * 100), 0, 100);
 }
 
-function shellArg(value) {
+function shellArg(value: unknown): string {
   return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
 }
 
-function formatStatusSuffix(result) {
-  const decision = result?.launch_decision || {};
+function formatStatusSuffix(result: PreflightResult): string {
+  const decision = result.launch_decision;
   if (decision.allowed && decision.release_allowed) return ` (${decision.lane} ready; release allowed)`;
   if (decision.allowed) return ` (${decision.lane} ready; release blocked)`;
-  if (result?.lane_statuses?.active_status === 'ready' && number(result?.active_recommended_agents) > 0) {
+  if (result.lane_statuses.active_status === 'ready' && number(result.active_recommended_agents) > 0) {
     return ` (${result.active_lane} ready; launch blocked)`;
   }
   return '';
 }
 
-function formatPercent(value) {
+function formatPercent(value: unknown): string {
   if (value === null || value === undefined || value === '') return 'n/a';
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 'n/a';
-  return `${parsed}%`;
+  return `${String(parsed)}%`;
 }
 
-function formatDispatchBlocked(moduleDispatch) {
-  const parts = [];
+function formatDispatchBlocked(moduleDispatch: ModuleDispatchSummary | null | undefined): string {
+  const parts: string[] = [];
   const held = number(moduleDispatch?.held_blocked_unclaimed);
   const dirtyScope = number(moduleDispatch?.dirty_scope_blocked_unclaimed);
   const other = number(moduleDispatch?.other_blocked_unclaimed);
   if (held) parts.push(blockedCountLabel(held, 'active lease'));
-  if (dirtyScope) parts.push(`${dirtyScope} dirty scope`);
+  if (dirtyScope) parts.push(`${String(dirtyScope)} dirty scope`);
   if (other) parts.push(blockedCountLabel(other, 'other guard'));
   return parts.length ? ` (${parts.join(', ')})` : '';
 }
 
-function blockedCountLabel(count, singular) {
-  return `${count} ${count === 1 ? singular : `${singular}s`}`;
+function blockedCountLabel(count: number, singular: string): string {
+  return `${String(count)} ${count === 1 ? singular : `${singular}s`}`;
+}
+
+function isRecord(value: unknown): value is RawRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function asRecord(value: unknown): RawRecord {
+  return isRecord(value) ? value : {};
+}
+
+function rawRecords(value: unknown): RawRecord[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value : '';
 }

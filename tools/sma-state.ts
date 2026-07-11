@@ -37,15 +37,66 @@ const publishIndexPath = path.resolve(repoRoot, "publish/publish-index.generated
 const installScanRoots = [path.resolve(workspaceRoot, "Projects")];
 const ignoredWalkDirs = new Set([".git", "node_modules", "dist", "build", ".next", ".turbo", "coverage"]);
 
-const defaults = {
+interface StateOptions { registry: string; buildIndex: string; out: string }
+interface StateRecord extends Record<string, unknown> {
+  id?: string; project?: string; name?: string; status?: string; kind?: string; code?: string;
+  message?: string; severity?: string; dimension?: string; artifact_id?: string; build_id?: string;
+  version?: string; file?: string; root?: string | null; path?: string | null; channel?: string; label?: string;
+  created_at?: string; published_at?: string; event_type?: string; bundle_path?: string;
+  publishing_visibility?: string | null; original_id?: string; target_type?: string; target_id?: string;
+  promotion_stage?: string; confidence_label?: string; candidate_key?: string; recurrence_key?: string;
+  dominant_feature_cluster?: string; dominant_domain?: string; why?: string; bottleneck_stage?: string;
+  source_project?: string | null; relative_root?: string; priority_tier?: string; generated_at?: string | null;
+  score?: number; count?: number; release_count?: number; artifact_count?: number; skipped_count?: number;
+  published_artifact_count?: number; stable_or_lts_artifact_count?: number; brick_count?: number;
+  required_brick_count?: number; verification_health_score?: number; publishability_score?: number;
+  installability_score?: number; updateability_score?: number; readiness_score?: number;
+  published_release_count?: number; build_count?: number; ready_count?: number;
+  verified_ready_count?: number; ready_for_adoption_count?: number; publish_ready_count?: number;
+  publishable_count?: number; auto_promotable_count?: number; applied_manifest_promotions?: number;
+  verification_ready_count?: number; bundle_count?: number; complete_bundle_count?: number;
+  publish_safe_count?: number; blocker_bundle_count?: number; warning_bundle_count?: number;
+  priority_score?: number; confidence_score?: number; recurrent_project_count?: number;
+  unmanifested_count?: number; validation_error_count?: number; validation_warning_count?: number;
+  priority_rank?: number;
+  imports_count?: number; selected_build_count?: number; resolved_brick_count?: number;
+  placement_count?: number; update_event_count?: number;
+  publish_ready?: boolean; verified_ready?: boolean; install_ready?: boolean; update_ready?: boolean;
+  rollback_supported?: boolean; installable?: boolean; ready?: boolean; release_backed?: boolean;
+  verification_ready?: boolean; apply_manifest_promotion?: boolean; publish_safe?: boolean;
+  declared_publishable?: boolean; required?: boolean; project_canonicalization_ready?: boolean;
+  builds?: StateRecord[]; projects?: StateRecord[]; bricks?: StateRecord[]; top_blockers?: StateRecord[];
+  top_warnings?: StateRecord[]; blockers?: StateRecord[]; actions?: StateRecord[]; bundles?: StateRecord[];
+  promotion_queue?: StateRecord[]; curated_builds?: StateRecord[]; top_candidates?: StateRecord[];
+  top_targets?: StateRecord[]; quality_queue?: StateRecord[]; top_actions?: StateRecord[];
+  top_hotspots?: StateRecord[]; highest_risk_bricks?: StateRecord[]; duplicate_groups?: StateRecord[];
+  imports?: StateRecord[]; selected_builds?: StateRecord[]; resolved_bricks?: StateRecord[];
+  placements?: StateRecord[]; sample_build_ids?: string[]; source_projects?: string[];
+  domains?: string[]; runtimes?: string[]; detection_sources?: string[]; sample_paths?: string[];
+  blocker_reasons?: string[]; brick_refs?: StateRecord[];
+  summary?: StateRecord; by_type?: StateRecord; build?: StateRecord; artifacts?: StateRecord;
+  latest_release?: StateRecord; latest_published_release?: StateRecord; trust_summary?: StateRecord;
+  build_truth?: StateRecord; release_summary?: StateRecord; verification_health?: StateRecord;
+  publishability?: StateRecord; installability?: StateRecord; updateability?: StateRecord;
+  check_counts?: StateRecord; verification?: StateRecord; release?: StateRecord; signals?: StateRecord;
+  readiness?: StateRecord; booleans?: StateRecord; source?: StateRecord; composition?: StateRecord;
+  current?: StateRecord; desired?: StateRecord; decision?: StateRecord; artifact?: StateRecord;
+  counts?: StateRecord; lock?: StateRecord; map?: StateRecord; scanner_report?: StateRecord;
+  code_quality_report?: StateRecord | null; compliance_report?: StateRecord; build_report?: StateRecord;
+  canonicalization_report?: StateRecord; refactor_report?: StateRecord; clone_preflight?: StateRecord | null;
+  env_contract_report?: StateRecord | null; boundary_report?: StateRecord | null; remediation_report?: StateRecord;
+  manifest_drift?: StateRecord | null; scanner?: StateRecord; blocker_summary?: StateRecord; evidence_summary?: StateRecord;
+}
+
+const defaults: StateOptions = {
   registry: path.resolve(repoRoot, "scans/all-projects/latest.registry.json"),
   buildIndex: buildIndexPath,
   out: path.resolve(repoRoot, "wiki/SMA_STATE.generated.json")
 };
 
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = { ...defaults };
+function parseArgs(argv: string[]): StateOptions {
+  const options: StateOptions = { ...defaults };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -74,19 +125,19 @@ Usage:
   return options;
 }
 
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+async function readJson<T>(filePath: string): Promise<T> {
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
 }
 
-async function maybeReadJson(filePath) {
+async function maybeReadJson<T = StateRecord>(filePath: string): Promise<T | null> {
   try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
+    return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
   } catch {
     return null;
   }
 }
 
-async function maybeCountJsonl(filePath) {
+async function maybeCountJsonl(filePath: string): Promise<number> {
   try {
     const text = await fs.readFile(filePath, "utf8");
     return text
@@ -98,8 +149,8 @@ async function maybeCountJsonl(filePath) {
   }
 }
 
-function registryStatusCounts(bricks) {
-  const counts = {
+function registryStatusCounts(bricks: StateRecord[]): Record<string, number> {
+  const counts: Record<string, number> = {
     canonical: 0,
     candidate: 0,
     project_bound: 0,
@@ -111,34 +162,39 @@ function registryStatusCounts(bricks) {
   };
 
   for (const brick of bricks || []) {
-    const key = counts[brick.status] != null ? brick.status : "unknown";
+    const status = brick.status ?? "unknown";
+    const key = counts[status] != null ? status : "unknown";
     counts[key] += 1;
   }
 
   return counts;
 }
 
-function normalizeRelativePath(value) {
+function normalizeRelativePath(value: unknown): string {
   return String(value || "").split(path.sep).join("/").replace(/^\.\//, "");
 }
 
-function relativeFromWorkspace(absolutePath) {
+function relativeFromWorkspace(absolutePath: string): string {
   return normalizeRelativePath(path.relative(workspaceRoot, absolutePath));
 }
 
-function pick(obj, keys) {
-  const out: Record<string, any> = {};
+function pick(obj: StateRecord, keys: string[]): StateRecord {
+  const out: StateRecord = {};
   for (const key of keys) {
     if (obj && obj[key] !== undefined) out[key] = obj[key];
   }
   return out;
 }
 
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
+function toArray(value: unknown): StateRecord[] {
+  return Array.isArray(value) ? value as StateRecord[] : [];
 }
 
-function uniqStrings(values): string[] {
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((entry) => String(entry)) : [];
+}
+
+function uniqStrings(values: unknown[]): string[] {
   return [...new Set<string>(values.flatMap((value) => {
     if (Array.isArray(value)) return value;
     if (value == null) return [];
@@ -146,32 +202,32 @@ function uniqStrings(values): string[] {
   }).map((value) => String(value).trim()).filter(Boolean))];
 }
 
-function semverOrFallback(value, fallback = "0.0.0") {
+function semverOrFallback(value: unknown, fallback = "0.0.0"): string {
   const candidate = String(value || "").trim();
   return /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(candidate)
     ? candidate
     : fallback;
 }
 
-function average(values) {
+function average(values: number[]): number {
   const filtered = values.filter((value) => Number.isFinite(value));
   if (filtered.length === 0) return 0;
   return Math.round(filtered.reduce((sum, value) => sum + value, 0) / filtered.length);
 }
 
-function numberOrFallback(primary, fallback) {
+function numberOrFallback(primary: unknown, fallback: unknown): number {
   return primary !== undefined && primary !== null
     ? Number(primary)
     : Number(fallback);
 }
 
 /** @param {(absolutePath: string, entryName: string) => boolean} [predicate] */
-async function collectJsonFiles(rootPath, predicate: (absolutePath: string, entryName: string) => boolean = () => true) {
+async function collectJsonFiles(rootPath: string, predicate: (absolutePath: string, entryName: string) => boolean = () => true): Promise<string[]> {
   const stat = await fs.stat(rootPath).catch(() => null);
   if (!stat || !stat.isDirectory()) return [];
 
-  const files = [];
-  async function walk(currentPath) {
+  const files: string[] = [];
+  async function walk(currentPath: string): Promise<void> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isDirectory()) {
@@ -189,24 +245,23 @@ async function collectJsonFiles(rootPath, predicate: (absolutePath: string, entr
   return files.sort((a, b) => a.localeCompare(b));
 }
 
-function buildReleaseSummary(releaseIndex, curatedBuildLookup = new Map()) {
+function buildReleaseSummary(releaseIndex: StateRecord | null, curatedBuildLookup: Map<string, StateRecord> = new Map()): StateRecord {
   const summary = releaseIndex?.summary || {};
   const buildSummary = summary.by_type?.build || {};
-  const allBuildReleases: any[] = Object.values(releaseIndex?.artifacts?.build || {});
+  const allBuildReleases = Object.values(releaseIndex?.artifacts?.build || {}) as StateRecord[];
   const linkedCuratedBuilds = allBuildReleases
-    .map((artifact) => curatedBuildLookup.get(artifact?.artifact_id))
-    .filter(Boolean);
-  const topBuildReleases = allBuildReleases
-    .map((artifact) => artifact.latest_release ? {
+    .map((artifact) => artifact.artifact_id ? curatedBuildLookup.get(artifact.artifact_id) : undefined)
+    .filter((entry): entry is StateRecord => Boolean(entry));
+  const topBuildReleases: (StateRecord & { latest_release: StateRecord })[] = allBuildReleases
+    .flatMap((artifact) => artifact.latest_release ? [{
       artifact_id: artifact.artifact_id,
       source_projects: artifact.source_projects || [],
       release_count: artifact.release_count || 0,
       latest_release: artifact.latest_release,
       latest_published_release: artifact.latest_published_release || null,
       trust_summary: artifact.trust_summary || {},
-      build_truth: curatedBuildLookup.get(artifact.artifact_id) || null
-    } : null)
-    .filter(Boolean)
+      build_truth: artifact.artifact_id ? (curatedBuildLookup.get(artifact.artifact_id) || null) : null
+    } as StateRecord & { latest_release: StateRecord }] : [])
     .sort((left, right) => {
       const leftTrust = String(left.latest_release?.trust_summary?.verification_status || "");
       const rightTrust = String(right.latest_release?.trust_summary?.verification_status || "");
@@ -236,10 +291,10 @@ function buildReleaseSummary(releaseIndex, curatedBuildLookup = new Map()) {
         trust_levels: buildSummary.trust_levels || {},
         product_truth: {
           linked_curated_build_count: linkedCuratedBuilds.length,
-          average_verification_health_score: average(linkedCuratedBuilds.map((entry) => entry.verification_health_score)),
-          average_publishability_score: average(linkedCuratedBuilds.map((entry) => entry.publishability_score)),
-          average_installability_score: average(linkedCuratedBuilds.map((entry) => entry.installability_score)),
-          average_updateability_score: average(linkedCuratedBuilds.map((entry) => entry.updateability_score))
+          average_verification_health_score: average(linkedCuratedBuilds.map((entry) => entry.verification_health_score ?? 0)),
+          average_publishability_score: average(linkedCuratedBuilds.map((entry) => entry.publishability_score ?? 0)),
+          average_installability_score: average(linkedCuratedBuilds.map((entry) => entry.installability_score ?? 0)),
+          average_updateability_score: average(linkedCuratedBuilds.map((entry) => entry.updateability_score ?? 0))
         }
       }
     },
@@ -281,7 +336,7 @@ function buildReleaseSummary(releaseIndex, curatedBuildLookup = new Map()) {
   };
 }
 
-function sortCuratedBuilds(curatedBuilds) {
+function sortCuratedBuilds(curatedBuilds: StateRecord[]): StateRecord[] {
   return [...curatedBuilds].sort((left, right) => {
     const leftPublishReady = Number(Boolean(left.publish_ready));
     const rightPublishReady = Number(Boolean(right.publish_ready));
@@ -302,8 +357,8 @@ function sortCuratedBuilds(curatedBuilds) {
   });
 }
 
-function summarizeTopBuildBlockers(builds, fallbackRows = [], limit = 8) {
-  const counts = new Map();
+function summarizeTopBuildBlockers(builds: StateRecord[], fallbackRows: StateRecord[] = [], limit = 8): StateRecord[] {
+  const counts = new Map<string, StateRecord & { count: number; sample_build_ids: string[] }>();
 
   for (const build of builds) {
     for (const blocker of toArray(build.top_blockers).slice(0, 4)) {
@@ -320,9 +375,10 @@ function summarizeTopBuildBlockers(builds, fallbackRows = [], limit = 8) {
         });
       }
       const row = counts.get(key);
+      if (!row) continue;
       row.count += 1;
       if (row.sample_build_ids.length < 4) {
-        row.sample_build_ids.push(build.artifact_id);
+        if (build.artifact_id) row.sample_build_ids.push(build.artifact_id);
       }
     }
   }
@@ -337,7 +393,7 @@ function summarizeTopBuildBlockers(builds, fallbackRows = [], limit = 8) {
         severity: blocker.severity || "warning",
         message: blocker.message || "Verification blocker recorded.",
         count: Number(blocker.count || 0),
-        sample_build_ids: toArray(blocker.sample_build_ids).slice(0, 4)
+        sample_build_ids: (blocker.sample_build_ids ?? []).slice(0, 4)
       });
     }
   }
@@ -347,7 +403,7 @@ function summarizeTopBuildBlockers(builds, fallbackRows = [], limit = 8) {
     .slice(0, limit);
 }
 
-function normalizeCuratedBuildFromIndex(entry) {
+function normalizeCuratedBuildFromIndex(entry: StateRecord): StateRecord {
   const releaseSummary = entry.release_summary || {};
   const verificationHealth = entry.verification_health || {};
   const publishability = entry.publishability || {};
@@ -400,7 +456,7 @@ function normalizeCuratedBuildFromIndex(entry) {
   };
 }
 
-function normalizeVerifierBuildOverlay(entry) {
+function normalizeVerifierBuildOverlay(entry: StateRecord): StateRecord | null {
   if (!entry?.build_id) return null;
   const suggestedStatus = String(entry?.verification?.suggested_status || "").trim().toLowerCase();
   return {
@@ -426,19 +482,19 @@ function normalizeVerifierBuildOverlay(entry) {
   };
 }
 
-async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndexFilePath) {
-  const verificationReport = await maybeReadJson(buildVerificationPath);
-  const verificationLookup = new Map<string, any>(
+async function collectCuratedBuilds(releaseIndex: StateRecord | null, buildIndexDocument: StateRecord | null, buildIndexFilePath: string): Promise<StateRecord> {
+  const verificationReport = await maybeReadJson<StateRecord>(buildVerificationPath);
+  const verificationLookup = new Map<string, StateRecord>(
     toArray(verificationReport?.builds)
       .map((entry) => normalizeVerifierBuildOverlay(entry))
-      .filter(Boolean)
+      .filter((entry): entry is StateRecord & { artifact_id: string } => Boolean(entry?.artifact_id))
       .map((entry) => [entry.artifact_id, entry])
   );
 
   if (Array.isArray(buildIndexDocument?.builds) && buildIndexDocument.builds.length > 0) {
     const sortedBuilds = sortCuratedBuilds(buildIndexDocument.builds.map((entry) => ({
       ...normalizeCuratedBuildFromIndex(entry),
-      ...(verificationLookup.get(entry.build_id) || {})
+      ...(entry.build_id ? (verificationLookup.get(entry.build_id) || {}) : {})
     })));
     const verifierSummary = verificationReport?.summary || {};
     const verificationSummary = buildIndexDocument.summary?.verification || {};
@@ -452,14 +508,14 @@ async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndex
       build_index_path: buildIndexDocument ? relativeFromWorkspace(buildIndexFilePath) : null,
       verification_report_path: verificationReport ? relativeFromWorkspace(buildVerificationPath) : null,
       curated_manifest_count: sortedBuilds.length,
-      released_curated_build_count: sortedBuilds.filter((entry) => entry.release_count > 0).length,
-      unreleased_curated_build_count: sortedBuilds.filter((entry) => entry.release_count === 0).length,
+      released_curated_build_count: sortedBuilds.filter((entry) => (entry.release_count ?? 0) > 0).length,
+      unreleased_curated_build_count: sortedBuilds.filter((entry) => (entry.release_count ?? 0) === 0).length,
       installable_build_count: sortedBuilds.filter((entry) => entry.installable).length,
       install_ready_count: numberOrFallback(verifierSummary.installable_count, sortedBuilds.filter((entry) => entry.install_ready).length),
       update_ready_build_count: numberOrFallback(verifierSummary.updateable_count, sortedBuilds.filter((entry) => entry.update_ready).length),
       rollback_supported_build_count: sortedBuilds.filter((entry) => entry.rollback_supported).length,
       candidate_or_better_verification_count: sortedBuilds.filter((entry) => ["candidate", "verified", "canonical", "passing"].includes(String(entry.latest_verification_status || ""))).length,
-      verification_available_count: numberOrFallback(verifierSummary.build_count, sortedBuilds.filter((entry) => entry.verification_health_score > 0).length),
+      verification_available_count: numberOrFallback(verifierSummary.build_count, sortedBuilds.filter((entry) => (entry.verification_health_score ?? 0) > 0).length),
       verification_ready_count: verifierSummary.verified_ready_count !== undefined && verifierSummary.verified_ready_count !== null
         ? Number(verifierSummary.verified_ready_count)
         : verifierSummary.ready_for_adoption_count !== undefined && verifierSummary.ready_for_adoption_count !== null
@@ -471,11 +527,11 @@ async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndex
           ? Number(verifierSummary.publishable_count)
         : numberOrFallback(publishabilitySummary.ready_count, sortedBuilds.filter((entry) => entry.publish_ready).length),
       suggested_build_status_counts: verifierSummary.by_suggested_status || verifierSummary.verification_status_suggestions || verificationReport?.summary?.by_suggested_status || {},
-      average_verification_health_score: Number(verificationSummary.average_score || average(sortedBuilds.map((entry) => entry.verification_health_score))),
-      average_readiness_score: Number(installabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.readiness_score))),
-      average_publishability_score: Number(publishabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.publishability_score))),
-      average_installability_score: Number(installabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.installability_score))),
-      average_updateability_score: Number(updateabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.updateability_score))),
+      average_verification_health_score: Number(verificationSummary.average_score || average(sortedBuilds.map((entry) => entry.verification_health_score ?? 0))),
+      average_readiness_score: Number(installabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.readiness_score ?? 0))),
+      average_publishability_score: Number(publishabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.publishability_score ?? 0))),
+      average_installability_score: Number(installabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.installability_score ?? 0))),
+      average_updateability_score: Number(updateabilitySummary.average_score || average(sortedBuilds.map((entry) => entry.updateability_score ?? 0))),
       verification_summary: verificationSummary,
       publishability_summary: publishabilitySummary,
       installability_summary: installabilitySummary,
@@ -487,13 +543,13 @@ async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndex
   }
 
   const files = await collectJsonFiles(buildsRoot, (absolutePath) => absolutePath.endsWith(".build.sweetspot.json"));
-  const builds = [];
+  const builds: StateRecord[] = [];
 
   for (const filePath of files) {
-    const manifest = await maybeReadJson(filePath);
+    const manifest = await maybeReadJson<StateRecord>(filePath);
     if (!manifest?.build?.id) continue;
     const artifactId = manifest.build.id;
-    const releaseArtifact = releaseIndex?.artifacts?.build?.[artifactId] || null;
+    const releaseArtifact = (releaseIndex?.artifacts?.build?.[artifactId] as StateRecord | undefined) || null;
     const latestRelease = releaseArtifact?.latest_release || null;
     const trustSummary = latestRelease?.trust_summary || releaseArtifact?.trust_summary || {};
     const verification = verificationLookup.get(artifactId) || null;
@@ -508,8 +564,8 @@ async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndex
       kind: manifest.build.kind || "build",
       source_project: manifest.source?.project || null,
       manifest_path: relativeFromWorkspace(filePath),
-      domains: uniqStrings(manifest.build.domain || []),
-      runtimes: uniqStrings(manifest.build.runtimes || []),
+      domains: uniqStrings(toStringArray(manifest.build.domain)),
+      runtimes: uniqStrings(toStringArray(manifest.build.runtimes)),
       brick_ref_count: toArray(manifest.composition?.brick_refs).length,
       required_brick_ref_count: toArray(manifest.composition?.brick_refs).filter((entry) => entry?.required !== false).length,
       release_count: releaseArtifact?.release_count || 0,
@@ -546,8 +602,8 @@ async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndex
     build_index_path: null,
     verification_report_path: verificationReport ? relativeFromWorkspace(buildVerificationPath) : null,
     curated_manifest_count: sortedBuilds.length,
-    released_curated_build_count: sortedBuilds.filter((entry) => entry.release_count > 0).length,
-    unreleased_curated_build_count: sortedBuilds.filter((entry) => entry.release_count === 0).length,
+    released_curated_build_count: sortedBuilds.filter((entry) => (entry.release_count ?? 0) > 0).length,
+    unreleased_curated_build_count: sortedBuilds.filter((entry) => (entry.release_count ?? 0) === 0).length,
     installable_build_count: sortedBuilds.filter((entry) => entry.installable).length,
     install_ready_count: 0,
     update_ready_build_count: sortedBuilds.filter((entry) => entry.update_ready).length,
@@ -572,7 +628,7 @@ async function collectCuratedBuilds(releaseIndex, buildIndexDocument, buildIndex
   };
 }
 
-function summarizePromotionPlane(promotionDocument) {
+function summarizePromotionPlane(promotionDocument: StateRecord | null): StateRecord {
   const summary = promotionDocument?.summary || {};
   const queue = toArray(promotionDocument?.promotion_queue);
   return {
@@ -608,7 +664,7 @@ function summarizePromotionPlane(promotionDocument) {
   };
 }
 
-function summarizePublishPlane(publishIndexDocument) {
+function summarizePublishPlane(publishIndexDocument: StateRecord | null): StateRecord {
   const summary = publishIndexDocument?.summary || {};
   const bundles = toArray(publishIndexDocument?.bundles);
   return {
@@ -641,13 +697,13 @@ function summarizePublishPlane(publishIndexDocument) {
   };
 }
 
-function attachCuratedBuildAuxTruth(curatedBuildsDocument, promotionDocument, publishIndexDocument) {
-  const promotionLookup = new Map(
+function attachCuratedBuildAuxTruth(curatedBuildsDocument: StateRecord, promotionDocument: StateRecord | null, publishIndexDocument: StateRecord | null): StateRecord {
+  const promotionLookup = new Map<string, StateRecord>(
     toArray(promotionDocument?.promotion_queue)
-      .filter((entry) => entry?.build_id)
+      .filter((entry): entry is StateRecord & { build_id: string } => Boolean(entry.build_id))
       .map((entry) => [entry.build_id, entry])
   );
-  const publishLookup = new Map();
+  const publishLookup = new Map<string, StateRecord>();
 
   for (const bundle of toArray(publishIndexDocument?.bundles)) {
     const originalId = bundle?.artifact?.original_id;
@@ -660,8 +716,8 @@ function attachCuratedBuildAuxTruth(curatedBuildsDocument, promotionDocument, pu
 
   const enrichedBuilds = sortCuratedBuilds(
     toArray(curatedBuildsDocument?.curated_builds).map((entry) => {
-      const promotion = promotionLookup.get(entry.artifact_id) || null;
-      const publishBundle = publishLookup.get(entry.artifact_id) || null;
+      const promotion = entry.artifact_id ? (promotionLookup.get(entry.artifact_id) || null) : null;
+      const publishBundle = entry.artifact_id ? (publishLookup.get(entry.artifact_id) || null) : null;
       return {
         ...entry,
         promotion_priority: promotion?.priority || null,
@@ -698,7 +754,7 @@ function attachCuratedBuildAuxTruth(curatedBuildsDocument, promotionDocument, pu
   };
 }
 
-async function readJsonLines(filePath) {
+async function readJsonLines(filePath: string): Promise<StateRecord[]> {
   try {
     const text = await fs.readFile(filePath, "utf8");
     return text
@@ -707,23 +763,23 @@ async function readJsonLines(filePath) {
       .filter(Boolean)
       .map((line) => {
         try {
-          return JSON.parse(line);
+          return JSON.parse(line) as StateRecord;
         } catch {
           return null;
         }
       })
-      .filter(Boolean);
+      .filter((entry): entry is StateRecord => Boolean(entry));
   } catch {
     return [];
   }
 }
 
-async function findSmarchRoots(rootPath, maxDepth = 4) {
-  const found = [];
+async function findSmarchRoots(rootPath: string, maxDepth = 4): Promise<string[]> {
+  const found: string[] = [];
   const rootStat = await fs.stat(rootPath).catch(() => null);
   if (!rootStat || !rootStat.isDirectory()) return found;
 
-  async function walk(currentPath, depth) {
+  async function walk(currentPath: string, depth: number): Promise<void> {
     if (depth > maxDepth) return;
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
     for (const entry of entries) {
@@ -742,8 +798,8 @@ async function findSmarchRoots(rootPath, maxDepth = 4) {
   return found.sort((a, b) => a.localeCompare(b));
 }
 
-async function collectInstallEvidence() {
-  const targets = [];
+async function collectInstallEvidence(): Promise<StateRecord> {
+  const targets: StateRecord[] = [];
 
   for (const rootPath of installScanRoots) {
     for (const smarchRoot of await findSmarchRoots(rootPath)) {
@@ -779,17 +835,17 @@ async function collectInstallEvidence() {
   return {
     scan_roots: installScanRoots.map((rootPath) => relativeFromWorkspace(rootPath)),
     target_count: totalTargets,
-    import_count: targets.reduce((sum, entry) => sum + entry.imports_count, 0),
-    selected_build_count: targets.reduce((sum, entry) => sum + entry.selected_build_count, 0),
-    resolved_brick_count: targets.reduce((sum, entry) => sum + entry.resolved_brick_count, 0),
-    placement_count: targets.reduce((sum, entry) => sum + entry.placement_count, 0),
-    update_event_count: targets.reduce((sum, entry) => sum + entry.update_event_count, 0),
+    import_count: targets.reduce((sum, entry) => sum + (entry.imports_count ?? 0), 0),
+    selected_build_count: targets.reduce((sum, entry) => sum + (entry.selected_build_count ?? 0), 0),
+    resolved_brick_count: targets.reduce((sum, entry) => sum + (entry.resolved_brick_count ?? 0), 0),
+    placement_count: targets.reduce((sum, entry) => sum + (entry.placement_count ?? 0), 0),
+    update_event_count: targets.reduce((sum, entry) => sum + (entry.update_event_count ?? 0), 0),
     latest_event_at: targets.map((entry) => entry.latest_event_at).filter(Boolean).sort().slice(-1)[0] || null,
     targets: targets.slice(0, 12)
   };
 }
 
-function summarizeCanonicalizationTargets(targets, limit = 6) {
+function summarizeCanonicalizationTargets(targets: StateRecord[], limit = 6): StateRecord[] {
   return (targets || []).slice(0, limit).map((target) => ({
     rank: target.rank,
     target_type: target.target_type,
@@ -805,37 +861,39 @@ function summarizeCanonicalizationTargets(targets, limit = 6) {
   }));
 }
 
-function projectRemediationRows(remediationReport, projectId, key, limit = 6) {
+function projectRemediationRows(remediationReport: StateRecord, projectId: string | undefined, key: string, limit = 6): StateRecord[] {
   return toArray(remediationReport?.[key])
     .filter((entry) => String(entry?.project || "") === String(projectId || ""))
     .slice(0, limit);
 }
 
 function summarizeProjects(
-  projects,
-  canonicalizationProjects = new Map(),
-  portfolioProjects = [],
-  remediationReport = {},
-  registryProjects = new Map(),
-) {
+  projects: StateRecord[],
+  canonicalizationProjects: Map<string, StateRecord> = new Map(),
+  portfolioProjects: Awaited<ReturnType<typeof discoverPortfolioProjects>> = [],
+  remediationReport: StateRecord = {},
+  registryProjects: Map<string, StateRecord> = new Map(),
+): StateRecord[] {
   const portfolioIds = new Set(portfolioProjects.map((entry) => entry.id));
   return sortByPortfolioPriority(
     (projects || []).filter((entry) => portfolioIds.has(String(entry?.project || ""))),
     portfolioProjects,
-    (entry) => entry?.project,
+    (entry) => entry?.project ?? "",
   ).map((entry) => {
-    const scanner = registryProjects.get(entry.project)?.scanner || {};
+    const projectId = entry.project ?? "";
+    const scanner = registryProjects.get(projectId)?.scanner || {};
+    const canonicalProject = canonicalizationProjects.get(projectId);
     return {
-      project: entry.project,
+      project: projectId,
       readiness: pick(entry.readiness || {}, ["score", "grade", "label"]),
       compliance: pick(entry.compliance_report || {}, ["score", "grade", "trackable_brick_count"]),
       code_quality_report: entry.code_quality_report || null,
       build_report: pick(entry.build_report || {}, ["candidate_count", "detected_brick_count", "average_confidence_score", "recurrent_candidate_count"]),
-      canonicalization: canonicalizationProjects.has(entry.project)
+      canonicalization: canonicalProject
         ? {
-          project_canonicalization_ready: canonicalizationProjects.get(entry.project).project_canonicalization_ready,
-          bottleneck_stage: canonicalizationProjects.get(entry.project).bottleneck_stage,
-          top_targets: summarizeCanonicalizationTargets(canonicalizationProjects.get(entry.project).top_targets, 3)
+          project_canonicalization_ready: canonicalProject.project_canonicalization_ready,
+          bottleneck_stage: canonicalProject.bottleneck_stage,
+          top_targets: summarizeCanonicalizationTargets(canonicalProject.top_targets ?? [], 3)
         }
         : null,
       clone_preflight: entry.clone_preflight || null,
@@ -843,13 +901,13 @@ function summarizeProjects(
       boundary_report: entry.boundary_report || null,
       manifest_drift: entry.manifest_drift || null,
       remediation_counts: scanner.remediation_report?.counts || {},
-      top_actions: projectRemediationRows(remediationReport, entry.project, "top_actions"),
-      quality_queue: projectRemediationRows(remediationReport, entry.project, "quality_queue"),
+      top_actions: projectRemediationRows(remediationReport, projectId, "top_actions"),
+      quality_queue: projectRemediationRows(remediationReport, projectId, "quality_queue"),
     };
   });
 }
 
-function summarizeBuildCandidates(buildReport, limit = 6) {
+function summarizeBuildCandidates(buildReport: StateRecord, limit = 6): StateRecord[] {
   const rows = Array.isArray(buildReport?.top_candidates) ? buildReport.top_candidates : [];
 
   return rows.slice(0, limit).map((entry) => ({
@@ -871,7 +929,7 @@ function summarizeBuildCandidates(buildReport, limit = 6) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const registry = await readJson(options.registry);
+  const registry = await readJson<StateRecord>(options.registry);
   const portfolioProjects = await discoverPortfolioProjects();
   const gen3Projects = [
     ...portfolioProjects.map((entry) => ({ id: entry.id, absoluteRoot: entry.absolute_root })),
@@ -883,24 +941,32 @@ async function main() {
   const compliance = scannerReport.compliance_report || {};
   const buildReport = scannerReport.build_report || {};
   const remediation = scannerReport.remediation_report || {};
-  const canonicalization = scannerReport.canonicalization_report?.projects?.length
+  const canonicalization: StateRecord = scannerReport.canonicalization_report?.projects?.length
     ? scannerReport.canonicalization_report
-    : buildCanonicalizationReport(registry);
+    : buildCanonicalizationReport(registry as unknown as Parameters<typeof buildCanonicalizationReport>[0]) as unknown as StateRecord;
   const refactor = registry.refactor_report || {};
   const compactCardCount = await maybeCountJsonl(path.resolve(repoRoot, "security/brick_cards.jsonl"));
-  const releaseIndex = await maybeReadJson(releaseIndexPath);
-  const buildIndex = await maybeReadJson(options.buildIndex);
-  const buildPromotion = await maybeReadJson(buildPromotionPath);
-  const publishIndex = await maybeReadJson(publishIndexPath);
+  const releaseIndex = await maybeReadJson<StateRecord>(releaseIndexPath);
+  const buildIndex = await maybeReadJson<StateRecord>(options.buildIndex);
+  const buildPromotion = await maybeReadJson<StateRecord>(buildPromotionPath);
+  const publishIndex = await maybeReadJson<StateRecord>(publishIndexPath);
   let curatedBuilds = await collectCuratedBuilds(releaseIndex, buildIndex, options.buildIndex);
   curatedBuilds = attachCuratedBuildAuxTruth(curatedBuilds, buildPromotion, publishIndex);
-  const curatedBuildLookup = new Map((curatedBuilds.curated_builds || []).map((entry) => [entry.artifact_id, entry]));
+  const curatedBuildLookup = new Map<string, StateRecord>(
+    (curatedBuilds.curated_builds || [])
+      .filter((entry): entry is StateRecord & { artifact_id: string } => Boolean(entry.artifact_id))
+      .map((entry) => [entry.artifact_id, entry]),
+  );
   const releasePlane = buildReleaseSummary(releaseIndex, curatedBuildLookup);
   const promotionPlane = summarizePromotionPlane(buildPromotion);
   const publishPlane = summarizePublishPlane(publishIndex);
   const installPlane = await collectInstallEvidence();
-  const canonicalizationProjects = new Map((canonicalization.projects || []).map((entry) => [entry.project, entry]));
-  const registryProjects = new Map((registry.projects || []).map((entry) => [String(entry.id || entry.project || ""), entry]));
+  const canonicalizationProjects = new Map<string, StateRecord>(
+    (canonicalization.projects || [])
+      .filter((entry): entry is StateRecord & { project: string } => Boolean(entry.project))
+      .map((entry) => [entry.project, entry]),
+  );
+  const registryProjects = new Map<string, StateRecord>((registry.projects || []).map((entry) => [String(entry.id || entry.project || ""), entry]));
 
   const snapshot = {
     generated_at: new Date().toISOString(),
@@ -961,7 +1027,7 @@ async function main() {
         bottleneck_mode: canonicalization.bottleneck_mode,
         reasons: canonicalization.reasons || [],
         counts: canonicalization.counts || {},
-        top_targets: summarizeCanonicalizationTargets(canonicalization.top_targets, 8)
+        top_targets: summarizeCanonicalizationTargets(canonicalization.top_targets ?? [], 8)
       },
       remediation_counts: remediation.counts || {},
       quality_queue: toArray(remediation.quality_queue).slice(0, 12),
@@ -992,7 +1058,7 @@ async function main() {
     projects: summarizeProjects(readiness.projects || [], canonicalizationProjects, portfolioProjects, remediation, registryProjects)
   };
 
-  const writeResult = await writeJsonIfMeaningfulChanged(options.out, snapshot, {
+  const writeResult = await writeJsonIfMeaningfulChanged(options.out, snapshot as unknown as Parameters<typeof normalizeSmaStateSnapshot>[0], {
     normalize: normalizeSmaStateSnapshot,
   });
   console.log(JSON.stringify({ ok: true, out: options.out, written: writeResult.written }, null, 2));

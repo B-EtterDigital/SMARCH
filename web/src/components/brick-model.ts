@@ -1,5 +1,5 @@
 export type BrickTrust = "candidate" | "verified" | "canonical";
-export type GateVerdict = "pass" | "fail" | "waived";
+type GateVerdict = "pass" | "fail" | "waived";
 
 export type BrickGate = {
   id: string;

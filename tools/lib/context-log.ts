@@ -32,9 +32,9 @@ import { PROJECT_PATH_OVERRIDES, resolveProjectRoot } from './project-paths.ts';
 
 export { PROJECT_PATH_OVERRIDES };
 
-export { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.ts';
+export { PROJECTS_ROOT,   } from './sma-paths.ts';
 import { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.ts';
-export const SCHEMA_VERSION = '1.0.0';
+const SCHEMA_VERSION = '1.0.0';
 
 // Project ids that intentionally live outside PROJECTS_ROOT. The SMA control
 // plane governs other projects, but it must still be able to log its own
@@ -234,7 +234,7 @@ export function appendContextEvent({
   return event;
 }
 
-export function newEventId(): string {
+function newEventId(): string {
   return `ctx-${Date.now()}-${randomBytes(4).toString('hex')}`;
 }
 
@@ -259,7 +259,7 @@ export function resolveActorId(explicit?: unknown, sessionId: string | null = re
   return suffix ? `${user}@${suffix}` : user;
 }
 
-export function nowIso(): string {
+function nowIso(): string {
   return new Date().toISOString();
 }
 

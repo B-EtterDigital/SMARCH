@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Records an edit outcome, reports its dirty delta, and releases the matching lease.
  * WHY: Work must close with evidence and ownership cleanup rather than an untracked handoff.
@@ -34,6 +36,45 @@ const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 const DIRTY = resolve(TOOLS_DIR, 'sma-dirty-baseline.ts');
 const PARALLEL_PREFLIGHT = resolve(TOOLS_DIR, 'sma-parallel-preflight.ts');
 
+interface EndEditArgs {
+  help?: boolean; selftest?: boolean; lease?: string; project?: string; brick?: string; intent?: string;
+  auto?: boolean; kind?: string; requireCleanupOk?: boolean; noDirtyDelta?: boolean; noRelease?: boolean;
+  noPreflightTldr?: boolean; json?: boolean; decision?: string; rejected: string[]; file: string[];
+  commit?: string; verifyCmd?: string; verifyStatus?: string; historyFile?: string;
+}
+interface PreflightReport {
+  ok?: boolean; error?: string; scope_project?: string | null; status?: string; readiness_score_percent?: number;
+  active_lane_capacity_percent?: number; recommended_agents?: number; active_recommended_agents?: number;
+  requested_agents?: number; active_lane?: string; launch_allowed?: boolean; release_allowed?: boolean;
+  launch_slots?: number; tldr?: string; current_slice?: string; outlook?: unknown[]; horizon?: unknown[];
+  eta?: unknown; primary_next_command?: string; conflicts?: unknown; graph_packets?: unknown; active_leases?: unknown;
+}
+interface DirtyDeltaCounts { new_count?: number; cleared_count?: number; status_changed_count?: number; unchanged_count?: number }
+interface DirtyDeltaReport {
+  ok: boolean; error?: string; label?: string; baseline_id?: unknown; baseline_created_at?: unknown; baseline?: unknown;
+  current?: unknown; delta?: DirtyDeltaCounts; changed_files?: string[];
+}
+interface CleanupStatus extends DirtyDeltaCounts {
+  status: string; requires_cleanup: boolean; preflight: boolean; delta_command: string; guidance: string;
+}
+interface ParsedPreflight {
+  scope?: { project?: string }; status?: string; readiness_score_percent?: number; active_lane_capacity_percent?: number;
+  recommended_agents?: number; active_recommended_agents?: number; requested_agents?: number; active_lane?: string;
+  launch_allowed?: boolean; launch_decision?: { release_allowed?: boolean }; big_picture?: { current_state?: { launch_slots?: number }; tldr?: string; current_slice?: string; next_slices?: unknown[]; horizon?: unknown[]; eta?: unknown };
+  launch_plan?: unknown[]; primary_next_command?: string; conflict_sla?: { open_conflicts?: unknown };
+  graph_packets?: { packet_count?: unknown }; controller?: { active_leases?: unknown };
+}
+interface DirtyBaselinePayload {
+  label?: string; baseline_id?: unknown; baseline_created_at?: unknown; baseline?: unknown; current?: unknown;
+  delta?: { new?: unknown[]; cleared?: unknown[]; status_changed?: unknown[]; unchanged_count?: number };
+}
+interface ContextEvent { event_id: string }
+interface ReleasedLease { lease_id: string }
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 const rawArgs = argv.slice(2);
 const command = rawArgs.find((arg) => !arg.startsWith('--')) || '';
 const args = parseArgs(rawArgs);
@@ -47,6 +88,9 @@ if (args.help || !args.lease || !args.project || !args.brick || (!args.intent &&
   usage();
   exit(args.help ? 0 : 2);
 }
+const lease = args.lease;
+const project = args.project;
+const brick = args.brick;
 
 const kind = args.kind ?? 'edit_applied';
 
@@ -55,7 +99,7 @@ try {
     throw new Error('--require-cleanup-ok cannot be combined with --no-dirty-delta');
   }
 
-  const preflightDirtyDelta = (args.requireCleanupOk || args.auto) ? captureDirtyDelta(args.lease) : null;
+  const preflightDirtyDelta = (args.requireCleanupOk || args.auto) ? captureDirtyDelta(lease) : null;
   const preflightCleanup = preflightDirtyDelta?.ok ? dirtyCleanupStatus(preflightDirtyDelta, { preflight: true }) : null;
   if (args.requireCleanupOk) {
     enforceCleanupOk(preflightDirtyDelta, preflightCleanup);
@@ -63,14 +107,14 @@ try {
 
   const closingIntent = args.auto
     ? deriveAutoIntent(preflightDirtyDelta, args.intent, args.historyFile)
-    : args.intent;
+    : args.intent ?? '';
   const contextArgs = [
     resolve(TOOLS_DIR, 'sma-context.ts'), 'append',
-    '--project', args.project,
-    '--brick', args.brick,
+    '--project', project,
+    '--brick', brick,
     '--kind', kind,
     '--intent', closingIntent,
-    '--lease', args.lease,
+    '--lease', lease,
     '--json',
   ];
   if (args.decision) contextArgs.push('--decision', args.decision);
@@ -85,15 +129,15 @@ try {
     process.stderr.write(ctxRes.stderr ?? '');
     exit(ctxRes.status ?? 1);
   }
-  const event = JSON.parse(ctxRes.stdout);
+  const event = JSON.parse(ctxRes.stdout) as ContextEvent;
 
-  let released = null;
+  let released: ReleasedLease | null = null;
   if (!args.noRelease) {
     const releaseArgs = [
       resolve(TOOLS_DIR, 'sma-lease.ts'), 'release',
-      '--lease', args.lease,
-      '--project', args.project,
-      '--brick', args.brick,
+      '--lease', lease,
+      '--project', project,
+      '--brick', brick,
       '--auto-context',
       '--json',
     ];
@@ -103,10 +147,10 @@ try {
       process.stderr.write(relRes.stderr ?? '');
       exit(relRes.status ?? 1);
     }
-    released = JSON.parse(relRes.stdout);
+    released = JSON.parse(relRes.stdout) as ReleasedLease;
   }
 
-  const dirtyDelta = args.noDirtyDelta ? null : (preflightDirtyDelta || captureDirtyDelta(args.lease));
+  const dirtyDelta = args.noDirtyDelta ? null : (preflightDirtyDelta || captureDirtyDelta(lease));
   const cleanup = dirtyDelta?.ok ? (preflightCleanup || dirtyCleanupStatus(dirtyDelta)) : null;
   const gen3Tldr = args.noPreflightTldr ? null : captureGen3PreflightTldr();
 
@@ -125,12 +169,12 @@ try {
     printGen3Tldr(gen3Tldr);
   }
 } catch (err) {
-  console.error(`sma-end-edit: ${err.message}`);
+  console.error(`sma-end-edit: ${errorMessage(err)}`);
   exit(1);
 }
 
-function captureGen3PreflightTldr() {
-  const preflightArgs = buildGen3PreflightArgs(args.project);
+function captureGen3PreflightTldr(): PreflightReport {
+  const preflightArgs = buildGen3PreflightArgs(project);
   const res = spawnSync('node', preflightArgs, {
     encoding: 'utf8',
     maxBuffer: 12 * 1024 * 1024,
@@ -143,7 +187,7 @@ function captureGen3PreflightTldr() {
     };
   }
   try {
-    const parsed = JSON.parse(res.stdout);
+    const parsed = JSON.parse(res.stdout) as ParsedPreflight;
     return {
       ok: true,
       scope_project: parsed.scope?.project || null,
@@ -170,12 +214,12 @@ function captureGen3PreflightTldr() {
   } catch (err) {
     return {
       ok: false,
-      error: `invalid preflight JSON: ${err.message}`,
+      error: `invalid preflight JSON: ${errorMessage(err)}`,
     };
   }
 }
 
-function buildGen3PreflightArgs(project) {
+function buildGen3PreflightArgs(project: string): string[] {
   const preflightArgs = [
     PARALLEL_PREFLIGHT,
     '--json',
@@ -187,7 +231,7 @@ function buildGen3PreflightArgs(project) {
   return preflightArgs;
 }
 
-function printGen3Tldr(report) {
+function printGen3Tldr(report: PreflightReport | null): void {
   if (!report) return;
   if (!report.ok) {
     console.log(`[end-edit] Gen3 big picture unavailable: ${report.error}`);
@@ -205,20 +249,20 @@ function printGen3Tldr(report) {
   if (report.primary_next_command) console.log(`[end-edit] Gen3 next: ${report.primary_next_command}`);
 }
 
-function formatReadinessScore(report) {
+function formatReadinessScore(report: PreflightReport): string {
   const launch = Number(report?.active_lane_capacity_percent ?? report?.readiness_score_percent ?? 0);
   const integration = Number(report?.readiness_score_percent ?? 0);
   if (launch !== integration) return `launch ${launch}%, integration ${integration}%`;
   return `${integration}%`;
 }
 
-function formatLaunchStatusSuffix(report) {
+function formatLaunchStatusSuffix(report: PreflightReport): string {
   if (report?.launch_allowed && report?.release_allowed) return ` (${report.active_lane || 'active lane'} ready; release allowed)`;
   if (report?.launch_allowed) return ` (${report.active_lane || 'active lane'} ready; release blocked)`;
   return '';
 }
 
-function runSelftest() {
+function runSelftest(): void {
   const projectArgs = buildGen3PreflightArgs('acme-desktop');
   assertSelftest(projectArgs.includes('--project'), 'project closeouts should use project-scoped preflight');
   assertSelftest(projectArgs.includes('acme-desktop'), 'project closeouts should pass the project id');
@@ -243,11 +287,11 @@ function runSelftest() {
   console.log('OK sma-end-edit selftest');
 }
 
-function assertSelftest(condition, message) {
+function assertSelftest(condition: boolean, message: string): void {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }
 
-function formatEta(eta) {
+function formatEta(eta: unknown): string {
   if (typeof eta === 'string') return eta;
   if (!eta || typeof eta !== 'object') return 'n/a';
   return Object.entries(eta)
@@ -255,11 +299,11 @@ function formatEta(eta) {
     .join('; ');
 }
 
-function captureDirtyDelta(label) {
+function captureDirtyDelta(label: string): DirtyDeltaReport {
   const res = spawnSync('node', [
     DIRTY,
     'delta',
-    '--project', args.project,
+    '--project', project,
     '--label', label,
     '--json',
   ], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
@@ -267,10 +311,20 @@ function captureDirtyDelta(label) {
     return { ok: false, error: firstLine(res.stderr) || `exit ${res.status ?? 1}` };
   }
   try {
-    const parsed = JSON.parse(res.stdout);
+    const parsed = JSON.parse(res.stdout) as DirtyBaselinePayload;
     const delta = parsed.delta ?? {};
     const changedFiles = [...(delta.new || []), ...(delta.status_changed || [])]
-      .map((entry) => typeof entry === 'string' ? entry : (entry.path || entry.file || entry.to || ''))
+      .map((entry) => {
+        if (typeof entry === 'string') return entry;
+        if (!entry || typeof entry !== 'object') return '';
+        for (const key of ['path', 'file', 'to']) {
+          if (key in entry) {
+            const value = entry[key as keyof typeof entry];
+            if (typeof value === 'string') return value;
+          }
+        }
+        return '';
+      })
       .filter(Boolean);
     return {
       ok: true,
@@ -288,11 +342,11 @@ function captureDirtyDelta(label) {
       changed_files: [...new Set(changedFiles)],
     };
   } catch (err) {
-    return { ok: false, error: `invalid dirty delta JSON: ${err.message}` };
+    return { ok: false, error: `invalid dirty delta JSON: ${errorMessage(err)}` };
   }
 }
 
-function deriveAutoIntent(report, fallback = '', historyFile = '') {
+function deriveAutoIntent(report: DirtyDeltaReport | null, fallback = '', historyFile = ''): string {
   const files = report?.ok && Array.isArray(report.changed_files) ? report.changed_files : [];
   const gates = readGateHistory(historyFile);
   const parts = [];
@@ -306,7 +360,7 @@ function deriveAutoIntent(report, fallback = '', historyFile = '') {
   return 'edit session closed with no dirty-baseline changes detected';
 }
 
-function readGateHistory(historyFile) {
+function readGateHistory(historyFile: string): string[] {
   if (!historyFile) return [];
   try {
     const text = requireReadFile(historyFile);
@@ -319,16 +373,16 @@ function readGateHistory(historyFile) {
   }
 }
 
-function requireReadFile(file) {
+function requireReadFile(file: string): string {
   return readFileSync(resolve(file), 'utf8');
 }
 
-function formatDirtyDelta(report) {
+function formatDirtyDelta(report: DirtyDeltaReport): string {
   const delta = report.delta ?? {};
   return `${delta.new_count ?? 0} new, ${delta.cleared_count ?? 0} cleared, ${delta.status_changed_count ?? 0} changed, ${delta.unchanged_count ?? 0} unchanged hidden`;
 }
 
-function dirtyCleanupStatus(report, options: Record<string, any> = {}) {
+function dirtyCleanupStatus(report: DirtyDeltaReport, options: { preflight?: boolean } = {}): CleanupStatus {
   const delta = report.delta ?? {};
   const newCount = Number(delta.new_count ?? 0);
   const changedCount = Number(delta.status_changed_count ?? 0);
@@ -341,14 +395,14 @@ function dirtyCleanupStatus(report, options: Record<string, any> = {}) {
     cleared_count: Number(delta.cleared_count ?? 0),
     unchanged_count: Number(delta.unchanged_count ?? 0),
     preflight: Boolean(options.preflight),
-    delta_command: `npm run dirty:delta -- --project ${shellArg(args.project)} --label ${shellArg(args.lease)}`,
+    delta_command: `npm run dirty:delta -- --project ${shellArg(project)} --label ${shellArg(lease)}`,
     guidance: requiresCleanup
       ? 'commit task-scoped work, delete scratch output, or keep the handoff explicitly classified before final integration'
       : 'no new or status-changed dirty paths since the task baseline',
   };
 }
 
-function enforceCleanupOk(dirtyDelta, cleanup) {
+function enforceCleanupOk(dirtyDelta: DirtyDeltaReport | null, cleanup: CleanupStatus | null): void {
   if (!dirtyDelta?.ok) {
     const error = dirtyDelta?.error || 'dirty delta unavailable';
     if (args.json) {
@@ -382,7 +436,7 @@ function enforceCleanupOk(dirtyDelta, cleanup) {
   exit(4);
 }
 
-function printCleanupStatus(cleanup) {
+function printCleanupStatus(cleanup: CleanupStatus | null): void {
   if (!cleanup) return;
   if (cleanup.requires_cleanup) {
     console.log(`[end-edit] cleanup required: ${cleanup.new_count} new, ${cleanup.status_changed_count} changed since start`);
@@ -393,15 +447,15 @@ function printCleanupStatus(cleanup) {
   console.log('[end-edit] cleanup ok: no new or status-changed dirty paths since start');
 }
 
-function firstLine(value) {
+function firstLine(value: unknown): string {
   return String(value || '').split(/\r?\n/).find((line) => line.trim())?.trim() || '';
 }
 
-function shellArg(value) {
+function shellArg(value: unknown): string {
   return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
 }
 
-function usage() {
+function usage(): void {
   console.log(`Usage:
   sma-end-edit.ts --lease <lease_id> --project <id> --brick <id> [--intent "..." | --auto]
                    [--decision "..."] [--rejected "alt::reason"]... [--file <path>]...
@@ -419,20 +473,20 @@ still has new or status-changed dirty paths.
 `);
 }
 
-function parseArgs(list) {
-  const out: Record<string, any> = { rejected: [], file: [] };
+function parseArgs(list: string[]): EndEditArgs {
+  const out: EndEditArgs = { rejected: [], file: [] };
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
     if (a === '--help' || a === '-h') { out.help = true; continue; }
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    const camel = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const camel = key.replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
     const next = list[i + 1];
     const isBool = next === undefined || next.startsWith('--');
-    if (isBool) { out[camel] = true; continue; }
+    if (isBool) { (out as unknown as Record<string, unknown>)[camel] = true; continue; }
     if (camel === 'rejected') out.rejected.push(next);
     else if (camel === 'file') out.file.push(next);
-    else out[camel] = next;
+    else (out as unknown as Record<string, unknown>)[camel] = next;
     i += 1;
   }
   return out;

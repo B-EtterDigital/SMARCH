@@ -38,7 +38,7 @@ function failOrFallback(message: string, cause?: unknown): null {
   return null;
 }
 
-export function runRustCore<T>(command: string, args: string[]): T | null {
+function runRustCore<T>(command: string, args: string[]): T | null {
   if (String(process.env.SMA_CORE || "").trim().toLowerCase() === "off") return null;
   const binary = String(process.env.SMA_CORE_BIN || "").trim() || "smarch-core";
   const result = spawnSync(binary, [command, "--json", ...args], {
@@ -78,11 +78,11 @@ export function rustWalkManifestPaths(options: RustWalkOptions): RustScanFile[] 
   return data.files;
 }
 
-export function rustHashFile(path: string) {
+function rustHashFile(path: string) {
   return runRustCore<{ path: string; size: number; xxh3: string; sha256: string }>("hash", [path]);
 }
 
-export function rustSimilarity(leftPath: string, rightPath: string) {
+function rustSimilarity(leftPath: string, rightPath: string) {
   return runRustCore<{ left: string; right: string; score: number }>("sim", [leftPath, rightPath]);
 }
 

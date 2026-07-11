@@ -38,7 +38,7 @@ type ProjectHealthAccumulator = {
 };
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const defaultOptions: ScannerOptions = {
+const defaultOptions: ScannerOptions = {
   root: PROJECTS_ROOT,
   out: path.join(smaRoot, "registry", "global-modules.generated.json"),
   projectId: "",
@@ -48,8 +48,8 @@ export const defaultOptions: ScannerOptions = {
   strict: false,
   json: false
 };
-export let activeExcludedRoots: string[] = [];
-export const excludedDirs = new Set([
+let activeExcludedRoots: string[] = [];
+const excludedDirs = new Set([
   ".git",
   "node_modules",
   "dist",
@@ -78,7 +78,7 @@ export const excludedDirs = new Set([
   "archived",
   ".archive"
 ]);
-export const archiveDirPatterns = [
+const archiveDirPatterns = [
   "corrupt-backup",
   "stream_preview_release",
   "fix-push",
@@ -88,7 +88,7 @@ export const archiveDirPatterns = [
   // surfaces, not canonical portfolio scan roots.
   "worktrees"
 ];
-export const moduleCandidateTypes = new Set([
+const moduleCandidateTypes = new Set([
   "browser_worker",
   "component_module",
   "context_module",
@@ -99,7 +99,7 @@ export const moduleCandidateTypes = new Set([
   "supabase_shared",
   "test_suite_group"
 ]);
-export const brickGroupCandidateTypes = new Set([
+const brickGroupCandidateTypes = new Set([
   "app"
 ]);
 
@@ -171,7 +171,7 @@ export function parseArgs(argv: string[]): ScannerOptions {
   return options;
 }
 
-export function printHelp(): void {
+function printHelp(): void {
   console.log(`SMA scanner
 
 Usage:
@@ -203,7 +203,7 @@ export async function walk(dir: string, results: string[] = []): Promise<string[
   return walkFiles(dir, { isExcludedDirName, isExcludedPath }, results);
 }
 
-export const moduleParentTypes = new Map([
+const moduleParentTypes = new Map([
   ["modules", "frontend_module"],
   ["features", "frontend_feature"],
   ["pages", "page_module"],
@@ -240,13 +240,13 @@ export const moduleParentTypes = new Map([
 
 // Ancestors that count as "in-app" so a generic moduleParentTypes match counts.
 // Without this we'd over-match on coincidental folders named "services" anywhere.
-export const appAncestors = new Set([
+const appAncestors = new Set([
   "src", "app", "apps", "packages", "electron", "renderer", "main",
   "sidecar", "shared", "frontend", "backend", "client", "server",
   "web", "mobile", "desktop", "core", "ui"
 ]);
 
-export function hasAppAncestor(parts: string[], index: number): boolean {
+function hasAppAncestor(parts: string[], index: number): boolean {
   for (let i = 0; i < index; i += 1) {
     if (appAncestors.has(parts[i])) return true;
   }
@@ -259,7 +259,7 @@ export function hasAppAncestor(parts: string[], index: number): boolean {
 //   src/renderer/modules/modchat/components/arena/hooks  -> hook_module
 //   src/renderer/modules/modchat/components/deep-summation/engine -> engine_module
 //   src/renderer/modules/modchat/components/chat/archive -> archive_module
-export const leafBrickNames = new Map([
+const leafBrickNames = new Map([
   ["hooks", "hook_module"],
   ["utils", "utility_module"],
   ["utilities", "utility_module"],
@@ -288,7 +288,7 @@ export const leafBrickNames = new Map([
   ["finetuning", "training_module"]
 ]);
 
-export function candidateType(parts: string[], index: number): string {
+function candidateType(parts: string[], index: number): string {
   const name = parts[index];
   const parent = parts[index - 1];
   const grandParent = parts[index - 2];
@@ -357,7 +357,7 @@ export function toSlashPath(value: string): string {
   return value.split(path.sep).join("/");
 }
 
-export function hierarchyRole(type: string): string {
+function hierarchyRole(type: string): string {
   if (brickGroupCandidateTypes.has(type)) {
     return "brick_group_candidate";
   }
@@ -369,7 +369,7 @@ export function hierarchyRole(type: string): string {
   return "brick_candidate";
 }
 
-export function candidateDomain(name: unknown): string {
+function candidateDomain(name: unknown): string {
   const [first] = String(name || "")
     .replace(/^_+/, "")
     .split(/[-_]/)
@@ -378,7 +378,7 @@ export function candidateDomain(name: unknown): string {
   return first || "misc";
 }
 
-export function candidateGroup(root: string, fullPath: string, type: string, project: string) {
+function candidateGroup(root: string, fullPath: string, type: string, project: string) {
   const relative = path.relative(root, fullPath);
   const parts = relative.split(path.sep);
   const parentParts = parts.slice(0, -1);
@@ -399,7 +399,7 @@ export function candidateGroup(root: string, fullPath: string, type: string, pro
   };
 }
 
-export async function hasManifest(dir: string): Promise<boolean> {
+async function hasManifest(dir: string): Promise<boolean> {
   try {
     await fs.access(path.join(dir, "module.sweetspot.json"));
     return true;
@@ -417,7 +417,7 @@ export async function hasManifest(dir: string): Promise<boolean> {
 // File-level brick patterns. Match whenever the file is named *<Suffix>.ext AND
 // EITHER the parent dir name matches the corresponding plural kind dir, OR any
 // ancestor up to 3 levels above does (catches src/renderer/pipelines/whisperFlow/WhisperFlowPipeline.ts).
-export const fileBrickPatterns: Array<[RegExp, RegExp, string]> = [
+const fileBrickPatterns: Array<[RegExp, RegExp, string]> = [
   [/^(providers?)$/, /([A-Za-z0-9]+Provider)\.(t|j)sx?$/i, "provider_file"],
   [/^(handlers?)$/, /([A-Za-z0-9]+Handler)\.(t|j)sx?$/i, "handler_file"],
   [/^(adapters?)$/, /([A-Za-z0-9]+Adapter)\.(t|j)sx?$/i, "adapter_file"],
@@ -441,7 +441,7 @@ export const fileBrickPatterns: Array<[RegExp, RegExp, string]> = [
   [/transcription|whisper|wispr|chirp|stt|tts|audio2text/i, /([A-Za-z0-9]+Pipeline)\.(t|j)sx?$/i, "pipeline_file"]
 ];
 
-export function fileCandidateType(parts: string[]): string {
+function fileCandidateType(parts: string[]): string {
   if (parts.length < 2) return "";
   const fileName = parts.at(-1) || "";
   const parentName = parts.at(-2) || "";
@@ -537,13 +537,13 @@ export async function readManifest(filePath: string): Promise<BrickManifest> {
   return JSON.parse(raw);
 }
 
-export function projectIdFromPath(root: string, manifestPath: string): string {
+function projectIdFromPath(root: string, manifestPath: string): string {
   const relative = path.relative(root, manifestPath);
   const [first] = relative.split(path.sep);
   return first || "unknown";
 }
 
-export async function inferProjectId(root: string): Promise<string> {
+async function inferProjectId(root: string): Promise<string> {
   try {
     const packageJson = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
 
@@ -558,7 +558,7 @@ export async function inferProjectId(root: string): Promise<string> {
   return "";
 }
 
-export async function isProjectRoot(dir: string): Promise<boolean> {
+async function isProjectRoot(dir: string): Promise<boolean> {
   for (const marker of ["package.json", "pnpm-workspace.yaml", "turbo.json"]) {
     if (await pathExists(path.join(dir, marker))) {
       return true;
@@ -568,11 +568,11 @@ export async function isProjectRoot(dir: string): Promise<boolean> {
   return false;
 }
 
-export function projectId(root: string, targetPath: string, forcedProjectId = ""): string {
+function projectId(root: string, targetPath: string, forcedProjectId = ""): string {
   return forcedProjectId || projectIdFromPath(root, targetPath);
 }
 
-export function normalizeBrickIdForProject(brickId: unknown, currentProjectId: unknown): string {
+function normalizeBrickIdForProject(brickId: unknown, currentProjectId: unknown): string {
   const value = String(brickId || "missing-id");
   const project = String(currentProjectId || "").trim();
 
@@ -640,7 +640,7 @@ export async function discoverProjectRoots(root: string, explicitProjectId = "")
   return discovered.sort((a, b) => a.root.localeCompare(b.root));
 }
 
-export function modelList(manifest: BrickManifest): string[] {
+function modelList(manifest: BrickManifest): string[] {
   const events = [
     manifest.provenance?.created_by,
     ...(manifest.provenance?.touched_by || []),
@@ -650,7 +650,7 @@ export function modelList(manifest: BrickManifest): string[] {
   return [...new Set(events.map((event) => event.model).filter((model): model is string => typeof model === "string" && model.length > 0))].sort();
 }
 
-export function healthFromReport(report: ValidationReport): string {
+function healthFromReport(report: ValidationReport): string {
   if (report.errors.length > 0) {
     return "fail";
   }
@@ -698,8 +698,8 @@ export function compactBrick(root: string, manifestPath: string, manifest: Brick
     adapters: manifest.interfaces?.adapters || [],
     forbidden_dependencies: manifest.interfaces?.forbidden_dependencies || [],
     required_dependencies: manifest.interfaces?.required_dependencies || [],
-    env_contract: manifest.security?.env || { required: false, status: "unknown", variables: [] },
-    rls_contract: manifest.security?.rls || { required: false, status: "unknown", negative_tests: [] },
+    env_contract: manifest.security?.env || { required: false, status: "not_applicable", variables: [] },
+    rls_contract: manifest.security?.rls || { required: false, status: "not_applicable", negative_tests: [] },
     vulnerability_findings: manifest.security?.vulnerability_findings || { critical: 0, high: 0, medium: 0, low: 0 },
     quality_line_count: manifest.quality?.line_count || { max_file_lines: 0, over_600_count: 0 },
     code_budget: manifest.quality?.code_budget || { status: "unknown", feature_lines: 0, file_count: 0, dependency_count: 0, notes: "" },
@@ -732,7 +732,7 @@ export function compactBrick(root: string, manifestPath: string, manifest: Brick
   return brick;
 }
 
-export function emptyStatusCounts(): Record<string, number> {
+function emptyStatusCounts(): Record<string, number> {
   return {
     experimental: 0,
     project_bound: 0,

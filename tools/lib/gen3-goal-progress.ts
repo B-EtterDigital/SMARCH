@@ -222,7 +222,7 @@ export function buildGoalProgressReport({
 
 export function renderGoalProgressSection(report: ReturnType<typeof buildGoalProgressReport> | null | undefined): string {
   if (!report) return '';
-  const s = report.summary || {};
+  const s = report.summary;
   const timeline = renderTimelineChart(report.timeline || []);
   const moduleGroups = renderModuleGroups(report.modules || []);
   const verificationRows = (report.recent_verifications || []).map((item) => `

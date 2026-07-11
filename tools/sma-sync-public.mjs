@@ -36,6 +36,20 @@ const DEFAULT_CONFIG = 'registry/sync-public.config.json';
 const GITLEAKS_CONFIG = '.gitleaks.toml';
 const APPLY_JOURNAL_VERSION = 1;
 
+/** @typedef {{from?: string, to?: string, config?: string, write?: boolean, allowNoGitleaks?: boolean, json?: boolean, quiet?: boolean, verbose?: boolean, selftest?: boolean, help?: boolean}} CliArgs */
+/** @typedef {{from: string, to: string}} Replacement */
+/** @typedef {Replacement & {count: number}} ReplacementCount */
+/** @typedef {{allowlistGlobs: string[], excludeGlobs: string[], replacements: Replacement[]}} SyncConfig */
+/** @typedef {{status: string, exit: number | null, output: string}} GateReport */
+/** @typedef {{status: string, mode: string, from: string, to: string, config: string, add_count: number, change_count: number, remove_count: number, adds: string[], changes: string[], removes: string[], replacement_counts: ReplacementCount[], leak_gate: GateReport | null, gitleaks: GateReport | null}} SyncReport */
+/** @typedef {{status: number | null, stdout: string, stderr: string, error?: NodeJS.ErrnoException}} SpawnResult */
+/** @typedef {{gitleaksSpawn?: (command: string, args: string[], options: {cwd: string, encoding: string}) => SpawnResult, warn?: (message: string) => void, silent?: boolean, crashAfterSwaps?: number}} Execution */
+/** @typedef {Error & {code?: string, exitCode?: number, report?: SyncReport}} CodedError */
+/** @typedef {{name: string, had_original: boolean, staged: boolean, state: string}} ApplyEntry */
+/** @typedef {{version: number, state: string, target_root: string, target_root_existed: boolean, transaction_root: string, entries: ApplyEntry[]}} ApplyJournal */
+/** @typedef {{command: string, args: string[], options: {cwd: string, encoding: string}}} GitleaksCall */
+
+/** @type {CliArgs} */
 let args = {};
 try {
   args = parseArgs(process.argv.slice(2));
@@ -49,12 +63,14 @@ try {
     if (args.verbose) console.error(`sma-sync-public: checked ${result.add_count + result.change_count + result.remove_count} changes`);
   }
 } catch (error) {
-  if (error.report && !args.selftest) printResult(error.report, args.json, args.quiet);
-  else if (args.json) console.log(JSON.stringify({ status: 'failed', error: { code: error.code || 'UNEXPECTED_ERROR', message: error.message } }));
-  printError(error.code || 'UNEXPECTED_ERROR', error.message, error);
-  process.exit(error.exitCode || 2);
+  const failure = /** @type {CodedError} */ (error);
+  if (failure.report && !args.selftest) printResult(failure.report, args.json, args.quiet);
+  else if (args.json) console.log(JSON.stringify({ status: 'failed', error: { code: failure.code || 'UNEXPECTED_ERROR', message: failure.message } }));
+  printError(failure.code || 'UNEXPECTED_ERROR', failure.message, failure);
+  process.exit(failure.exitCode || 2);
 }
 
+/** @returns {string} */
 function usage() {
   return `Synchronize a filtered private tree to a public target.
 
@@ -71,6 +87,7 @@ Exit codes: 0 success; 2 usage/config; 1 leak/security block; 3 missing source; 
 Known limitation: --write requires gitleaks unless --allow-no-gitleaks is explicitly supplied.`;
 }
 
+/** @param {CliArgs} options @param {Execution} [execution] @returns {SyncReport} */
 function executeSync(options, execution = {}) {
   if (!options.from) throw codedError('ARGUMENT_INVALID', '--from requires a source root');
   if (!options.to) throw codedError('ARGUMENT_INVALID', '--to requires a target root');
@@ -122,7 +139,9 @@ function executeSync(options, execution = {}) {
 
     const stageFiles = collectFiles(stageRoot);
     const stageSet = new Set(stageFiles);
+    /** @type {string[]} */
     const adds = [];
+    /** @type {string[]} */
     const changes = [];
     const removes = targetFiles.filter((file) => !stageSet.has(file)).sort();
     for (const file of stageFiles) {
@@ -134,6 +153,7 @@ function executeSync(options, execution = {}) {
       }
     }
 
+    /** @type {SyncReport} */
     const report = {
       status: 'pending-leak-gate',
       mode: options.write ? 'write' : 'dry-run',
@@ -195,23 +215,26 @@ function executeSync(options, execution = {}) {
   }
 }
 
+/** @param {string} filePath @returns {SyncConfig} */
 function readConfig(filePath) {
   if (!existsSync(filePath)) throw codedError('CONFIG_NOT_FOUND', `sync config not found: ${filePath}`);
   let payload;
   try {
     payload = JSON.parse(readFileSync(filePath, 'utf8'));
   } catch (error) {
-    throw codedError('CONFIG_INVALID', `cannot parse sync config: ${error.message}`);
+    throw codedError('CONFIG_INVALID', `cannot parse sync config: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw codedError('CONFIG_INVALID', 'sync config must be a JSON object');
   }
-  const allowlistGlobs = validateStringArray(payload.allowlist_globs, 'allowlist_globs');
+  const configPayload = /** @type {{allowlist_globs?: unknown, exclude_globs?: unknown, replacements?: unknown}} */ (payload);
+  const allowlistGlobs = validateStringArray(configPayload.allowlist_globs, 'allowlist_globs');
   if (allowlistGlobs.length === 0) throw codedError('CONFIG_INVALID', 'explicit allowlist required');
-  const excludeGlobs = validateStringArray(payload.exclude_globs, 'exclude_globs');
-  if (!Array.isArray(payload.replacements)) throw codedError('CONFIG_INVALID', 'replacements must be an array');
-  const replacements = payload.replacements.map((entry, index) => {
-    if (!entry || typeof entry.from !== 'string' || typeof entry.to !== 'string' || !entry.from) {
+  const excludeGlobs = validateStringArray(configPayload.exclude_globs, 'exclude_globs');
+  if (!Array.isArray(configPayload.replacements)) throw codedError('CONFIG_INVALID', 'replacements must be an array');
+  const replacements = configPayload.replacements.map((entry, index) => {
+    if (!entry || typeof entry !== 'object' || !('from' in entry) || !('to' in entry)
+        || typeof entry.from !== 'string' || typeof entry.to !== 'string' || !entry.from) {
       throw codedError('CONFIG_INVALID', `replacement ${index + 1} must contain a non-empty from string and a to string`);
     }
     return { from: entry.from, to: entry.to };
@@ -219,26 +242,30 @@ function readConfig(filePath) {
   return { allowlistGlobs, excludeGlobs, replacements };
 }
 
+/** @param {unknown} value @param {string} name @returns {string[]} */
 function validateStringArray(value, name) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !item)) {
     throw codedError('CONFIG_INVALID', `${name} must be an array of non-empty strings`);
   }
-  return value;
+  return /** @type {string[]} */ (value);
 }
 
+/** @param {string} root @returns {string[]} */
 function collectFiles(root) {
+  /** @type {string[]} */
   const files = [];
   walk(root, '', files);
   return files.sort();
 }
 
+/** @param {string} root @param {string} relativeDir @param {string[]} files @returns {void} */
 function walk(root, relativeDir, files) {
   const absoluteDir = resolve(root, relativeDir);
   let entries;
   try {
     entries = readdirSync(absoluteDir, { withFileTypes: true });
   } catch (error) {
-    throw codedError('DIRECTORY_READ_FAILED', `${absoluteDir}: ${error.message}`);
+    throw codedError('DIRECTORY_READ_FAILED', `${absoluteDir}: ${error instanceof Error ? error.message : String(error)}`);
   }
   for (const entry of entries) {
     if (entry.name === '.git') continue;
@@ -254,11 +281,13 @@ function walk(root, relativeDir, files) {
   }
 }
 
+/** @param {string} file @param {SyncConfig} config @returns {boolean} */
 function isSelected(file, config) {
   const included = !config.allowlistGlobs.length || config.allowlistGlobs.some((glob) => matchesGlob(file, glob));
   return included && !config.excludeGlobs.some((glob) => matchesGlob(file, glob));
 }
 
+/** @param {string} file @param {string} glob @returns {boolean} */
 function matchesGlob(file, glob) {
   const normalizedGlob = normalizePath(glob);
   let source = '^';
@@ -283,17 +312,20 @@ function matchesGlob(file, glob) {
   return new RegExp(`${source}$`).test(file);
 }
 
+/** @param {string} stageRoot @returns {import('node:child_process').SpawnSyncReturns<string>} */
 function runLeakGate(stageRoot) {
   try {
     execFileSync('git', ['init', '-q'], { cwd: stageRoot, stdio: ['ignore', 'ignore', 'pipe'] });
     execFileSync('git', ['add', '-f', '--', '.'], { cwd: stageRoot, stdio: ['ignore', 'ignore', 'pipe'] });
   } catch (error) {
-    const detail = error.stderr?.toString('utf8').trim() || error.message;
+    const failure = /** @type {Error & {stderr?: Buffer}} */ (error);
+    const detail = failure.stderr?.toString('utf8').trim() || failure.message;
     throw codedError('STAGING_GIT_FAILED', detail);
   }
   return spawnSync(process.execPath, [LEAK_GATE_PATH], { cwd: stageRoot, encoding: 'utf8' });
 }
 
+/** @param {string} stageRoot @param {Execution} execution @returns {{available: boolean, status: number | null, stdout: string, stderr: string}} */
 function runGitleaks(stageRoot, execution) {
   const spawn = execution.gitleaksSpawn || spawnSync;
   const result = spawn(
@@ -301,23 +333,25 @@ function runGitleaks(stageRoot, execution) {
     ['detect', '--source', stageRoot, '--no-git', '--config', GITLEAKS_CONFIG],
     { cwd: SMA_ROOT, encoding: 'utf8' },
   );
-  if (result.error?.code === 'ENOENT') {
+  if (/** @type {NodeJS.ErrnoException | undefined} */ (result.error)?.code === 'ENOENT') {
     return { available: false, status: null, stdout: '', stderr: result.error.message || '' };
   }
   if (result.error) {
-    return { available: true, status: result.status ?? 2, stdout: result.stdout || '', stderr: result.stderr || result.error.message || '' };
+    return { available: true, status: result.status ?? 2, stdout: String(result.stdout || ''), stderr: String(result.stderr || result.error.message || '') };
   }
   return {
     available: true,
     status: result.status ?? 2,
-    stdout: result.stdout || '',
-    stderr: result.stderr || '',
+    stdout: String(result.stdout || ''),
+    stderr: String(result.stderr || ''),
   };
 }
 
+/** @param {string} filePath @returns {string} */
 function resolveRealPath(filePath) {
   const absolutePath = resolve(filePath);
   let existingPath = absolutePath;
+  /** @type {string[]} */
   const missingSegments = [];
   while (!existsSync(existingPath)) {
     const parent = dirname(existingPath);
@@ -328,11 +362,13 @@ function resolveRealPath(filePath) {
   return resolve(realpathSync(existingPath), ...missingSegments);
 }
 
+/** @param {string} parentPath @param {string} childPath @returns {boolean} */
 function containsPath(parentPath, childPath) {
   const rel = relative(parentPath, childPath);
   return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel));
 }
 
+/** @param {string} stageRoot @param {string} toRoot @param {string[]} adds @param {string[]} changes @param {string[]} removes @param {Execution} [execution] */
 function applyChanges(stageRoot, toRoot, adds, changes, removes, execution = {}) {
   const affectedFiles = [...new Set([...adds, ...changes, ...removes])].sort();
   const topLevelEntries = [...new Set(affectedFiles.map((file) => file.split('/')[0]))].sort();
@@ -347,6 +383,7 @@ function applyChanges(stageRoot, toRoot, adds, changes, removes, execution = {})
   mkdirSync(backupRoot, { recursive: true });
 
   const journalPath = applyJournalPath(toRoot);
+  /** @type {ApplyJournal} */
   const journal = {
     version: APPLY_JOURNAL_VERSION,
     state: 'preparing',
@@ -399,12 +436,15 @@ function applyChanges(stageRoot, toRoot, adds, changes, removes, execution = {})
       if (existsSync(journalPath)) rollbackApplyJournal(journalPath, toRoot);
       else rmSync(transactionRoot, { recursive: true, force: true });
     } catch (rollbackError) {
-      throw codedError('APPLY_ROLLBACK_FAILED', `${error.message}; rollback failed: ${rollbackError.message}`);
+      const applyMessage = error instanceof Error ? error.message : String(error);
+      const rollbackMessage = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
+      throw codedError('APPLY_ROLLBACK_FAILED', `${applyMessage}; rollback failed: ${rollbackMessage}`);
     }
     throw error;
   }
 }
 
+/** @param {string} stageRoot @param {string} toRoot @param {string} transactionStage @param {string} topLevel @param {string[]} adds @param {string[]} changes @param {string[]} removes */
 function prepareTopLevelEntry(stageRoot, toRoot, transactionStage, topLevel, adds, changes, removes) {
   const currentPath = join(toRoot, topLevel);
   const stagedPath = join(transactionStage, topLevel);
@@ -424,6 +464,7 @@ function prepareTopLevelEntry(stageRoot, toRoot, transactionStage, topLevel, add
   }
 }
 
+/** @param {string} directory @param {string} boundary */
 function ensureDirectory(directory, boundary) {
   if (directory === boundary) return;
   if (existsSync(directory)) {
@@ -434,6 +475,7 @@ function ensureDirectory(directory, boundary) {
   mkdirSync(directory);
 }
 
+/** @param {string} toRoot @param {boolean | undefined} write */
 function recoverPendingApply(toRoot, write) {
   const journalPath = applyJournalPath(toRoot);
   if (!existsSync(journalPath)) return;
@@ -443,12 +485,14 @@ function recoverPendingApply(toRoot, write) {
   rollbackApplyJournal(journalPath, toRoot);
 }
 
+/** @param {string} journalPath @param {string} expectedTargetRoot */
 function rollbackApplyJournal(journalPath, expectedTargetRoot) {
+  /** @type {ApplyJournal} */
   let journal;
   try {
-    journal = JSON.parse(readFileSync(journalPath, 'utf8'));
+    journal = /** @type {ApplyJournal} */ (JSON.parse(readFileSync(journalPath, 'utf8')));
   } catch (error) {
-    throw codedError('APPLY_JOURNAL_INVALID', `cannot read rollback journal: ${error.message}`);
+    throw codedError('APPLY_JOURNAL_INVALID', `cannot read rollback journal: ${error instanceof Error ? error.message : String(error)}`);
   }
   validateApplyJournal(journal, expectedTargetRoot);
   journal.state = 'rolling-back';
@@ -475,6 +519,7 @@ function rollbackApplyJournal(journalPath, expectedTargetRoot) {
   rmSync(journal.transaction_root, { recursive: true, force: true });
 }
 
+/** @param {ApplyJournal} journal @param {string} expectedTargetRoot */
 function validateApplyJournal(journal, expectedTargetRoot) {
   const transactionParent = dirname(expectedTargetRoot);
   if (journal?.version !== APPLY_JOURNAL_VERSION || journal.target_root !== expectedTargetRoot) {
@@ -496,22 +541,26 @@ function validateApplyJournal(journal, expectedTargetRoot) {
   }
 }
 
+/** @param {string} journalPath @param {ApplyJournal} journal */
 function writeApplyJournal(journalPath, journal) {
   const temporaryPath = `${journalPath}.tmp`;
   writeFileSync(temporaryPath, `${JSON.stringify(journal, null, 2)}\n`);
   renameSync(temporaryPath, journalPath);
 }
 
+/** @param {string} toRoot @returns {string} */
 function applyJournalPath(toRoot) {
   return join(dirname(toRoot), `.${basename(toRoot)}.sma-sync-public.journal.json`);
 }
 
+/** @param {number} swapsCompleted @param {Execution} execution */
 function injectApplyCrash(swapsCompleted, execution) {
   const configured = execution.crashAfterSwaps ?? Number.parseInt(process.env.SMA_SYNC_PUBLIC_TEST_CRASH_AFTER_SWAPS || '', 10);
   if (!Number.isInteger(configured) || configured < 1 || swapsCompleted !== configured) return;
   process.kill(process.pid, 'SIGKILL');
 }
 
+/** @param {Buffer} buffer @returns {string | null} */
 function decodeText(buffer) {
   if (buffer.includes(0)) return null;
   try {
@@ -521,6 +570,7 @@ function decodeText(buffer) {
   }
 }
 
+/** @param {string} text @param {string} needle @returns {number} */
 function countOccurrences(text, needle) {
   let count = 0;
   let offset = 0;
@@ -531,6 +581,7 @@ function countOccurrences(text, needle) {
   return count;
 }
 
+/** @param {SyncReport} result @param {boolean | undefined} json @param {boolean | undefined} [quiet] */
 function printResult(result, json, quiet = false) {
   if (json) {
     console.log(JSON.stringify(result, null, 2));
@@ -552,10 +603,12 @@ function printResult(result, json, quiet = false) {
   if (result.gitleaks?.status === 'failed' && result.gitleaks.output) console.log(result.gitleaks.output);
 }
 
+/** @returns {void} */
 function runSelftest() {
   const fixtureRoot = mkdtempSync(join(tmpdir(), 'sma-sync-public-selftest-'));
   const machineLeak = ['/ho', 'me/testuser'].join('');
   try {
+    /** @type {GitleaksCall[]} */
     const gitleaksCalls = [];
     const passingGitleaks = mockGitleaks(0, gitleaksCalls);
     const scrubSource = join(fixtureRoot, 'scrub-source');
@@ -608,7 +661,7 @@ function runSelftest() {
     try {
       executeSync({ from: gateSource, to: gateTarget, config: gateConfig, write: true }, passingGitleaks);
     } catch (error) {
-      blocked = error.code === 'LEAK_GATE_FAILED';
+      blocked = /** @type {CodedError} */ (error).code === 'LEAK_GATE_FAILED';
     }
     assert(blocked, 'leak gate did not block write');
     assert(readFileSync(join(gateTarget, 'sentinel.txt'), 'utf8') === 'unchanged\n', 'blocked write changed target');
@@ -655,11 +708,12 @@ function runSelftest() {
     assert(readFileSync(join(atomicTarget, 'alpha', 'keep.bin'), 'utf8') === 'unselected\n', 'top-level swap removed an unselected file');
     assert(!existsSync(atomicJournal), 'successful recovery did not remove the rollback journal');
 
+    /** @type {string[]} */
     const missingWarnings = [];
     const missingGitleaks = mockMissingGitleaks(missingWarnings);
     const noGitleaksTarget = join(fixtureRoot, 'no-gitleaks-target');
     const dryRun = executeSync({ from: gateSource, to: noGitleaksTarget, config: gateConfig }, missingGitleaks);
-    assert(dryRun.gitleaks.status === 'unavailable', 'dry-run did not report unavailable gitleaks');
+    assert(dryRun.gitleaks?.status === 'unavailable', 'dry-run did not report unavailable gitleaks');
     assert(missingWarnings.some((warning) => warning.startsWith('WARN ')), 'missing gitleaks did not print WARN');
     expectErrorCode(
       () => executeSync({ from: gateSource, to: noGitleaksTarget, config: gateConfig, write: true }, missingGitleaks),
@@ -674,11 +728,12 @@ function runSelftest() {
 
     const failingGitleaks = mockGitleaks(1, []);
     const gitleaksBlockedTarget = join(fixtureRoot, 'gitleaks-blocked-target');
+    /** @type {CodedError | undefined} */
     let gitleaksError;
     try {
       executeSync({ from: gateSource, to: gitleaksBlockedTarget, config: gateConfig, write: true }, failingGitleaks);
     } catch (error) {
-      gitleaksError = error;
+      gitleaksError = /** @type {CodedError} */ (error);
     }
     assert(gitleaksError?.code === 'GITLEAKS_FAILED', 'gitleaks finding did not block write');
     assert(gitleaksError.report?.leak_gate?.status === 'passed', 'node leak gate did not run alongside gitleaks');
@@ -689,6 +744,7 @@ function runSelftest() {
   }
 }
 
+/** @param {number} status @param {GitleaksCall[]} calls @returns {Execution} */
 function mockGitleaks(status, calls) {
   return {
     silent: true,
@@ -700,6 +756,7 @@ function mockGitleaks(status, calls) {
   };
 }
 
+/** @param {string[]} warnings @returns {Execution} */
 function mockMissingGitleaks(warnings) {
   return {
     silent: true,
@@ -713,6 +770,7 @@ function mockMissingGitleaks(warnings) {
   };
 }
 
+/** @param {GitleaksCall} call */
 function assertGitleaksInvocation(call) {
   assert(call.command === 'gitleaks', 'staging verification did not spawn gitleaks');
   assert(call.args[0] === 'detect', 'gitleaks detect subcommand missing');
@@ -721,22 +779,26 @@ function assertGitleaksInvocation(call) {
   assert(call.options.cwd === SMA_ROOT, 'gitleaks config was not resolved from the SMA root');
 }
 
+/** @param {() => unknown} action @param {string} code @param {string} [messageIncludes] */
 function expectErrorCode(action, code, messageIncludes = '') {
+  /** @type {CodedError | undefined} */
   let error;
   try {
     action();
   } catch (caught) {
-    error = caught;
+    error = /** @type {CodedError} */ (caught);
   }
   assert(error?.code === code, `expected ${code}, received ${error?.code || 'no error'}`);
   if (messageIncludes) assert(error.message.includes(messageIncludes), `missing error text: ${messageIncludes}`);
 }
 
+/** @param {unknown} condition @param {string} message @returns {asserts condition} */
 function assert(condition, message) {
   if (!condition) throw codedError('SELFTEST_FAILED', message);
 }
 
-function printError(code, message, error = {}) {
+/** @param {string} code @param {string} message @param {CodedError} [error] */
+function printError(code, message, error = /** @type {CodedError} */ ({})) {
   const nextCommand = code === 'ARGUMENT_INVALID'
     ? 'Run `sma sync-public --help`.'
     : code === 'SOURCE_NOT_FOUND'
@@ -747,8 +809,9 @@ function printError(code, message, error = {}) {
   console.error(JSON.stringify({ area: 'cli:sync-public', severity: error.exitCode === 1 ? 'error' : 'warning', tool: 'sma-sync-public', code, message, next_command: nextCommand, context: { write: Boolean(args.write) } }));
 }
 
+/** @param {string} code @param {string} message @returns {CodedError} */
 function codedError(code, message) {
-  const error = /** @type {Error & {code?: string, exitCode?: number, report?: any}} */ (new Error(message));
+  const error = /** @type {CodedError} */ (new Error(message));
   error.code = code;
   if (code === 'SOURCE_NOT_FOUND') error.exitCode = 3;
   else if (code.startsWith('APPLY_')) error.exitCode = 4;
@@ -757,12 +820,15 @@ function codedError(code, message) {
   return error;
 }
 
+/** @param {string} value @returns {string} */
 function normalizePath(value) {
   const normalized = value.split(sep).join('/').replace(/^\.\//, '');
   return isAbsolute(value) ? normalized.replace(/^\/+/, '') : normalized;
 }
 
+/** @param {string[]} list @returns {CliArgs} */
 function parseArgs(list) {
+  /** @type {CliArgs} */
   const out = {};
   for (let index = 0; index < list.length; index += 1) {
     const arg = list[index];
@@ -771,13 +837,20 @@ function parseArgs(list) {
       continue;
     }
     if (arg === '--write' || arg === '--json' || arg === '--selftest' || arg === '--quiet' || arg === '--verbose' || arg === '--help' || arg === '-h') {
-      out[arg === '-h' ? 'help' : arg.slice(2)] = true;
+      if (arg === '--write') out.write = true;
+      else if (arg === '--json') out.json = true;
+      else if (arg === '--selftest') out.selftest = true;
+      else if (arg === '--quiet') out.quiet = true;
+      else if (arg === '--verbose') out.verbose = true;
+      else out.help = true;
       continue;
     }
     if (arg === '--from' || arg === '--to' || arg === '--config') {
       const next = list[index + 1];
       if (!next || next.startsWith('--')) throw codedError('ARGUMENT_INVALID', `${arg} requires a path`);
-      out[arg.slice(2)] = next;
+      if (arg === '--from') out.from = next;
+      else if (arg === '--to') out.to = next;
+      else out.config = next;
       index += 1;
       continue;
     }

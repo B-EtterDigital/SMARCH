@@ -36,7 +36,7 @@ import { classifyLicense, opennessRank } from './license-lattice.ts';
 // Well-known license-text signatures. Lowercased substring -> canonical SPDX.
 // Extend here as new license boilerplates need recognizing.
 // ---------------------------------------------------------------------------
-export const TEXT_SIGNATURES = [
+const TEXT_SIGNATURES = [
   ['gnu affero', 'AGPL-3.0'],
   ['gnu general public', 'GPL-3.0'],
   ['gnu lesser', 'LGPL-3.0'],

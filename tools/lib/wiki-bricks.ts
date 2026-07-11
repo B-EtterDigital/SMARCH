@@ -41,7 +41,7 @@ export async function maybeReadJson(filePath: string): Promise<unknown | null> {
   }
 }
 
-export function gateRows(manifest: ManifestView | null | undefined): string {
+function gateRows(manifest: ManifestView | null | undefined): string {
   const gates: Record<string, GateView> = manifest?.sweetspot || {};
   return Object.entries(gates).map(([name, gate]) => mdTableRow([
     name,
@@ -52,7 +52,7 @@ export function gateRows(manifest: ManifestView | null | undefined): string {
   ])).join("\n");
 }
 
-export function listLines(items: unknown): string {
+function listLines(items: unknown): string {
   if (!Array.isArray(items) || items.length === 0) {
     return "- Not declared";
   }
@@ -60,7 +60,7 @@ export function listLines(items: unknown): string {
   return items.map((item) => `- ${item}`).join("\n");
 }
 
-export function provenanceLines(manifest: ManifestView | null | undefined): string {
+function provenanceLines(manifest: ManifestView | null | undefined): string {
   const events = [
     manifest?.provenance?.created_by,
     ...(manifest?.provenance?.touched_by || []),
@@ -77,7 +77,7 @@ export function provenanceLines(manifest: ManifestView | null | undefined): stri
   }).join("\n");
 }
 
-export function envRows(manifest: ManifestView | null | undefined): string {
+function envRows(manifest: ManifestView | null | undefined): string {
   const vars = manifest?.security?.env?.variables || [];
 
   if (vars.length === 0) {
@@ -92,7 +92,7 @@ export function envRows(manifest: ManifestView | null | undefined): string {
   ])).join("\n");
 }
 
-export function dependencyRows(manifest: ManifestView | null | undefined): string {
+function dependencyRows(manifest: ManifestView | null | undefined): string {
   const dependencies = manifest?.supply_chain?.dependencies || [];
 
   if (dependencies.length === 0) {
@@ -269,16 +269,16 @@ ${rows.join("\n")}
 `;
 }
 
-export function optionList(values: Array<[string, number]>): string {
+function optionList(values: Array<[string, number]>): string {
   return values.map(([value]) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
 }
 
-export function shortPath(brick: CompactBrick): string {
+function shortPath(brick: CompactBrick): string {
   const [first] = brick.source_paths || [];
   return first || brick.manifest_path || "";
 }
 
-export function brickTone(brick: CompactBrick): string {
+function brickTone(brick: CompactBrick): string {
   if (brick.health?.status === "fail" || brick.risk === "critical") {
     return "danger";
   }
@@ -294,7 +294,7 @@ export function brickTone(brick: CompactBrick): string {
   return "steady";
 }
 
-export function featureClusters(bricks: CompactBrick[]): FeatureClusterView[] {
+function featureClusters(bricks: CompactBrick[]): FeatureClusterView[] {
   const byId = new Map<string, Omit<FeatureClusterView, "count" | "average_score">>();
 
   for (const brick of bricks) {
@@ -339,7 +339,7 @@ export function featureClusters(bricks: CompactBrick[]): FeatureClusterView[] {
   })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
-export function countsLine(counts: Record<string, number> | null | undefined): string {
+function countsLine(counts: Record<string, number> | null | undefined): string {
   return Object.entries(counts || {})
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([key, count]) => `${key}: ${count}`)

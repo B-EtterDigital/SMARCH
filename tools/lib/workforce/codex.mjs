@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { runWorkforceProcess } from "./process-runner.mjs";
 
 const DEFAULT_MODEL = "gpt-5.5";
 const DEFAULT_EFFORT = "xhigh";
@@ -36,44 +37,6 @@ export function buildArgs({
   if (schema) args.push("--output-schema", String(schema));
   args.push("--json", "-");
   return args;
-}
-
-/**
- * @param {string} command
- * @param {string[]} args
- * @param {string} input
- * @param {{ timeoutMs: number, signal?: AbortSignal, cwd?: string }} options
- * @returns {Promise<ProcessResult>}
- */
-function runProcess(command, args, input, { timeoutMs, signal, cwd }) {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, { env: process.env, cwd });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    let timedOut = false;
-
-    /** @param {ProcessResult} result */
-    const finish = (result) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", abort);
-      resolve(result);
-    };
-    const abort = () => {
-      timedOut = true;
-      child.kill("SIGKILL");
-    };
-    const timer = setTimeout(abort, timeoutMs);
-    signal?.addEventListener("abort", abort, { once: true });
-
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
-    child.on("error", (error) => finish({ code: null, stdout, stderr, error, timedOut }));
-    child.on("close", (code, closeSignal) => finish({ code, stdout, stderr, closeSignal, timedOut }));
-    child.stdin.end(input);
-  });
 }
 
 /**
@@ -143,7 +106,7 @@ export async function execute(packet, {
   }
 
   const args = buildArgs({ model, effort, schema, readOnly });
-  const result = await runProcess("codex", args, packetPrompt(packet), { timeoutMs, signal, cwd });
+  const result = await runWorkforceProcess("codex", args, packetPrompt(packet), { timeoutMs, signal, cwd });
   const parsed = parseEvents(result.stdout);
   const ok = result.code === 0 && !result.timedOut;
   return {

@@ -12,14 +12,14 @@ export type ConflictLedgerProps = {
   error?: unknown;
 };
 
-export function sortConflicts(conflicts: Conflict[]): Conflict[] {
+function sortConflicts(conflicts: Conflict[]): Conflict[] {
   return [...conflicts].sort((left, right) => {
     if (left.status !== right.status) return left.status === "open" ? -1 : 1;
     return Date.parse(right.timestamp) - Date.parse(left.timestamp);
   });
 }
 
-export function relativeConflictTime(timestamp: string, now = Date.now()): string {
+function relativeConflictTime(timestamp: string, now = Date.now()): string {
   const minutes = Math.max(0, Math.floor((now - Date.parse(timestamp)) / 60_000));
   if (minutes < 1) return STRINGS.relativeNow;
   if (minutes < 60) return `${minutes}${STRINGS.minuteSuffix}`;

@@ -230,8 +230,8 @@ export function renderObservationMarkdown(observation: ModuleObservation, { bloc
 
 
 export function moduleObservationBigPicture(observation: ModuleObservation): BigPicture {
-  const summary = observation?.summary || {};
-  const dispatch = observation?.dispatch || {};
+  const summary = observation.summary;
+  const dispatch = observation.dispatch;
   const assignmentCount = numeric(summary.assignment_count || dispatch.assignment_count);
   const claimReady = numeric(summary.claimable_unclaimed);
   const unclaimed = numeric(summary.unclaimed);
@@ -284,9 +284,9 @@ export function moduleObservationBigPicture(observation: ModuleObservation): Big
 
 
 export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
-  const capacity = watch?.capacity || {};
-  const progress = watch?.progress || {};
-  const dispatch = watch?.dispatch || {};
+  const capacity = watch.capacity;
+  const progress = watch.progress;
+  const dispatch = watch.dispatch;
   const dispatchReady = Boolean(dispatch.available);
   const assignmentCount = numeric(progress.assignment_count);
   const claimReady = dispatchReady ? numeric(progress.claimable_unclaimed) : 0;

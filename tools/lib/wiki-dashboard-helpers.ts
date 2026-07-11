@@ -87,7 +87,7 @@ export function projectTone(status: string): string {
   return "steady";
 }
 
-export function scoreTone(score: number): string {
+function scoreTone(score: number): string {
   if (score >= 85) return "ready";
   if (score >= 70) return "review";
   return "danger";
@@ -97,11 +97,11 @@ export function formatNumber(value: unknown): string {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
 }
 
-export function toArray<T>(value: T[] | null | undefined): T[] {
+function toArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
-export function formatCoverageUnits(value: unknown): string {
+function formatCoverageUnits(value: unknown): string {
   const numeric = Number(value || 0);
 
   if (Number.isInteger(numeric)) {
@@ -273,13 +273,13 @@ export function buildFamilyRows(scanner: ScannerView | null | undefined, limit =
         </li>`).join("\n");
 }
 
-export function releaseTone(trustLevel: unknown, verificationStatus: unknown): string {
+function releaseTone(trustLevel: unknown, verificationStatus: unknown): string {
   if (["high", "strong"].includes(String(trustLevel || "").toLowerCase()) || ["verified", "canonical"].includes(String(verificationStatus || "").toLowerCase())) return "ready";
   if (["medium"].includes(String(trustLevel || "").toLowerCase()) || ["candidate"].includes(String(verificationStatus || "").toLowerCase())) return "review";
   return "danger";
 }
 
-export function buildVerificationTone(entry: CuratedBuild | null | undefined): string {
+function buildVerificationTone(entry: CuratedBuild | null | undefined): string {
   const suggested = String(entry?.suggested_build_status || "").toLowerCase();
   if (suggested === "canonical" || entry?.publish_ready) return "ready";
   if (suggested === "verified" || Number(entry?.readiness_score || 0) >= 75) return "review";
@@ -471,7 +471,7 @@ export function tokenCards(scanner: ScannerView | null | undefined): string {
   }).join("\n");
 }
 
-export function titleLabel(value: unknown): string {
+function titleLabel(value: unknown): string {
   const text = String(value || "unknown")
     .replace(/::/g, " / ")
     .replace(/[._/]+/g, " ")
@@ -484,7 +484,7 @@ export function titleLabel(value: unknown): string {
   return text.replace(/\b[a-z]/g, (match) => match.toUpperCase());
 }
 
-export function buildCandidateSource(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined): BuildCandidate[] {
+function buildCandidateSource(stateSnapshot: StateSnapshot | null | undefined, scanner: ScannerView | null | undefined): BuildCandidate[] {
   const scannerRows = scanner?.build_report?.top_candidates || [];
   if (scannerRows.length > 0) {
     return scannerRows;
@@ -548,14 +548,14 @@ export function capabilityFamilies(stateSnapshot: StateSnapshot | null | undefin
     .sort((a, b) => b.project_count - a.project_count || b.occurrence_count - a.occurrence_count || b.max_confidence_score - a.max_confidence_score || a.label.localeCompare(b.label));
 }
 
-export function topSummaryItems(summary: Record<string, number> | null | undefined, limit = 3): Array<[string, number]> {
+function topSummaryItems(summary: Record<string, number> | null | undefined, limit = 3): Array<[string, number]> {
   return Object.entries(summary || {})
     .filter(([, value]) => Number(value || 0) > 0)
     .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0) || String(a[0]).localeCompare(String(b[0])))
     .slice(0, limit);
 }
 
-export function canonicalTargetTone(entry: CanonicalTarget | null | undefined): string {
+function canonicalTargetTone(entry: CanonicalTarget | null | undefined): string {
   if (entry?.promotion_stage === "promote_now" && !(entry?.blocker_reasons || []).includes("contains_project_bound_members")) {
     return "ready";
   }

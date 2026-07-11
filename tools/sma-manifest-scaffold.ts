@@ -21,7 +21,57 @@ import {
   uniqueStrings,
 } from "./lib/curated-build-utils.ts";
 
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
+
 const DEFAULT_OUT = "scaffolds/build-manifest-repairs.generated.json";
+
+type CuratedBuild = Awaited<ReturnType<typeof loadCuratedBuildContext>>['curatedBuilds'][number];
+interface ScaffoldManifest {
+  build?: { slug?: unknown };
+  clone?: { target_docs?: unknown[] };
+  contracts?: {
+    data?: { tables?: unknown[] };
+    rls?: { matrix_path?: unknown; tables?: unknown[] };
+  };
+  owner?: { reviewers?: unknown[] };
+  provenance?: { reviewed_by?: unknown[] };
+  source?: {
+    archive_hash?: unknown;
+    commit?: unknown;
+    repository?: unknown;
+    supporting_artifacts?: unknown[];
+  };
+  upgrade?: { supersedes?: unknown[] };
+  verification?: {
+    evidence?: { status?: unknown }[];
+    fixture_targets?: unknown[];
+    last_verified_at?: unknown;
+    smoke_commands?: unknown[];
+    status?: unknown;
+  };
+}
+type ScaffoldBuild = CuratedBuild & { manifest: ScaffoldManifest | null };
+interface Scaffold {
+  category: string;
+  mode: string;
+  priority: string;
+  status: string;
+  json_paths: string[];
+  reason: string;
+  required_inputs: string[];
+  seed: unknown;
+}
+interface CompanionStub {
+  kind: string;
+  path: string;
+  template_ref?: string;
+  template?: { title: string; sections: string[] };
+  reason: string;
+}
 
 const HELP_TEXT = `Usage: node tools/sma-manifest-scaffold.ts [options]
 
@@ -35,21 +85,22 @@ Options:
   --help          Show this help text.
 `;
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
 
-async function main() {
+async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     process.stdout.write(HELP_TEXT);
     return;
   }
 
-  const outPath = path.resolve(args.out || DEFAULT_OUT);
-  const context = await loadCuratedBuildContext(args);
-  const builds = filterCuratedBuilds(context.curatedBuilds, args).map(buildManifestScaffolds);
+  const outPath = path.resolve(typeof args.out === 'string' ? args.out : DEFAULT_OUT);
+  const context = await loadCuratedBuildContext(stringOptions(args));
+  const builds = filterCuratedBuilds(context.curatedBuilds, args)
+    .map((build) => buildManifestScaffolds(build));
 
   const document = {
     generated_at: new Date().toISOString(),
@@ -73,21 +124,31 @@ async function main() {
   }
 }
 
-function buildManifestScaffolds(build) {
-  const manifest = build.manifest || {};
-  const source = manifest.source || {};
-  const owner = manifest.owner || {};
-  const provenance = manifest.provenance || {};
-  const verification = manifest.verification || {};
-  const contracts = manifest.contracts || {};
-  const clone = manifest.clone || {};
-  const upgrade = manifest.upgrade || {};
+function buildManifestScaffolds(build: ScaffoldBuild) {
+  const manifest = build.manifest ?? {};
+  const source = manifest.source ?? {};
+  const owner = manifest.owner ?? {};
+  const provenance = manifest.provenance ?? {};
+  const verification = manifest.verification ?? {};
+  const contracts = manifest.contracts ?? {};
+  const clone = manifest.clone ?? {};
+  const upgrade = manifest.upgrade ?? {};
   const buildSlug = String(manifest.build?.slug || build.build_id || "build").trim();
   const missingDocs = collectMissingDeclaredDocs(build);
-  const evidenceStatuses = toArray(verification.evidence).map((entry) => String(entry.status || "").toLowerCase());
+  const evidenceStatuses = toArray(verification.evidence)
+    .map((entry) => String(orElse(entry.status, () => "")).toLowerCase());
 
-  const scaffolds = [];
-  const add = (category, mode, priority, jsonPaths, reason, requiredInputs, seed, status = "scaffold") => {
+  const scaffolds: Scaffold[] = [];
+  const add = (
+    category: string,
+    mode: string,
+    priority: string,
+    jsonPaths: string[],
+    reason: string,
+    requiredInputs: string[],
+    seed: unknown,
+    status = "scaffold",
+  ): void => {
     scaffolds.push({
       category,
       mode,
@@ -100,7 +161,7 @@ function buildManifestScaffolds(build) {
     });
   };
 
-  if (!String(source.repository || "").trim() || !String(source.commit || "").trim()) {
+  if (!String(orElse(source.repository, () => "")).trim() || !String(orElse(source.commit, () => "")).trim()) {
     add(
       "source_identity",
       "patch",
@@ -109,9 +170,9 @@ function buildManifestScaffolds(build) {
       "Source identity is still blank, which weakens deterministic provenance and later update reasoning.",
       ["canonical repository URL", "current commit sha", "optional archive hash"],
       {
-        repository: source.repository || "https://github.com/<owner>/<repo>",
-        commit: source.commit || "<commit-sha>",
-        archive_hash: source.archive_hash || "<optional-source-tree-hash>",
+        repository: orElse(source.repository, () => "https://github.com/<owner>/<repo>"),
+        commit: orElse(source.commit, () => "<commit-sha>"),
+        archive_hash: orElse(source.archive_hash, () => "<optional-source-tree-hash>"),
       },
       "missing"
     );
@@ -142,7 +203,7 @@ function buildManifestScaffolds(build) {
       "Reviewer lineage and last verification timestamp are still too thin for trustworthy promotion.",
       ["reviewer names or ids", "review date", "review scope"],
       {
-        owner_reviewers: owner.reviewers && owner.reviewers.length ? owner.reviewers : ["<reviewer-id>"],
+        owner_reviewers: owner.reviewers?.length ? owner.reviewers : ["<reviewer-id>"],
         reviewed_by: Array.isArray(provenance.reviewed_by) && provenance.reviewed_by.length ? provenance.reviewed_by : [
           {
             actor_kind: "human",
@@ -152,13 +213,13 @@ function buildManifestScaffolds(build) {
             summary: "Reviewed build scope, verification posture, and publish lane.",
           },
         ],
-        last_verified_at: verification.last_verified_at || "<ISO-8601>",
+        last_verified_at: orElse(verification.last_verified_at, () => "<ISO-8601>"),
       },
       "thin"
     );
   }
 
-  if (toArray(verification.fixture_targets).length === 0 || evidenceStatuses.every((status) => status !== "pass" || String(verification.status || "").toLowerCase() === "planned")) {
+  if (toArray(verification.fixture_targets).length === 0 || evidenceStatuses.every((status) => status !== "pass" || String(orElse(verification.status, () => "")).toLowerCase() === "planned")) {
     add(
       "verification_fixture_pack",
       "scaffold",
@@ -175,13 +236,13 @@ function buildManifestScaffolds(build) {
           executed_at: "<ISO-8601>",
           notes: "Replace placeholder with real build-level verification evidence.",
         })),
-        last_verified_at: verification.last_verified_at || "<ISO-8601>",
+        last_verified_at: orElse(verification.last_verified_at, () => "<ISO-8601>"),
       },
       toArray(verification.fixture_targets).length === 0 ? "missing" : "thin"
     );
   }
 
-  if (String(build.build_id).includes("workos-auth-billing")) {
+  if (build.build_id.includes("workos-auth-billing")) {
     add(
       "workos_entitlement_rls",
       "scaffold",
@@ -190,15 +251,15 @@ function buildManifestScaffolds(build) {
       "Auth and billing verification needs explicit table/matrix grounding for account linking, entitlements, and negative-path checks.",
       ["billing tables", "entitlement tables", "RLS matrix doc path"],
       {
-        data_tables: toArray(contracts.data?.tables).length ? contracts.data.tables : ["subscriptions", "entitlements", "linked_identities"],
-        rls_tables: toArray(contracts.rls?.tables).length ? contracts.rls.tables : ["subscriptions", "entitlements", "linked_identities"],
-        matrix_path: contracts.rls?.matrix_path || "docs/rls/workos-auth-billing.matrix.md",
+        data_tables: toArray(contracts.data?.tables).length ? toArray(contracts.data?.tables) : ["subscriptions", "entitlements", "linked_identities"],
+        rls_tables: toArray(contracts.rls?.tables).length ? toArray(contracts.rls?.tables) : ["subscriptions", "entitlements", "linked_identities"],
+        matrix_path: orElse(contracts.rls?.matrix_path, () => "docs/rls/workos-auth-billing.matrix.md"),
       },
       "missing"
     );
   }
 
-  if (String(build.build_id).includes("admin-ops-control-plane")) {
+  if (build.build_id.includes("admin-ops-control-plane")) {
     add(
       "admin_authz_audit",
       "scaffold",
@@ -207,9 +268,9 @@ function buildManifestScaffolds(build) {
       "Privileged admin capability still lacks explicit authz/audit proof and matrix-backed negative-path evidence.",
       ["admin tables", "audit log tables", "approval path notes", "RLS matrix doc path"],
       {
-        data_tables: toArray(contracts.data?.tables).length ? contracts.data.tables : ["admin_actions", "provider_balances", "rate_limits", "credit_adjustments"],
-        rls_tables: toArray(contracts.rls?.tables).length ? contracts.rls.tables : ["admin_actions", "provider_balances", "rate_limits", "credit_adjustments"],
-        matrix_path: contracts.rls?.matrix_path || "docs/rls/admin-ops-control-plane.matrix.md",
+        data_tables: toArray(contracts.data?.tables).length ? toArray(contracts.data?.tables) : ["admin_actions", "provider_balances", "rate_limits", "credit_adjustments"],
+        rls_tables: toArray(contracts.rls?.tables).length ? toArray(contracts.rls?.tables) : ["admin_actions", "provider_balances", "rate_limits", "credit_adjustments"],
+        matrix_path: orElse(contracts.rls?.matrix_path, () => "docs/rls/admin-ops-control-plane.matrix.md"),
         evidence_append: [
           {
             command: "manual admin smoke and authorization review",
@@ -224,7 +285,7 @@ function buildManifestScaffolds(build) {
     );
   }
 
-  if (String(build.build_id).includes("ai-image-generation")) {
+  if (build.build_id.includes("ai-image-generation")) {
     add(
       "image_regression_evidence",
       "patch",
@@ -250,7 +311,7 @@ function buildManifestScaffolds(build) {
             notes: "Record proxy-only delivery and tenant isolation proof.",
           },
         ],
-        last_verified_at: verification.last_verified_at || "<ISO-8601>",
+        last_verified_at: orElse(verification.last_verified_at, () => "<ISO-8601>"),
       },
       "thin"
     );
@@ -262,8 +323,8 @@ function buildManifestScaffolds(build) {
       "The image build is ahead of the others, but the RLS matrix anchor is still too soft for later promotion.",
       ["storage tables", "job tables", "RLS matrix doc path"],
       {
-        rls_tables: toArray(contracts.rls?.tables).length ? contracts.rls.tables : ["generation_jobs", "generated_assets"],
-        matrix_path: contracts.rls?.matrix_path || "docs/rls/ai-image-generation.matrix.md",
+        rls_tables: toArray(contracts.rls?.tables).length ? toArray(contracts.rls?.tables) : ["generation_jobs", "generated_assets"],
+        matrix_path: orElse(contracts.rls?.matrix_path, () => "docs/rls/ai-image-generation.matrix.md"),
       },
       "thin"
     );
@@ -310,34 +371,25 @@ function buildManifestScaffolds(build) {
     name: build.name,
     source_project: build.source_project,
     manifest_path: build.manifest_path,
-    handoff_refs: buildHandoffPaths(build),
+    handoff_refs: buildHandoffPaths({
+      artifact_id: typeof build.artifact_id === 'string' ? build.artifact_id : undefined,
+      build_id: build.build_id,
+      source_project: typeof build.source_project === 'string' ? build.source_project : undefined,
+    }),
     scaffolds,
     companion_stubs: buildCompanionStubs(build, missingDocs, buildSlug),
   };
 }
 
-function collectMissingDeclaredDocs(build) {
+function collectMissingDeclaredDocs(build: ScaffoldBuild): string[] {
   return toArray(build.publishBundle?.report?.findings)
     .filter((entry) => entry.rule_id === "missing-declared-path")
-    .map((entry) => String(entry.evidence || "").trim())
+    .map((entry) => (orElse(entry.evidence, () => "")).trim())
     .filter(Boolean);
 }
 
-function buildCompanionStubs(build, missingDocs, buildSlug) {
-  /** @type {Array<{
-   * kind: string,
-   * path: string,
-   * template_ref?: string,
-   * template?: {title: string, sections: string[]},
-   * reason: string
-   * }>} */
-  const stubs: Array<{
-    kind: string;
-    path: string;
-    template_ref?: string;
-    template?: { title: string; sections: string[] };
-    reason: string;
-  }> = [
+function buildCompanionStubs(build: ScaffoldBuild, missingDocs: string[], buildSlug: string): CompanionStub[] {
+  const stubs: CompanionStub[] = [
     {
       kind: "verification_record",
       path: `security/build-evidence/${buildSlug}.verification.json`,
@@ -350,11 +402,17 @@ function buildCompanionStubs(build, missingDocs, buildSlug) {
       kind: "doc_stub",
       path: docPath,
       template: {
-        title: build.name,
+        title: String(orElse(build.name, () => build.build_id)),
         sections: ["What This Build Does", "Install Steps", "Required Ports", "Verification", "Known Traps", "Rollback"],
       },
       reason: "Manifest declares this doc path, but the publish lane could not resolve it.",
     });
   }
   return stubs;
+}
+
+function stringOptions(args: Record<string, string | boolean | string[]>): Record<string, string | undefined> {
+  return Object.fromEntries(
+    Object.entries(args).flatMap(([key, value]) => typeof value === 'string' ? [[key, value]] : []),
+  );
 }

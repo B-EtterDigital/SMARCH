@@ -73,7 +73,7 @@ function validationError(tool, field, expectation) {
  * @param {unknown} input
  * @returns {ToolInput}
  */
-export function validateInput(tool, schema, input) {
+function validateInput(tool, schema, input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw validationError(tool, "$", "object");
   }
@@ -175,7 +175,7 @@ export function boundedDiagnosticValue(value, depth = 0) {
  * @param {McpToolError | McpErrorLike} error
  * @param {number} durationMs
  */
-export function emitFailure(tool, error, durationMs) {
+function emitFailure(tool, error, durationMs) {
   console.error(JSON.stringify({
     area: `mcp:${tool}`,
     severity: "error",

@@ -599,7 +599,10 @@ function assertManifestValid(manifestPath, manifest, schema) {
   const schemaErrors = validateAgainstSchema(manifest, schema, schema);
   assert.equal(schemaErrors.length, 0, `${manifestPath} failed JSON schema validation:\n${schemaErrors.join("\n")}`);
 
-  const semanticReport = validateManifest(manifestPath, manifest);
+  const semanticReport = validateManifest(
+    manifestPath,
+    /** @type {Parameters<typeof validateManifest>[1]} */ (manifest),
+  );
   assert.equal(
     semanticReport.errors.length,
     0,

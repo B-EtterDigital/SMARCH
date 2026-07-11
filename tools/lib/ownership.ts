@@ -60,7 +60,7 @@ function readJson(path: string): unknown {
 // --- ownership --------------------------------------------------------------
 
 let _owners: OwnersConfig | undefined;
-export function loadOwners(): OwnersConfig {
+function loadOwners(): OwnersConfig {
   if (_owners) return _owners;
   const parsed = readJson(OWNERS);
   const data = isRecord(parsed) ? parsed : {};
@@ -138,4 +138,4 @@ export function sameIdentity(a: unknown, b: unknown): boolean {
 }
 
 // test seam
-export function _reset() { _owners = undefined; _identityIndex = undefined; }
+function _reset() { _owners = undefined; _identityIndex = undefined; }

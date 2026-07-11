@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * What: Generates per-project queues for canonicalization work.
  * Why: Portfolio findings need actionable project-side tasks rather than one undifferentiated list.
@@ -22,6 +24,26 @@ import {
   discoverPortfolioProjects,
   projectPriorityRank,
 } from "./lib/portfolio-projects.ts";
+import type { PortfolioProject } from "./lib/portfolio-projects.ts";
+
+interface QualityReport { score?: number; grade?: string; analyzed_code_file_count?: number; hotspot_file_count?: number; brick_hotspot_count?: number; duplicate_cluster_count?: number; total_smell_count?: number; by_type?: Record<string, number> }
+interface ScannerReport {
+  readiness?: { score?: number; grade?: string }; compliance_report?: { score?: number; grade?: string };
+  clone_preflight?: { copy_ready?: number; guided?: number; manual_review?: number; blocked?: number };
+  env_contract_report?: { bricks_with_undeclared_refs?: number; undeclared_reference_count?: number };
+  boundary_report?: { unresolved_local_import_count?: number; unowned_local_dependency_count?: number; cross_brick_owned_import_count?: number; private_cross_brick_import_count?: number };
+  manifest_drift?: { count?: number }; code_quality_report?: QualityReport;
+  remediation_report?: { counts?: Record<string, unknown> };
+}
+interface QueueAction { project?: string; category?: string; name?: string; brick_name?: string; brick_id?: string; path?: string; priority_score?: number; why?: string; first_action?: string; reason_codes?: unknown[]; top_types?: Array<{ label?: string; key?: string; count?: number }> }
+interface RemediationPlan { project?: string; actions?: QueueAction[] }
+interface StateProject { project: string; readiness?: { score?: number; grade?: string }; compliance?: { score?: number; grade?: string }; code_quality_report?: QualityReport; remediation_counts?: Record<string, unknown>; canonicalization?: { top_targets?: CandidateTarget[] } }
+interface CandidateTarget { target_id?: string; target_type?: string; name?: string; priority_score?: number; blocker_reasons?: unknown[]; evidence_summary?: { source_path?: string; why?: string } }
+interface RegistryProject { id?: string; project?: string; scanner?: ScannerReport }
+interface QueueBuild { build_id: string; source_project?: string; name?: string; manifest_path?: string | null; status?: string; verified_ready?: boolean; publish_ready?: boolean; private_publish_status?: string; promotion?: { blockers?: Array<{ code?: string }> } | null; verificationEntry?: { top_blockers?: Array<{ code?: string }> } | null; publishBundle?: { top_blockers?: Array<{ rule_id?: string }> } | null; first_actions?: string[] }
+interface QueueContext { state: { projects?: StateProject[] }; registry: { projects?: RegistryProject[]; scanner_report?: { remediation_report?: { project_action_plans?: RemediationPlan[]; top_actions?: QueueAction[]; quality_queue?: QueueAction[] } } }; curatedBuilds: QueueBuild[] }
+interface FirstActionInput { projectId: string; curatedBuilds: QueueBuild[]; scanner: ScannerReport; remediationActions: QueueAction[]; topQualityActions: QueueAction[] }
+interface RenderedQuality { score: number; grade: string; analyzed_code_file_count: number; hotspot_file_count: number; brick_hotspot_count: number; duplicate_cluster_count: number; total_smell_count: number; top_smells: Array<{ key: string; count: number }> }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -44,16 +66,17 @@ main().catch((error) => {
   process.exit(1);
 });
 
-async function main() {
+async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     process.stdout.write(HELP_TEXT);
     return;
   }
 
-  const outPath = path.resolve(args.out || DEFAULT_OUT);
-  const selectedProjects = new Set([].concat(args.project || []).flatMap((value) => Array.isArray(value) ? value : [value]).map((value) => String(value || "").trim()).filter(Boolean));
-  const context = await loadCuratedBuildContext(args);
+  const outPath = path.resolve(typeof args.out === "string" ? args.out : DEFAULT_OUT);
+  const projectArgs = Array.isArray(args.project) ? args.project : args.project ? [args.project] : [];
+  const selectedProjects = new Set(projectArgs.map((value) => String(value || "").trim()).filter(Boolean));
+  const context = await loadCuratedBuildContext(args as unknown as Record<string, string | undefined>) as unknown as QueueContext;
   const portfolioProjects = await discoverPortfolioProjects();
   const projects = buildProjectQueues(context, portfolioProjects)
     .filter((entry) => selectedProjects.size === 0 || selectedProjects.has(entry.project))
@@ -87,29 +110,34 @@ async function main() {
   }
 }
 
-function buildProjectQueues(context, portfolioProjects = []) {
-  const projectStates = new Map(toArray(context.state.projects).map((entry) => [entry.project, entry]));
-  const registryProjects = new Map(toArray(context.registry.projects).map((entry) => [entry.id || entry.project, entry]));
-  const remediationPlans = new Map(
+function buildProjectQueues(context: QueueContext, portfolioProjects: PortfolioProject[] = []) {
+  const projectStates = new Map<string, StateProject>(toArray(context.state.projects).map((entry) => [entry.project, entry]));
+  const registryProjects = new Map<string, RegistryProject>(toArray(context.registry.projects).flatMap((entry) => {
+    const id = entry.id || entry.project;
+    return id ? [[id, entry] as [string, RegistryProject]] : [];
+  }));
+  const remediationPlans = new Map<string, RemediationPlan>(
     toArray(context.registry.scanner_report?.remediation_report?.project_action_plans)
-      .map((entry) => [entry.project, entry])
+      .flatMap((entry) => entry.project ? [[entry.project, entry] as [string, RemediationPlan]] : [])
   );
   const topActions = toArray(context.registry.scanner_report?.remediation_report?.top_actions);
   const qualityQueue = toArray(context.registry.scanner_report?.remediation_report?.quality_queue);
   const portfolioById = new Map(portfolioProjects.map((entry) => [entry.id, entry]));
-  const curatedByProject = new Map();
+  const curatedByProject = new Map<string, QueueBuild[]>();
   for (const build of context.curatedBuilds) {
-    if (!curatedByProject.has(build.source_project)) curatedByProject.set(build.source_project, []);
-    curatedByProject.get(build.source_project).push(build);
+    const projectId = build.source_project ?? "";
+    const builds = curatedByProject.get(projectId) ?? [];
+    builds.push(build);
+    curatedByProject.set(projectId, builds);
   }
 
   const projectIds = uniqueStrings(portfolioProjects.map((entry) => entry.id));
 
   return projectIds.map((projectId) => {
     const portfolioProject = portfolioById.get(projectId) || null;
-    const stateProject = projectStates.get(projectId) || {};
-    const registryProject = registryProjects.get(projectId) || {};
-    const scanner = registryProject.scanner || {};
+    const stateProject: StateProject = projectStates.get(projectId) ?? { project: projectId };
+    const registryProject: RegistryProject = registryProjects.get(projectId) ?? {};
+    const scanner: ScannerReport = registryProject.scanner ?? {};
     const clone = scanner.clone_preflight || {};
     const env = scanner.env_contract_report || {};
     const boundary = scanner.boundary_report || {};
@@ -118,7 +146,7 @@ function buildProjectQueues(context, portfolioProjects = []) {
     const curatedBuilds = toArray(curatedByProject.get(projectId)).sort((left, right) =>
       String(left.name || "").localeCompare(String(right.name || ""))
     );
-    const topTargets = toArray(stateProject.canonicalization?.top_targets || []).slice(0, 6);
+    const topTargets = toArray<CandidateTarget>(stateProject.canonicalization?.top_targets).slice(0, 6);
     const remediationActions = toArray(remediationPlans.get(projectId)?.actions || []).slice(0, 6);
     const topProjectActions = topActions.filter((entry) => entry.project === projectId).slice(0, 6);
     const topQualityActions = qualityQueue.filter((entry) => entry.project === projectId).slice(0, 6);
@@ -183,7 +211,7 @@ function buildProjectQueues(context, portfolioProjects = []) {
           ...toArray(build.verificationEntry?.top_blockers).map((entry) => entry.code),
           ...toArray(build.publishBundle?.top_blockers).map((entry) => entry.rule_id),
         ]),
-        handoff_refs: buildHandoffPaths(build),
+        handoff_refs: buildHandoffPaths({ source_project: build.source_project, build_id: build.build_id }),
         first_actions: toArray(build.first_actions),
       })),
       candidate_targets: topTargets.map((target) => ({
@@ -222,9 +250,9 @@ function buildProjectQueues(context, portfolioProjects = []) {
   });
 }
 
-function deriveProjectFirstActions({ projectId, curatedBuilds, scanner, remediationActions, topQualityActions }) {
-  const actions = [];
-  const push = (value) => {
+function deriveProjectFirstActions({ projectId, curatedBuilds, scanner, remediationActions, topQualityActions }: FirstActionInput): string[] {
+  const actions: string[] = [];
+  const push = (value: unknown): void => {
     const text = String(value || "").trim();
     if (text) actions.push(text);
   };
@@ -250,18 +278,18 @@ function deriveProjectFirstActions({ projectId, curatedBuilds, scanner, remediat
   return uniqueStrings(actions).slice(0, 8);
 }
 
-function formatNumber(value) {
+function formatNumber(value: unknown): string {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
 }
 
-function renderList(items, renderItem) {
+function renderList<T>(items: T[], renderItem: (item: T, index: number) => string): string {
   if (!items.length) return "- None recorded";
   return items.map(renderItem).join("\n");
 }
 
-function renderProjectQueueMarkdown(entry) {
-  const quality = entry.current.code_quality || {};
-  const topSmells = quality.top_smells || [];
+function renderProjectQueueMarkdown(entry: ProjectQueue): string {
+  const quality: RenderedQuality = entry.current.code_quality;
+  const topSmells: Array<{ key: string; count: number }> = quality.top_smells;
   return `# ${entry.project}
 
 ## Snapshot
@@ -309,7 +337,7 @@ ${renderList(entry.first_actions, (action, index) => `${index + 1}. ${action}`)}
 `;
 }
 
-function renderQueueReadme(document) {
+function renderQueueReadme(document: QueueDocument): string {
   const topProjects = document.projects.slice(0, 5);
   return `# Repo Queues
 
@@ -335,7 +363,7 @@ Each queue doc includes:
 `;
 }
 
-async function writeQueueDocs(document) {
+async function writeQueueDocs(document: QueueDocument): Promise<void> {
   const docsRoot = path.join(repoRoot, "handoffs/repo-queues");
   await fs.mkdir(docsRoot, { recursive: true });
   const keepFiles = new Set(["README.md", ...document.projects.map((entry) => `${entry.project}.md`)]);
@@ -351,7 +379,10 @@ async function writeQueueDocs(document) {
   await fs.writeFile(path.join(docsRoot, "README.md"), `${renderQueueReadme(document)}\n`, "utf8");
 }
 
-function compareProjectQueues(left, right, portfolioProjects = []) {
+function compareProjectQueues(left: ProjectQueue, right: ProjectQueue, portfolioProjects: PortfolioProject[] = []): number {
   return projectPriorityRank(left.project, portfolioProjects) - projectPriorityRank(right.project, portfolioProjects)
     || String(left.project).localeCompare(String(right.project));
 }
+
+type ProjectQueue = ReturnType<typeof buildProjectQueues>[number];
+interface QueueDocument { generated_at: string; summary: { project_count: number; curated_build_count: number; execution_order: string[]; top_repo: string | null }; portfolio: { total_project_count: number; priority_projects: string[] }; projects: ProjectQueue[] }

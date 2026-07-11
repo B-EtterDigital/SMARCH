@@ -43,11 +43,11 @@ export function modulesOverlap(left: ModulePathSpec | null | undefined, right: M
   return overlappingModulePathPairs(left, right).length > 0;
 }
 
-export function pathsOverlap(leftPaths: string[], rightPaths: string[]): boolean {
+function pathsOverlap(leftPaths: string[], rightPaths: string[]): boolean {
   return overlappingPathPairs(leftPaths, rightPaths).length > 0;
 }
 
-export function overlappingPathPairs(leftPaths: string[], rightPaths: string[]): PathOverlapPair[] {
+function overlappingPathPairs(leftPaths: string[], rightPaths: string[]): PathOverlapPair[] {
   return overlappingPathPairsWithExcludes(leftPaths, rightPaths, [], []);
 }
 
@@ -60,7 +60,7 @@ export function overlappingModulePathPairs(leftModule: ModulePathSpec | null | u
   );
 }
 
-export function overlappingPathPairsWithExcludes(leftPaths: string[], rightPaths: string[], leftExcludePaths: string[], rightExcludePaths: string[]): PathOverlapPair[] {
+function overlappingPathPairsWithExcludes(leftPaths: string[], rightPaths: string[], leftExcludePaths: string[], rightExcludePaths: string[]): PathOverlapPair[] {
   const pairs: PathOverlapPair[] = [];
   for (const left of leftPaths) {
     for (const right of rightPaths) {
@@ -73,7 +73,7 @@ export function overlappingPathPairsWithExcludes(leftPaths: string[], rightPaths
   return pairs;
 }
 
-export function patternCoveredByAnyExclude(pattern: string, excludePaths: string[]): boolean {
+function patternCoveredByAnyExclude(pattern: string, excludePaths: string[]): boolean {
   return (excludePaths || []).some((exclude) => pathPatternCovers(exclude, pattern));
 }
 
@@ -94,7 +94,7 @@ export function pathPatternCovers(coverPattern: string, targetPattern: string): 
   return true;
 }
 
-export function pathPatternOverlap(left: string, right: string): boolean {
+function pathPatternOverlap(left: string, right: string): boolean {
   const a = globBase(left);
   const b = globBase(right);
   if (!a || !b) return false;
@@ -108,7 +108,7 @@ export function pathPatternOverlap(left: string, right: string): boolean {
   return true;
 }
 
-export function globBase(pattern: string): string {
+function globBase(pattern: string): string {
   let value = String(pattern || '').replace(/\\/g, '/').trim();
   if (!value) return '';
   const wildcard = value.search(/[*{[]/);
@@ -121,7 +121,7 @@ export function globBase(pattern: string): string {
   return parts.join('/');
 }
 
-export function literalFileTokens(pattern: string): string[] {
+function literalFileTokens(pattern: string): string[] {
   const file = String(pattern || '').replace(/\\/g, '/').split('/').pop() || '';
   return file
     .replace(/\*\*/g, '*')

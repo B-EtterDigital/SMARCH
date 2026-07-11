@@ -43,30 +43,61 @@ const FINGERPRINT_LEDGER = resolve(SMA_ROOT, 'security/brick-fingerprints.genera
 const ANCHOR = resolve(SMA_ROOT, 'registry/anchor.generated.json');
 const OUT_ROOT = resolve(SMA_ROOT, 'releases/attestations');
 
-type CliArgs = Record<string, any>;
+type CliArgs = {
+  all?: boolean;
+  brick?: string;
+  json?: boolean;
+  timestamp?: string;
+};
+type Seal = { head?: string; [key: string]: unknown };
+type ProvenanceRow = {
+  brick_id: string;
+  project?: string | null;
+  seal?: Seal;
+  created_by?: Record<string, unknown> | null;
+  contributors?: Array<Record<string, unknown>>;
+  commit_count?: number | null;
+};
+type LicenseRow = {
+  brick_id: string;
+  spdx?: string | null;
+  license_class?: string | null;
+  openness?: string | null;
+  visibility?: string | null;
+  attribution_required?: boolean | null;
+};
+type FingerprintRow = {
+  brick_id: string;
+  project?: string | null;
+  content_hash?: string | null;
+  file_count?: number | null;
+  byte_count?: number | null;
+};
+type Ledger<T> = { provenance?: T[]; licenses?: T[]; fingerprints?: T[] };
+type Anchor = { root?: string | null; anchor_digest?: string | null };
 
 const args = parseArgs(process.argv.slice(2));
 
 try {
   main();
 } catch (err) {
-  console.error(`sma-attest: ${err.message}`);
+  console.error(`sma-attest: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(1);
 }
 
 function main() {
-  const prov = loadJson(PROV_LEDGER, 'provenance ledger', 'sma-provenance-ledger.ts');
-  const lic = loadJson(LICENSE_LEDGER, 'license ledger', 'sma-provenance-ledger.ts');
-  const fp = loadJson(FINGERPRINT_LEDGER, 'fingerprint ledger', 'sma-provenance-ledger.ts');
-  const anchor = loadJson(ANCHOR, 'anchor', 'sma-anchor.ts');
+  const prov = loadJson<Ledger<ProvenanceRow>>(PROV_LEDGER, 'provenance ledger', 'sma-provenance-ledger.ts');
+  const lic = loadJson<Ledger<LicenseRow>>(LICENSE_LEDGER, 'license ledger', 'sma-provenance-ledger.ts');
+  const fp = loadJson<Ledger<FingerprintRow>>(FINGERPRINT_LEDGER, 'fingerprint ledger', 'sma-provenance-ledger.ts');
+  const anchor = loadJson<Anchor>(ANCHOR, 'anchor', 'sma-anchor.ts');
 
-  const provIndex = indexBy(prov.provenance, 'brick_id');
-  const licIndex = indexBy(lic.licenses, 'brick_id');
-  const fpIndex = indexBy(fp.fingerprints, 'brick_id');
+  const provIndex = indexBy(prov.provenance);
+  const licIndex = indexBy(lic.licenses);
+  const fpIndex = indexBy(fp.fingerprints);
 
   // Merkle basis — EXACTLY as sma-anchor.ts: sealed rows only, sorted by brick_id.
-  const rows = (prov.provenance || [])
-    .filter((p) => p.seal && p.seal.head)
+  const rows = (prov.provenance ?? [])
+    .filter((p): p is ProvenanceRow & { seal: Seal & { head: string } } => typeof p.seal?.head === 'string')
     .map((p) => ({ brick_id: p.brick_id, head: p.seal.head }))
     .sort((a, b) => a.brick_id.localeCompare(b.brick_id));
   const leaves = rows.map((r) => leafHash(r.brick_id, r.head));
@@ -94,25 +125,25 @@ function main() {
     const idx = rowIndex.get(brickId);
     if (idx === undefined) throw new Error(`brick not present in sealed set: ${brickId}`);
 
-    const fpRow = fpIndex.get(brickId) || {};
-    const licRow = licIndex.get(brickId) || {};
+    const fpRow = fpIndex.get(brickId);
+    const licRow = licIndex.get(brickId);
     const brick = {
       brick_id: brickId,
-      project: provRow.project || fpRow.project || null,
-      content_hash: fpRow.content_hash || null,
-      file_count: fpRow.file_count ?? null,
-      byte_count: fpRow.byte_count ?? null,
-      spdx: licRow.spdx || null,
-      license_class: licRow.license_class || null,
-      openness: licRow.openness || null,
-      visibility: licRow.visibility || null,
-      attribution_required: licRow.attribution_required ?? null,
+      project: provRow.project || fpRow?.project || null,
+      content_hash: fpRow?.content_hash || null,
+      file_count: fpRow?.file_count ?? null,
+      byte_count: fpRow?.byte_count ?? null,
+      spdx: licRow?.spdx || null,
+      license_class: licRow?.license_class || null,
+      openness: licRow?.openness || null,
+      visibility: licRow?.visibility || null,
+      attribution_required: licRow?.attribution_required ?? null,
       seal: provRow.seal,
       created_by: provRow.created_by || null,
       contributors: provRow.contributors || [],
       commit_count: provRow.commit_count ?? null,
     };
-    const components = []; // no sub-component source in these ledgers
+    const components: Parameters<typeof intotoStatement>[1] = []; // no sub-component source in these ledgers
 
     const proof = inclusionProof(layers, idx);
     if (!verifyBrickInclusion(brickId, provRow.seal.head, proof, root)) {
@@ -121,9 +152,10 @@ function main() {
 
     const dir = resolve(OUT_ROOT, sanitizeDir(brickId));
     mkdirSync(dir, { recursive: true });
-    writeJson(resolve(dir, 'intoto.json'), intotoStatement(brick, components, timestamp));
-    writeJson(resolve(dir, 'sbom.spdx.json'), spdxDocument(brick, components, timestamp));
-    writeJson(resolve(dir, 'sbom.cdx.json'), cyclonedxDocument(brick, components, timestamp));
+    const attestationBrick = brick as unknown as Parameters<typeof intotoStatement>[0];
+    writeJson(resolve(dir, 'intoto.json'), intotoStatement(attestationBrick, components, timestamp));
+    writeJson(resolve(dir, 'sbom.spdx.json'), spdxDocument(attestationBrick, components, timestamp));
+    writeJson(resolve(dir, 'sbom.cdx.json'), cyclonedxDocument(attestationBrick, components, timestamp));
     writeJson(resolve(dir, 'inclusion-proof.json'), {
       brick_id: brickId,
       seal_head: provRow.seal.head,
@@ -164,16 +196,16 @@ function main() {
 
 // --- helpers ---------------------------------------------------------------
 
-function loadJson(path: string, label: string, producer: string): any {
+function loadJson<T>(path: string, label: string, producer: string): T {
   if (!existsSync(path)) {
     throw new Error(`${label} not found: ${rel(path)}. Run: node tools/${producer}`);
   }
-  return JSON.parse(readFileSync(path, 'utf8'));
+  return JSON.parse(readFileSync(path, 'utf8')) as T;
 }
 
-function indexBy(arr: any[], key: string): Map<any, any> {
-  const m = new Map();
-  for (const row of arr || []) if (row && row[key] != null) m.set(row[key], row);
+function indexBy<T extends { brick_id: string }>(arr: T[] | undefined): Map<string, T> {
+  const m = new Map<string, T>();
+  for (const row of arr ?? []) if (row.brick_id) m.set(row.brick_id, row);
   return m;
 }
 
@@ -198,10 +230,14 @@ function parseArgs(list: string[]): CliArgs {
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase());
     const next = list[i + 1];
-    if (next === undefined || next.startsWith('--')) { out[key] = true; continue; }
-    out[key] = next; i += 1;
+    if (next === undefined || next.startsWith('--')) {
+      if (key === 'all' || key === 'json') out[key] = true;
+      continue;
+    }
+    if (key === 'brick' || key === 'timestamp') out[key] = next;
+    i += 1;
   }
   return out;
 }

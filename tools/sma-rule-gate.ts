@@ -21,23 +21,95 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
 const DEFAULTS = {
-  projectsRoot: process.env.SMA_PROJECTS_ROOT || PROJECTS_ROOT,
+  projectsRoot: process.env.SMA_PROJECTS_ROOT ?? PROJECTS_ROOT,
   reportDir: path.resolve(repoRoot, "security"),
 };
+
+interface ManifestInput {
+  build?: { id?: string; runtimes?: string[] };
+  source?: { project?: string; paths?: string[] };
+}
+
+interface RuleContext {
+  manifest: ManifestInput;
+  projectRoot: string;
+  declaredSourcePaths: string[];
+  sourceFiles: string[];
+}
+
+interface Finding {
+  file: string;
+  line: number;
+  snippet: string;
+}
+
+interface RuleCheckResult {
+  findings: Finding[];
+  truncated?: boolean;
+}
+
+interface RuleDefinition {
+  id: string;
+  severity: 'block' | 'warn';
+  description: string;
+  applies: (manifest: ManifestInput) => boolean;
+  check: (context: RuleContext) => RuleCheckResult | Promise<RuleCheckResult>;
+}
+
+interface CliOptions {
+  projectsRoot: string;
+  manifest?: string;
+  all?: boolean;
+  report?: string;
+  json?: boolean;
+  warnOnly?: boolean;
+  help?: boolean;
+}
+
+interface RuleReport {
+  id: string;
+  severity: 'block' | 'warn';
+  description?: string;
+  status: 'pass' | 'block' | 'warn' | 'skipped';
+  reason?: string;
+  findings: Finding[];
+  totalFindings: number;
+  truncated?: boolean;
+}
+
+interface ManifestReport {
+  manifest: string;
+  build_id?: string;
+  project?: string;
+  projectRoot: string | null;
+  blockingFindings: number;
+  warningFindings: number;
+  rules: RuleReport[];
+}
+
+interface CombinedReport {
+  generated_at: string;
+  status: 'warn' | 'checked';
+  manifests: number;
+  blocking: number;
+  warning: number;
+  warnings: string[];
+  reports: ManifestReport[];
+}
 
 // ---------------------------------------------------------------------------
 // Rule registry. Each rule declares: id, severity, applies(manifest) -> bool,
 // check(ctx) -> { findings: [{file, line, snippet}], summary }
 // ---------------------------------------------------------------------------
 
-const RULES = [
+const RULES: RuleDefinition[] = [
   {
     id: "R1.no-prod-console-log",
     severity: "block",
     description: "No console.log() in production source files. Use a logger or strip.",
-    applies: (m) => true,
-    async check(ctx) {
-      const findings = [];
+    applies: (_manifest: ManifestInput) => true,
+    async check(ctx: RuleContext) {
+      const findings: Finding[] = [];
       for (const file of ctx.sourceFiles) {
         if (isScript(file) || isLogger(file) || isTest(file)) continue;
         const text = await safeRead(file);
@@ -57,9 +129,9 @@ const RULES = [
     id: "R8.no-hex-outside-tokens",
     severity: "warn",
     description: "No hex color literals outside theme/token files (SS Rule 8).",
-    applies: (m) => isUiBrick(m),
-    async check(ctx) {
-      const findings = [];
+    applies: (manifest: ManifestInput) => isUiBrick(manifest),
+    async check(ctx: RuleContext) {
+      const findings: Finding[] = [];
       const re = /#[0-9a-fA-F]{6}\b/;
       for (const file of ctx.sourceFiles) {
         if (!/\.(ts|tsx)$/.test(file)) continue;
@@ -81,9 +153,9 @@ const RULES = [
     id: "SS8.no-select-star",
     severity: "block",
     description: "No select('*') in production query code (SS Rule 3 / SS8).",
-    applies: (m) => true,
-    async check(ctx) {
-      const findings = [];
+    applies: (_manifest: ManifestInput) => true,
+    async check(ctx: RuleContext) {
+      const findings: Finding[] = [];
       for (const file of ctx.sourceFiles) {
         if (!/\.(ts|tsx|js|mjs)$/.test(file)) continue;
         if (isTest(file)) continue;
@@ -104,8 +176,8 @@ const RULES = [
     severity: "block",
     description: "Every declared source.paths[] entry must exist on disk.",
     applies: () => true,
-    async check(ctx) {
-      const findings = [];
+    check(ctx: RuleContext) {
+      const findings: Finding[] = [];
       if (!ctx.projectRoot) return { findings };
       for (const p of ctx.declaredSourcePaths) {
         const abs = path.join(ctx.projectRoot, p);
@@ -145,19 +217,19 @@ Exit codes:
   2  configuration / IO error
 `;
 
-async function main() {
+async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) { console.log(HELP); process.exit(0); }
 
   const manifests = await resolveManifests(opts);
 
-  const reports = [];
+  const reports: ManifestReport[] = [];
   for (const manifestPath of manifests) {
     const report = await gateOne(manifestPath, opts);
     reports.push(report);
   }
 
-  const combined = {
+  const combined: CombinedReport = {
     generated_at: new Date().toISOString(),
     status: reports.length === 0 ? "warn" : "checked",
     manifests: reports.length,
@@ -185,25 +257,22 @@ async function main() {
   if (combined.blocking > 0 && !opts.warnOnly) process.exit(1);
 }
 
-async function gateOne(manifestPath, opts) {
-  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
-  const projectRoot = await resolveProjectRoot(manifest, opts.projectsRoot);
-  const ctx = {
-    manifest,
-    projectRoot,
-    declaredSourcePaths: manifest.source?.paths ?? [],
-    sourceFiles: projectRoot ? await collectSourceFiles(projectRoot, manifest.source?.paths ?? []) : [],
-  };
+async function gateOne(manifestPath: string, opts: CliOptions): Promise<ManifestReport> {
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ManifestInput;
+  const projectRoot = resolveProjectRoot(manifest, opts.projectsRoot);
+  const declaredSourcePaths = manifest.source?.paths ?? [];
+  const sourceFiles = projectRoot ? await collectSourceFiles(projectRoot, declaredSourcePaths) : [];
 
-  const ruleReports = [];
+  const ruleReports: RuleReport[] = [];
   let blocking = 0, warning = 0;
   for (const rule of RULES) {
     if (!rule.applies(manifest)) continue;
     if (!projectRoot) {
-      ruleReports.push({ id: rule.id, severity: rule.severity, status: "skipped", reason: "project root not resolved" });
+      ruleReports.push({ id: rule.id, severity: rule.severity, status: "skipped", reason: "project root not resolved", findings: [], totalFindings: 0 });
       continue;
     }
-    const { findings = [], truncated } = await rule.check(ctx) as { findings?: any[]; truncated?: boolean };
+    const ctx: RuleContext = { manifest, projectRoot, declaredSourcePaths, sourceFiles };
+    const { findings, truncated } = await rule.check(ctx);
     const status = findings.length === 0 ? "pass" : (rule.severity === "block" ? "block" : "warn");
     ruleReports.push({ id: rule.id, severity: rule.severity, description: rule.description, status, findings: findings.slice(0, 25), totalFindings: findings.length, truncated });
     if (status === "block") blocking += findings.length;
@@ -225,8 +294,8 @@ async function gateOne(manifestPath, opts) {
 // helpers
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv: string[]): Record<string, any> {
-  const out: Record<string, any> = { projectsRoot: DEFAULTS.projectsRoot };
+function parseArgs(argv: string[]): CliOptions {
+  const out: CliOptions = { projectsRoot: DEFAULTS.projectsRoot };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i], n = argv[i + 1];
     if (a === "--manifest") { out.manifest = n; i += 1; }
@@ -240,18 +309,18 @@ function parseArgs(argv: string[]): Record<string, any> {
   return out;
 }
 
-async function resolveManifests(opts: Record<string, any>): Promise<string[]> {
+async function resolveManifests(opts: CliOptions): Promise<string[]> {
   if (opts.manifest) return [path.resolve(opts.manifest)];
   if (opts.all) {
     const root = path.resolve(repoRoot, "builds");
-    return await walkManifests(root);
+    return walkManifests(root);
   }
   return [];
 }
 
-async function walkManifests(root) {
-  const out = [];
-  async function walk(dir) {
+async function walkManifests(root: string): Promise<string[]> {
+  const out: string[] = [];
+  async function walk(dir: string): Promise<void> {
     let entries;
     try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
@@ -264,30 +333,30 @@ async function walkManifests(root) {
   return out;
 }
 
-async function resolveProjectRoot(manifest, _projectsRoot) {
+function resolveProjectRoot(manifest: ManifestInput, _projectsRoot: string): string | null {
   // Delegated to tools/lib/project-paths.ts — the canonical resolver
   // that handles the curated override map (e.g. acme-desktop → acme-desktop)
   // and case-insensitive fallback. Register new external projects there.
   return canonicalResolveProjectRoot(manifest.source?.project);
 }
 
-async function collectSourceFiles(projectRoot, declaredPaths) {
+async function collectSourceFiles(projectRoot: string, declaredPaths: string[]): Promise<string[]> {
   const exts = new Set([".ts", ".tsx", ".js", ".mjs", ".jsx"]);
-  const files = [];
+  const files: string[] = [];
   for (const decl of declaredPaths) {
     const abs = path.join(projectRoot, decl);
     if (!existsSync(abs)) continue;
     const stat = await fs.stat(abs);
     if (stat.isFile()) { files.push(abs); continue; }
-    await walkDir(abs, (f) => {
-      const ext = path.extname(f);
-      if (exts.has(ext)) files.push(f);
+    await walkDir(abs, (file: string) => {
+      const ext = path.extname(file);
+      if (exts.has(ext)) files.push(file);
     });
   }
   return files;
 }
 
-async function walkDir(dir, onFile) {
+async function walkDir(dir: string, onFile: (file: string) => void): Promise<void> {
   let entries;
   try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
   for (const e of entries) {
@@ -298,55 +367,55 @@ async function walkDir(dir, onFile) {
   }
 }
 
-async function safeRead(file) {
+async function safeRead(file: string): Promise<string | null> {
   try { return await fs.readFile(file, "utf8"); } catch { return null; }
 }
 
-function rel(file, root) { return root ? path.relative(root, file) : file; }
+function rel(file: string, root: string | null): string { return root ? path.relative(root, file) : file; }
 
-function isScript(file) { return /\/scripts\//.test(file); }
-function isLogger(file) { return /\/(logger|AgentLogger|debug)\.(ts|tsx|js|mjs)$/.test(file); }
-function isTest(file) { return /\.(test|spec)\.(ts|tsx|js|mjs)$|\/__tests__\/|\/0000testing\//.test(file); }
-function isTokenFile(file) { return /\/(theme|themes|tokens|design-tokens|colorTokens|comicColorTokenSets|comicThemeModes)/.test(file) || /tailwind\.config\./.test(file); }
-function isDataFile(file) { return /\/data\//.test(file) || /Template[s]?\.(ts|tsx)$/.test(file); }
-function isUiBrick(m) {
-  const runtimes = m.build?.runtimes ?? [];
+function isScript(file: string): boolean { return file.includes('/scripts/'); }
+function isLogger(file: string): boolean { return /\/(logger|AgentLogger|debug)\.(ts|tsx|js|mjs)$/.test(file); }
+function isTest(file: string): boolean { return /\.(test|spec)\.(ts|tsx|js|mjs)$|\/__tests__\/|\/0000testing\//.test(file); }
+function isTokenFile(file: string): boolean { return /\/(theme|themes|tokens|design-tokens|colorTokens|comicColorTokenSets|comicThemeModes)/.test(file) || file.includes('tailwind.config.'); }
+function isDataFile(file: string): boolean { return file.includes('/data/') || /Template[s]?\.(ts|tsx)$/.test(file); }
+function isUiBrick(manifest: ManifestInput): boolean {
+  const runtimes = manifest.build?.runtimes ?? [];
   return runtimes.includes("browser") || runtimes.includes("electron");
 }
-function isInJsdocExample(lines, i) {
+function isInJsdocExample(lines: string[], i: number): boolean {
   for (let j = i; j >= 0 && j > i - 12; j -= 1) {
-    if (/@example/.test(lines[j])) return true;
+    if (lines[j].includes('@example')) return true;
     if (/^\s*\*\/\s*$/.test(lines[j])) return false;
   }
   return false;
 }
 
-function printSummary(combined) {
+function printSummary(combined: CombinedReport): void {
   if (combined.status === "warn") {
     console.log("[rule-gate] WARN — nothing to check; run npm run scan to discover manifests, then rerun this gate");
     return;
   }
   const verdict = combined.blocking === 0 ? "PASS" : "BLOCK";
-  console.log(`[rule-gate] ${verdict} — ${combined.manifests} manifest(s), ${combined.blocking} blocking, ${combined.warning} warning`);
+  console.log(`[rule-gate] ${verdict} — ${String(combined.manifests)} manifest(s), ${String(combined.blocking)} blocking, ${String(combined.warning)} warning`);
   for (const r of combined.reports) {
     const v = r.blockingFindings === 0 ? "✓" : "✗";
-    console.log(`  ${v} ${r.build_id || r.manifest}`);
+    console.log(`  ${v} ${r.build_id ?? r.manifest}`);
     if (!r.projectRoot) {
       console.log(`      (project root not resolved — source-aware rules skipped)`);
     }
     for (const rule of r.rules) {
       if (rule.status === "pass" || rule.status === "skipped") continue;
       const tag = rule.status === "block" ? "BLOCK" : "WARN ";
-      console.log(`      [${tag}] ${rule.id}: ${rule.totalFindings} finding(s)`);
+      console.log(`      [${tag}] ${rule.id}: ${String(rule.totalFindings)} finding(s)`);
       for (const f of rule.findings.slice(0, 3)) {
-        console.log(`              ${f.file}:${f.line}  ${f.snippet}`);
+        console.log(`              ${f.file}:${String(f.line)}  ${f.snippet}`);
       }
-      if (rule.totalFindings > 3) console.log(`              ... and ${rule.totalFindings - 3} more`);
+      if (rule.totalFindings > 3) console.log(`              ... and ${String(rule.totalFindings - 3)} more`);
     }
   }
 }
 
-main().catch((err) => {
-  console.error("[rule-gate] error:", err.message);
+main().catch((err: unknown) => {
+  console.error("[rule-gate] error:", err instanceof Error ? err.message : String(err));
   process.exit(2);
 });

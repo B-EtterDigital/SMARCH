@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
+/* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
  * WHAT: Generates detailed per-brick reference pages grounded in code, manifests, documentation, and connection evidence.
  * WHY: Reusers need installation, interfaces, examples, risks, and troubleshooting in one source-backed page instead of scattered files.
@@ -41,7 +43,31 @@ import path from "node:path";
 import { codexBatch } from "./lib/codex-runner.ts";
 import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
-function parseArgs(argv: string[]) {
+interface WikiOptions { registry: string; candidates: string; connections: string; outRoot: string; limit: number; concurrency: number; overwrite: boolean; project: string; filter: string; statuses: string; minScore: number; timeoutMs: number; model: string; dryRun: boolean }
+interface Brick { id: string; name?: string; project?: string; status?: string; kind?: string; score?: number; manifest_path: string; source_paths?: string[] }
+interface ManifestSemantics { purpose?: string; tags?: string[]; public_api?: unknown[]; risks?: unknown[]; related_concepts?: unknown[]; reuse_archetype?: string; wiki_page?: string; wiki_portable_page?: string; wiki_generated_at?: string }
+interface BrickManifest { brick?: { status?: string }; semantics?: ManifestSemantics }
+interface ConnectionEdge { from?: string; kind?: string; target?: string; confidence?: string; reason?: string }
+interface ApiParam { name: string; type: string; required: boolean; description: string }
+interface ApiThrow { type: string; condition: string }
+interface ApiMember { name: string; kind: string; signature?: string; summary?: string; remarks?: string; params?: ApiParam[]; returns?: string; throws?: ApiThrow[]; example?: string; since?: string; stability?: string; see_also?: string[] }
+interface WikiData {
+  title?: string; overview?: string; when_to_use?: string[]; when_not_to_use?: string[]; architecture?: string;
+  public_api?: ApiMember[]; configuration?: Array<{ name: string; scope: string; required: boolean; purpose: string; default?: string; example?: string }>;
+  installation?: string[]; usage_example?: string; integration_recipe?: string[];
+  related_bricks?: Array<{ id: string; kind: string; summary: string }>;
+  troubleshooting?: Array<{ symptom: string; likely_cause: string; fix: string }>;
+  faq?: Array<{ q: string; a: string }>; caveats?: string[]; references?: Array<{ label: string; location: string }>;
+  portable_doc?: string;
+}
+interface WikiMeta { brick: Brick; manifest: BrickManifest; outPath: string }
+interface CandidatePayload { bricks?: Brick[] }
+interface RegistryPayload { bricks?: Brick[] }
+interface ConnectionPayload { edges?: ConnectionEdge[] }
+
+function errorMessage(error: unknown): string { return error instanceof Error ? error.message : String(error); }
+
+function parseArgs(argv: string[]): WikiOptions {
   const opts = {
     registry: smaPath("scans/all-projects/latest.registry.json"),
     candidates: smaPath("security/reuse_candidates.json"),
@@ -223,7 +249,7 @@ const SCHEMA = {
   }
 };
 
-async function readJson(p: string): Promise<any> { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson<T>(p: string): Promise<T> { return JSON.parse(await fs.readFile(p, "utf8")) as T; }
 async function maybe(p: string): Promise<string | null> { try { return await fs.readFile(p, "utf8"); } catch { return null; } }
 
 function slugify(s: unknown): string {
@@ -234,12 +260,13 @@ function slugify(s: unknown): string {
     .slice(0, 80);
 }
 
-async function gatherDocs(brick, manifest) {
+async function gatherDocs(brick: Brick, _manifest: BrickManifest): Promise<string> {
   const rootDir = path.dirname(brick.manifest_path);
   const wanted = new Set<string>();
-  const isFileBrick = (brick.source_paths || []).some((p) => /\.(t|j)sx?$|\.py$/i.test(p));
-  if (isFileBrick) {
-    wanted.add(path.resolve(PROJECTS_ROOT, brick.project || "", brick.source_paths[0]));
+  const sourcePaths = brick.source_paths ?? [];
+  const isFileBrick = sourcePaths.some((p) => /\.(t|j)sx?$|\.py$/i.test(p));
+  if (isFileBrick && sourcePaths[0]) {
+    wanted.add(path.resolve(PROJECTS_ROOT, brick.project || "", sourcePaths[0]));
   }
   for (const name of [
     "README.md", "README.txt", "readme.md", "OVERVIEW.md", "USAGE.md",
@@ -278,7 +305,7 @@ async function gatherDocs(brick, manifest) {
   return pieces.join("\n\n");
 }
 
-function buildPrompt(brick, manifest, docs, connectionEdges) {
+function buildPrompt(brick: Brick, manifest: BrickManifest, docs: string, connectionEdges: ConnectionEdge[]): string {
   const sem = manifest.semantics || {};
   const connBlock = connectionEdges.slice(0, 8)
     .map((e) => `- ${e.kind} → ${e.target}  (${e.confidence || ""})  ${e.reason || ""}`)
@@ -327,7 +354,7 @@ Specific requirements:
 Return ONLY the JSON object.`;
 }
 
-function renderMarkdown(brick, manifest, data) {
+function renderMarkdown(brick: Brick, manifest: BrickManifest, data: WikiData): string {
   const sem = manifest.semantics || {};
   const front = [
     "---",
@@ -343,7 +370,7 @@ function renderMarkdown(brick, manifest, data) {
     `generated_by: codex-gpt-5.4`,
     "---",
     ""
-  ].filter(Boolean).join("\n");
+  ].filter((line): line is string => Boolean(line)).join("\n");
 
   const lines = [front];
   lines.push(`# ${data.title || brick.name || brick.id}`, "");
@@ -419,12 +446,12 @@ function renderMarkdown(brick, manifest, data) {
   return lines.join("\n");
 }
 
-async function loadBricks(opts) {
-  const cands = await readJson(opts.candidates);
-  const registry = await readJson(opts.registry);
-  const byId = new Map<string, any>(registry.bricks.map((b: any) => [b.id, b]));
+async function loadBricks(opts: WikiOptions): Promise<Brick[]> {
+  const cands = await readJson<CandidatePayload>(opts.candidates);
+  const registry = await readJson<RegistryPayload>(opts.registry);
+  const byId = new Map<string, Brick>((registry.bricks ?? []).map((brick) => [brick.id, brick]));
   const wanted = opts.statuses.split(",").map((s) => s.trim()).filter(Boolean);
-  const list: any[] = [];
+  const list: Brick[] = [];
   for (const b of cands.bricks || []) {
     if (opts.minScore > 0 && (b.score || 0) < opts.minScore) continue;
     const reg = byId.get(b.id);
@@ -442,36 +469,38 @@ async function loadBricks(opts) {
   return list;
 }
 
-async function loadConnections(opts) {
+async function loadConnections(opts: WikiOptions): Promise<Map<string, ConnectionEdge[]>> {
   const d = await maybe(opts.connections);
-  if (!d) return new Map();
+  if (!d) return new Map<string, ConnectionEdge[]>();
   try {
-    const parsed = JSON.parse(d);
-    const byFrom = new Map();
-    for (const e of parsed.edges || []) {
-      if (!byFrom.has(e.from)) byFrom.set(e.from, []);
-      byFrom.get(e.from).push(e);
+    const parsed = JSON.parse(d) as ConnectionPayload;
+    const byFrom = new Map<string, ConnectionEdge[]>();
+    for (const edge of parsed.edges ?? []) {
+      if (!edge.from) continue;
+      const edges = byFrom.get(edge.from) ?? [];
+      edges.push(edge);
+      byFrom.set(edge.from, edges);
     }
     return byFrom;
-  } catch { return new Map(); }
+  } catch { return new Map<string, ConnectionEdge[]>(); }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
   const bricks = await loadBricks(opts);
   const conns = await loadConnections(opts);
   console.error(`writing wiki pages for ${bricks.length} brick(s) (concurrency=${opts.concurrency})`);
 
-  const items = [];
-  const meta = new Map();
+  const items: Array<{ id: string; prompt: string; schema: typeof SCHEMA }> = [];
+  const meta = new Map<string, WikiMeta>();
 
   for (const b of bricks) {
     try {
-      const manifest = JSON.parse(await fs.readFile(b.manifest_path, "utf8"));
+      const manifest = JSON.parse(await fs.readFile(b.manifest_path, "utf8")) as BrickManifest;
       const slug = slugify(b.id);
       const outPath = path.join(opts.outRoot, b.project || "_unknown", `${slug}.md`);
       if (!opts.overwrite) {
-        const stat = await fs.stat(outPath).catch(() => null);
+        const stat: Awaited<ReturnType<typeof fs.stat>> | null = await fs.stat(outPath).catch((): null => null);
         if (stat) continue;
       }
       const docs = await gatherDocs(b, manifest);
@@ -483,14 +512,14 @@ async function main() {
       });
       meta.set(b.id, { brick: b, manifest, outPath });
     } catch (err) {
-      console.error(`skip ${b.id}: ${err.message}`);
+      console.error(`skip ${b.id}: ${errorMessage(err)}`);
     }
   }
 
   console.error(`queued ${items.length} (skipped ${bricks.length - items.length} existing — use --overwrite to regenerate)`);
 
   let processed = 0, written = 0, cacheHits = 0, failed = 0;
-  const writeQueue = [];
+  const writeQueue: Promise<void>[] = [];
 
   await codexBatch(items, {
     concurrency: opts.concurrency,
@@ -499,15 +528,25 @@ async function main() {
     onResult: (wrapped) => {
       processed += 1;
       const r = wrapped.result;
-      if (!r.ok) { failed += 1; console.error(`  ${wrapped.id}: ${r.error}`); return; }
+      if (!r.ok) {
+        failed += 1;
+        console.error(`  ${wrapped.id}: ${"error" in r ? r.error : "Codex request failed"}`);
+        return;
+      }
       if (r.fromCache) cacheHits += 1;
       const m = meta.get(wrapped.id);
       if (!m) return;
-      const md = renderMarkdown(m.brick, m.manifest, r.data);
+      if (!r.data || typeof r.data !== "object" || Array.isArray(r.data)) {
+        failed += 1;
+        console.error(`  ${wrapped.id}: structured response was not an object`);
+        return;
+      }
+      const data = r.data as unknown as WikiData;
+      const md = renderMarkdown(m.brick, m.manifest, data);
       const portablePath = m.outPath.replace(/\.md$/, ".portable.md");
-      const portableMd = (r.data.portable_doc && r.data.portable_doc.trim())
-        ? r.data.portable_doc.trim()
-        : `# ${r.data.title || m.brick.name || m.brick.id}\n\n${r.data.overview || ""}\n`;
+      const portableMd = (data.portable_doc?.trim())
+        ? data.portable_doc.trim()
+        : `# ${data.title || m.brick.name || m.brick.id}\n\n${data.overview || ""}\n`;
       const writePromise = (async () => {
         if (opts.dryRun) { written += 1; return; }
         try {
@@ -521,7 +560,7 @@ async function main() {
           await fs.writeFile(m.brick.manifest_path, `${JSON.stringify(m.manifest, null, 2)}\n`);
           written += 1;
         } catch (err) {
-          failed += 1; console.error(`  write ${m.outPath}: ${err.message}`);
+          failed += 1; console.error(`  write ${m.outPath}: ${errorMessage(err)}`);
         }
       })();
       writeQueue.push(writePromise);

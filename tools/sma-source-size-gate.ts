@@ -33,14 +33,65 @@ const SKIP_DIRS = new Set([
 ]);
 const DEFAULT_SOURCE_ROOTS = ['tools'];
 
+interface SourceSizeArgs extends Record<string, string | string[] | boolean | undefined> {
+  root?: string;
+  maxLines?: string;
+  baseline?: string | false;
+  sourceRoot?: string[];
+  updateBaseline?: boolean;
+  json?: boolean;
+  gate?: boolean;
+}
+
+interface SourceSizeViolation {
+  path: string;
+  lines: number;
+}
+
+interface BaselineViolation extends SourceSizeViolation {
+  reason?: string;
+}
+
+interface SourceSizeBaseline {
+  files: BaselineViolation[];
+}
+
+interface LegacyViolation extends SourceSizeViolation {
+  baseline_lines: number;
+  reason: string;
+}
+
+interface GrownViolation extends SourceSizeViolation {
+  baseline_lines: number;
+}
+
+interface FixedViolation {
+  path: string;
+  baseline_lines: number;
+}
+
+interface SourceSizeResult {
+  status: 'failed' | 'passed';
+  threshold: number;
+  violation_count: number;
+  new_violation_count: number;
+  grown_baseline_count: number;
+  legacy_violation_count: number;
+  fixed_baseline_count: number;
+  new_violations: SourceSizeViolation[];
+  grown_baseline: GrownViolation[];
+  legacy_violations: LegacyViolation[];
+  fixed_baseline: FixedViolation[];
+}
+
 const args = parseArgs(process.argv.slice(2));
-const root = resolve(args.root || SMA_ROOT);
+const root = resolve(args.root ?? SMA_ROOT);
 const maxLines = positiveInt(args.maxLines, 1900);
 const threshold = maxLines;
 const baselinePath = args.baseline === false
   ? null
   : resolve(root, typeof args.baseline === 'string' ? args.baseline : DEFAULT_BASELINE);
-const sourceRoots = (args.sourceRoot || DEFAULT_SOURCE_ROOTS).map((item) => resolve(root, item));
+const sourceRoots = (args.sourceRoot ?? DEFAULT_SOURCE_ROOTS).map((item: string) => resolve(root, item));
 
 try {
   const files = collectSourceFiles(sourceRoots);
@@ -52,7 +103,7 @@ try {
   const result = buildResult({ violations, baseline, threshold });
 
   if (args.updateBaseline) {
-    writeBaseline(baselinePath || DEFAULT_BASELINE, violations, threshold);
+    writeBaseline(baselinePath ?? DEFAULT_BASELINE, violations, threshold);
   }
 
   if (args.json) {
@@ -62,13 +113,13 @@ try {
   }
 
   if (args.gate && result.status === 'failed') process.exit(4);
-} catch (err) {
-  console.error(`sma-source-size-gate: ${err.message}`);
+} catch (err: unknown) {
+  console.error(`sma-source-size-gate: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(1);
 }
 
 function collectSourceFiles(roots: string[]): string[] {
-  const files = [];
+  const files: string[] = [];
   for (const start of roots) {
     if (!existsSync(start)) continue;
     walk(start, files);
@@ -76,7 +127,7 @@ function collectSourceFiles(roots: string[]): string[] {
   return files;
 }
 
-function walk(dir: string, files: string[]) {
+function walk(dir: string, files: string[]): void {
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -99,11 +150,11 @@ function walk(dir: string, files: string[]) {
   }
 }
 
-function buildResult({ violations, baseline, threshold }: Record<string, any>) {
-  const baselineMap = new Map<string, any>((baseline.files || []).map((item) => [item.path, item]));
-  const newViolations = [];
-  const grownBaseline = [];
-  const legacyViolations = [];
+function buildResult({ violations, baseline, threshold }: { violations: SourceSizeViolation[]; baseline: SourceSizeBaseline; threshold: number }): SourceSizeResult {
+  const baselineMap = new Map<string, BaselineViolation>(baseline.files.map((item: BaselineViolation) => [item.path, item]));
+  const newViolations: SourceSizeViolation[] = [];
+  const grownBaseline: GrownViolation[] = [];
+  const legacyViolations: LegacyViolation[] = [];
 
   for (const item of violations) {
     const known = baselineMap.get(item.path);
@@ -111,16 +162,16 @@ function buildResult({ violations, baseline, threshold }: Record<string, any>) {
       newViolations.push(item);
       continue;
     }
-    if (item.lines > Number(known.lines || 0)) {
-      grownBaseline.push({ ...item, baseline_lines: Number(known.lines || 0) });
+    if (item.lines > known.lines) {
+      grownBaseline.push({ ...item, baseline_lines: known.lines });
       continue;
     }
-    legacyViolations.push({ ...item, baseline_lines: Number(known.lines || 0), reason: known.reason || 'legacy oversized source' });
+    legacyViolations.push({ ...item, baseline_lines: known.lines, reason: known.reason ?? 'legacy oversized source' });
   }
 
-  const missingBaseline = (baseline.files || [])
-    .filter((item) => !violations.some((violation) => violation.path === item.path))
-    .map((item) => ({ path: item.path, baseline_lines: Number(item.lines || 0) }));
+  const missingBaseline = baseline.files
+    .filter((item: BaselineViolation) => !violations.some((violation: SourceSizeViolation) => violation.path === item.path))
+    .map((item: BaselineViolation) => ({ path: item.path, baseline_lines: item.lines }));
 
   return {
     status: newViolations.length || grownBaseline.length ? 'failed' : 'passed',
@@ -137,30 +188,30 @@ function buildResult({ violations, baseline, threshold }: Record<string, any>) {
   };
 }
 
-function printResult(result) {
+function printResult(result: SourceSizeResult): void {
   console.log(`SMA source-size gate: ${result.status}`);
-  console.log(`threshold: >=${result.threshold} lines`);
-  console.log(`violations: ${result.violation_count} (${result.new_violation_count} new, ${result.grown_baseline_count} grown baseline, ${result.legacy_violation_count} legacy)`);
-  for (const item of result.new_violations) console.log(`NEW ${item.lines} ${item.path}`);
-  for (const item of result.grown_baseline) console.log(`GROWN ${item.lines}/${item.baseline_lines} ${item.path}`);
-  for (const item of result.legacy_violations) console.log(`LEGACY ${item.lines}/${item.baseline_lines} ${item.path} - ${item.reason}`);
-  for (const item of result.fixed_baseline) console.log(`FIXED ${item.path} (was ${item.baseline_lines})`);
+  console.log(`threshold: >=${String(result.threshold)} lines`);
+  console.log(`violations: ${String(result.violation_count)} (${String(result.new_violation_count)} new, ${String(result.grown_baseline_count)} grown baseline, ${String(result.legacy_violation_count)} legacy)`);
+  for (const item of result.new_violations) console.log(`NEW ${String(item.lines)} ${item.path}`);
+  for (const item of result.grown_baseline) console.log(`GROWN ${String(item.lines)}/${String(item.baseline_lines)} ${item.path}`);
+  for (const item of result.legacy_violations) console.log(`LEGACY ${String(item.lines)}/${String(item.baseline_lines)} ${item.path} - ${item.reason}`);
+  for (const item of result.fixed_baseline) console.log(`FIXED ${item.path} (was ${String(item.baseline_lines)})`);
 }
 
-function readBaseline(filePath) {
+function readBaseline(filePath: string): SourceSizeBaseline {
   try {
-    return JSON.parse(readFileSync(filePath, 'utf8'));
+    return JSON.parse(readFileSync(filePath, 'utf8')) as SourceSizeBaseline;
   } catch {
     return { files: [] };
   }
 }
 
-function writeBaseline(filePath, violations, threshold) {
+function writeBaseline(filePath: string, violations: SourceSizeViolation[], threshold: number): void {
   const payload = {
     schema_version: '1.0.0',
     threshold,
     updated_at: new Date().toISOString(),
-    files: violations.map((item) => ({
+    files: violations.map((item: SourceSizeViolation) => ({
       path: item.path,
       lines: item.lines,
       reason: 'legacy oversized source; split below the SMA source-size cap',
@@ -169,23 +220,23 @@ function writeBaseline(filePath, violations, threshold) {
   writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
 }
 
-function isGeneratedSource(name) {
-  return /\.generated\./.test(name) || /\.min\./.test(name);
+function isGeneratedSource(name: string): boolean {
+  return name.includes('.generated.') || name.includes('.min.');
 }
 
-function extension(name) {
+function extension(name: string): string {
   const index = name.lastIndexOf('.');
   return index >= 0 ? name.slice(index) : '';
 }
 
-function countLines(filePath) {
+function countLines(filePath: string): number {
   const text = readFileSync(filePath, 'utf8');
   if (!text) return 0;
   const lines = text.split(/\r?\n/);
   return text.endsWith('\n') || text.endsWith('\r\n') ? lines.length - 1 : lines.length;
 }
 
-function positiveInt(value, fallback) {
+function positiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number(value ?? fallback);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
@@ -201,23 +252,23 @@ function positiveInt(value, fallback) {
  * gate?: boolean
  * }}
  */
-function parseArgs(list: string[]): Record<string, any> {
-  const out: Record<string, any> = {};
+function parseArgs(list: string[]): SourceSizeArgs {
+  const out: SourceSizeArgs = {};
   for (let index = 0; index < list.length; index += 1) {
     const arg = list[index];
     if (!arg.startsWith('--')) continue;
-    const key = arg.slice(2).replace(/-([a-z])/g, (_, char) => char.toUpperCase());
-    if (key === 'noBaseline') {
+    if (arg === '--no-baseline') {
       out.baseline = false;
       continue;
     }
-    const next = list[index + 1];
+    const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
+    const next = list.at(index + 1);
     if (next === undefined || next.startsWith('--')) {
       out[key] = true;
       continue;
     }
     if (key === 'sourceRoot') {
-      out.sourceRoot = [...(out.sourceRoot || []), next];
+      out.sourceRoot = [...(out.sourceRoot ?? []), next];
     } else {
       out[key] = next;
     }

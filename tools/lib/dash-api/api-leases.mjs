@@ -2,7 +2,7 @@ import path from "node:path";
 import { DASH_API_MAX_ROWS, readJsonFile, runReadHandler, validateQuery } from "./core.mjs";
 
 export const LEASES_SCOPE = "dashboard:leases:read";
-export const LEASES_CONTRACT = Object.freeze({ method: "GET", path: "/api/leases", idempotent: true, retry: "safe with exponential backoff after 502/504", timeout_ms: 500, max_rows: DASH_API_MAX_ROWS });
+const LEASES_CONTRACT = Object.freeze({ method: "GET", path: "/api/leases", idempotent: true, retry: "safe with exponential backoff after 502/504", timeout_ms: 500, max_rows: DASH_API_MAX_ROWS });
 
 /** @typedef {{ expires_at?: string, [key: string]: unknown }} LeaseRecord */
 /** @typedef {{ limit: number }} LeasesInput */

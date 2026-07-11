@@ -30,7 +30,7 @@ import {
 } from './lib/packet-freshness.ts';
 import type { LeaseFingerprint, PacketFreshness } from './lib/packet-freshness.ts';
 
-type GraphPacketArgs = {
+interface GraphPacketArgs {
   help?: boolean;
   json?: boolean;
   ttl?: string | boolean;
@@ -45,19 +45,19 @@ type GraphPacketArgs = {
   next?: boolean;
   rank?: string | boolean;
   [key: string]: string | boolean | undefined;
-};
+}
 
-type GraphPacket = {
+interface GraphPacket {
   rank?: number; project: string; kind: string; brick: string; repair_command: string; verify_command: string;
   repair_kind?: string; missing_target_count?: number; module_graph_gap_count?: number; lease_fingerprint?: LeaseFingerprint;
   held?: boolean; packet_stale?: boolean; packet_freshness?: PacketFreshness; report_freshness?: PacketFreshness;
   held_by?: string | null; held_ttl_seconds?: number | null; detail?: string; claim_packet_command?: string;
   claim_command?: string; inspect_command?: string; finish_rule?: string; claim_intent?: string;
-  target_fixes?: Array<{ source_path?: string; module_id?: string; candidates?: Array<{ path?: string; reason?: string; score?: number }> }>;
+  target_fixes?: { source_path?: string; module_id?: string; candidates?: { path?: string; reason?: string; score?: number }[] }[];
   [key: string]: unknown;
-};
-type GraphPacketSummary = Record<string, unknown> & { packet_count?: number; module_graph_gap_count?: number; project_graph_gaps?: number; stale_packet_count?: number };
-type GraphPacketReport = { generated_at?: string | null; lease_fingerprint?: LeaseFingerprint | null; summary?: GraphPacketSummary; packets: GraphPacket[]; [key: string]: unknown };
+}
+interface GraphPacketSummary extends Record<string, unknown> { packet_count?: number; module_graph_gap_count?: number; project_graph_gaps?: number; stale_packet_count?: number }
+interface GraphPacketReport extends Record<string, unknown> { generated_at?: string | null; lease_fingerprint?: LeaseFingerprint | null; summary?: GraphPacketSummary; packets: GraphPacket[] }
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_PACKET_FILE = resolve(SMA_ROOT, 'handoffs/graph-packets.generated.json');
@@ -111,22 +111,22 @@ function runList() {
   if (autoRefreshed) {
     console.log('auto-refreshed stale graph packets before listing');
   }
-  console.log(`graph packets: ${decorated.summary?.packet_count ?? packets.length}, module gaps ${decorated.summary?.module_graph_gap_count ?? 0}, project gaps ${decorated.summary?.project_graph_gaps ?? 0}`);
+  console.log(`graph packets: ${String(decorated.summary.packet_count ?? packets.length)}, module gaps ${String(decorated.summary.module_graph_gap_count ?? 0)}, project gaps ${String(decorated.summary.project_graph_gaps ?? 0)}`);
   console.log(`packet file: ${formatPacketFreshness(decorated.freshness)}`);
   if (decorated.freshness.stale) {
     console.log('refresh: npm run controller:sweep:write');
-  } else if (Number(decorated.summary?.stale_packet_count || 0) > 0) {
-    console.log(`stale packets: ${decorated.summary.stale_packet_count}; fresh packets can still be claimed, refresh before stale ranks`);
+  } else if (decorated.summary.stale_packet_count > 0) {
+    console.log(`stale packets: ${String(decorated.summary.stale_packet_count)}; fresh packets can still be claimed, refresh before stale ranks`);
   }
   for (const packet of packets) {
-    const held = packet.held ? ` [held by ${packet.held_by}, ttl ${packet.held_ttl_seconds}s]` : '';
+    const held = packet.held ? ` [held by ${String(packet.held_by)}, ttl ${String(packet.held_ttl_seconds)}s]` : '';
     const stale = packet.packet_stale ? ' [stale]' : '';
     const impact = graphPacketImpact(packet);
-    console.log(`${packet.rank}. ${packet.project} ${packet.kind} (${impact})${held}${stale}`);
-    console.log(`   claim: npm run graph:claim -- --rank ${packet.rank}`);
+    console.log(`${String(packet.rank)}. ${packet.project} ${packet.kind} (${impact})${held}${stale}`);
+    console.log(`   claim: npm run graph:claim -- --rank ${String(packet.rank)}`);
   }
-  if (Number(decorated.summary?.packet_count || 0) > packets.length) {
-    console.log(`... ${Number(decorated.summary.packet_count) - packets.length} more hidden; rerun with --limit ${decorated.summary.packet_count}`);
+  if ((decorated.summary.packet_count ?? 0) > packets.length) {
+    console.log(`... ${String((decorated.summary.packet_count ?? 0) - packets.length)} more hidden; rerun with --limit ${String(decorated.summary.packet_count)}`);
   }
   return 0;
 }
@@ -136,7 +136,7 @@ function runShow() {
   const packet = selectPacket(report);
   const freshness = packet.report_freshness?.stale
     ? packet.report_freshness
-    : packet.packet_freshness || packetFreshness(report, { maxAge: maxPacketAgeSeconds() });
+    : packet.packet_freshness ?? packetFreshness(report, { maxAge: maxPacketAgeSeconds() });
   if (args.json) {
     console.log(JSON.stringify({ freshness, auto_refreshed: autoRefreshed, packet }, null, 2));
     return 0;
@@ -145,31 +145,37 @@ function runShow() {
   if (autoRefreshed) {
     console.log('auto-refreshed stale graph packets before showing');
   }
-  console.log(`#${packet.rank} ${packet.project} ${packet.kind}`);
+  console.log(`#${String(packet.rank)} ${packet.project} ${packet.kind}`);
   console.log(`packet file: ${formatPacketFreshness(freshness)}`);
   console.log(`brick: ${packet.brick}`);
-  if (packet.repair_kind) console.log(`repair kind: ${packet.repair_kind}`);
-  if (packet.module_graph_gap_count) console.log(`module gaps: ${packet.module_graph_gap_count}`);
-  if (packet.missing_target_count) console.log(`missing targets: ${packet.missing_target_count}`);
-  if (packet.detail) console.log(`detail: ${packet.detail}`);
-  for (const fix of packet.target_fixes || []) {
-    console.log(`target fix: ${fix.source_path || fix.module_id || 'unknown source'}`);
-    for (const candidate of fix.candidates || []) {
-      if (candidate.path) console.log(`  candidate: ${candidate.path} (${candidate.reason || 'candidate'}; score ${candidate.score ?? 0})`);
-    }
-  }
-  console.log(`claim: ${packet.claim_packet_command || `npm run graph:claim -- --rank ${packet.rank}`}`);
-  console.log(`fallback claim: ${packet.claim_command}`);
+  printPacketDetails(packet);
+  console.log(`claim: ${packet.claim_packet_command ?? `npm run graph:claim -- --rank ${String(packet.rank)}`}`);
+  console.log(`fallback claim: ${packet.claim_command ?? ''}`);
   console.log(`repair: ${packet.repair_command}`);
   console.log(`verify: ${packet.verify_command}`);
-  console.log(`inspect: ${packet.inspect_command}`);
-  console.log(`finish: ${packet.finish_rule}`);
+  console.log(`inspect: ${packet.inspect_command ?? ''}`);
+  console.log(`finish: ${packet.finish_rule ?? ''}`);
   return 0;
+}
+
+function printPacketDetails(packet: GraphPacket): void {
+  if (packet.repair_kind) console.log(`repair kind: ${packet.repair_kind}`);
+  if (packet.module_graph_gap_count) console.log(`module gaps: ${String(packet.module_graph_gap_count)}`);
+  if (packet.missing_target_count) console.log(`missing targets: ${String(packet.missing_target_count)}`);
+  if (packet.detail) console.log(`detail: ${packet.detail}`);
+  for (const fix of packet.target_fixes ?? []) printTargetFix(fix);
+}
+
+function printTargetFix(fix: NonNullable<GraphPacket['target_fixes']>[number]): void {
+  console.log(`target fix: ${(fix.source_path ?? fix.module_id) ?? 'unknown source'}`);
+  for (const candidate of fix.candidates ?? []) {
+    if (candidate.path) console.log(`  candidate: ${candidate.path} (${candidate.reason ?? 'candidate'}; score ${String(candidate.score ?? 0)})`);
+  }
 }
 
 function runClaim() {
   const { packet, freshness, autoRefreshed } = claimSelectionWithOptionalRefresh();
-  const intent = packet.claim_intent || `repair ${packet.kind} for ${packet.project}`;
+  const intent = packet.claim_intent ?? `repair ${packet.kind} for ${packet.project}`;
   const startArgs = [
     START_EDIT,
     '--project', packet.project,
@@ -187,8 +193,8 @@ function runClaim() {
       brick: packet.brick,
       repair_command: packet.repair_command,
       verify_command: packet.verify_command,
-      repair_kind: packet.repair_kind || null,
-      target_fixes: packet.target_fixes || [],
+      repair_kind: packet.repair_kind ?? null,
+      target_fixes: packet.target_fixes ?? [],
       freshness,
       auto_refreshed: autoRefreshed,
       command: ['node', ...startArgs].map(shellArg).join(' '),
@@ -200,7 +206,7 @@ function runClaim() {
   if (autoRefreshed && !args.json) {
     console.log('auto-refreshed stale graph packets before claiming');
   }
-  console.log(`claiming graph packet #${packet.rank}: ${packet.project} ${packet.kind}`);
+  console.log(`claiming graph packet #${String(packet.rank)}: ${packet.project} ${packet.kind}`);
   const result = spawnSync(process.execPath, startArgs, {
     cwd: SMA_ROOT,
     stdio: 'inherit',
@@ -223,7 +229,7 @@ function claimSelection() {
   assertFreshPacketReport(report, {
     allowStale: Boolean(args.allowStale),
     currentLeaseFingerprint: currentLeaseFingerprint(),
-    expectedLeaseFingerprint: report.lease_fingerprint || null,
+    expectedLeaseFingerprint: report.lease_fingerprint ?? null,
     label: 'graph',
     maxAge: maxPacketAgeSeconds(),
     refreshCommand: 'npm run controller:sweep:write',
@@ -232,7 +238,7 @@ function claimSelection() {
   const freshness = assertFreshPacketReport(report, {
     allowStale: Boolean(args.allowStale),
     currentLeaseFingerprint: currentLeaseFingerprint(packet.project),
-    expectedLeaseFingerprint: packet.lease_fingerprint || report.lease_fingerprint || null,
+    expectedLeaseFingerprint: (packet.lease_fingerprint ?? report.lease_fingerprint) ?? null,
     label: 'graph',
     maxAge: maxPacketAgeSeconds(),
     refreshCommand: 'npm run controller:sweep:write',
@@ -249,7 +255,7 @@ function packetReportWithOptionalRefresh() {
   let report = readPacketReport();
   const freshness = packetFreshness(report, {
     currentLeaseFingerprint: currentLeaseFingerprint(),
-    expectedLeaseFingerprint: report.lease_fingerprint || null,
+    expectedLeaseFingerprint: report.lease_fingerprint ?? null,
     maxAge: maxPacketAgeSeconds(),
   });
   if (!shouldAutoRefreshDisplay(freshness)) {
@@ -274,14 +280,14 @@ function decoratedPacketReportWithOptionalRefresh() {
 
 function shouldAutoRefreshDisplay(freshness: PacketFreshness): boolean {
   if (args.allowStale || args.noAutoRefresh || args.packetFile) return false;
-  return Boolean(freshness?.stale);
+  return freshness.stale;
 }
 
 function refreshControllerPackets(label: string): void {
   const maxAttempts = 30;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     if (!args.json) {
-      const suffix = attempt === 1 ? 'refreshing controller sweep once' : `waiting for controller refresh lease (${attempt}/${maxAttempts})`;
+      const suffix = attempt === 1 ? 'refreshing controller sweep once' : `waiting for controller refresh lease (${String(attempt)}/${String(maxAttempts)})`;
       console.error(`${label}: packet handoff is stale; ${suffix}`);
     }
     const result = spawnSync('npm', ['run', 'controller:sweep:write'], {
@@ -301,7 +307,7 @@ function refreshControllerPackets(label: string): void {
 }
 
 function isControllerRefreshLeaseHeld(value: unknown): boolean {
-  return /resource is leased: other:controller-actions/.test(String(value || ''));
+  return safeString(value).includes('resource is leased: other:controller-actions');
 }
 
 function isDefaultPacketReportFresh() {
@@ -310,7 +316,7 @@ function isDefaultPacketReportFresh() {
     const report = readPacketReport();
     const freshness = packetFreshness(report, {
       currentLeaseFingerprint: currentLeaseFingerprint(),
-      expectedLeaseFingerprint: report.lease_fingerprint || null,
+      expectedLeaseFingerprint: report.lease_fingerprint ?? null,
       maxAge: maxPacketAgeSeconds(),
     });
     return !freshness.stale;
@@ -325,11 +331,11 @@ function sleep(ms: number): void {
 }
 
 function readPacketReport(): GraphPacketReport {
-  const file = resolve(args.packetFile || DEFAULT_PACKET_FILE);
+  const file = resolve(args.packetFile ?? DEFAULT_PACKET_FILE);
   if (!existsSync(file)) {
     throw new Error(`graph packet file not found: ${file}; run npm run controller:sweep:write`);
   }
-  const report = JSON.parse(readFileSync(file, 'utf8'));
+  const report = JSON.parse(readFileSync(file, 'utf8')) as GraphPacketReport;
   if (!Array.isArray(report.packets)) throw new Error(`invalid graph packet file: ${file}`);
   return report;
 }
@@ -338,19 +344,20 @@ function decoratePacketReport(report: GraphPacketReport) {
   const active = readActiveLeases({ excludeCurrentWrapperLease: true });
   const freshness = packetFreshness(report, {
     currentLeaseFingerprint: packetLeaseFingerprint(active),
-    expectedLeaseFingerprint: report.lease_fingerprint || null,
+    expectedLeaseFingerprint: report.lease_fingerprint ?? null,
     maxAge: maxPacketAgeSeconds(),
   });
   const fingerprintsByProject = new Map<string, LeaseFingerprint>();
   const fingerprintForProject = (project: string): LeaseFingerprint => {
-    const key = String(project || '');
-    if (!fingerprintsByProject.has(key)) {
-      fingerprintsByProject.set(key, packetLeaseFingerprint(active, { project }));
-    }
-    return fingerprintsByProject.get(key);
+    const key = project;
+    const existing = fingerprintsByProject.get(key);
+    if (existing) return existing;
+    const fingerprint = packetLeaseFingerprint(active, { project });
+    fingerprintsByProject.set(key, fingerprint);
+    return fingerprint;
   };
   const leasesByPacket = new Map<string, (typeof active.leases)[number]>();
-  for (const lease of active.leases || []) {
+  for (const lease of active.leases) {
     if (lease.resource_kind !== 'brick' || !lease.project || !lease.resource_id) continue;
     leasesByPacket.set(packetLeaseKey(lease.project, lease.resource_id), lease);
   }
@@ -359,7 +366,7 @@ function decoratePacketReport(report: GraphPacketReport) {
     const lease = leasesByPacket.get(packetLeaseKey(packet.project, packet.brick));
     const packetFreshnessStatus = packetFreshness(report, {
       currentLeaseFingerprint: fingerprintForProject(packet.project),
-      expectedLeaseFingerprint: packet.lease_fingerprint || report.lease_fingerprint || null,
+      expectedLeaseFingerprint: (packet.lease_fingerprint ?? report.lease_fingerprint) ?? null,
       maxAge: maxPacketAgeSeconds(),
     });
     return {
@@ -368,8 +375,8 @@ function decoratePacketReport(report: GraphPacketReport) {
       packet_freshness: packetFreshnessStatus,
       packet_stale: args.project ? packetFreshnessStatus.stale : freshness.stale || packetFreshnessStatus.stale,
       held: Boolean(lease),
-      held_by: lease?.agent_id || null,
-      held_lease_id: lease?.lease_id || null,
+      held_by: lease?.agent_id ?? null,
+      held_lease_id: lease?.lease_id ?? null,
       held_ttl_seconds: lease?.ttl_remaining_seconds ?? null,
     };
   });
@@ -379,7 +386,7 @@ function decoratePacketReport(report: GraphPacketReport) {
     ...report,
     freshness,
     summary: {
-      ...graphScopedSummary(report.summary || {}, scopedPackets),
+      ...graphScopedSummary(report.summary ?? {}, scopedPackets),
       packet_age_seconds: freshness.age_seconds,
       packet_max_age_seconds: freshness.max_age_seconds,
       packet_stale: freshness.stale,
@@ -397,9 +404,9 @@ function graphScopedSummary(baseSummary: GraphPacketSummary, packets: GraphPacke
     ...baseSummary,
     scoped_project: String(args.project),
     packet_count: packets.length,
-    module_graph_gap_count: packets.reduce((sum: number, packet: GraphPacket) => sum + Number(packet.module_graph_gap_count || 0), 0),
+    module_graph_gap_count: packets.reduce((sum: number, packet: GraphPacket) => sum + (packet.module_graph_gap_count ?? 0), 0),
     project_graph_gaps: packets.filter((packet: GraphPacket) => packet.kind === 'project-graph-gap').length,
-    target_drift_count: packets.reduce((sum: number, packet: GraphPacket) => sum + Number(packet.missing_target_count || 0), 0),
+    target_drift_count: packets.reduce((sum: number, packet: GraphPacket) => sum + (packet.missing_target_count ?? 0), 0),
   };
 }
 
@@ -432,30 +439,30 @@ function selectPacket(report: GraphPacketReport): GraphPacket {
   const rank = Number(args.rank);
   if (!Number.isInteger(rank) || rank <= 0) throw new Error('select a packet with --rank <n>');
   const packet = projectScopedPackets(decorated.packets).find((item: GraphPacket) => Number(item.rank) === rank);
-  if (!packet) throw new Error(`graph packet rank not found: ${rank}`);
+  if (!packet) throw new Error(`graph packet rank not found: ${String(rank)}`);
   return assertPacket(packet);
 }
 
 function projectScopedPackets(packets: GraphPacket[]): GraphPacket[] {
   if (!args.project) return packets;
-  return packets.filter((packet: GraphPacket) => String(packet.project) === String(args.project));
+  return packets.filter((packet: GraphPacket) => packet.project === String(args.project));
 }
 
 function assertPacket(packet: GraphPacket): GraphPacket {
   for (const key of ['project', 'kind', 'brick', 'repair_command', 'verify_command']) {
-    if (!packet[key]) throw new Error(`graph packet #${packet.rank} is missing ${key}`);
+    if (!packet[key]) throw new Error(`graph packet #${String(packet.rank)} is missing ${key}`);
   }
   return packet;
 }
 
 function graphPacketImpact(packet: GraphPacket): string {
   if (packet.repair_kind === 'target-drift') {
-    const count = Number(packet.missing_target_count || packet.module_graph_gap_count || 0);
-    return `${count} target drift${count === 1 ? '' : 's'}`;
+    const count = (packet.missing_target_count ?? packet.module_graph_gap_count) ?? 0;
+    return `${String(count)} target drift${count === 1 ? '' : 's'}`;
   }
   if (packet.kind === 'module-graph-gap') {
-    const count = Number(packet.module_graph_gap_count || 0);
-    return `${count} module gap${count === 1 ? '' : 's'}`;
+    const count = packet.module_graph_gap_count ?? 0;
+    return `${String(count)} module gap${count === 1 ? '' : 's'}`;
   }
   return 'missing project graph';
 }
@@ -469,13 +476,21 @@ function relativeToSma(filePath: string): string {
 }
 
 function shellArg(value: unknown): string {
-  return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
+  return `'${safeString(value).replace(/'/g, `'\\''`)}'`;
 }
 
 function tailOutput(value: unknown): string {
-  const text = String(value || '').trim();
+  const text = safeString(value).trim();
   if (!text) return 'no output';
   return text.split('\n').slice(-8).join('\n');
+}
+
+function safeString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
+  if (value instanceof Error) return value.message;
+  if (value === null || value === undefined) return '';
+  return JSON.stringify(value);
 }
 
 function parseArgs(list: string[]): GraphPacketArgs {
@@ -488,7 +503,7 @@ function parseArgs(list: string[]): GraphPacketArgs {
     }
     if (!arg.startsWith('--')) continue;
     const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, character: string) => character.toUpperCase());
-    const next = list[i + 1];
+    const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
       out[key] = true;

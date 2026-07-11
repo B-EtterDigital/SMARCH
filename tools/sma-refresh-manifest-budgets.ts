@@ -10,6 +10,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+type FalsyValue = false | 0 | 0n | '' | null | undefined;
+function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
+  if (!value) return fallback();
+  return value as Exclude<T, FalsyValue>;
+}
+
 const analyzableSourceExtensions = new Set([
   ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
   ".py", ".rb", ".go", ".rs", ".java", ".kt",
@@ -52,9 +58,61 @@ const archiveDirPatterns = [
   "stream_preview_release"
 ];
 
-function parseArgs(argv): Record<string, any> {
-  const options: Record<string, any> = {
-    root: null,
+interface RefreshArgs {
+  root: string;
+  scan: string | null;
+  projectId: string;
+  manifests: string[];
+  allManifests: boolean;
+  syncProjectId: boolean;
+  dryRun: boolean;
+  json: boolean;
+}
+
+interface ManifestDocument {
+  brick?: { id?: string };
+  hierarchy?: { group_id?: string };
+  quality?: {
+    code_budget?: { feature_lines?: number; file_count?: number };
+    line_count?: { max_file_lines?: number; over_600_count?: number };
+  };
+  source?: { paths?: string[]; project?: string };
+}
+
+type ManifestWithQuality = ManifestDocument & {
+  quality: {
+    code_budget: { feature_lines?: number; file_count?: number };
+    line_count: { max_file_lines?: number; over_600_count?: number };
+  };
+};
+
+interface SourceBudget {
+  sourcePath: string;
+  fileCount: number;
+  featureLines: number;
+  maxFileLines: number;
+  over600Count: number;
+}
+
+interface RefreshResult {
+  manifest: string;
+  changed: boolean;
+  skipped: boolean;
+  reason?: string;
+  budget?: SourceBudget;
+}
+
+interface SummaryResult {
+  manifest: string;
+  changed: boolean;
+  skipped: boolean;
+  reason: string | null;
+  budget: SourceBudget | null;
+}
+
+function parseArgs(argv: string[]): RefreshArgs {
+  const options: RefreshArgs = {
+    root: "",
     scan: null,
     projectId: "",
     manifests: [],
@@ -133,7 +191,7 @@ function parseArgs(argv): Record<string, any> {
   return options;
 }
 
-function printHelp() {
+function printHelp(): void {
   console.log(`Refresh stale manifest budget metadata from current source files.
 
 Usage:
@@ -152,7 +210,7 @@ Options:
 `);
 }
 
-async function pathExists(targetPath) {
+async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -161,11 +219,11 @@ async function pathExists(targetPath) {
   }
 }
 
-function toSlashPath(targetPath) {
+function toSlashPath(targetPath: string): string {
   return targetPath.split(path.sep).join("/");
 }
 
-function isExcludedDirName(name) {
+function isExcludedDirName(name: string): boolean {
   if (excludedDirNames.has(name)) {
     return true;
   }
@@ -174,11 +232,11 @@ function isExcludedDirName(name) {
   return archiveDirPatterns.some((pattern) => lower.includes(pattern));
 }
 
-function isAnalyzableSourceFile(filePath) {
+function isAnalyzableSourceFile(filePath: string): boolean {
   return analyzableSourceExtensions.has(path.extname(filePath).toLowerCase());
 }
 
-async function walkAnalyzableFiles(targetPath, files = []) {
+async function walkAnalyzableFiles(targetPath: string, files: string[] = []): Promise<string[]> {
   let stats;
 
   try {
@@ -221,8 +279,8 @@ async function walkAnalyzableFiles(targetPath, files = []) {
   return files;
 }
 
-function normalizeSourcePath(projectRoot, sourcePath) {
-  const requestedPath = String(sourcePath || "").split("/").join(path.sep);
+function normalizeSourcePath(projectRoot: string, sourcePath: unknown): string {
+  const requestedPath = String(orElse(sourcePath, () => "")).split("/").join(path.sep);
   const projectDirName = path.basename(projectRoot);
   const prefixedPattern = new RegExp(`^${projectDirName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\\\/]`);
 
@@ -233,10 +291,10 @@ function normalizeSourcePath(projectRoot, sourcePath) {
   return requestedPath;
 }
 
-async function manifestCandidatesForSourcePath(projectRoot, sourcePath) {
+async function manifestCandidatesForSourcePath(projectRoot: string, sourcePath: unknown): Promise<string[]> {
   const normalized = normalizeSourcePath(projectRoot, sourcePath);
   const absoluteTarget = path.resolve(projectRoot, normalized);
-  const candidates = [];
+  const candidates: string[] = [];
 
   try {
     const stats = await fs.stat(absoluteTarget);
@@ -253,7 +311,7 @@ async function manifestCandidatesForSourcePath(projectRoot, sourcePath) {
   return candidates;
 }
 
-async function collectManifestPaths(options) {
+async function collectManifestPaths(options: RefreshArgs): Promise<string[]> {
   const manifestPaths = new Set(options.manifests);
 
   if (options.allManifests) {
@@ -261,6 +319,7 @@ async function collectManifestPaths(options) {
 
     while (stack.length > 0) {
       const current = stack.pop();
+      if (!current) break;
       const entries = await fs.readdir(current, { withFileTypes: true });
 
       for (const entry of entries) {
@@ -283,15 +342,17 @@ async function collectManifestPaths(options) {
   }
 
   if (options.scan) {
-    const scan = JSON.parse(await fs.readFile(options.scan, "utf8"));
-    const entries = scan?.scanner_report?.manifest_drift?.entries || [];
+    const scan = JSON.parse(await fs.readFile(options.scan, "utf8")) as {
+      scanner_report?: { manifest_drift?: { entries?: { kind?: string; path?: string }[] } };
+    };
+    const entries = orElse(scan.scanner_report?.manifest_drift?.entries, () => []);
 
     for (const entry of entries) {
-      if (!["max_file_lines_drift", "file_count_drift", "feature_line_drift"].includes(entry.kind)) {
+      if (!["max_file_lines_drift", "file_count_drift", "feature_line_drift"].includes(orElse(entry.kind, () => ""))) {
         continue;
       }
 
-      const candidates = await manifestCandidatesForSourcePath(options.root, entry.path || "");
+      const candidates = await manifestCandidatesForSourcePath(options.root, orElse(entry.path, () => ""));
 
       for (const candidate of candidates) {
         if (await pathExists(candidate)) {
@@ -304,7 +365,7 @@ async function collectManifestPaths(options) {
   return [...manifestPaths].sort();
 }
 
-function maybeRewriteProjectIdentity(manifest, projectId) {
+function maybeRewriteProjectIdentity(manifest: ManifestDocument, projectId: string): boolean {
   if (!projectId) {
     return false;
   }
@@ -316,7 +377,7 @@ function maybeRewriteProjectIdentity(manifest, projectId) {
     changed = true;
   }
 
-  if (manifest.brick?.id && manifest.brick.id.includes(".")) {
+  if (manifest.brick?.id?.includes(".")) {
     const [, ...rest] = manifest.brick.id.split(".");
     const nextId = [projectId, ...rest].join(".");
 
@@ -326,7 +387,7 @@ function maybeRewriteProjectIdentity(manifest, projectId) {
     }
   }
 
-  if (manifest.hierarchy?.group_id && manifest.hierarchy.group_id.includes(":")) {
+  if (manifest.hierarchy?.group_id?.includes(":")) {
     const [, ...rest] = manifest.hierarchy.group_id.split(":");
     const nextGroupId = [projectId, ...rest].join(":");
 
@@ -339,14 +400,14 @@ function maybeRewriteProjectIdentity(manifest, projectId) {
   return changed;
 }
 
-function ensureQualityBlocks(manifest) {
+function ensureQualityBlocks(manifest: ManifestDocument): asserts manifest is ManifestWithQuality {
   manifest.quality ||= {};
   manifest.quality.line_count ||= {};
   manifest.quality.code_budget ||= {};
 }
 
-async function computeBudget(projectRoot, manifest) {
-  const sourcePath = manifest?.source?.paths?.[0];
+async function computeBudget(projectRoot: string, manifest: ManifestDocument): Promise<SourceBudget | null> {
+  const sourcePath = manifest.source?.paths?.[0];
 
   if (!sourcePath) {
     return null;
@@ -380,9 +441,9 @@ async function computeBudget(projectRoot, manifest) {
   };
 }
 
-async function refreshManifest(projectRoot, manifestPath, options) {
+async function refreshManifest(projectRoot: string, manifestPath: string, options: RefreshArgs): Promise<RefreshResult> {
   const raw = await fs.readFile(manifestPath, "utf8");
-  const manifest = JSON.parse(raw);
+  const manifest = JSON.parse(raw) as ManifestDocument;
   const budget = await computeBudget(projectRoot, manifest);
 
   if (!budget) {
@@ -397,22 +458,22 @@ async function refreshManifest(projectRoot, manifestPath, options) {
   ensureQualityBlocks(manifest);
   let changed = false;
 
-  if ((manifest.quality.line_count?.max_file_lines || 0) !== budget.maxFileLines) {
+  if ((orElse(manifest.quality.line_count.max_file_lines, () => 0)) !== budget.maxFileLines) {
     manifest.quality.line_count.max_file_lines = budget.maxFileLines;
     changed = true;
   }
 
-  if ((manifest.quality.line_count?.over_600_count || 0) !== budget.over600Count) {
+  if ((orElse(manifest.quality.line_count.over_600_count, () => 0)) !== budget.over600Count) {
     manifest.quality.line_count.over_600_count = budget.over600Count;
     changed = true;
   }
 
-  if ((manifest.quality.code_budget?.feature_lines || 0) !== budget.featureLines) {
+  if ((orElse(manifest.quality.code_budget.feature_lines, () => 0)) !== budget.featureLines) {
     manifest.quality.code_budget.feature_lines = budget.featureLines;
     changed = true;
   }
 
-  if ((manifest.quality.code_budget?.file_count || 0) !== budget.fileCount) {
+  if ((orElse(manifest.quality.code_budget.file_count, () => 0)) !== budget.fileCount) {
     manifest.quality.code_budget.file_count = budget.fileCount;
     changed = true;
   }
@@ -433,16 +494,22 @@ async function refreshManifest(projectRoot, manifestPath, options) {
   };
 }
 
-async function main() {
+async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const manifestPaths = await collectManifestPaths(options);
-  const results = [];
+  const results: RefreshResult[] = [];
 
   for (const manifestPath of manifestPaths) {
     results.push(await refreshManifest(options.root, manifestPath, options));
   }
 
-  const summary: Record<string, any> = {
+  const summary: {
+    root: string;
+    manifest_count: number;
+    changed_count: number;
+    skipped_count: number;
+    results: SummaryResult[];
+  } = {
     root: options.root,
     manifest_count: manifestPaths.length,
     changed_count: results.filter((result) => result.changed).length,
@@ -451,8 +518,8 @@ async function main() {
       manifest: toSlashPath(path.relative(options.root, result.manifest)),
       changed: result.changed,
       skipped: result.skipped,
-      reason: result.reason || null,
-      budget: result.budget || null
+      reason: orElse(result.reason, () => null),
+      budget: orElse(result.budget, () => null)
     }))
   };
 
@@ -461,18 +528,18 @@ async function main() {
     return;
   }
 
-  console.log(`Refreshed ${summary.changed_count}/${summary.manifest_count} manifest(s) under ${options.root}`);
+  console.log(`Refreshed ${String(summary.changed_count)}/${String(summary.manifest_count)} manifest(s) under ${options.root}`);
 
   for (const result of summary.results.filter((entry) => entry.changed)) {
     console.log(`- ${result.manifest}`);
   }
 
   if (summary.skipped_count > 0) {
-    console.log(`Skipped ${summary.skipped_count} manifest(s) with missing source paths.`);
+    console.log(`Skipped ${String(summary.skipped_count)} manifest(s) with missing source paths.`);
   }
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

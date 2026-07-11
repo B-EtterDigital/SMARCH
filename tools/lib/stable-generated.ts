@@ -78,7 +78,7 @@ export function normalizeRegistrySnapshot(snapshot: JsonRecord): JsonRecord {
   return clone;
 }
 
-export function stableLease(lease: JsonRecord): JsonRecord {
+function stableLease(lease: JsonRecord): JsonRecord {
   const clone = { ...lease };
   delete clone.expires_at;
   delete clone.ttl_remaining_seconds;
