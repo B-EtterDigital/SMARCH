@@ -127,7 +127,7 @@ export async function queryGlobalGraph(options = {}) {
   const graphPath = globalGraphPath(resolvedHome);
   if (!existsSync(graphPath)) {
     throw new Error(
-      `Missing global Graphify graph: ${graphPath}. Add one with \`node tools/sma-graphify.mjs refresh --project <id> --global\` before querying.`,
+      `Missing global Graphify graph: ${graphPath}. Add one with \`node tools/sma-graphify.ts refresh --project <id> --global\` before querying.`,
     );
   }
 

@@ -1,20 +1,15 @@
 {
-  "generated": "2026-07-11T01:22:02+00:00",
+  "generated": "2026-07-11T02:48:35+00:00",
   "root": ".UltraVision",
   "strict": true,
   "pedantic": false,
   "pass": true,
-  "task_count": 1702,
+  "task_count": 1704,
   "error_count": 0,
   "warning_count": 0,
   "errors": [],
   "warnings": [],
   "info": [
-    "13 cross-module dependency edge(s) \u2014 see `uvp topo` for wave ordering",
-    "unordered co-edit risk on `tools/sma-graphify.mjs`: UV-GR-graph-charter, UV-GR-sma-graphify-convert",
-    "unordered co-edit risk on `tools/sma-lease.mjs`: UV-CO-coord-charter, UV-CO-sma-lease-convert",
-    "unordered co-edit risk on `tools/sma-rule-gate.mjs`: UV-GA-gates-charter, UV-GA-sma-rule-gate-convert",
-    "unordered co-edit risk on `tools/sma-scan.mjs`: UV-RG-reg-charter, UV-RG-sma-scan-convert",
-    "unordered co-edit risk on `tools/sma-sync-public.mjs`: UV-SY-cmd-sync-public-docs, UV-SY-sync-charter"
+    "13 cross-module dependency edge(s) \u2014 see `uvp topo` for wave ordering"
   ]
 }

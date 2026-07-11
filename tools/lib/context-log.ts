@@ -10,7 +10,7 @@
 /**
  * context-log.ts — shared helpers for the per-brick agent-context NDJSON log.
  *
- * Used by tools/sma-context.mjs (CLI) and tools/sma-lease.mjs (auto-stamping).
+ * Used by tools/sma-context.ts (CLI) and tools/sma-lease.ts (auto-stamping).
  * Schema: schemas/agent-context-event.schema.json.
  *
  * Path: <project_root>/.smarch/agent-context/<safe-brick-id>.ndjson

@@ -6,7 +6,7 @@
  * INPUTS: A changed file and the repository's generation-three configuration.
  * OUTPUTS: A structured module and lane decision with the matching ownership details.
  * CALLERS: Agents, automated checks, and dispatch tools selecting safe work lanes.
- * Usage: `node tools/sma-gen3-classify.mjs --changed-file tools/sma-graphify.mjs`
+ * Usage: `node tools/sma-gen3-classify.mjs --changed-file tools/sma-graphify.ts`
  */
 
 import { readFileSync } from 'node:fs';
@@ -146,7 +146,7 @@ function normalizePath(path) {
 }
 
 function runSelftest(config) {
-  assertClassification(config, 'tools/sma-lease.mjs', {
+  assertClassification(config, 'tools/sma-lease.ts', {
     module: 'coord',
     lane: 'single-module',
   });

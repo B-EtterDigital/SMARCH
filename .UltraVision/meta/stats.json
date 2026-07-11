@@ -1,16 +1,16 @@
 {
-  "generated": "2026-07-11T01:55:14+00:00",
+  "generated": "2026-07-11T02:19:39+00:00",
   "totals": {
     "tasks": 1702,
     "active": 1699,
-    "done": 571,
+    "done": 870,
     "obsolete": 3,
-    "percent_complete": 33.61,
-    "est_minutes_remaining": 36740
+    "percent_complete": 51.21,
+    "est_minutes_remaining": 29215
   },
   "by_status": {
-    "claimed": 300,
-    "done": 571,
+    "claimed": 1,
+    "done": 870,
     "obsolete": 3,
     "todo": 828
   },

@@ -5,9 +5,9 @@
  * INPUTS: A harness object supplied by the parallel-preflight command.
  * OUTPUTS: A success message and zero result, or an assertion failure naming the broken decision.
  * CALLERS: The parallel-preflight command invokes this harness through its selftest mode.
- * @example node tools/sma-parallel-preflight.mjs selftest
+ * @example node tools/sma-parallel-preflight.ts selftest
  */
-/** Selftest harness for sma-parallel-preflight.mjs. */
+/** Selftest harness for sma-parallel-preflight.ts. */
 
 type SelftestHarness = Record<string, any>;
 

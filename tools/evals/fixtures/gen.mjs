@@ -16,13 +16,13 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { validateManifest } from "../../sma-validate.mjs";
+import { validateManifest } from "../../sma-validate.ts";
 
 const execFileAsync = promisify(execFile);
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "../../..");
 const SCHEMA_PATH = path.join(REPO_ROOT, "schemas", "brick.manifest.schema.json");
-const SCANNER_PATH = path.join(REPO_ROOT, "tools", "sma-scan.mjs");
+const SCANNER_PATH = path.join(REPO_ROOT, "tools", "sma-scan.ts");
 const DEFAULT_OUTPUT = path.join(SCRIPT_DIR, "portfolio");
 const SNAPSHOT_PATH = path.join(SCRIPT_DIR, "portfolio.snapshot.json");
 const SNAPSHOT_ROOT = "tools/evals/fixtures/portfolio";

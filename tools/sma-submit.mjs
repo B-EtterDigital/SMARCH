@@ -29,7 +29,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateManifest } from './sma-validate.mjs';
+import { validateManifest } from './sma-validate.ts';
 import { CliError, emitFailure } from './cli-contract.mjs';
 
 const TOOL_PATH = fileURLToPath(import.meta.url);
@@ -394,7 +394,7 @@ export function createSubmission(options) {
       files: entries.sort((a, b) => a.path.localeCompare(b.path)),
       verification: {
         digest: 'sha256',
-        manifest_validator: 'tools/sma-validate.mjs',
+        manifest_validator: 'tools/sma-validate.ts',
         manifest_warning_count: manifestReport.warnings.length,
         gates,
       },

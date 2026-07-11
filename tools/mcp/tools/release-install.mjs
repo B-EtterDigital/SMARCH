@@ -1,5 +1,5 @@
 import { currentRoot, requireString } from "../lib.mjs";
-import { installRelease } from "../../sma-store.mjs";
+import { installRelease } from "../../sma-store.ts";
 
 export const name = "release-install";
 export const description = "Install a versioned SMA release through the import-safe sma-store API.";

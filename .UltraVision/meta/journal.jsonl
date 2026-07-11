@@ -1751,3 +1751,419 @@
 {"ts": "2026-07-11T02:19:18+00:00", "action": "complete", "id": "UV-EV-cmd-evals-run-impl", "detail": "node tools/sma-doc-lint.mjs"}
 {"ts": "2026-07-11T02:19:18+00:00", "action": "complete", "id": "UV-EV-cmd-evals-run-telemetry", "detail": "node tools/sma-doc-lint.mjs"}
 {"ts": "2026-07-11T02:19:19+00:00", "action": "complete", "id": "UV-EV-cmd-evals-run-unit", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:20:20+00:00", "action": "claim", "id": "UV-RG-sma-backfill-bulk-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:20+00:00", "action": "claim", "id": "UV-RG-sma-backfill-bulk-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:20+00:00", "action": "claim", "id": "UV-RG-sma-backfill-plan-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:21+00:00", "action": "claim", "id": "UV-RG-sma-backfill-plan-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:21+00:00", "action": "claim", "id": "UV-RG-sma-backfill-run-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:21+00:00", "action": "claim", "id": "UV-RG-sma-backfill-run-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:21+00:00", "action": "claim", "id": "UV-RG-sma-backfill-summary-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:22+00:00", "action": "claim", "id": "UV-RG-sma-backfill-summary-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:22+00:00", "action": "claim", "id": "UV-RG-sma-backlog-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:22+00:00", "action": "claim", "id": "UV-RG-sma-backlog-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:23+00:00", "action": "claim", "id": "UV-RG-sma-bootstrap-manifests-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:23+00:00", "action": "claim", "id": "UV-RG-sma-bootstrap-manifests-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:23+00:00", "action": "claim", "id": "UV-RG-sma-build-index-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:24+00:00", "action": "claim", "id": "UV-RG-sma-build-index-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:24+00:00", "action": "claim", "id": "UV-RG-sma-build-packets-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:24+00:00", "action": "claim", "id": "UV-RG-sma-build-packets-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:25+00:00", "action": "claim", "id": "UV-RG-sma-build-promote-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:25+00:00", "action": "claim", "id": "UV-RG-sma-build-promote-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:26+00:00", "action": "claim", "id": "UV-RG-sma-build-verify-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:26+00:00", "action": "claim", "id": "UV-RG-sma-build-verify-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:26+00:00", "action": "claim", "id": "UV-RG-sma-canonicalization-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:27+00:00", "action": "claim", "id": "UV-RG-sma-canonicalization-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:27+00:00", "action": "claim", "id": "UV-RG-sma-clone-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:27+00:00", "action": "claim", "id": "UV-RG-sma-clone-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:28+00:00", "action": "claim", "id": "UV-RG-sma-clone-smoke-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:28+00:00", "action": "claim", "id": "UV-RG-sma-clone-smoke-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:28+00:00", "action": "claim", "id": "UV-RG-sma-compact-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:29+00:00", "action": "claim", "id": "UV-RG-sma-compact-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:29+00:00", "action": "claim", "id": "UV-RG-sma-dependents-index-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:29+00:00", "action": "claim", "id": "UV-RG-sma-dependents-index-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:30+00:00", "action": "claim", "id": "UV-RG-sma-doctor-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:30+00:00", "action": "claim", "id": "UV-RG-sma-doctor-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:31+00:00", "action": "claim", "id": "UV-RG-sma-enrich-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:31+00:00", "action": "claim", "id": "UV-RG-sma-enrich-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:31+00:00", "action": "claim", "id": "UV-RG-sma-filter-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:32+00:00", "action": "claim", "id": "UV-RG-sma-filter-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:32+00:00", "action": "claim", "id": "UV-RG-sma-goal-progress-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:32+00:00", "action": "claim", "id": "UV-RG-sma-goal-progress-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:32+00:00", "action": "claim", "id": "UV-RG-sma-import-verify-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:33+00:00", "action": "claim", "id": "UV-RG-sma-import-verify-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:33+00:00", "action": "claim", "id": "UV-RG-sma-init-project-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:33+00:00", "action": "claim", "id": "UV-RG-sma-init-project-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:34+00:00", "action": "claim", "id": "UV-RG-sma-manifest-scaffold-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:34+00:00", "action": "claim", "id": "UV-RG-sma-manifest-scaffold-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:34+00:00", "action": "claim", "id": "UV-RG-sma-match-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:35+00:00", "action": "claim", "id": "UV-RG-sma-match-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:35+00:00", "action": "claim", "id": "UV-RG-sma-merge-registries-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:35+00:00", "action": "claim", "id": "UV-RG-sma-merge-registries-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:36+00:00", "action": "claim", "id": "UV-RG-sma-module-work-packets-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:36+00:00", "action": "claim", "id": "UV-RG-sma-module-work-packets-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:36+00:00", "action": "claim", "id": "UV-RG-sma-operator-packet-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:37+00:00", "action": "claim", "id": "UV-RG-sma-operator-packet-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:37+00:00", "action": "claim", "id": "UV-RG-sma-portfolio-refresh-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:37+00:00", "action": "claim", "id": "UV-RG-sma-portfolio-refresh-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:38+00:00", "action": "claim", "id": "UV-RG-sma-portfolio-scan-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:38+00:00", "action": "claim", "id": "UV-RG-sma-portfolio-scan-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:38+00:00", "action": "claim", "id": "UV-RG-sma-promote-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:38+00:00", "action": "claim", "id": "UV-RG-sma-promote-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:39+00:00", "action": "claim", "id": "UV-RG-sma-propagate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:39+00:00", "action": "claim", "id": "UV-RG-sma-propagate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:40+00:00", "action": "claim", "id": "UV-RG-sma-publish-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:40+00:00", "action": "claim", "id": "UV-RG-sma-publish-index-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:40+00:00", "action": "claim", "id": "UV-RG-sma-publish-index-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:40+00:00", "action": "claim", "id": "UV-RG-sma-publish-leaks-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:41+00:00", "action": "claim", "id": "UV-RG-sma-publish-leaks-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:41+00:00", "action": "claim", "id": "UV-RG-sma-publish-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:42+00:00", "action": "claim", "id": "UV-RG-sma-recommend-builds-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:42+00:00", "action": "claim", "id": "UV-RG-sma-recommend-builds-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:42+00:00", "action": "claim", "id": "UV-RG-sma-refresh-manifest-budgets-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:42+00:00", "action": "claim", "id": "UV-RG-sma-refresh-manifest-budgets-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:43+00:00", "action": "claim", "id": "UV-RG-sma-release-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:43+00:00", "action": "claim", "id": "UV-RG-sma-release-drafts-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:43+00:00", "action": "claim", "id": "UV-RG-sma-release-drafts-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:44+00:00", "action": "claim", "id": "UV-RG-sma-release-index-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:44+00:00", "action": "claim", "id": "UV-RG-sma-release-index-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:44+00:00", "action": "claim", "id": "UV-RG-sma-release-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:45+00:00", "action": "claim", "id": "UV-RG-sma-repo-queues-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:45+00:00", "action": "claim", "id": "UV-RG-sma-repo-queues-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:46+00:00", "action": "claim", "id": "UV-RG-sma-reuse-receipt-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:46+00:00", "action": "claim", "id": "UV-RG-sma-reuse-receipt-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:46+00:00", "action": "claim", "id": "UV-RG-sma-scan-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:47+00:00", "action": "claim", "id": "UV-RG-sma-scan-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:47+00:00", "action": "claim", "id": "UV-RG-sma-score-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:47+00:00", "action": "claim", "id": "UV-RG-sma-score-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:47+00:00", "action": "claim", "id": "UV-RG-sma-similarity-scan-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:48+00:00", "action": "claim", "id": "UV-RG-sma-similarity-scan-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:48+00:00", "action": "claim", "id": "UV-RG-sma-stable-generated-selftest-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:49+00:00", "action": "claim", "id": "UV-RG-sma-stable-generated-selftest-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:49+00:00", "action": "claim", "id": "UV-RG-sma-state-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:49+00:00", "action": "claim", "id": "UV-RG-sma-state-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:50+00:00", "action": "claim", "id": "UV-RG-sma-stats-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:50+00:00", "action": "claim", "id": "UV-RG-sma-stats-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:50+00:00", "action": "claim", "id": "UV-RG-sma-store-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:51+00:00", "action": "claim", "id": "UV-RG-sma-store-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:51+00:00", "action": "claim", "id": "UV-RG-sma-store-remote-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:52+00:00", "action": "claim", "id": "UV-RG-sma-store-remote-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:52+00:00", "action": "claim", "id": "UV-RG-sma-sup-status-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:52+00:00", "action": "claim", "id": "UV-RG-sma-sup-status-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:53+00:00", "action": "claim", "id": "UV-RG-sma-token-count-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:53+00:00", "action": "claim", "id": "UV-RG-sma-token-count-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:53+00:00", "action": "claim", "id": "UV-RG-sma-touch-backfill-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:54+00:00", "action": "claim", "id": "UV-RG-sma-touch-backfill-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:54+00:00", "action": "claim", "id": "UV-RG-sma-update-plan-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:54+00:00", "action": "claim", "id": "UV-RG-sma-update-plan-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:55+00:00", "action": "claim", "id": "UV-RG-sma-wave-monitor-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:55+00:00", "action": "claim", "id": "UV-RG-sma-wave-monitor-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:55+00:00", "action": "claim", "id": "UV-RG-sma-wave-observe-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:56+00:00", "action": "claim", "id": "UV-RG-sma-wave-observe-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:56+00:00", "action": "claim", "id": "UV-RG-sma-why-blocked-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:56+00:00", "action": "claim", "id": "UV-RG-sma-why-blocked-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:57+00:00", "action": "claim", "id": "UV-CO-sma-cleanup-packets-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:57+00:00", "action": "claim", "id": "UV-CO-sma-cleanup-packets-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:57+00:00", "action": "claim", "id": "UV-CO-sma-conflict-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:57+00:00", "action": "claim", "id": "UV-CO-sma-conflict-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:58+00:00", "action": "claim", "id": "UV-CO-sma-context-check-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:58+00:00", "action": "claim", "id": "UV-CO-sma-context-check-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:58+00:00", "action": "claim", "id": "UV-CO-sma-context-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:59+00:00", "action": "claim", "id": "UV-CO-sma-context-normalize-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:59+00:00", "action": "claim", "id": "UV-CO-sma-context-normalize-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:20:59+00:00", "action": "claim", "id": "UV-CO-sma-context-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:00+00:00", "action": "claim", "id": "UV-CO-sma-context-replay-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:00+00:00", "action": "claim", "id": "UV-CO-sma-context-replay-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:00+00:00", "action": "claim", "id": "UV-CO-sma-controller-snapshot-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:01+00:00", "action": "claim", "id": "UV-CO-sma-controller-snapshot-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:01+00:00", "action": "claim", "id": "UV-CO-sma-dirty-baseline-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:02+00:00", "action": "claim", "id": "UV-CO-sma-dirty-baseline-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:02+00:00", "action": "claim", "id": "UV-CO-sma-end-edit-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:02+00:00", "action": "claim", "id": "UV-CO-sma-end-edit-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:03+00:00", "action": "claim", "id": "UV-CO-sma-lease-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:03+00:00", "action": "claim", "id": "UV-CO-sma-lease-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:03+00:00", "action": "claim", "id": "UV-CO-sma-merge-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:04+00:00", "action": "claim", "id": "UV-CO-sma-merge-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:04+00:00", "action": "claim", "id": "UV-CO-sma-parallel-preflight-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:04+00:00", "action": "claim", "id": "UV-CO-sma-parallel-preflight-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:05+00:00", "action": "claim", "id": "UV-CO-sma-seed-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:05+00:00", "action": "claim", "id": "UV-CO-sma-seed-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:05+00:00", "action": "claim", "id": "UV-CO-sma-start-edit-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:06+00:00", "action": "claim", "id": "UV-CO-sma-start-edit-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:06+00:00", "action": "claim", "id": "UV-SM-sma-codex-all-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:06+00:00", "action": "claim", "id": "UV-SM-sma-codex-all-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:07+00:00", "action": "claim", "id": "UV-SM-sma-codex-connect-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:07+00:00", "action": "claim", "id": "UV-SM-sma-codex-connect-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:07+00:00", "action": "claim", "id": "UV-SM-sma-codex-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:08+00:00", "action": "claim", "id": "UV-SM-sma-codex-enrich-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:08+00:00", "action": "claim", "id": "UV-SM-sma-codex-enrich-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:09+00:00", "action": "claim", "id": "UV-SM-sma-codex-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:09+00:00", "action": "claim", "id": "UV-SM-sma-codex-profile-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:09+00:00", "action": "claim", "id": "UV-SM-sma-codex-profile-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:09+00:00", "action": "claim", "id": "UV-SM-sma-codex-rank-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:10+00:00", "action": "claim", "id": "UV-SM-sma-codex-rank-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:10+00:00", "action": "claim", "id": "UV-SM-sma-codex-scan-helper-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:10+00:00", "action": "claim", "id": "UV-SM-sma-codex-scan-helper-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:11+00:00", "action": "claim", "id": "UV-SM-sma-codex-test-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:11+00:00", "action": "claim", "id": "UV-SM-sma-codex-test-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:11+00:00", "action": "claim", "id": "UV-SM-sma-codex-wiki-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:12+00:00", "action": "claim", "id": "UV-SM-sma-codex-wiki-index-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:12+00:00", "action": "claim", "id": "UV-SM-sma-codex-wiki-index-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:12+00:00", "action": "claim", "id": "UV-SM-sma-codex-wiki-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:13+00:00", "action": "claim", "id": "UV-SM-sma-smoa-token-summary-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:13+00:00", "action": "claim", "id": "UV-SM-sma-smoa-token-summary-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:13+00:00", "action": "claim", "id": "UV-GA-sma-ci-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:14+00:00", "action": "claim", "id": "UV-GA-sma-ci-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:14+00:00", "action": "claim", "id": "UV-GA-sma-compliance-gate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:15+00:00", "action": "claim", "id": "UV-GA-sma-compliance-gate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:15+00:00", "action": "claim", "id": "UV-GA-sma-license-gate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:15+00:00", "action": "claim", "id": "UV-GA-sma-license-gate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:16+00:00", "action": "claim", "id": "UV-GA-sma-rule-gate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:16+00:00", "action": "claim", "id": "UV-GA-sma-rule-gate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:16+00:00", "action": "claim", "id": "UV-GA-sma-scope-drift-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:17+00:00", "action": "claim", "id": "UV-GA-sma-scope-drift-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:17+00:00", "action": "claim", "id": "UV-GA-sma-security-gate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:17+00:00", "action": "claim", "id": "UV-GA-sma-security-gate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:18+00:00", "action": "claim", "id": "UV-GA-sma-source-size-gate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:18+00:00", "action": "claim", "id": "UV-GA-sma-source-size-gate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:19+00:00", "action": "claim", "id": "UV-GA-sma-validate-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:19+00:00", "action": "claim", "id": "UV-GA-sma-validate-gen3-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:19+00:00", "action": "claim", "id": "UV-GA-sma-validate-gen3-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:19+00:00", "action": "claim", "id": "UV-GA-sma-validate-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:20+00:00", "action": "claim", "id": "UV-DA-sma-brick-wall-lego-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:20+00:00", "action": "claim", "id": "UV-DA-sma-brick-wall-lego-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:20+00:00", "action": "claim", "id": "UV-DA-sma-dashboard-server-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:21+00:00", "action": "claim", "id": "UV-DA-sma-dashboard-server-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:21+00:00", "action": "claim", "id": "UV-DA-sma-gen3-dashboard-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:21+00:00", "action": "claim", "id": "UV-DA-sma-gen3-dashboard-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:21+00:00", "action": "claim", "id": "UV-DA-sma-wiki-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:22+00:00", "action": "claim", "id": "UV-DA-sma-wiki-gen3-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:22+00:00", "action": "claim", "id": "UV-DA-sma-wiki-gen3-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:22+00:00", "action": "claim", "id": "UV-DA-sma-wiki-html-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:23+00:00", "action": "claim", "id": "UV-DA-sma-wiki-html-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:23+00:00", "action": "claim", "id": "UV-DA-sma-wiki-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:23+00:00", "action": "claim", "id": "UV-PR-sma-anchor-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:24+00:00", "action": "claim", "id": "UV-PR-sma-anchor-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:24+00:00", "action": "claim", "id": "UV-PR-sma-attest-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:24+00:00", "action": "claim", "id": "UV-PR-sma-attest-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:25+00:00", "action": "claim", "id": "UV-PR-sma-attest-verify-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:25+00:00", "action": "claim", "id": "UV-PR-sma-attest-verify-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:25+00:00", "action": "claim", "id": "UV-PR-sma-provenance-ledger-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:26+00:00", "action": "claim", "id": "UV-PR-sma-provenance-ledger-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:26+00:00", "action": "claim", "id": "UV-PR-sma-provenance-summary-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:26+00:00", "action": "claim", "id": "UV-PR-sma-provenance-summary-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:26+00:00", "action": "claim", "id": "UV-PR-sma-provenance-verify-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:27+00:00", "action": "claim", "id": "UV-PR-sma-provenance-verify-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:27+00:00", "action": "claim", "id": "UV-GR-sma-graph-packets-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:27+00:00", "action": "claim", "id": "UV-GR-sma-graph-packets-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:28+00:00", "action": "claim", "id": "UV-GR-sma-graphify-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:28+00:00", "action": "claim", "id": "UV-GR-sma-graphify-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:28+00:00", "action": "claim", "id": "UV-SK-install-agent-skills-convert", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:21:29+00:00", "action": "claim", "id": "UV-SK-install-agent-skills-parity", "agent": "codex-w12"}
+{"ts": "2026-07-11T02:46:37+00:00", "action": "complete", "id": "UV-RG-sma-backfill-bulk-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:38+00:00", "action": "complete", "id": "UV-RG-sma-backfill-bulk-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:38+00:00", "action": "complete", "id": "UV-RG-sma-backfill-plan-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:39+00:00", "action": "complete", "id": "UV-RG-sma-backfill-plan-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:40+00:00", "action": "complete", "id": "UV-RG-sma-backfill-run-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:40+00:00", "action": "complete", "id": "UV-RG-sma-backfill-run-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:41+00:00", "action": "complete", "id": "UV-RG-sma-backfill-summary-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:41+00:00", "action": "complete", "id": "UV-RG-sma-backfill-summary-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:42+00:00", "action": "complete", "id": "UV-RG-sma-backlog-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:42+00:00", "action": "complete", "id": "UV-RG-sma-backlog-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:43+00:00", "action": "complete", "id": "UV-RG-sma-bootstrap-manifests-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:43+00:00", "action": "complete", "id": "UV-RG-sma-bootstrap-manifests-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:44+00:00", "action": "complete", "id": "UV-RG-sma-build-index-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:45+00:00", "action": "complete", "id": "UV-RG-sma-build-index-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:45+00:00", "action": "complete", "id": "UV-RG-sma-build-packets-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:46+00:00", "action": "complete", "id": "UV-RG-sma-build-packets-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:46+00:00", "action": "complete", "id": "UV-RG-sma-build-promote-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:47+00:00", "action": "complete", "id": "UV-RG-sma-build-promote-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:47+00:00", "action": "complete", "id": "UV-RG-sma-build-verify-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:48+00:00", "action": "complete", "id": "UV-RG-sma-build-verify-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:48+00:00", "action": "complete", "id": "UV-RG-sma-canonicalization-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:49+00:00", "action": "complete", "id": "UV-RG-sma-canonicalization-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:50+00:00", "action": "complete", "id": "UV-RG-sma-clone-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:50+00:00", "action": "complete", "id": "UV-RG-sma-clone-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:51+00:00", "action": "complete", "id": "UV-RG-sma-clone-smoke-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:52+00:00", "action": "complete", "id": "UV-RG-sma-clone-smoke-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:52+00:00", "action": "complete", "id": "UV-RG-sma-compact-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:53+00:00", "action": "complete", "id": "UV-RG-sma-compact-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:53+00:00", "action": "complete", "id": "UV-RG-sma-dependents-index-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:54+00:00", "action": "complete", "id": "UV-RG-sma-dependents-index-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:54+00:00", "action": "complete", "id": "UV-RG-sma-doctor-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:55+00:00", "action": "complete", "id": "UV-RG-sma-doctor-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:55+00:00", "action": "complete", "id": "UV-RG-sma-enrich-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:56+00:00", "action": "complete", "id": "UV-RG-sma-enrich-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:56+00:00", "action": "complete", "id": "UV-RG-sma-filter-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:57+00:00", "action": "complete", "id": "UV-RG-sma-filter-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:58+00:00", "action": "complete", "id": "UV-RG-sma-goal-progress-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:58+00:00", "action": "complete", "id": "UV-RG-sma-goal-progress-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:58+00:00", "action": "complete", "id": "UV-RG-sma-import-verify-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:59+00:00", "action": "complete", "id": "UV-RG-sma-import-verify-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:46:59+00:00", "action": "complete", "id": "UV-RG-sma-init-project-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:00+00:00", "action": "complete", "id": "UV-RG-sma-init-project-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:00+00:00", "action": "complete", "id": "UV-RG-sma-manifest-scaffold-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:01+00:00", "action": "complete", "id": "UV-RG-sma-manifest-scaffold-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:01+00:00", "action": "complete", "id": "UV-RG-sma-match-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:02+00:00", "action": "complete", "id": "UV-RG-sma-match-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:02+00:00", "action": "complete", "id": "UV-RG-sma-merge-registries-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:03+00:00", "action": "complete", "id": "UV-RG-sma-merge-registries-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:03+00:00", "action": "complete", "id": "UV-RG-sma-module-work-packets-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:04+00:00", "action": "complete", "id": "UV-RG-sma-module-work-packets-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:05+00:00", "action": "complete", "id": "UV-RG-sma-operator-packet-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:05+00:00", "action": "complete", "id": "UV-RG-sma-operator-packet-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:06+00:00", "action": "complete", "id": "UV-RG-sma-portfolio-refresh-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:06+00:00", "action": "complete", "id": "UV-RG-sma-portfolio-refresh-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:07+00:00", "action": "complete", "id": "UV-RG-sma-portfolio-scan-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:08+00:00", "action": "complete", "id": "UV-RG-sma-portfolio-scan-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:09+00:00", "action": "complete", "id": "UV-RG-sma-promote-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:10+00:00", "action": "complete", "id": "UV-RG-sma-promote-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:10+00:00", "action": "complete", "id": "UV-RG-sma-propagate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:11+00:00", "action": "complete", "id": "UV-RG-sma-propagate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:11+00:00", "action": "complete", "id": "UV-RG-sma-publish-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:12+00:00", "action": "complete", "id": "UV-RG-sma-publish-index-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:12+00:00", "action": "complete", "id": "UV-RG-sma-publish-index-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:13+00:00", "action": "complete", "id": "UV-RG-sma-publish-leaks-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:13+00:00", "action": "complete", "id": "UV-RG-sma-publish-leaks-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:14+00:00", "action": "complete", "id": "UV-RG-sma-publish-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:15+00:00", "action": "complete", "id": "UV-RG-sma-recommend-builds-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:16+00:00", "action": "complete", "id": "UV-RG-sma-recommend-builds-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:16+00:00", "action": "complete", "id": "UV-RG-sma-refresh-manifest-budgets-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:17+00:00", "action": "complete", "id": "UV-RG-sma-refresh-manifest-budgets-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:18+00:00", "action": "complete", "id": "UV-RG-sma-release-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:19+00:00", "action": "complete", "id": "UV-RG-sma-release-drafts-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:19+00:00", "action": "complete", "id": "UV-RG-sma-release-drafts-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:20+00:00", "action": "complete", "id": "UV-RG-sma-release-index-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:21+00:00", "action": "complete", "id": "UV-RG-sma-release-index-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:21+00:00", "action": "complete", "id": "UV-RG-sma-release-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:22+00:00", "action": "complete", "id": "UV-RG-sma-repo-queues-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:23+00:00", "action": "complete", "id": "UV-RG-sma-repo-queues-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:23+00:00", "action": "complete", "id": "UV-RG-sma-reuse-receipt-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:24+00:00", "action": "complete", "id": "UV-RG-sma-reuse-receipt-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:24+00:00", "action": "complete", "id": "UV-RG-sma-scan-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:25+00:00", "action": "complete", "id": "UV-RG-sma-scan-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:25+00:00", "action": "complete", "id": "UV-RG-sma-score-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:26+00:00", "action": "complete", "id": "UV-RG-sma-score-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:26+00:00", "action": "complete", "id": "UV-RG-sma-similarity-scan-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:27+00:00", "action": "complete", "id": "UV-RG-sma-similarity-scan-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:27+00:00", "action": "complete", "id": "UV-RG-sma-stable-generated-selftest-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:28+00:00", "action": "complete", "id": "UV-RG-sma-stable-generated-selftest-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:29+00:00", "action": "complete", "id": "UV-RG-sma-state-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:29+00:00", "action": "complete", "id": "UV-RG-sma-state-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:30+00:00", "action": "complete", "id": "UV-RG-sma-stats-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:30+00:00", "action": "complete", "id": "UV-RG-sma-stats-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:31+00:00", "action": "complete", "id": "UV-RG-sma-store-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:31+00:00", "action": "complete", "id": "UV-RG-sma-store-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:32+00:00", "action": "complete", "id": "UV-RG-sma-store-remote-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:32+00:00", "action": "complete", "id": "UV-RG-sma-store-remote-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:33+00:00", "action": "complete", "id": "UV-RG-sma-sup-status-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:33+00:00", "action": "complete", "id": "UV-RG-sma-sup-status-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:33+00:00", "action": "complete", "id": "UV-RG-sma-token-count-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:34+00:00", "action": "complete", "id": "UV-RG-sma-token-count-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:35+00:00", "action": "complete", "id": "UV-RG-sma-touch-backfill-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:35+00:00", "action": "complete", "id": "UV-RG-sma-touch-backfill-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:35+00:00", "action": "complete", "id": "UV-RG-sma-update-plan-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:36+00:00", "action": "complete", "id": "UV-RG-sma-update-plan-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:36+00:00", "action": "complete", "id": "UV-RG-sma-wave-monitor-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:37+00:00", "action": "complete", "id": "UV-RG-sma-wave-monitor-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:37+00:00", "action": "complete", "id": "UV-RG-sma-wave-observe-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:38+00:00", "action": "complete", "id": "UV-RG-sma-wave-observe-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:38+00:00", "action": "complete", "id": "UV-RG-sma-why-blocked-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:39+00:00", "action": "complete", "id": "UV-RG-sma-why-blocked-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:40+00:00", "action": "complete", "id": "UV-CO-sma-cleanup-packets-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:40+00:00", "action": "complete", "id": "UV-CO-sma-cleanup-packets-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:41+00:00", "action": "complete", "id": "UV-CO-sma-conflict-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:41+00:00", "action": "complete", "id": "UV-CO-sma-conflict-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:42+00:00", "action": "complete", "id": "UV-CO-sma-context-check-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:42+00:00", "action": "complete", "id": "UV-CO-sma-context-check-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:43+00:00", "action": "complete", "id": "UV-CO-sma-context-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:43+00:00", "action": "complete", "id": "UV-CO-sma-context-normalize-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:44+00:00", "action": "complete", "id": "UV-CO-sma-context-normalize-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:44+00:00", "action": "complete", "id": "UV-CO-sma-context-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:45+00:00", "action": "complete", "id": "UV-CO-sma-context-replay-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:45+00:00", "action": "complete", "id": "UV-CO-sma-context-replay-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:46+00:00", "action": "complete", "id": "UV-CO-sma-controller-snapshot-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:46+00:00", "action": "complete", "id": "UV-CO-sma-controller-snapshot-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:47+00:00", "action": "complete", "id": "UV-CO-sma-dirty-baseline-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:47+00:00", "action": "complete", "id": "UV-CO-sma-dirty-baseline-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:48+00:00", "action": "complete", "id": "UV-CO-sma-end-edit-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:48+00:00", "action": "complete", "id": "UV-CO-sma-end-edit-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:49+00:00", "action": "complete", "id": "UV-CO-sma-lease-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:49+00:00", "action": "complete", "id": "UV-CO-sma-lease-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:50+00:00", "action": "complete", "id": "UV-CO-sma-merge-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:50+00:00", "action": "complete", "id": "UV-CO-sma-merge-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:51+00:00", "action": "complete", "id": "UV-CO-sma-parallel-preflight-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:51+00:00", "action": "complete", "id": "UV-CO-sma-parallel-preflight-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:52+00:00", "action": "complete", "id": "UV-CO-sma-seed-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:52+00:00", "action": "complete", "id": "UV-CO-sma-seed-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:53+00:00", "action": "complete", "id": "UV-CO-sma-start-edit-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:53+00:00", "action": "complete", "id": "UV-CO-sma-start-edit-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:54+00:00", "action": "complete", "id": "UV-SM-sma-codex-all-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:54+00:00", "action": "complete", "id": "UV-SM-sma-codex-all-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:55+00:00", "action": "complete", "id": "UV-SM-sma-codex-connect-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:56+00:00", "action": "complete", "id": "UV-SM-sma-codex-connect-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:56+00:00", "action": "complete", "id": "UV-SM-sma-codex-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:57+00:00", "action": "complete", "id": "UV-SM-sma-codex-enrich-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:57+00:00", "action": "complete", "id": "UV-SM-sma-codex-enrich-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:58+00:00", "action": "complete", "id": "UV-SM-sma-codex-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:58+00:00", "action": "complete", "id": "UV-SM-sma-codex-profile-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:59+00:00", "action": "complete", "id": "UV-SM-sma-codex-profile-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:47:59+00:00", "action": "complete", "id": "UV-SM-sma-codex-rank-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:00+00:00", "action": "complete", "id": "UV-SM-sma-codex-rank-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:01+00:00", "action": "complete", "id": "UV-SM-sma-codex-scan-helper-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:01+00:00", "action": "complete", "id": "UV-SM-sma-codex-scan-helper-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:02+00:00", "action": "complete", "id": "UV-SM-sma-codex-test-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:02+00:00", "action": "complete", "id": "UV-SM-sma-codex-test-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:03+00:00", "action": "complete", "id": "UV-SM-sma-codex-wiki-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:03+00:00", "action": "complete", "id": "UV-SM-sma-codex-wiki-index-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:04+00:00", "action": "complete", "id": "UV-SM-sma-codex-wiki-index-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:04+00:00", "action": "complete", "id": "UV-SM-sma-codex-wiki-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:05+00:00", "action": "complete", "id": "UV-SM-sma-smoa-token-summary-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:06+00:00", "action": "complete", "id": "UV-SM-sma-smoa-token-summary-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:06+00:00", "action": "complete", "id": "UV-GA-sma-ci-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:07+00:00", "action": "complete", "id": "UV-GA-sma-ci-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:07+00:00", "action": "complete", "id": "UV-GA-sma-compliance-gate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:08+00:00", "action": "complete", "id": "UV-GA-sma-compliance-gate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:08+00:00", "action": "complete", "id": "UV-GA-sma-license-gate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:09+00:00", "action": "complete", "id": "UV-GA-sma-license-gate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:09+00:00", "action": "complete", "id": "UV-GA-sma-rule-gate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:10+00:00", "action": "complete", "id": "UV-GA-sma-rule-gate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:10+00:00", "action": "complete", "id": "UV-GA-sma-scope-drift-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:11+00:00", "action": "complete", "id": "UV-GA-sma-scope-drift-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:12+00:00", "action": "complete", "id": "UV-GA-sma-security-gate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:12+00:00", "action": "complete", "id": "UV-GA-sma-security-gate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:13+00:00", "action": "complete", "id": "UV-GA-sma-source-size-gate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:13+00:00", "action": "complete", "id": "UV-GA-sma-source-size-gate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:14+00:00", "action": "complete", "id": "UV-GA-sma-validate-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:14+00:00", "action": "complete", "id": "UV-GA-sma-validate-gen3-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:15+00:00", "action": "complete", "id": "UV-GA-sma-validate-gen3-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:16+00:00", "action": "complete", "id": "UV-GA-sma-validate-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:17+00:00", "action": "complete", "id": "UV-DA-sma-brick-wall-lego-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:18+00:00", "action": "complete", "id": "UV-DA-sma-brick-wall-lego-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:18+00:00", "action": "complete", "id": "UV-DA-sma-dashboard-server-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:19+00:00", "action": "complete", "id": "UV-DA-sma-dashboard-server-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:19+00:00", "action": "complete", "id": "UV-DA-sma-gen3-dashboard-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:20+00:00", "action": "complete", "id": "UV-DA-sma-gen3-dashboard-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:21+00:00", "action": "complete", "id": "UV-DA-sma-wiki-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:21+00:00", "action": "complete", "id": "UV-DA-sma-wiki-gen3-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:22+00:00", "action": "complete", "id": "UV-DA-sma-wiki-gen3-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:23+00:00", "action": "complete", "id": "UV-DA-sma-wiki-html-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:23+00:00", "action": "complete", "id": "UV-DA-sma-wiki-html-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:24+00:00", "action": "complete", "id": "UV-DA-sma-wiki-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:24+00:00", "action": "complete", "id": "UV-PR-sma-anchor-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:25+00:00", "action": "complete", "id": "UV-PR-sma-anchor-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:25+00:00", "action": "complete", "id": "UV-PR-sma-attest-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:26+00:00", "action": "complete", "id": "UV-PR-sma-attest-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:27+00:00", "action": "complete", "id": "UV-PR-sma-attest-verify-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:27+00:00", "action": "complete", "id": "UV-PR-sma-attest-verify-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:28+00:00", "action": "complete", "id": "UV-PR-sma-provenance-ledger-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:29+00:00", "action": "complete", "id": "UV-PR-sma-provenance-ledger-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:29+00:00", "action": "complete", "id": "UV-PR-sma-provenance-summary-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:30+00:00", "action": "complete", "id": "UV-PR-sma-provenance-summary-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:31+00:00", "action": "complete", "id": "UV-PR-sma-provenance-verify-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:31+00:00", "action": "complete", "id": "UV-PR-sma-provenance-verify-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:32+00:00", "action": "complete", "id": "UV-GR-sma-graph-packets-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:32+00:00", "action": "complete", "id": "UV-GR-sma-graph-packets-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:32+00:00", "action": "complete", "id": "UV-GR-sma-graphify-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:33+00:00", "action": "complete", "id": "UV-GR-sma-graphify-parity", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:33+00:00", "action": "complete", "id": "UV-SK-install-agent-skills-convert", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T02:48:34+00:00", "action": "complete", "id": "UV-SK-install-agent-skills-parity", "detail": "node tools/sma-doc-lint.mjs"}

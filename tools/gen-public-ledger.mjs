@@ -17,8 +17,8 @@ import { computeSeal } from './lib/provenance-seal.ts';
 
 const LEDGER_PATH = 'registry/public-ledger.generated.json';
 const FILES = [
-  'tools/sma-ci.mjs',
-  'tools/sma-scan.mjs',
+  'tools/sma-ci.ts',
+  'tools/sma-scan.ts',
   'tools/install-agent-skills.mjs',
   'tools/lib/provenance-seal.ts',
   'tools/lib/license-lattice.ts',

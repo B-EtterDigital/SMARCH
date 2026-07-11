@@ -80,7 +80,7 @@ async function writeCloneFixture(root) {
   const toolsDirectory = path.join(root, "tools");
   await mkdir(toolsDirectory, { recursive: true });
   await writeFile(
-    path.join(toolsDirectory, "sma-clone.mjs"),
+    path.join(toolsDirectory, "sma-clone.ts"),
     `import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -237,7 +237,7 @@ async function run() {
     const freshTarget = path.join(root, "fresh-target-project");
     await writeReleaseFixture(root, freshBrick, freshVersion, "installed.txt");
     const cli = spawnSync(process.execPath, [
-      path.resolve(repoRoot, "tools/sma-store.mjs"),
+      path.resolve(repoRoot, "tools/sma-store.ts"),
       "install",
       "--brick",
       freshBrick,

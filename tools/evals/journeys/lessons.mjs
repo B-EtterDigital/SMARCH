@@ -55,8 +55,8 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/sma-start-edit.mjs",
-      "tools/sma-end-edit.mjs"
+      "tools/sma-start-edit.ts",
+      "tools/sma-end-edit.ts"
     ]
   }],
   ["09-conflicts-are-normal.md", {
@@ -68,7 +68,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/sma-conflict.mjs"
+      "tools/sma-conflict.ts"
     ]
   }],
   ["10-your-first-capsule.md", {
@@ -92,7 +92,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/sma-graphify.mjs query"
+      "tools/sma-graphify.ts query"
     ]
   }],
   ["12-agents-and-skills-setup.md", {
@@ -116,7 +116,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/sma-bootstrap-manifests.mjs"
+      "tools/sma-bootstrap-manifests.ts"
     ]
   }],
   ["14-canonical-the-registry-story.md", {
@@ -128,7 +128,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/sma-canonicalization.mjs"
+      "tools/sma-canonicalization.ts"
     ]
   }],
   ["15-mcp-connect-your-agent.md", {
@@ -152,7 +152,7 @@ const LESSON_CONTRACTS = new Map([
       "## Where to go next",
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
-      "tools/sma-scan.mjs"
+      "tools/sma-scan.ts"
     ]
   }],
   ["17-reading-the-plan-uvp.md", {
@@ -178,7 +178,7 @@ const LESSON_CONTRACTS = new Map([
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
       "SMA_AGENT=\"swarm-blue\"",
-      "tools/sma-start-edit.mjs",
+      "tools/sma-start-edit.ts",
       "conflict_detected"
     ]
   }]

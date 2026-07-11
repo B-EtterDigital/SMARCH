@@ -4,13 +4,13 @@
   "updated_at": "2026-07-03T00:00:00.000Z",
   "files": [
     {
-      "path": "tools/sma-scan.mjs",
+      "path": "tools/sma-scan.ts",
       "lines": 4732,
       "reason": "legacy oversized source; split below the SMA source-size cap"
     },
     {
-      "path": "tools/sma-wiki.mjs",
-      "lines": 4159,
+      "path": "tools/sma-wiki.ts",
+      "lines": 4162,
       "reason": "legacy oversized source; split below the SMA source-size cap"
     }
   ]

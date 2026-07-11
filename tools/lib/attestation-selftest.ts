@@ -27,7 +27,7 @@ import { resolve } from 'node:path';
 
 import { intotoStatement, spdxDocument, cyclonedxDocument } from './attestation.ts';
 import { leafHash, buildMerkle, inclusionProof } from './merkle.ts';
-import { verifyBundle } from '../sma-attest-verify.mjs';
+import { verifyBundle } from '../sma-attest-verify.ts';
 
 const h = (s) => createHash('sha256').update(s).digest('hex');
 let n = 0;

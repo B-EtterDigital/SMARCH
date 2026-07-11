@@ -26,10 +26,10 @@ const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Every tool that can copy/emit/release/publish a brick's source or manifest
 // MUST route through the export guard.
 const GUARDED_EXPORTERS: string[] = [
-  'tools/sma-clone.mjs',
-  'tools/sma-release.mjs',
-  'tools/sma-publish.mjs',
-  'tools/sma-store-remote.mjs',
+  'tools/sma-clone.ts',
+  'tools/sma-release.ts',
+  'tools/sma-publish.ts',
+  'tools/sma-store-remote.ts',
 ];
 
 let n: number = 0;

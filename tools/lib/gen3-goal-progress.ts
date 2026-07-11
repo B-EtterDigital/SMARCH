@@ -24,11 +24,11 @@ const DEFAULT_BUCKETS = 50;
 const VERIFY_STATUSES = new Set(['pass', 'fail', 'blocked', 'skipped']);
 const CONTROL_PLANE_MODULES = [
   { id: 'dashboard', label: 'Dashboard', paths: ['tools/*dashboard*.mjs', 'wiki/*DASHBOARD*'] },
-  { id: 'graphify', label: 'Graphify', paths: ['tools/sma-graphify.mjs', 'tools/sma-graph-packets.mjs', 'graphify-out/**'] },
-  { id: 'leases', label: 'Leases + collisions', paths: ['tools/sma-lease.mjs', 'tools/sma-start-edit.mjs', 'tools/sma-end-edit.mjs', 'tools/sma-conflict.mjs'] },
-  { id: 'modules', label: 'Module waves', paths: ['tools/sma-module-work-packets.mjs', 'tools/lib/module-work-*.mjs', 'handoffs/module-waves/**'] },
-  { id: 'state', label: 'State + scanner', paths: ['tools/sma-state.mjs', 'tools/sma-scan.mjs', 'registry/**', 'wiki/SMA_STATE*'] },
-  { id: 'quality', label: 'Quality gates', paths: ['tools/sma-*-gate.mjs', 'tools/sma-validate*.mjs', 'tools/sma-source-size-gate.mjs'] },
+  { id: 'graphify', label: 'Graphify', paths: ['tools/sma-graphify.ts', 'tools/sma-graph-packets.ts', 'graphify-out/**'] },
+  { id: 'leases', label: 'Leases + collisions', paths: ['tools/sma-lease.ts', 'tools/sma-start-edit.ts', 'tools/sma-end-edit.ts', 'tools/sma-conflict.ts'] },
+  { id: 'modules', label: 'Module waves', paths: ['tools/sma-module-work-packets.ts', 'tools/lib/module-work-*.mjs', 'handoffs/module-waves/**'] },
+  { id: 'state', label: 'State + scanner', paths: ['tools/sma-state.ts', 'tools/sma-scan.ts', 'registry/**', 'wiki/SMA_STATE*'] },
+  { id: 'quality', label: 'Quality gates', paths: ['tools/sma-*-gate.mjs', 'tools/sma-validate*.mjs', 'tools/sma-source-size-gate.ts'] },
 ];
 
 export function buildGoalProgressReport({
