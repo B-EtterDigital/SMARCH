@@ -1,5 +1,7 @@
 # Acme Studio Security Documentation
 
+This document records the security controls and incident process for Acme Studio services. Engineers, operators, and reviewers need it whenever they touch authentication, storage, network boundaries, or sensitive data. Read it before implementation and during release review or incident response. Remember that each security claim needs an enforced control and evidence from the real boundary.
+
 ## API Security Requirements
 
 ### Authentication

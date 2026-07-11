@@ -1,5 +1,7 @@
 # Update Propagation — source-side fan-out
 
+This guide explains how a released source brick reaches projects that import or copy it. Brick maintainers and release operators need it before they bump a version or respond to an incoming update. Read it when cutting a release, refreshing the dependents index, or applying propagation. Remember that locked imports receive update plans, while copied forks receive notices and must be updated by their owners.
+
 The pull-side flow (`sma-clone` → `import-lock` → `sma-update-plan`) was already in place. This document covers the new push-side flow added in commit `01ad274`.
 
 ## First observed end-to-end propagation (2026-04-29)

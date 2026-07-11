@@ -1,5 +1,7 @@
 # Build Verification Harness Templates
 
+This guide explains the reusable checklist, smoke-command contract, and evidence record for build verification. Engineers and release reviewers need it when they add a verification harness to a project or repair an existing build. Read it before selecting smoke commands and before accepting the recorded result. Remember that the evidence record must describe commands that ran against the current build, including failures and skipped checks.
+
 This folder is a small working kit for repo-level repair on a curated build.
 
 Use it when a build is still `candidate` and you need to gather enough

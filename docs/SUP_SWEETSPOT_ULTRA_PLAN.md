@@ -1,4 +1,6 @@
-# SUP — Sweetspot Ultra Plan
+# [SUP](GLOSSARY.md#sup) — Sweetspot Ultra Plan
+
+This guide defines the opt-in planning layer that turns a product vision into a tracked UltraVision task graph. Planners, controllers, and executing agents need it when a request activates SUP or a repository already uses an UltraVision plan of record. Read it before creating, claiming, verifying, or closing plan tasks. Remember to update task state through the plan tooling and never by editing generated task records by hand.
 
 SUP is the optional, maximum-granularity planning layer of SMA. Where normal
 Gen3 work plans just enough to move a lane safely, SUP reconstructs a project's
@@ -62,7 +64,7 @@ SUP-planned repos in `wiki/sup/projects.json`:
   constraints — `uvp validate` rejects task dependencies along forbidden edges.
 - SUP planning itself is docs-lane, single-owner work: take a project lease on
   brick `ultravision-plan` before generating or refreshing.
-- Executing SUP tasks follows normal Gen3 lanes, leases, gates, telemetry/SRS
+- Executing SUP tasks follows normal Gen3 lanes, leases, gates, telemetry/[SRS](GLOSSARY.md#srs)
   proof rules, and claims discipline. SUP changes *what* is planned, never *how*
   work is gated.
 - Paid services (Higgsfield/Fal/ElevenLabs media tasks, paid CI) stay opt-in:

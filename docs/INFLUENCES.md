@@ -1,5 +1,7 @@
 # Influences and Credits
 
+This document records the projects and authors whose ideas shaped SMARCH. Maintainers, contributors, and public communicators need it when tracing a design choice or crediting prior work. Read it before presenting the framework's origins or extending a borrowed pattern. Remember to distinguish inspiration from code provenance and from claims of compatibility.
+
 SMARCH grew from practical work and from ideas shared openly by other builders. This page records the clearest parts of that lineage and the specific lessons we carried forward.
 
 ## Pierre / code.storage, diffs.com, and trees.software
@@ -12,7 +14,7 @@ SMARCH's `sma-store` uses its own `installRelease({ brickId, version, ... })` AP
 
 [Sakana Fugu](https://sakana.ai/fugu-beta/) is a learned multi-agent orchestration system that coordinates a pool of models.
 
-SMOA learned from Fugu that much of a multi-agent system's intelligence can live in the aggregation layer. Selecting, coordinating, and combining agents matters more than treating their outputs as a simple average.
+[SMOA](GLOSSARY.md#smoa) learned from Fugu that much of a multi-agent system's intelligence can live in the aggregation layer. Selecting, coordinating, and combining agents matters more than treating their outputs as a simple average.
 
 ## OpenRouter Fusion
 
@@ -56,7 +58,7 @@ It demonstrated that engineering methodology can be packaged and shared through 
 
 [GSD, or Get Shit Done](https://github.com/gsd-build/get-shit-done), by Lex Christopherson is a spec-driven planning and execution system for coding agents.
 
-The linked original repository is archived and now points readers to Open GSD. Its approach to durable specifications, phased plans, and context recovery is part of the planning lineage behind SUP and UltraVision. SMARCH applies that lineage within its own brick, gate, lease, and evidence model.
+The linked original repository is archived and now points readers to Open GSD. Its approach to durable specifications, phased plans, and context recovery is part of the planning lineage behind [SUP](GLOSSARY.md#sup) and UltraVision. SMARCH applies that lineage within its own brick, gate, lease, and evidence model.
 
 ## tree-sitter
 

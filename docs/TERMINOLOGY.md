@@ -1,5 +1,7 @@
 # Terminology
 
+This document is the naming contract for public concepts, internal gates, and optional modules in Sweetspot. Writers, implementers, and reviewers need it when they introduce or rename a term. Read it before publishing user-facing copy, schemas, commands, or architecture documents. Remember to use one approved name for each concept so code and documentation stay searchable together.
+
 Public SMA vocabulary should stay small.
 
 ## Public Terms
@@ -37,18 +39,18 @@ These names are useful in tooling and manifests, but should not be the first thi
 | Gate | Plain Meaning |
 |------|---------------|
 | SSA-v2 | Security and architecture boundary |
-| SSI | Failure isolation and access gating |
-| SSTF | Testing proof |
-| SPE | Performance proof |
-| SRS | Observability proof |
+| [SSI](GLOSSARY.md#ssi) | Failure isolation and access gating |
+| [SSTF](GLOSSARY.md#sstf) | Testing proof |
+| [SPE](GLOSSARY.md#spe) | Performance proof |
+| [SRS](GLOSSARY.md#srs) | Observability proof |
 | SSRA | Release readiness |
 | SSTT | Task tracking |
 | SAS | Agent swarm ownership |
-| SVA | Vulnerability audit |
-| SRLS | RLS/storage/database access proof |
-| SEV | Env and secret hygiene |
+| [SVA](GLOSSARY.md#sva) | Vulnerability audit |
+| [SRLS](GLOSSARY.md#srls) | RLS/storage/database access proof |
+| [SEV](GLOSSARY.md#sev) | Env and secret hygiene |
 | SDC | Data classification |
-| SSC | Supply-chain and provenance |
+| [SSC](GLOSSARY.md#ssc) | Supply-chain and provenance |
 | SAI | Agent integrity |
 
 ## Known Optional Module Names

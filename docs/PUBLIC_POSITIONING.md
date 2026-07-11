@@ -1,5 +1,7 @@
 # Public Positioning
 
+This guide defines accurate public language for describing Sweetspot Modular Architecture. Maintainers, writers, and presenters need it before publishing claims about the framework. Read it when preparing a launch page, talk, repository description, or partner briefing. Remember to describe verified capabilities and current maturity without turning the system into a universal doctrine.
+
 SMA should be presented as a working engineering system, not as a grand universal doctrine.
 
 ## One-Sentence Version

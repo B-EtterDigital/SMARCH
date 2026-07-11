@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -11,6 +12,27 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, "../../..");
 const INTRO_DIR = path.join(REPO_ROOT, "docs", "intro");
 const BLOCK_TIMEOUT_MS = 5 * 60 * 1000;
 const FAILURE_OUTPUT_LIMIT = 4_000;
+const REGISTERED_LESSONS = new Set([
+  "00-orientation.md",
+  "01-what-is-a-brick.md",
+  "02-your-first-scan.md",
+  "03-reading-the-brick-wall.md",
+  "04-manifests-explained.md",
+  "05-gates-what-blocks-and-why.md",
+  "06-your-first-clone.md",
+  "07-provenance-and-seals.md",
+  "08-leases-working-alongside-agents.md",
+  "09-conflicts-are-normal.md",
+  "10-your-first-capsule.md",
+  "11-the-graph-asking-questions.md",
+  "12-agents-and-skills-setup.md",
+  "13-contributing-your-first-brick.md",
+  "14-canonical-the-registry-story.md",
+  "15-mcp-connect-your-agent.md",
+  "16-glossary-safari.md",
+  "17-reading-the-plan-uvp.md",
+  "18-your-first-agent-swarm.md"
+]);
 const LESSON_CONTRACTS = new Map([
   ["07-provenance-and-seals.md", {
     requiredSnippets: [
@@ -169,6 +191,7 @@ Usage:
   node tools/evals/journeys/lessons.mjs
   node tools/evals/journeys/lessons.mjs --lesson 01
   node tools/evals/journeys/lessons.mjs --lessons 01,02,03
+  node tools/evals/journeys/lessons.mjs --selftest
 
 The runner executes fenced bash blocks in docs/intro/NN-*.md. Use --lesson
 for one lesson or --lessons for a comma-separated group. With no filter, the
@@ -185,6 +208,7 @@ function addSelectors(target, value) {
 
 function parseArgs(argv) {
   const selectors = new Set();
+  let selftest = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -193,6 +217,8 @@ function parseArgs(argv) {
     if ((arg === "--lesson" || arg === "--lessons") && next) {
       addSelectors(selectors, next);
       index += 1;
+    } else if (arg === "--selftest") {
+      selftest = true;
     } else if (arg === "--help" || arg === "-h") {
       usage();
       process.exit(0);
@@ -201,7 +227,11 @@ function parseArgs(argv) {
     }
   }
 
-  return selectors;
+  if (selftest && selectors.size > 0) {
+    throw new Error("--selftest cannot be combined with lesson selectors");
+  }
+
+  return { selectors, selftest };
 }
 
 function parseBashBlocks(markdown) {
@@ -228,10 +258,28 @@ function matchesSelector(filename, selector) {
   return basename === selector || basename.startsWith(`${selector}-`);
 }
 
-async function findLessons(selectors) {
+function assertCurriculumCoverage(discovered) {
+  const discoveredSet = new Set(discovered);
+  const unregistered = discovered.filter((name) => !REGISTERED_LESSONS.has(name));
+  const stale = [...REGISTERED_LESSONS].filter((name) => !discoveredSet.has(name));
+
+  if (unregistered.length > 0 || stale.length > 0) {
+    throw new Error(
+      `Intro curriculum registration drift (unregistered: ${unregistered.join(", ") || "none"}; stale: ${stale.join(", ") || "none"})`
+    );
+  }
+}
+
+async function discoverLessons() {
   const entries = (await fs.readdir(INTRO_DIR))
     .filter((name) => /^\d\d-.*\.md$/.test(name))
     .sort();
+  assertCurriculumCoverage(entries);
+  return entries;
+}
+
+async function findLessons(selectors) {
+  const entries = await discoverLessons();
 
   if (selectors.size === 0) return entries;
 
@@ -245,6 +293,22 @@ async function findLessons(selectors) {
   }
 
   return [...new Set(selected)].sort();
+}
+
+async function selftest() {
+  const entries = await discoverLessons();
+  assertCurriculumCoverage(entries);
+  assert.throws(
+    () => assertCurriculumCoverage([...entries, "19-unregistered-selftest.md"]),
+    /unregistered: 19-unregistered-selftest\.md/,
+    "an unregistered intro lesson must fail closed"
+  );
+  assert.throws(
+    () => assertCurriculumCoverage(entries.filter((name) => name !== "00-orientation.md")),
+    /stale: 00-orientation\.md/,
+    "a stale curriculum registration must fail closed"
+  );
+  console.log(`Lesson curriculum selftest passed: ${entries.length} registered lesson(s); drift negatives rejected.`);
 }
 
 function tail(value) {
@@ -351,8 +415,9 @@ async function runJourney(selectors) {
 }
 
 try {
-  const selectors = parseArgs(process.argv.slice(2));
-  await runJourney(selectors);
+  const options = parseArgs(process.argv.slice(2));
+  if (options.selftest) await selftest();
+  else await runJourney(options.selectors);
 } catch (error) {
   console.error(`Lesson journey error: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;

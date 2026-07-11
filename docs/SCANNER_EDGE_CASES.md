@@ -1,5 +1,7 @@
 # Scanner Edge Cases
 
+This reference records repository layouts and naming patterns that can mislead the Sweetspot scanner. Scanner maintainers and project bootstrap owners need it when discovery results look incomplete or inflated. Read it before changing root detection, candidate grouping, archive handling, or component classification. Remember that the scanner should report uncertain structure without promoting it to a trusted brick.
+
 These rules came from bootstrapping Acme Studio as the first full SMA-indexed project.
 
 ## Project Root Discovery

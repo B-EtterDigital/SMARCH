@@ -1,5 +1,7 @@
 # Curated Build Private Publish Lane
 
+This playbook explains the controlled path for publishing a curated build to an approved private audience. Build owners and release operators need it when reuse must stay inside a restricted boundary. Read it before packaging, granting access, or changing a private build's publication state. Remember that private publication still requires verified provenance, security, and consumer instructions.
+
 Status: operational playbook for curated builds under `builds/`.
 
 This is the short decision doc for one narrow question:
@@ -9,8 +11,8 @@ without pretending proof exists where it does not?
 
 Use this together with:
 
-- [docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md](~/DEV/SMARCH/docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md)
-- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](~/DEV/SMARCH/docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md)
+- [docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md](CURATED_BUILD_LIFECYCLE_PLAYBOOK.md)
+- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
 
 Current repo reality:
 

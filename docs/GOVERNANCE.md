@@ -1,5 +1,7 @@
 # Governance
 
+This guide defines who may promote, demote, or reject bricks and builds in the Sweetspot registry. Maintainers and reviewers need it whenever they make a lifecycle decision. Read it before approving canonical status, recording an exception, or responding to failed evidence. Remember that registry quality depends on documented rejection and demotion decisions as much as promotion.
+
 SMA needs rejection rules. Without rejection rules, the registry becomes a junk drawer.
 
 ## Status Lifecycle
@@ -65,8 +67,8 @@ Demotion statuses:
 |------|----------------|
 | Architect | Boundary, public API, adapter shape |
 | Security | secrets, authz, RLS, env, vulnerability checks |
-| Tester | SSTF coverage and regression confidence |
-| Performance | SPE thresholds and N+1 risk |
+| Tester | [SSTF](GLOSSARY.md#sstf) coverage and regression confidence |
+| Performance | [SPE](GLOSSARY.md#spe) thresholds and N+1 risk |
 | Release | SSRA readiness and deployment risk |
 | Registry Maintainer | canonical map, duplicate map, metadata quality |
 
@@ -116,4 +118,3 @@ The bar is:
 - Is provenance recorded?
 
 New philosophy is welcome. Unverifiable claims are not.
-

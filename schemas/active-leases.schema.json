@@ -2,22 +2,44 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sma/schemas/active-leases.schema.json",
   "title": "SMA Active Leases",
-  "description": "Soft locks across SMARCH-managed resources. Agents (human or model-driven) acquire a lease on a brick or regen-target before edits, and release it after. TTL-based so a crashed agent does not permanently block a resource. Runtime cache lives at SMA/registry/active-leases.generated.json and is intentionally ignored by git.",
+  "description": "This schema defines the runtime lease registry that prevents agents and tools from editing the same SMARCH resource at once. Agent-runtime authors and control-plane maintainers need it when they create, renew, inspect, or release a lease. Read it before writing lease records or changing collision handling. Remember that leases expire, so ownership depends on both the resource identity and the current expiration time.",
   "type": "object",
-  "required": ["schema_version", "generated_at", "leases"],
+  "required": [
+    "schema_version",
+    "generated_at",
+    "leases"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "1.0.0" },
-    "generated_at": { "type": "string", "format": "date-time" },
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "Schema version that this document conforms to."
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "Time when this document was generated, in ISO 8601 date-time format.",
+      "format": "date-time"
+    },
     "leases": {
       "type": "array",
-      "items": { "$ref": "#/$defs/lease" }
+      "description": "Ordered leases values for the record.",
+      "items": {
+        "$ref": "#/$defs/lease"
+      }
     }
   },
   "$defs": {
     "lease": {
       "type": "object",
-      "required": ["lease_id", "resource_kind", "resource_id", "agent_id", "acquired_at", "expires_at", "intent"],
+      "required": [
+        "lease_id",
+        "resource_kind",
+        "resource_id",
+        "agent_id",
+        "acquired_at",
+        "expires_at",
+        "intent"
+      ],
       "additionalProperties": false,
       "properties": {
         "lease_id": {
@@ -26,6 +48,7 @@
         },
         "resource_kind": {
           "type": "string",
+          "description": "Selected resource kind; allowed values are `brick`, `build`, `release`, `registry-regen`, `wiki-regen`, `state-regen`, `import-lock`, `backlog`, `other`.",
           "enum": [
             "brick",
             "build",
@@ -52,16 +75,45 @@
         },
         "actor_kind": {
           "type": "string",
-          "enum": ["human", "ai_model", "agent", "automation", "tool"]
+          "description": "Category of actor that performed the action.",
+          "enum": [
+            "human",
+            "ai_model",
+            "agent",
+            "automation",
+            "tool"
+          ]
         },
-        "session_id": { "type": "string" },
-        "task_id": { "type": "string" },
-        "model": { "type": "string" },
-        "acquired_at": { "type": "string", "format": "date-time" },
-        "expires_at": { "type": "string", "format": "date-time" },
-        "renewed_at": { "type": "string", "format": "date-time" },
+        "session_id": {
+          "type": "string",
+          "description": "Identifier of the agent session that produced this value."
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Identifier of the task associated with this value."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier recorded for an AI-driven actor."
+        },
+        "acquired_at": {
+          "type": "string",
+          "description": "Time when the lease was acquired, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "description": "Time when the lease expires, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
+        "renewed_at": {
+          "type": "string",
+          "description": "Time of the most recent lease renewal, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
         "renewals": {
           "type": "integer",
+          "description": "Number of times the lease has been renewed.",
           "minimum": 0,
           "default": 0
         },
@@ -76,14 +128,20 @@
         },
         "linked_backlog": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Backlog entry identifiers connected to this record.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "force_acquired_from": {
           "type": "string",
           "description": "If this lease was force-stolen, the prior lease_id."
         },
-        "force_acquired_reason": { "type": "string" }
+        "force_acquired_reason": {
+          "type": "string",
+          "description": "Human-entered reason for displacing the prior lease holder."
+        }
       }
     }
   }

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
-import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery, substringIdfHits } from "./lib/graph-embeddings.mjs";
+import { buildEmbeddingIndex, selftestEmbeddingContentAddress, semanticRerankQuery } from "./lib/graph-embeddings.mjs";
 import { queryGlobalGraph, selftestGlobalQuery } from "./lib/graph-global.mjs";
 import { communitySummaryBlock, generateCommunitySummaries, selftestCommunitySummaries } from "./lib/graph-summaries.mjs";
 import { sourceFreshness } from "./lib/graph-staleness.mjs";
@@ -1704,17 +1704,17 @@ function commandGlobalPath() {
   return runGraphify(["global", "path"]).status;
 }
 
-function commandGlobal(options) {
+async function commandGlobal(options) {
   const [subcommand, ...rest] = options.rest;
   if (subcommand === "list") return commandGlobalList();
   if (subcommand === "path") return commandGlobalPath();
   if (subcommand !== "query") throw new Error("global requires one of: list, path, query");
-  console.log(queryGlobalGraph({ question: rest.join(" "), tags: options.tags, budget: options.budget, graphifyPath: graphifyBin() }));
+  console.log(await queryGlobalGraph({ question: rest.join(" "), tags: options.tags, budget: options.budget, graphifyPath: graphifyBin() }));
   return 0;
 }
 
 async function commandSelftest() {
-  selftestGlobalQuery({ graphifyPath: graphifyBin() });
+  await selftestGlobalQuery({ graphifyPath: graphifyBin() });
   const stderrCap = graphifyGlobalCapMessage({
     stderr: "Error: global graph exceeds GRAPHIFY_MAX_GRAPH_BYTES 512MB",
     stdout: "",
@@ -1827,30 +1827,7 @@ async function commandSelftest() {
     const emptyStatus = graphStatusForTarget(strictOptions, fixtureRoot, moduleTarget, process.execPath);
     assertSelftest(emptyStatus.graphKnownEmpty && !emptyStatus.graphStale, "known-empty graphs must keep existing semantics");
 
-    const embeddingGraphPath = path.join(fixtureRoot, "graphify-out", "graph.json");
-    writeFileSync(embeddingGraphPath, JSON.stringify({
-      nodes: [
-        { id: "session-signin", label: "session-signin", source_snippet: "Establishes a user session." },
-        { id: "invoice-total", label: "invoice-total", source_snippet: "Calculates billing totals." },
-      ],
-      edges: [],
-    }) + "\n");
-    const stubEmbedder = createDeterministicHashEmbedder({ aliases: { auth: "session", login: "signin", flow: "" } });
-    const builtIndex = await buildEmbeddingIndex({ graphPath: embeddingGraphPath, embedder: stubEmbedder });
-    assertSelftest(builtIndex.built && "count" in builtIndex && builtIndex.count === 2, "stub embedding index should build without a model");
-    assertSelftest("builtAt" in builtIndex && builtIndex.builtAt === statSync(embeddingGraphPath).mtime.toISOString(), "embedding metadata must use graph mtime");
-    assertSelftest(substringIdfHits(readJson(embeddingGraphPath), "auth login flow").length === 0, "synonym fixture must miss substring ranking");
-    const semanticResult = await semanticRerankQuery({ graphPath: embeddingGraphPath, question: "auth login flow", embedder: stubEmbedder });
-    assertSelftest(semanticResult.usedSemantic, "semantic rerank should use the fixture index");
-    assertSelftest(semanticResult.hits[0]?.id === "session-signin", "semantic rerank should find the synonym node");
-    assertSelftest(semanticResult.expandedQuestion.includes("session-signin"), "semantic seed should feed the existing traversal query");
-    const warnings = [];
-    const missingEmbedder = await buildEmbeddingIndex({
-      graphPath: embeddingGraphPath,
-      backend: "unavailable-fixture",
-      onWarning: (warning) => warnings.push(warning),
-    });
-    assertSelftest(!missingEmbedder.built && warnings.length === 1, "missing local embedder should warn exactly once and skip");
+    await selftestEmbeddingContentAddress({ fixtureRoot, assert: assertSelftest });
     assertSelftest(parseArgs(["query", "--no-semantic-rank", "--", "question"]).semanticRank === false, "query should allow semantic ranking opt-out");
 
     await selftestCommunitySummaries({ fixtureRoot, assert: assertSelftest });

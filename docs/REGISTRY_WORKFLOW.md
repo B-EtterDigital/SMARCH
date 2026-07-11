@@ -1,5 +1,7 @@
 # Registry Workflow
 
+This guide explains how projects and bricks enter, move through, and leave the Sweetspot registry. Registry operators and brick owners need it when scanning projects or promoting reusable work. Read it before changing registry data, accepting a candidate, or marking an entry stale. Remember that the registry indexes evidence from source projects; it does not create trust by itself.
+
 The registry is the inventory of usable Sweetspot bricks across projects.
 
 The workflow is deliberately simple:
@@ -82,7 +84,7 @@ When two bricks solve the same problem:
 
 A brick can become canonical only if:
 - score is 90 or higher
-- no high or critical SVA findings
+- no high or critical [SVA](GLOSSARY.md#sva) findings
 - clone readiness is `copy_ready` or clearly `guided`
 - provenance includes source and latest touch
 - tests are documented and current

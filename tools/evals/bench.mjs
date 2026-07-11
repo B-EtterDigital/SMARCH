@@ -329,9 +329,9 @@ async function executeBench(options = {}) {
   }
 }
 
-function runChild(args, env = {}) {
+function runNodeScript(script, args, env = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), ...args], {
+    const child = spawn(process.execPath, [script, ...args], {
       cwd: REPO_ROOT,
       env: { ...process.env, ...env },
       stdio: ["ignore", "pipe", "pipe"],
@@ -345,7 +345,18 @@ function runChild(args, env = {}) {
   });
 }
 
+function runChild(args, env = {}) {
+  return runNodeScript(fileURLToPath(import.meta.url), args, env);
+}
+
 async function selftest() {
+  const qualityGates = await runNodeScript(path.join(SCRIPT_DIR, "run.mjs"), ["--selftest"]);
+  assert.equal(
+    qualityGates.exitCode,
+    0,
+    `evaluation quality gates must pass:\n${qualityGates.stderr || qualityGates.stdout}`
+  );
+
   const report = await executeBench();
   assert.equal(
     report.passed,
@@ -377,6 +388,7 @@ async function selftest() {
       injected_slowdown_ms: queryGateLimit + 250,
       injected_metric: BUDGETS.graphifyQueryWarm.id,
       negative_exit_code: negative.exitCode,
+      quality_gates_exit_code: qualityGates.exitCode,
     },
   };
 }
@@ -393,6 +405,7 @@ function printHuman(report) {
     console.log(`${marker} ${result.label}: ${formatValue(result.actual, result.unit)} < ${formatValue(result.gate_limit, result.unit)} (${HEADROOM_PERCENT}% CI headroom)`);
   }
   if (report.selftest) {
+    console.log(`PASS evaluation quality gates exited ${report.selftest.quality_gates_exit_code}`);
     console.log(`PASS injected slowdown failed ${report.selftest.injected_metric} with exit ${report.selftest.negative_exit_code}`);
   }
   console.log(`${report.passed ? "PASS" : "FAIL"} 07 performance plan (${report.fixture_file_count} fixture files)`);

@@ -1,5 +1,7 @@
 # Curated Build Lifecycle Playbook
 
+This playbook explains how a scanned capability becomes a reviewed, reusable build. Build curators, project owners, and release reviewers need it as they move work between lifecycle states. Read it before promoting, updating, or retiring a build under `builds/`. Remember that each transition requires current source evidence and an explicit reviewer decision.
+
 Status: operating playbook for promoted builds under `builds/`.
 
 This doc explains how a curated build moves through the real SMARCH lifecycle:
@@ -22,11 +24,11 @@ Current repo reality:
 
 Source of truth:
 
-- [builds/acme-desktop/workos-auth-billing.build.sweetspot.json](~/DEV/SMARCH/builds/acme-desktop/workos-auth-billing.build.sweetspot.json)
-- [builds/acme-studio/admin-ops-control-plane.build.sweetspot.json](~/DEV/SMARCH/builds/acme-studio/admin-ops-control-plane.build.sweetspot.json)
-- [builds/acme-studio/ai-image-generation.build.sweetspot.json](~/DEV/SMARCH/builds/acme-studio/ai-image-generation.build.sweetspot.json)
-- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](~/DEV/SMARCH/docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md)
-- [docs/GOVERNANCE.md](~/DEV/SMARCH/docs/GOVERNANCE.md)
+- `builds/acme-desktop/workos-auth-billing.build.sweetspot.json`
+- `builds/acme-studio/admin-ops-control-plane.build.sweetspot.json`
+- `builds/acme-studio/ai-image-generation.build.sweetspot.json`
+- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
+- [docs/GOVERNANCE.md](GOVERNANCE.md)
 
 ## The Main Rule
 
@@ -341,5 +343,5 @@ If any answer is unclear, keep the build where it is.
 
 ## Related Docs
 
-- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](~/DEV/SMARCH/docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md)
-- [docs/GOVERNANCE.md](~/DEV/SMARCH/docs/GOVERNANCE.md)
+- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
+- [docs/GOVERNANCE.md](GOVERNANCE.md)

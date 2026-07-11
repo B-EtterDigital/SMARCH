@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { PROJECTS_ROOT } from "./sma-paths.mjs";
 import { loadPortfolioConfig } from "./portfolio-config.mjs";
 
@@ -18,9 +20,24 @@ const portfolioOverrides = new Map(Object.entries(portfolioConfig.overrides));
 
 let portfolioCache = null;
 
-export async function discoverPortfolioProjects() {
+export class PortfolioDiscoveryError extends Error {
+  constructor(directory, cause) {
+    const code = typeof cause?.code === "string" ? cause.code : "UNKNOWN";
+    super(`portfolio discovery could not read ${directory} (${code}): ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = "PortfolioDiscoveryError";
+    this.code = "PORTFOLIO_DISCOVERY_UNREADABLE";
+    this.details = { directory, cause_code: code };
+  }
+}
+
+export async function discoverPortfolioProjects(options = {}) {
+  if (Object.keys(options).length > 0) {
+    return loadPortfolioProjects(options);
+  }
   if (!portfolioCache) {
-    portfolioCache = loadPortfolioProjects();
+    portfolioCache = loadPortfolioProjects({
+      strict: process.argv.includes("--strict"),
+    });
   }
   return portfolioCache;
 }
@@ -45,28 +62,45 @@ export function sortByPortfolioPriority(entries, portfolioProjects = [], idSelec
   });
 }
 
-async function loadPortfolioProjects() {
-  const topEntries = await fs.readdir(portfolioProjectsRoot, { withFileTypes: true });
+async function loadPortfolioProjects({
+  projectsRoot = portfolioProjectsRoot,
+  fsApi = fs,
+  logger = console,
+  strict = process.argv.includes("--strict"),
+} = {}) {
+  const readDirectory = async (directory) => {
+    try {
+      return await fsApi.readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (error?.code === "ENOENT") return [];
+      const discoveryError = new PortfolioDiscoveryError(directory, error);
+      logger?.warn?.(`warn: ${discoveryError.message}`);
+      if (strict) throw discoveryError;
+      return [];
+    }
+  };
+
+  const topEntries = await readDirectory(projectsRoot);
   const results = [];
 
   for (const entry of topEntries) {
     if (!entry.isDirectory()) continue;
     if (shouldIgnore(entry.name)) continue;
 
-    const topPath = path.join(portfolioProjectsRoot, entry.name);
-    if (await hasProjectMarkers(topPath)) {
-      results.push(await describeProject(topPath));
+    const topPath = path.join(projectsRoot, entry.name);
+    if (await hasProjectMarkers(topPath, fsApi)) {
+      results.push(await describeProject(topPath, projectsRoot));
       continue;
     }
 
-    const nestedEntries = await fs.readdir(topPath, { withFileTypes: true }).catch(() => []);
+    const nestedEntries = await readDirectory(topPath);
     for (const nested of nestedEntries) {
       if (!nested.isDirectory()) continue;
       if (shouldIgnore(nested.name)) continue;
 
       const nestedPath = path.join(topPath, nested.name);
-      if (await hasProjectMarkers(nestedPath)) {
-        results.push(await describeProject(nestedPath));
+      if (await hasProjectMarkers(nestedPath, fsApi)) {
+        results.push(await describeProject(nestedPath, projectsRoot));
       }
     }
   }
@@ -92,8 +126,8 @@ async function loadPortfolioProjects() {
   }));
 }
 
-async function describeProject(absolutePath) {
-  const relativeRoot = normalizePath(path.relative(portfolioProjectsRoot, absolutePath));
+async function describeProject(absolutePath, projectsRoot = portfolioProjectsRoot) {
+  const relativeRoot = normalizePath(path.relative(projectsRoot, absolutePath));
   const override = portfolioOverrides.get(relativeRoot) || {};
   const id = override.id || slugify(relativeRoot);
   const name = override.name || humanizeName(path.basename(absolutePath));
@@ -107,10 +141,10 @@ async function describeProject(absolutePath) {
   };
 }
 
-async function hasProjectMarkers(absolutePath) {
+async function hasProjectMarkers(absolutePath, fsApi = fs) {
   for (const marker of rootMarkers) {
     try {
-      await fs.access(path.join(absolutePath, marker));
+      await fsApi.access(path.join(absolutePath, marker));
       return true;
     } catch {
       continue;
@@ -145,4 +179,66 @@ function humanizeName(value) {
 
 function normalizePath(value) {
   return String(value || "").split(path.sep).join("/");
+}
+
+async function runSelftest() {
+  const projectsRoot = path.resolve("/virtual/projects");
+  const directoryEntry = (name) => ({ name, isDirectory: () => true });
+  const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
+  const missing = Object.assign(new Error("not found"), { code: "ENOENT" });
+  const warnings = [];
+  const fsApi = {
+    async access() {
+      throw missing;
+    },
+    async readdir(directory) {
+      if (directory === projectsRoot) return [directoryEntry("unreadable")];
+      throw unreadable;
+    },
+  };
+
+  const nonStrict = await discoverPortfolioProjects({
+    projectsRoot,
+    fsApi,
+    strict: false,
+    logger: { warn: (message) => warnings.push(message) },
+  });
+  assert.deepEqual(nonStrict, []);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /EACCES/);
+
+  await assert.rejects(
+    discoverPortfolioProjects({
+      projectsRoot,
+      fsApi,
+      strict: true,
+      logger: { warn: (message) => warnings.push(message) },
+    }),
+    (error) => error instanceof PortfolioDiscoveryError
+      && error.details.cause_code === "EACCES",
+  );
+
+  const emptyWarnings = [];
+  const empty = await discoverPortfolioProjects({
+    projectsRoot,
+    fsApi: {
+      async readdir() {
+        throw missing;
+      },
+    },
+    strict: true,
+    logger: { warn: (message) => emptyWarnings.push(message) },
+  });
+  assert.deepEqual(empty, []);
+  assert.deepEqual(emptyWarnings, []);
+  process.stdout.write("portfolio-projects selftest: PASS\n");
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.argv.includes("--selftest")) {
+    runSelftest().catch((error) => {
+      console.error(error instanceof Error ? error.stack : String(error));
+      process.exitCode = 1;
+    });
+  }
 }

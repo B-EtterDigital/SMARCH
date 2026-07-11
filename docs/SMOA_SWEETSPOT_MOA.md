@@ -1,4 +1,6 @@
-# SMOA — Sweetspot MoA
+# [SMOA](GLOSSARY.md#smoa) — Sweetspot MoA
+
+This guide defines the opt-in multi-agent execution model for Sweetspot work. Orchestrators, implementers, and reviewers need it before they join a SMOA run. Read it when a request uses the SMOA trigger or when you receive a worker packet from an active run. Remember that SMOA changes who performs the work while the Gen3 proof and collision rules stay in force.
 
 SMOA is SMA's opt-in multi-model orchestration layer: a **Mixture of Agents**
 (orchestration around several separate models — not MoE, which is expert
@@ -48,7 +50,7 @@ rescinded the same day — it broke autonomous work):
 ## Roles and effort
 
 - Planner / arbiter / gatekeeper: Fable 5 (orchestrating session), xhigh,
-  always under `$sma-gen3`; SUP is plan-of-record when `.UltraVision/` exists.
+always under `$sma-gen3`; [SUP](GLOSSARY.md#sup) is plan-of-record when `.UltraVision/` exists.
 - Executors A/B: two `gpt-5.5` instances via `codex exec`, headless, effort
   xhigh always (standing rule), max 10 concurrent; opt down to high only on an
   explicit user request. ChatGPT-subscription auth exposes no codex model

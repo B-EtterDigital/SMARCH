@@ -2,32 +2,70 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sma/schemas/agent-context-event.schema.json",
   "title": "SMA Agent Context Event",
-  "description": "One event in an append-only NDJSON log of agent actions on a brick. Lives at <project>/.smarch/agent-context/<brick-id>.ndjson. Never rewrite an event; always append. Survives compaction. Parallel to git history but records intent rather than diff.",
+  "description": "This schema defines one append-only event that records why an agent acted on a brick and what evidence it produced. Agent-tool authors, reviewers, and maintainers need it when they append or consume project context logs. Read it before emitting an event or reconstructing work after compaction. Remember to append a new event instead of rewriting prior history.",
   "type": "object",
-  "required": ["schema_version", "event_id", "brick_id", "actor_kind", "actor_id", "kind", "intent", "timestamp"],
+  "required": [
+    "schema_version",
+    "event_id",
+    "brick_id",
+    "actor_kind",
+    "actor_id",
+    "kind",
+    "intent",
+    "timestamp"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "1.0.0" },
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "Schema version that this document conforms to."
+    },
     "event_id": {
       "type": "string",
       "description": "Stable id, format: ctx-<unix-ms>-<8 hex>."
     },
-    "brick_id": { "type": "string" },
-    "project": { "type": "string" },
+    "brick_id": {
+      "type": "string",
+      "description": "Stable identifier of the brick associated with this record."
+    },
+    "project": {
+      "type": "string",
+      "description": "Project identifier associated with the record."
+    },
     "actor_kind": {
       "type": "string",
-      "enum": ["human", "ai_model", "agent", "automation", "tool"]
+      "description": "Category of actor that performed the action.",
+      "enum": [
+        "human",
+        "ai_model",
+        "agent",
+        "automation",
+        "tool"
+      ]
     },
-    "actor_id": { "type": "string" },
-    "model": { "type": "string" },
-    "session_id": { "type": "string" },
-    "task_id": { "type": "string" },
+    "actor_id": {
+      "type": "string",
+      "description": "Identifier of the human, agent, automation, or tool that performed the action."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model identifier recorded for an AI-driven actor."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Identifier of the agent session that produced this value."
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Identifier of the task associated with this value."
+    },
     "lease_id": {
       "type": "string",
       "description": "Lease this event was performed under. Strongly encouraged."
     },
     "kind": {
       "type": "string",
+      "description": "Classification assigned to the record.",
       "enum": [
         "lease_acquired",
         "lease_renewed",
@@ -61,40 +99,79 @@
     },
     "rejected_alternatives": {
       "type": "array",
+      "description": "Alternatives considered and rejected before this action.",
       "items": {
         "type": "object",
-        "required": ["alternative", "reason"],
+        "required": [
+          "alternative",
+          "reason"
+        ],
         "additionalProperties": false,
         "properties": {
-          "alternative": { "type": "string" },
-          "reason": { "type": "string" }
+          "alternative": {
+            "type": "string",
+            "description": "An approach that was considered but not selected."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Plain-language reason for this decision."
+          }
         }
       }
     },
     "linked_backlog": {
       "type": "array",
-      "items": { "type": "string" },
+      "description": "Backlog entry identifiers connected to this record.",
+      "items": {
+        "type": "string"
+      },
       "uniqueItems": true
     },
     "files_touched": {
       "type": "array",
-      "items": { "type": "string" },
+      "description": "Repository-relative files changed by the recorded work.",
+      "items": {
+        "type": "string"
+      },
       "uniqueItems": true
     },
-    "commit": { "type": "string" },
+    "commit": {
+      "type": "string",
+      "description": "Git commit identifier associated with the recorded work."
+    },
     "verification": {
       "type": "object",
+      "description": "Fields that describe the verification.",
       "additionalProperties": false,
       "properties": {
-        "command": { "type": "string" },
-        "status": { "enum": ["pass", "fail", "skipped", "blocked"] },
-        "output_path": { "type": "string" },
-        "notes": { "type": "string" }
+        "command": {
+          "type": "string",
+          "description": "Command used to produce or verify this evidence."
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "skipped",
+            "blocked"
+          ],
+          "description": "Current status of the verification."
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Path to the stored command output or evidence artifact."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the verification."
+        }
       }
     },
     "proof": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "uniqueItems": true,
       "description": "Concrete proof commands or artifact references produced for this brick."
     },
@@ -102,6 +179,10 @@
       "type": "number",
       "description": "Optional measured or estimated improvement captured with proof evidence."
     },
-    "timestamp": { "type": "string", "format": "date-time" }
+    "timestamp": {
+      "type": "string",
+      "description": "Time when the event occurred, in ISO 8601 date-time format.",
+      "format": "date-time"
+    }
   }
 }

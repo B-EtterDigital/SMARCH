@@ -1,5 +1,7 @@
 # Security And Swarm Gates
 
+This reference maps the security, reliability, and agent-coordination gates used across Sweetspot projects. Brick authors, security reviewers, and multi-agent controllers need it when assigning or evaluating required evidence. Read it before declaring a brick ready or allowing several agents to work around the same boundary. Remember that each gate answers a different risk and needs its own recorded proof.
+
 SMA adds the missing gates around the existing Sweetspot stack.
 
 The goal is not more ceremony. The goal is making multi-agent development and high-security reuse boring enough to trust.
@@ -9,10 +11,10 @@ The goal is not more ceremony. The goal is making multi-agent development and hi
 | Layer | Role |
 |-------|------|
 | SSA-v2 | Security and architecture boundary |
-| SSI | Runtime isolation and access gates |
-| SSTF | Behavior and regression tests |
-| SPE | Performance limits |
-| SRS | Observability and incident evidence |
+| [SSI](GLOSSARY.md#ssi) | Runtime isolation and access gates |
+| [SSTF](GLOSSARY.md#sstf) | Behavior and regression tests |
+| [SPE](GLOSSARY.md#spe) | Performance limits |
+| [SRS](GLOSSARY.md#srs) | Observability and incident evidence |
 | SSRA | Release readiness |
 | SSTT | Task traceability |
 
@@ -21,11 +23,11 @@ The goal is not more ceremony. The goal is making multi-agent development and hi
 | Gate | Name | Purpose |
 |------|------|---------|
 | SAS | Sweetspot Agent Swarm | Agent write ownership and handoff protocol |
-| SVA | Sweetspot Vulnerability Audit | VibeSec-style vulnerability checks |
-| SRLS | Sweetspot RLS Standard | Table, storage, RPC, and tenant access proof |
-| SEV | Sweetspot Environment Validation | Env vars, secret scope, repo hygiene |
+| [SVA](GLOSSARY.md#sva) | Sweetspot Vulnerability Audit | VibeSec-style vulnerability checks |
+| [SRLS](GLOSSARY.md#srls) | Sweetspot RLS Standard | Table, storage, RPC, and tenant access proof |
+| [SEV](GLOSSARY.md#sev) | Sweetspot Environment Validation | Env vars, secret scope, repo hygiene |
 | SDC | Sweetspot Data Classification | Data sensitivity and redaction rules |
-| SSC | Sweetspot Supply Chain | Source, hash, dependencies, license, provenance |
+| [SSC](GLOSSARY.md#ssc) | Sweetspot Supply Chain | Source, hash, dependencies, license, provenance |
 | SAI | Sweetspot Agent Integrity | Prompt-injection and tool-permission discipline |
 
 ## SAS: Agent Swarm Rules
@@ -162,4 +164,3 @@ Rules:
 - Agents do not read secrets unless explicitly required.
 - Agents do not deploy or rotate secrets unless assigned that role.
 - Security-sensitive generated code gets a security review.
-

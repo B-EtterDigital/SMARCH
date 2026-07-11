@@ -1,5 +1,7 @@
 # Token-efficient brick cards
 
+This reference explains the compact brick-card format used to load registry knowledge into an agent context. Tool authors and operators need it when generating cards or choosing how much brick detail to retrieve. Read it before changing the card schema, stream format, or retrieval workflow. Remember that a compact card points to deeper evidence and must not overstate what the full manifest proves.
+
 > "Don't use more of the agent's context than the brick actually deserves."
 
 Every enriched brick manifest now carries a `semantics.compact` block designed

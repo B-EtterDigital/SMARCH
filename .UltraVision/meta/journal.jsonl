@@ -133,3 +133,206 @@
 {"ts": "2026-07-10T18:05:46+00:00", "action": "complete", "id": "UV-DO-attribution-sweep", "detail": "node tools/sma-leak-gate.mjs"}
 {"ts": "2026-07-10T18:05:48+00:00", "action": "complete", "id": "UV-DO-influences-verify", "detail": "npm run source:size:gate"}
 {"ts": "2026-07-10T18:06:38+00:00", "action": "complete", "id": "UV-EV-bench", "detail": "node tools/evals/bench.mjs --selftest"}
+{"ts": "2026-07-10T18:07:48+00:00", "action": "claim", "id": "UV-DA-skeptic3-dashboard-mutations", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:49+00:00", "action": "claim", "id": "UV-GR-skeptic2b-global-semantic", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:49+00:00", "action": "claim", "id": "UV-GR-skeptic2b-embedding-content-address", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:50+00:00", "action": "claim", "id": "UV-SM-skeptic2b-codex-via-workforce", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:51+00:00", "action": "claim", "id": "UV-RG-skeptic2b-discovery-fail-closed", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:52+00:00", "action": "claim", "id": "UV-RG-skeptic2b-install-race", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:52+00:00", "action": "claim", "id": "UV-EV-skeptic3-fixture-snapshot-gate", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:07:53+00:00", "action": "claim", "id": "UV-SK-skeptic3-plugin-smoke", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:45+00:00", "action": "claim", "id": "UV-DO-in-adoption-roadmap-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:46+00:00", "action": "claim", "id": "UV-DO-in-agent-skills-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:47+00:00", "action": "claim", "id": "UV-DO-in-brick-metadata-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:48+00:00", "action": "claim", "id": "UV-DO-in-build-layer-implementation-plan-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:48+00:00", "action": "claim", "id": "UV-DO-in-canonicalization-playbook-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:49+00:00", "action": "claim", "id": "UV-DO-in-codex-integration-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:49+00:00", "action": "claim", "id": "UV-DO-in-compact-brick-cards-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:50+00:00", "action": "claim", "id": "UV-DO-in-compliance-layer-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:50+00:00", "action": "claim", "id": "UV-DO-in-curated-build-acceptance-definitions-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:51+00:00", "action": "claim", "id": "UV-DO-in-curated-build-lifecycle-playbook-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:52+00:00", "action": "claim", "id": "UV-DO-in-curated-build-private-publish-lane-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:53+00:00", "action": "claim", "id": "UV-DO-in-enforcement-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:54+00:00", "action": "claim", "id": "UV-DO-in-engineering-review-response-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:55+00:00", "action": "claim", "id": "UV-DO-in-ex-build-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:56+00:00", "action": "claim", "id": "UV-DO-in-ex-module-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:57+00:00", "action": "claim", "id": "UV-DO-in-ex-sweetspot-visual-demo-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:58+00:00", "action": "claim", "id": "UV-DO-in-first-time-setup-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:08:59+00:00", "action": "claim", "id": "UV-DO-in-framework-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:00+00:00", "action": "claim", "id": "UV-DO-in-governance-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:01+00:00", "action": "claim", "id": "UV-DO-in-hierarchy-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:02+00:00", "action": "claim", "id": "UV-DO-in-influences-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:04+00:00", "action": "claim", "id": "UV-DO-in-maturity-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:06+00:00", "action": "claim", "id": "UV-DO-in-multi-agent-operations-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:07+00:00", "action": "claim", "id": "UV-DO-in-privacy-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:08+00:00", "action": "claim", "id": "UV-DO-in-provenance-seal-license-lattice-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:09+00:00", "action": "claim", "id": "UV-DO-in-public-positioning-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:10+00:00", "action": "claim", "id": "UV-DO-in-registry-workflow-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:12+00:00", "action": "claim", "id": "UV-DO-in-roadmap-100-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:14+00:00", "action": "claim", "id": "UV-DO-in-scanner-edge-cases-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:15+00:00", "action": "claim", "id": "UV-DO-in-scat-sweetspot-core-agent-testloop-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:16+00:00", "action": "claim", "id": "UV-DO-in-security-and-swarm-gates-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:17+00:00", "action": "claim", "id": "UV-DO-in-security-md-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:17+00:00", "action": "claim", "id": "UV-DO-in-sff-sweetspot-frontend-fix-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:18+00:00", "action": "claim", "id": "UV-DO-in-smoa-sweetspot-moa-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:18+00:00", "action": "claim", "id": "UV-DO-in-spe-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:19+00:00", "action": "claim", "id": "UV-DO-in-srs-obs-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:20+00:00", "action": "claim", "id": "UV-DO-in-srs-sec-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:21+00:00", "action": "claim", "id": "UV-DO-in-ssa-v2-base-rules-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:21+00:00", "action": "claim", "id": "UV-DO-in-sstf-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:22+00:00", "action": "claim", "id": "UV-DO-in-sup-sweetspot-ultra-plan-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:23+00:00", "action": "claim", "id": "UV-DO-in-sweetspot-visual-demo-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:24+00:00", "action": "claim", "id": "UV-DO-in-terminology-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:26+00:00", "action": "claim", "id": "UV-DO-in-token-accounting-and-backlog-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:27+00:00", "action": "claim", "id": "UV-DO-in-tour-capsule-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:28+00:00", "action": "claim", "id": "UV-DO-in-tour-ci-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:30+00:00", "action": "claim", "id": "UV-DO-in-tour-commun-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:31+00:00", "action": "claim", "id": "UV-DO-in-tour-coord-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:31+00:00", "action": "claim", "id": "UV-DO-in-tour-dash-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:32+00:00", "action": "claim", "id": "UV-DO-in-tour-docs-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:33+00:00", "action": "claim", "id": "UV-DO-in-tour-evals-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:34+00:00", "action": "claim", "id": "UV-DO-in-tour-gates-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:36+00:00", "action": "claim", "id": "UV-DO-in-tour-graph-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:37+00:00", "action": "claim", "id": "UV-DO-in-tour-mcp-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:38+00:00", "action": "claim", "id": "UV-DO-in-tour-prov-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:40+00:00", "action": "claim", "id": "UV-DO-in-tour-reg-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:41+00:00", "action": "claim", "id": "UV-DO-in-tour-rust-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:42+00:00", "action": "claim", "id": "UV-DO-in-tour-schemas-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:44+00:00", "action": "claim", "id": "UV-DO-in-tour-skills-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:46+00:00", "action": "claim", "id": "UV-DO-in-tour-smoa-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:48+00:00", "action": "claim", "id": "UV-DO-in-tour-sync-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:50+00:00", "action": "claim", "id": "UV-DO-in-tpl-agents-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:52+00:00", "action": "claim", "id": "UV-DO-in-tpl-brick-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:52+00:00", "action": "claim", "id": "UV-DO-in-tpl-build-verification-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:53+00:00", "action": "claim", "id": "UV-DO-in-tpl-github-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:54+00:00", "action": "claim", "id": "UV-DO-in-tpl-project-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:55+00:00", "action": "claim", "id": "UV-DO-in-tpl-security-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:56+00:00", "action": "claim", "id": "UV-DO-in-transparency-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:56+00:00", "action": "claim", "id": "UV-DO-in-update-propagation-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:58+00:00", "action": "claim", "id": "UV-DO-in-user-wiki-and-course-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:58+00:00", "action": "claim", "id": "UV-SC-ann-active-leases-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:09:59+00:00", "action": "claim", "id": "UV-SC-ann-agent-context-event-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:00+00:00", "action": "claim", "id": "UV-SC-ann-backlog-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:00+00:00", "action": "claim", "id": "UV-SC-ann-brick-manifest-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:01+00:00", "action": "claim", "id": "UV-SC-ann-build-manifest-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:02+00:00", "action": "claim", "id": "UV-SC-ann-dependents-index-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:03+00:00", "action": "claim", "id": "UV-SC-ann-global-registry-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:04+00:00", "action": "claim", "id": "UV-SC-ann-import-lock-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:04+00:00", "action": "claim", "id": "UV-SC-ann-merge-proposal-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:05+00:00", "action": "claim", "id": "UV-SC-ann-placement-map-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:05+00:00", "action": "claim", "id": "UV-SC-ann-project-index-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:06+00:00", "action": "claim", "id": "UV-SC-ann-release-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:07+00:00", "action": "claim", "id": "UV-SC-ann-reuse-receipt-schema-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:07+00:00", "action": "claim", "id": "UV-SK-in-agents-claude-code-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:08+00:00", "action": "claim", "id": "UV-SK-in-agents-codex-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:08+00:00", "action": "claim", "id": "UV-SK-in-agents-opencode-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:08+00:00", "action": "claim", "id": "UV-SK-in-agents-root-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:09+00:00", "action": "claim", "id": "UV-SK-in-skill-f5-ultravisionplan-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:09+00:00", "action": "claim", "id": "UV-SK-in-skill-sma-agent-composer-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:10+00:00", "action": "claim", "id": "UV-SK-in-skill-sma-course-builder-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:10+00:00", "action": "claim", "id": "UV-SK-in-skill-sma-enforcer-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:10+00:00", "action": "claim", "id": "UV-SK-in-skill-sma-gen3-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:11+00:00", "action": "claim", "id": "UV-SK-in-skill-sma-token-backlog-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:11+00:00", "action": "claim", "id": "UV-SK-in-skill-sweetspot-frontend-fix-intro", "agent": "codex-w8"}
+{"ts": "2026-07-10T18:10:11+00:00", "action": "claim", "id": "UV-SK-in-skill-sweetspot-moa-intro", "agent": "codex-w8"}
+{"ts": "2026-07-11T00:58:48+00:00", "action": "complete", "id": "UV-DO-in-adoption-roadmap-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:49+00:00", "action": "complete", "id": "UV-DO-in-agent-skills-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:49+00:00", "action": "complete", "id": "UV-DO-in-brick-metadata-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:50+00:00", "action": "complete", "id": "UV-DO-in-build-layer-implementation-plan-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:50+00:00", "action": "complete", "id": "UV-DO-in-canonicalization-playbook-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:51+00:00", "action": "complete", "id": "UV-DO-in-codex-integration-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:51+00:00", "action": "complete", "id": "UV-DO-in-compact-brick-cards-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:52+00:00", "action": "complete", "id": "UV-DO-in-compliance-layer-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:52+00:00", "action": "complete", "id": "UV-DO-in-curated-build-acceptance-definitions-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:53+00:00", "action": "complete", "id": "UV-DO-in-curated-build-lifecycle-playbook-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:53+00:00", "action": "complete", "id": "UV-DO-in-curated-build-private-publish-lane-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:54+00:00", "action": "complete", "id": "UV-DO-in-enforcement-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:54+00:00", "action": "complete", "id": "UV-DO-in-engineering-review-response-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:55+00:00", "action": "complete", "id": "UV-DO-in-ex-build-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:55+00:00", "action": "complete", "id": "UV-DO-in-ex-module-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:56+00:00", "action": "complete", "id": "UV-DO-in-ex-sweetspot-visual-demo-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:56+00:00", "action": "complete", "id": "UV-DO-in-first-time-setup-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:57+00:00", "action": "complete", "id": "UV-DO-in-framework-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:57+00:00", "action": "complete", "id": "UV-DO-in-governance-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:58+00:00", "action": "complete", "id": "UV-DO-in-hierarchy-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:58+00:00", "action": "complete", "id": "UV-DO-in-influences-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:59+00:00", "action": "complete", "id": "UV-DO-in-maturity-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:58:59+00:00", "action": "complete", "id": "UV-DO-in-multi-agent-operations-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:00+00:00", "action": "complete", "id": "UV-DO-in-privacy-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:00+00:00", "action": "complete", "id": "UV-DO-in-provenance-seal-license-lattice-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:01+00:00", "action": "complete", "id": "UV-DO-in-public-positioning-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:01+00:00", "action": "complete", "id": "UV-DO-in-registry-workflow-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:02+00:00", "action": "complete", "id": "UV-DO-in-roadmap-100-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:02+00:00", "action": "complete", "id": "UV-DO-in-scanner-edge-cases-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:03+00:00", "action": "complete", "id": "UV-DO-in-scat-sweetspot-core-agent-testloop-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:03+00:00", "action": "complete", "id": "UV-DO-in-security-and-swarm-gates-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:04+00:00", "action": "complete", "id": "UV-DO-in-security-md-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:04+00:00", "action": "complete", "id": "UV-DO-in-sff-sweetspot-frontend-fix-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:05+00:00", "action": "complete", "id": "UV-DO-in-smoa-sweetspot-moa-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:05+00:00", "action": "complete", "id": "UV-DO-in-spe-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:06+00:00", "action": "complete", "id": "UV-DO-in-srs-obs-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:06+00:00", "action": "complete", "id": "UV-DO-in-srs-sec-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:07+00:00", "action": "complete", "id": "UV-DO-in-ssa-v2-base-rules-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:07+00:00", "action": "complete", "id": "UV-DO-in-sstf-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:07+00:00", "action": "complete", "id": "UV-DO-in-sup-sweetspot-ultra-plan-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:08+00:00", "action": "complete", "id": "UV-DO-in-sweetspot-visual-demo-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:08+00:00", "action": "complete", "id": "UV-DO-in-terminology-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:09+00:00", "action": "complete", "id": "UV-DO-in-token-accounting-and-backlog-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:09+00:00", "action": "complete", "id": "UV-DO-in-tour-capsule-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:10+00:00", "action": "complete", "id": "UV-DO-in-tour-ci-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:10+00:00", "action": "complete", "id": "UV-DO-in-tour-commun-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:11+00:00", "action": "complete", "id": "UV-DO-in-tour-coord-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:11+00:00", "action": "complete", "id": "UV-DO-in-tour-dash-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:12+00:00", "action": "complete", "id": "UV-DO-in-tour-docs-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:12+00:00", "action": "complete", "id": "UV-DO-in-tour-evals-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:13+00:00", "action": "complete", "id": "UV-DO-in-tour-gates-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:13+00:00", "action": "complete", "id": "UV-DO-in-tour-graph-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:14+00:00", "action": "complete", "id": "UV-DO-in-tour-mcp-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:15+00:00", "action": "complete", "id": "UV-DO-in-tour-prov-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:15+00:00", "action": "complete", "id": "UV-DO-in-tour-reg-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:16+00:00", "action": "complete", "id": "UV-DO-in-tour-rust-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:17+00:00", "action": "complete", "id": "UV-DO-in-tour-schemas-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:17+00:00", "action": "complete", "id": "UV-DO-in-tour-skills-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:18+00:00", "action": "complete", "id": "UV-DO-in-tour-smoa-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:18+00:00", "action": "complete", "id": "UV-DO-in-tour-sync-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:19+00:00", "action": "complete", "id": "UV-DO-in-tpl-agents-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:20+00:00", "action": "complete", "id": "UV-DO-in-tpl-brick-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:20+00:00", "action": "complete", "id": "UV-DO-in-tpl-build-verification-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:21+00:00", "action": "complete", "id": "UV-DO-in-tpl-github-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:22+00:00", "action": "complete", "id": "UV-DO-in-tpl-project-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:22+00:00", "action": "complete", "id": "UV-DO-in-tpl-security-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:23+00:00", "action": "complete", "id": "UV-DO-in-transparency-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:23+00:00", "action": "complete", "id": "UV-DO-in-update-propagation-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:24+00:00", "action": "complete", "id": "UV-DO-in-user-wiki-and-course-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:25+00:00", "action": "complete", "id": "UV-SC-ann-active-leases-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:25+00:00", "action": "complete", "id": "UV-SC-ann-agent-context-event-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:26+00:00", "action": "complete", "id": "UV-SC-ann-backlog-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:26+00:00", "action": "complete", "id": "UV-SC-ann-brick-manifest-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:27+00:00", "action": "complete", "id": "UV-SC-ann-build-manifest-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:27+00:00", "action": "complete", "id": "UV-SC-ann-dependents-index-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:28+00:00", "action": "complete", "id": "UV-SC-ann-global-registry-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:28+00:00", "action": "complete", "id": "UV-SC-ann-import-lock-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:28+00:00", "action": "complete", "id": "UV-SC-ann-merge-proposal-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:29+00:00", "action": "complete", "id": "UV-SC-ann-placement-map-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:29+00:00", "action": "complete", "id": "UV-SC-ann-project-index-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:30+00:00", "action": "complete", "id": "UV-SC-ann-release-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:30+00:00", "action": "complete", "id": "UV-SC-ann-reuse-receipt-schema-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:31+00:00", "action": "complete", "id": "UV-SK-in-agents-claude-code-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:31+00:00", "action": "complete", "id": "UV-SK-in-agents-codex-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:32+00:00", "action": "complete", "id": "UV-SK-in-agents-opencode-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:32+00:00", "action": "complete", "id": "UV-SK-in-agents-root-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:33+00:00", "action": "complete", "id": "UV-SK-in-skill-f5-ultravisionplan-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:33+00:00", "action": "complete", "id": "UV-SK-in-skill-sma-agent-composer-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:34+00:00", "action": "complete", "id": "UV-SK-in-skill-sma-course-builder-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:34+00:00", "action": "complete", "id": "UV-SK-in-skill-sma-enforcer-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:35+00:00", "action": "complete", "id": "UV-SK-in-skill-sma-gen3-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:35+00:00", "action": "complete", "id": "UV-SK-in-skill-sma-token-backlog-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:36+00:00", "action": "complete", "id": "UV-SK-in-skill-sweetspot-frontend-fix-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:36+00:00", "action": "complete", "id": "UV-SK-in-skill-sweetspot-moa-intro", "detail": "node tools/sma-doc-lint.mjs"}
+{"ts": "2026-07-11T00:59:36+00:00", "action": "complete", "id": "UV-DA-skeptic3-dashboard-mutations", "detail": "node --check tools/sma-dashboard-server.mjs"}
+{"ts": "2026-07-11T00:59:39+00:00", "action": "complete", "id": "UV-GR-skeptic2b-global-semantic", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-11T00:59:42+00:00", "action": "complete", "id": "UV-GR-skeptic2b-embedding-content-address", "detail": "node tools/sma-graphify.mjs selftest"}
+{"ts": "2026-07-11T00:59:42+00:00", "action": "complete", "id": "UV-SM-skeptic2b-codex-via-workforce", "detail": "node tools/sma-codex-profile.mjs selftest"}
+{"ts": "2026-07-11T00:59:43+00:00", "action": "complete", "id": "UV-RG-skeptic2b-discovery-fail-closed", "detail": "node tools/lib/portfolio-projects.mjs --selftest"}
+{"ts": "2026-07-11T00:59:44+00:00", "action": "complete", "id": "UV-RG-skeptic2b-install-race", "detail": "node tools/mcp/selftest.mjs"}
+{"ts": "2026-07-11T00:59:44+00:00", "action": "complete", "id": "UV-SK-skeptic3-plugin-smoke", "detail": "node tools/sma-plugin-sync.mjs --check"}

@@ -1,5 +1,7 @@
 # Token Accounting + Backlog (standard SMA workflow)
 
+This document defines how Sweetspot records reuse savings, integration effort, and work left incomplete. Implementers, reviewers, and project owners need it when they copy a brick, defer a gate, promote a brick, or report token savings. Read it before the relevant action so the receipt or backlog entry is created in the same work session. Remember that unrecorded debt and guessed savings are not valid project evidence.
+
 This is mandatory for every SMA-clone, every brick promotion, and every session that leaves a brick less-than-perfect. It exists so:
 
 1. The value of reuse is **measurable** (tokens saved, wall-clock saved).

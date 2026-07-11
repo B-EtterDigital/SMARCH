@@ -1,4 +1,6 @@
-# SFF — Sweetspot Frontend-Fix
+# [SFF](GLOSSARY.md#sff) — Sweetspot Frontend-Fix
+
+This guide defines the opt-in design-excellence workflow for frontend repairs. Product designers, frontend implementers, and reviewers need it before changing a user-facing surface under this workflow. Read it when a request triggers SFF or a repository already carries its design lock. Remember that the lock governs every later frontend edit until an authorized SFF run changes it.
 
 SFF is SMA's opt-in design-excellence layer. It exists because two failures
 were observed in practice: Fable shipping frontend without loading its design
@@ -12,7 +14,7 @@ Reference implementation: `skills/sweetspot-frontend-fix/SKILL.md`
 ## Opt-in rule
 
 Triggers only on the literal tokens `SFF`, `/sff`, `Sweetspot Frontend-Fix`,
-`frontend fix`. Never self-triggers (same law as SUP/SMOA). **Standing
+`frontend fix`. Never self-triggers (same law as [SUP](GLOSSARY.md#sup)/[SMOA](GLOSSARY.md#smoa)). **Standing
 exception:** when a repo contains `.sff/DESIGN-LOCK.md`, the Design Lock
 rules bind every agent touching frontend surfaces, trigger or not.
 

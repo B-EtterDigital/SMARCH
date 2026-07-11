@@ -28,6 +28,7 @@
     {
       "name": "f5-ultravisionplan",
       "bundle": true,
+      "smokeTrigger": "user says SUP",
       "reason": "Public ultra-granular planning skill requested for the Claude plugin bundle."
     },
     {
@@ -38,16 +39,19 @@
     {
       "name": "sma-course-builder",
       "bundle": true,
+      "smokeTrigger": "asked to teach SMA",
       "reason": "Public SMA wiki and course generation skill requested for the Claude plugin bundle."
     },
     {
       "name": "sma-enforcer",
       "bundle": true,
+      "smokeTrigger": "audit SMA compliance",
       "reason": "Public SMA validation and enforcement skill requested for the Claude plugin bundle."
     },
     {
       "name": "sma-gen3",
       "bundle": true,
+      "smokeTrigger": "module ownership",
       "reason": "Core SMA Gen3 operating skill requested for the Claude plugin bundle."
     },
     {
@@ -58,11 +62,13 @@
     {
       "name": "sweetspot-frontend-fix",
       "bundle": true,
+      "smokeTrigger": "literal SFF",
       "reason": "Public frontend design-excellence skill requested for the Claude plugin bundle."
     },
     {
       "name": "sweetspot-moa",
       "bundle": true,
+      "smokeTrigger": "literally writes SMOA",
       "reason": "Public multi-agent orchestration skill requested for the Claude plugin bundle."
     }
   ]

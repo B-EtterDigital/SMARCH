@@ -1,5 +1,7 @@
 # User Wiki And Course Layer
 
+This guide defines the wiki pages and course materials that teach people how to evaluate, reuse, and maintain Sweetspot bricks. Documentation authors, course builders, and registry maintainers need it when they turn registry data into human-facing learning material. Read it before generating a brick page or changing the learner path. Remember that the wiki answers immediate trust and reuse questions, while the course teaches the lifecycle in sequence.
+
 SMA needs two learning surfaces:
 
 1. A brick wiki for lookup.
@@ -58,9 +60,9 @@ New users should learn in this order:
 
 1. What a brick is.
 2. Why small files and isolation help AI teams.
-3. How SSA-v2 protects secrets and data boundaries.
-4. How SSI prevents one broken module from taking down the app.
-5. How SSTF, SPE, SRS, and security gates prove the brick.
+3. How [SSA-v2](GLOSSARY.md#ssa-v2) protects secrets and data boundaries.
+4. How [SSI](GLOSSARY.md#ssi) prevents one broken module from taking down the app.
+5. How [SSTF](GLOSSARY.md#sstf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), and security gates prove the brick.
 6. How to read a brick manifest.
 7. How to copy a brick safely.
 8. How model provenance helps trace changes.

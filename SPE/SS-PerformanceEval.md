@@ -1,13 +1,15 @@
-# SPE — Sweetspot Performance Eval v1.0
+# [SPE](../docs/GLOSSARY.md#spe) — Sweetspot Performance Eval v1.0
+
+This document defines the performance thresholds, audit sequence, and approved repair patterns for Sweetspot product surfaces. Engineers and reviewers need it before they measure or approve a page, component, or data flow. Read it during implementation, before release, and again after any performance fix. Remember to measure the same path after the fix because an unverified optimization does not pass the performance gate.
 
 ## Purpose
 Systematic, brutally honest performance auditing framework for every page/component before shipping to production. SPE provides measurable thresholds, a repeatable audit process, and mandatory fix-before-ship gates.
 
 SPE works in harmony with the Sweetspot ecosystem:
 - **SSA-v2** → SPE enforces that all data flows through edge functions/RPCs, never N+1 client queries
-- **SSI** → SPE validates that lazy loading (L1), error boundaries (L2), and tier gating (L3) don't degrade performance
-- **SRS** → SPE ensures no security shortcuts for performance (no `select(*)`, no client-side secrets)
-- **SSTF-v1** → SPE metrics are testable via SSTF performance test patterns
+- **[SSI](../docs/GLOSSARY.md#ssi)** → SPE validates that lazy loading (L1), error boundaries (L2), and tier gating (L3) don't degrade performance
+- **[SRS](../docs/GLOSSARY.md#srs)** → SPE ensures no security shortcuts for performance (no `select(*)`, no client-side secrets)
+- **[SSTF-v1](../docs/GLOSSARY.md#sstf)** → SPE metrics are testable via SSTF performance test patterns
 - **SSRA** → SPE audit results feed into release readiness checklists
 
 ---

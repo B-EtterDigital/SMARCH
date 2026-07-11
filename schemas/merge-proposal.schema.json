@@ -2,62 +2,141 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sma/schemas/merge-proposal.schema.json",
   "title": "SMA Merge Proposal",
-  "description": "Generated when two divergent edit chains are detected on the same brick. Surfaces conflicting intents from agent-context, not just conflicting bytes. Written to <project>/.smarch/merge-proposals/<brick-id>-<unix-ms>.json for human or orchestrator review.",
+  "description": "This schema defines the review record created when two agent edit chains diverge on the same brick. Controllers, reviewers, and merge tooling need it when they compare intents, files, leases, and resolution choices. Read it before selecting a preferred chain or recording a manual merge. Remember that the proposal records each chain's intent and byte-level conflicts.",
   "type": "object",
-  "required": ["schema_version", "proposal_id", "brick_id", "generated_at", "chains", "files", "recommendation"],
+  "required": [
+    "schema_version",
+    "proposal_id",
+    "brick_id",
+    "generated_at",
+    "chains",
+    "files",
+    "recommendation"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "1.0.0" },
-    "proposal_id": { "type": "string" },
-    "brick_id": { "type": "string" },
-    "project": { "type": "string" },
-    "generated_at": { "type": "string", "format": "date-time" },
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "Schema version that this document conforms to."
+    },
+    "proposal_id": {
+      "type": "string",
+      "description": "Stable identifier of this merge proposal."
+    },
+    "brick_id": {
+      "type": "string",
+      "description": "Stable identifier of the brick associated with this record."
+    },
+    "project": {
+      "type": "string",
+      "description": "Project identifier associated with the record."
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "Time when this document was generated, in ISO 8601 date-time format.",
+      "format": "date-time"
+    },
     "chains": {
       "type": "array",
+      "description": "Ordered chains values for the record.",
       "minItems": 2,
       "items": {
         "type": "object",
-        "required": ["chain_id", "agent_id", "intents", "events"],
+        "required": [
+          "chain_id",
+          "agent_id",
+          "intents",
+          "events"
+        ],
         "additionalProperties": false,
         "properties": {
-          "chain_id": { "type": "string" },
-          "agent_id": { "type": "string" },
-          "session_id": { "type": "string" },
-          "actor_kind": { "type": "string" },
-          "model": { "type": "string" },
-          "started_at": { "type": "string", "format": "date-time" },
-          "ended_at": { "type": "string", "format": "date-time" },
+          "chain_id": {
+            "type": "string",
+            "description": "Recorded chain identifier for the items."
+          },
+          "agent_id": {
+            "type": "string",
+            "description": "Recorded agent identifier for the items."
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Identifier of the agent session that produced this value."
+          },
+          "actor_kind": {
+            "type": "string",
+            "description": "Category of actor that performed the action."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model identifier recorded for an AI-driven actor."
+          },
+          "started_at": {
+            "type": "string",
+            "description": "Time when the edit chain started, in ISO 8601 date-time format.",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": "string",
+            "description": "Time when the edit chain ended, in ISO 8601 date-time format.",
+            "format": "date-time"
+          },
           "intents": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Distinct intent statements pulled from the chain's agent-context events."
           },
           "events": {
             "type": "array",
-            "items": { "type": "string", "description": "event_id refs into the agent-context log" }
+            "description": "Ordered events values for the chain.",
+            "items": {
+              "type": "string",
+              "description": "event_id refs into the agent-context log"
+            }
           },
           "files_touched": {
             "type": "array",
-            "items": { "type": "string" },
+            "description": "Repository-relative files changed by the recorded work.",
+            "items": {
+              "type": "string"
+            },
             "uniqueItems": true
           },
           "lease_ids": {
             "type": "array",
-            "items": { "type": "string" }
+            "description": "Ordered lease ids values for the chain.",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
     },
     "files": {
       "type": "array",
+      "description": "Ordered files values for the record.",
       "items": {
         "type": "object",
-        "required": ["path", "status"],
+        "required": [
+          "path",
+          "status"
+        ],
         "additionalProperties": false,
         "properties": {
-          "path": { "type": "string" },
+          "path": {
+            "type": "string",
+            "description": "Repository-relative path to the file."
+          },
           "status": {
-            "enum": ["only_in_chain_a", "only_in_chain_b", "diverged", "agreed", "manifest_field_diverged"]
+            "enum": [
+              "only_in_chain_a",
+              "only_in_chain_b",
+              "diverged",
+              "agreed",
+              "manifest_field_diverged"
+            ],
+            "description": "Current status of the file."
           },
           "diverged_field": {
             "type": "string",
@@ -68,19 +147,47 @@
     },
     "recommendation": {
       "type": "object",
-      "required": ["preferred_chain", "reason"],
+      "description": "Fields that describe the recommendation.",
+      "required": [
+        "preferred_chain",
+        "reason"
+      ],
       "additionalProperties": false,
       "properties": {
-        "preferred_chain": { "type": "string", "description": "chain_id, or 'manual' if no clear winner" },
-        "reason": { "type": "string" }
+        "preferred_chain": {
+          "type": "string",
+          "description": "chain_id, or 'manual' if no clear winner"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Plain-language reason for this decision."
+        }
       }
     },
-    "resolved_at": { "type": "string", "format": "date-time" },
-    "resolved_by": { "type": "string" },
+    "resolved_at": {
+      "type": "string",
+      "description": "Time when the proposal was resolved, in ISO 8601 date-time format.",
+      "format": "date-time"
+    },
+    "resolved_by": {
+      "type": "string",
+      "description": "Identifier of the actor that resolved the proposal."
+    },
     "resolution_kind": {
       "type": "string",
-      "enum": ["accepted_a", "accepted_b", "manual_merge", "discarded_a", "discarded_b", "fork"]
+      "description": "Selected resolution kind; allowed values are `accepted_a`, `accepted_b`, `manual_merge`, `discarded_a`, `discarded_b`, `fork`.",
+      "enum": [
+        "accepted_a",
+        "accepted_b",
+        "manual_merge",
+        "discarded_a",
+        "discarded_b",
+        "fork"
+      ]
     },
-    "resolution_notes": { "type": "string" }
+    "resolution_notes": {
+      "type": "string",
+      "description": "Notes explaining how the proposal was resolved."
+    }
   }
 }

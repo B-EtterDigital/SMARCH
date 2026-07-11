@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -11,6 +12,19 @@ const DEFAULT_TOP_K = 50;
 function graphNodes(graph) {
   const nodes = graph?.nodes ?? graph?.elements?.nodes;
   return Array.isArray(nodes) ? nodes : [];
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+}
+
+export function graphNodeContentHash(graph) {
+  const canonicalNodes = graphNodes(graph)
+    .map((node) => JSON.stringify(canonicalize(node)))
+    .sort();
+  return createHash("sha256").update(JSON.stringify(canonicalNodes)).digest("hex");
 }
 
 function nodeId(node) {
@@ -184,13 +198,13 @@ export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onW
   );
   const dims = vectors[0].length;
   const paths = indexPaths(absoluteGraphPath);
-  const graphStat = statSync(absoluteGraphPath);
   const meta = {
     dims,
     backend: localEmbedder.backend,
     model: localEmbedder.model,
     count: nodes.length,
-    builtAt: graphStat.mtime.toISOString(),
+    graphContentHash: graphNodeContentHash(graph),
+    builtAt: new Date().toISOString(),
   };
 
   mkdirSync(paths.root, { recursive: true });
@@ -200,12 +214,11 @@ export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onW
   return { built: true, ...meta, ...paths };
 }
 
-function readEmbeddingIndex(graphPath) {
+function readEmbeddingIndex(graphPath, graph) {
   const paths = indexPaths(graphPath);
   if (![paths.vectorsPath, paths.idsPath, paths.metaPath].every(existsSync)) return null;
   const meta = JSON.parse(readFileSync(paths.metaPath, "utf8"));
-  const graphMtime = statSync(graphPath).mtime.toISOString();
-  if (meta.builtAt !== graphMtime) return null;
+  if (meta.graphContentHash !== graphNodeContentHash(graph)) return null;
   const ids = readFileSync(paths.idsPath, "utf8").split(/\r?\n/).filter(Boolean).map((line) => {
     const value = JSON.parse(line);
     return String(value?.id ?? value);
@@ -216,11 +229,12 @@ function readEmbeddingIndex(graphPath) {
   return { meta, ids, buffer };
 }
 
-function cosineRows(index, queryVector, topK) {
+function cosineRows(index, queryVector, topK, allowedNodeIds = null) {
   const dims = index.meta.dims;
   if (queryVector.length !== dims) throw new Error(`embedding dimensions changed: index=${dims}, query=${queryVector.length}`);
   const scored = [];
   for (let row = 0; row < index.ids.length; row += 1) {
+    if (allowedNodeIds && !allowedNodeIds.has(index.ids[row])) continue;
     let score = 0;
     const offset = row * dims * 4;
     for (let col = 0; col < dims; col += 1) score += index.buffer.readFloatLE(offset + col * 4) * queryVector[col];
@@ -275,11 +289,12 @@ function reciprocalRankMerge(nodesById, lexical, semantic, limit) {
     || left.id.localeCompare(right.id)).slice(0, limit);
 }
 
-export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, onWarning = console.warn, ...embedderOptions }) {
+export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, allowedNodeIds = undefined, onWarning = console.warn, ...embedderOptions }) {
   const absoluteGraphPath = path.resolve(graphPath);
   const graph = JSON.parse(readFileSync(absoluteGraphPath, "utf8"));
-  const lexicalHits = substringIdfHits(graph, question);
-  const index = readEmbeddingIndex(absoluteGraphPath);
+  const allowed = allowedNodeIds ? new Set([...allowedNodeIds].map(String)) : null;
+  const lexicalHits = substringIdfHits(graph, question).filter((hit) => !allowed || allowed.has(hit.id));
+  const index = readEmbeddingIndex(absoluteGraphPath, graph);
   if (!index) return { usedSemantic: false, hits: lexicalHits, expandedQuestion: question };
 
   const localEmbedder = await resolveLocalEmbedder({ embedder, backend: index.meta.backend, ...embedderOptions });
@@ -288,8 +303,10 @@ export async function semanticRerankQuery({ graphPath, question, embedder = unde
     return { usedSemantic: false, hits: lexicalHits, expandedQuestion: question, reason: "no-local-embedder" };
   }
   const [queryVector] = normalizeBatch(await localEmbedder.embed([question]), 1);
-  const semanticHits = cosineRows(index, queryVector, topK);
-  const nodesById = new Map(graphNodes(graph).map((node) => [nodeId(node), { id: nodeId(node), label: nodeLabel(node) }]));
+  const semanticHits = cosineRows(index, queryVector, topK, allowed);
+  const nodesById = new Map(graphNodes(graph)
+    .filter((node) => !allowed || allowed.has(nodeId(node)))
+    .map((node) => [nodeId(node), { id: nodeId(node), label: nodeLabel(node) }]));
   const hits = reciprocalRankMerge(nodesById, lexicalHits, semanticHits, topK);
   const seedLabels = hits.slice(0, 3).map((hit) => hit.label).filter(Boolean);
   return {
@@ -326,6 +343,45 @@ export function createDeterministicHashEmbedder({ dims = 32, aliases = {} } = {}
       });
     },
   };
+}
+
+export async function selftestEmbeddingContentAddress({ fixtureRoot, assert: assertResult }) {
+  const graphRoot = path.join(fixtureRoot, "embedding-fixture", "graphify-out");
+  const graphPath = path.join(graphRoot, "graph.json");
+  mkdirSync(graphRoot, { recursive: true });
+  writeFileSync(graphPath, `${JSON.stringify({
+    nodes: [
+      { id: "session-signin", label: "session-signin", source_snippet: "Establishes a user session." },
+      { id: "invoice-total", label: "invoice-total", source_snippet: "Calculates billing totals." },
+    ],
+    edges: [],
+  })}\n`);
+  const embedder = createDeterministicHashEmbedder({ aliases: { auth: "session", login: "signin", flow: "" } });
+  const built = await buildEmbeddingIndex({ graphPath, embedder });
+  assertResult(built.built && "count" in built && built.count === 2, "stub embedding index should build without a model");
+  assertResult("graphContentHash" in built && /^[a-f0-9]{64}$/.test(built.graphContentHash), "embedding metadata must use a SHA-256 graph content hash");
+  assertResult(substringIdfHits(JSON.parse(readFileSync(graphPath, "utf8")), "auth login flow").length === 0, "synonym fixture must miss substring ranking");
+  const semantic = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });
+  assertResult(semantic.usedSemantic && semantic.hits[0]?.id === "session-signin", "semantic rerank should find the synonym node");
+  assertResult(semantic.expandedQuestion.includes("session-signin"), "semantic seed should feed the existing traversal query");
+
+  const originalMtime = statSync(graphPath).mtime;
+  const graph = JSON.parse(readFileSync(graphPath, "utf8"));
+  writeFileSync(graphPath, `${JSON.stringify({ ...graph, nodes: [...graph.nodes].reverse() })}\n`);
+  utimesSync(graphPath, originalMtime, originalMtime);
+  const reordered = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });
+  assertResult(reordered.usedSemantic, "canonical graph hashing must ignore node order changes");
+
+  const changed = JSON.parse(readFileSync(graphPath, "utf8"));
+  changed.nodes[0].source_snippet = "Graph content changed without changing its filesystem timestamp.";
+  writeFileSync(graphPath, `${JSON.stringify(changed)}\n`);
+  utimesSync(graphPath, originalMtime, originalMtime);
+  const stale = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });
+  assertResult(!stale.usedSemantic, "content changes with an unchanged graph mtime must invalidate the embedding index");
+
+  const warnings = [];
+  const missing = await buildEmbeddingIndex({ graphPath, backend: "unavailable-fixture", onWarning: (warning) => warnings.push(warning) });
+  assertResult(!missing.built && warnings.length === 1, "missing local embedder should warn exactly once and skip");
 }
 
 let localeStableSelftestComplete = false;

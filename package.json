@@ -52,7 +52,7 @@
     "anchor": "node tools/sma-anchor.mjs",
     "anchor:verify": "node tools/sma-anchor.mjs --verify",
     "gate:license": "node tools/sma-license-gate.mjs --gate",
-    "gate:all": "npm run gate:rules && npm run gate:scope && npm run source:size:gate && npm run gate:compliance && npm run gate:license && npm run provenance:verify && npm run gate:leaks",
+    "gate:all": "npm run gate:rules && npm run gate:scope && npm run source:size:gate && npm run gate:compliance && npm run gate:license && npm run provenance:verify && npm run gate:leaks && npm run gate:docs",
     "gate:promote": "npm run gate:all && npm run build:promote",
     "build:packets": "node tools/sma-build-packets.mjs",
     "release": "node tools/sma-release.mjs",

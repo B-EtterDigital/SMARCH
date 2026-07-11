@@ -16,6 +16,8 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, "../../..");
 const SCHEMA_PATH = path.join(REPO_ROOT, "schemas", "brick.manifest.schema.json");
 const SCANNER_PATH = path.join(REPO_ROOT, "tools", "sma-scan.mjs");
 const DEFAULT_OUTPUT = path.join(SCRIPT_DIR, "portfolio");
+const SNAPSHOT_PATH = path.join(SCRIPT_DIR, "portfolio.snapshot.json");
+const SNAPSHOT_ROOT = "tools/evals/fixtures/portfolio";
 const FIXED_SEED = "smarch-public-eval-fixtures-v1";
 const FIXED_TIMESTAMP = "2026-01-15T00:00:00.000Z";
 const MAX_PORTFOLIO_BYTES = 2 * 1024 * 1024;
@@ -87,7 +89,7 @@ const DUPLICATE_PAIR = [
 ];
 
 function parseArgs(argv) {
-  const options = { output: DEFAULT_OUTPUT, selftest: false };
+  const options = { output: DEFAULT_OUTPUT, selftest: false, updateSnapshot: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -98,12 +100,15 @@ function parseArgs(argv) {
       index += 1;
     } else if (arg === "--selftest") {
       options.selftest = true;
+    } else if (arg === "--update-snapshot") {
+      options.updateSnapshot = true;
     } else if (arg === "--help" || arg === "-h") {
       console.log(`Deterministic SMA fixture portfolio generator
 
 Usage:
   node tools/evals/fixtures/gen.mjs [--out <directory>]
   node tools/evals/fixtures/gen.mjs --selftest
+  node tools/evals/fixtures/gen.mjs --update-snapshot
 `);
       process.exit(0);
     } else {
@@ -580,6 +585,34 @@ function snapshotBytes(snapshot) {
   return snapshot.reduce((sum, entry) => sum + Number(entry.bytes || 0), 0);
 }
 
+function snapshotSummary(snapshot) {
+  const files = snapshot.filter((entry) => entry.kind === "file");
+  return {
+    schemaVersion: 1,
+    algorithm: "sha256",
+    root: SNAPSHOT_ROOT,
+    digest: createHash("sha256").update(JSON.stringify(snapshot)).digest("hex"),
+    fileCount: files.length,
+    totalBytes: snapshotBytes(files)
+  };
+}
+
+async function readCommittedSnapshot() {
+  const snapshot = JSON.parse(await fs.readFile(SNAPSHOT_PATH, "utf8"));
+  assert.equal(snapshot.schemaVersion, 1, "fixture snapshot schemaVersion must be 1");
+  assert.equal(snapshot.algorithm, "sha256", "fixture snapshot algorithm must be sha256");
+  assert.equal(snapshot.root, SNAPSHOT_ROOT, `fixture snapshot root must be ${SNAPSHOT_ROOT}`);
+  return snapshot;
+}
+
+function assertSnapshotMatches(actual, expected, label) {
+  assert.deepEqual(
+    actual,
+    expected,
+    `${label} snapshot drift; inspect the fixture change, then run node tools/evals/fixtures/gen.mjs --update-snapshot`
+  );
+}
+
 async function scanPortfolio(portfolioRoot, reportPath) {
   const { stdout, stderr } = await execFileAsync(process.execPath, [
     SCANNER_PATH,
@@ -591,7 +624,7 @@ async function scanPortfolio(portfolioRoot, reportPath) {
     maxBuffer: 8 * 1024 * 1024
   });
 
-  assert.equal(stderr, "", `scanner wrote to stderr:\n${stderr}`);
+  assert.equal(stderr.trim(), "", `scanner wrote to stderr:\n${stderr}`);
   JSON.parse(stdout);
   return JSON.parse(await fs.readFile(reportPath, "utf8"));
 }
@@ -625,11 +658,26 @@ async function selftest() {
     const secondSnapshot = await treeSnapshot(secondRoot);
     assert.deepEqual(secondSnapshot, firstSnapshot, "two generated trees must be byte-identical");
 
+    const expectedSnapshot = await readCommittedSnapshot();
+    const committedSnapshot = await treeSnapshot(DEFAULT_OUTPUT);
+    assertSnapshotMatches(snapshotSummary(committedSnapshot), expectedSnapshot, "committed fixture portfolio");
+    assertSnapshotMatches(snapshotSummary(firstSnapshot), expectedSnapshot, "regenerated fixture portfolio");
+
     const totalBytes = snapshotBytes(firstSnapshot);
     assert(totalBytes < MAX_PORTFOLIO_BYTES, `portfolio is ${totalBytes} bytes; limit is ${MAX_PORTFOLIO_BYTES}`);
 
     const report = await scanPortfolio(firstRoot, path.join(tempRoot, "scanner-report.json"));
     assertPlantedFindings(report);
+
+    const driftTarget = firstSnapshot.find((entry) => entry.kind === "file")?.path;
+    assert(driftTarget, "fixture snapshot selftest requires at least one file");
+    await fs.appendFile(path.join(firstRoot, driftTarget), "\nfixture drift selftest\n");
+    const driftedSnapshot = snapshotSummary(await treeSnapshot(firstRoot));
+    assert.throws(
+      () => assertSnapshotMatches(driftedSnapshot, expectedSnapshot, "mutated fixture portfolio"),
+      /snapshot drift/,
+      "mutating a fixture must fail the committed snapshot gate"
+    );
 
     console.log(JSON.stringify({
       ok: true,
@@ -637,6 +685,8 @@ async function selftest() {
       project_count: PROJECTS.length,
       brick_count: report.bricks.length,
       total_bytes: totalBytes,
+      snapshot_digest: expectedSnapshot.digest,
+      drift_negative_test: "passed",
       planted_findings: {
         oversized_files: 1,
         env_contract_gaps: 1,
@@ -651,6 +701,20 @@ async function selftest() {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+
+  if (options.selftest && options.updateSnapshot) {
+    throw new Error("--selftest and --update-snapshot are mutually exclusive");
+  }
+
+  if (options.updateSnapshot) {
+    if (options.output !== DEFAULT_OUTPUT) {
+      throw new Error("--update-snapshot only supports the committed fixture portfolio");
+    }
+    const summary = snapshotSummary(await treeSnapshot(DEFAULT_OUTPUT));
+    await fs.writeFile(SNAPSHOT_PATH, stableJson(summary));
+    console.log(JSON.stringify({ ok: true, snapshot: SNAPSHOT_PATH, ...summary }, null, 2));
+    return;
+  }
 
   if (options.selftest) {
     await selftest();

@@ -1,5 +1,7 @@
 # Privacy, data protection, and residency (GDPR + Swiss FADP)
 
+This document describes how the SMARCH service handles personal data, international transfers, retention, and user rights. Operators, engineers, and privacy reviewers need it when they change data flows or answer a compliance request. Read it before introducing a processor, storage region, moderation path, or retention rule. Remember that the implemented data flow and the written register must agree.
+
 This documents how the SMARCH space processes personal data and how it meets EU GDPR
 and Swiss revFADP (revDSG) requirements. It is the processor register + transfer basis
 that the moderation and storage code implements. Pair it with `docs/TRANSPARENCY.md`

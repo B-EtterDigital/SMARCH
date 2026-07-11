@@ -1,52 +1,52 @@
 {
-  "generated": "2026-07-10T17:35:42+00:00",
+  "generated": "2026-07-10T18:06:44+00:00",
   "totals": {
-    "tasks": 1694,
-    "active": 1693,
-    "done": 49,
+    "tasks": 1702,
+    "active": 1701,
+    "done": 63,
     "obsolete": 1,
-    "percent_complete": 2.89,
-    "est_minutes_remaining": 45085
+    "percent_complete": 3.7,
+    "est_minutes_remaining": 44965
   },
   "by_status": {
     "claimed": 1,
-    "done": 49,
+    "done": 63,
     "obsolete": 1,
-    "todo": 1643
+    "todo": 1637
   },
   "by_complexity": {
     "C1": 954,
-    "C2": 479,
-    "C3": 232,
+    "C2": 483,
+    "C3": 236,
     "C4": 29
   },
   "by_model_tier": {
     "haiku": 954,
     "opus": 29,
-    "sonnet": 711
+    "sonnet": 719
   },
   "by_module": {
     "capsule": 31,
     "ci": 12,
     "commun": 16,
     "coord": 79,
-    "dash": 284,
+    "dash": 285,
     "docs": 381,
-    "evals": 57,
+    "evals": 58,
     "gates": 55,
-    "graph": 22,
+    "graph": 24,
     "mcp": 89,
     "prov": 99,
-    "reg": 302,
+    "reg": 304,
     "rust": 12,
     "schemas": 154,
-    "skills": 25,
-    "smoa": 59,
+    "skills": 26,
+    "smoa": 60,
     "sync": 17
   },
   "by_domain": {
     "a11y": 21,
-    "backend": 273,
+    "backend": 277,
     "data": 38,
     "design": 20,
     "docs": 706,
@@ -55,20 +55,20 @@
     "infra": 35,
     "perf": 70,
     "release": 1,
-    "security": 18,
+    "security": 20,
     "telemetry": 67,
-    "test": 309,
+    "test": 311,
     "ux": 25
   },
   "by_lane": {
     "shared-hot-path": 185,
-    "single-module": 1509
+    "single-module": 1517
   },
   "by_milestone": {
     "M0": 140,
     "M1": 635,
-    "M2": 548,
-    "M3": 371
+    "M2": 555,
+    "M3": 372
   },
   "paid_tasks": 0
 }

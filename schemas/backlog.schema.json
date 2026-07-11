@@ -2,23 +2,65 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sma/schemas/backlog.schema.json",
   "title": "SMA Backlog",
-  "description": "Standard format for tracking imperfections that need to be cleaned up before a brick can be promoted, or that affect compliance/quality scores. One file per project (.smarch/backlog.json) plus a global aggregate at SMA/registry/backlog.generated.json.",
+  "description": "This schema defines the project backlog used to track imperfections, promotion blockers, and their resolution evidence. Brick owners, reviewers, and registry tooling need it when they open, update, or aggregate debt records. Read it before leaving a gate incomplete or deciding whether a brick can advance. Remember that unresolved work must remain explicit until it is resolved or closed with a written rationale.",
   "type": "object",
-  "required": ["schema_version", "project", "generated_at", "entries"],
+  "required": [
+    "schema_version",
+    "project",
+    "generated_at",
+    "entries"
+  ],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
-    "project": { "type": "string" },
-    "generated_at": { "type": "string", "format": "date-time" },
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "Schema version that this document conforms to."
+    },
+    "project": {
+      "type": "string",
+      "description": "Project identifier associated with the record."
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "Time when this document was generated, in ISO 8601 date-time format.",
+      "format": "date-time"
+    },
     "entries": {
       "type": "array",
+      "description": "Ordered entries values for the record.",
       "items": {
         "type": "object",
-        "required": ["id", "title", "severity", "kind", "scope", "opened_at", "status"],
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "kind",
+          "scope",
+          "opened_at",
+          "status"
+        ],
         "properties": {
-          "id": { "type": "string", "description": "Stable id, e.g. acme-lang-001" },
-          "title": { "type": "string" },
-          "description": { "type": "string" },
-          "severity": { "enum": ["blocker", "high", "medium", "low", "nit"] },
+          "id": {
+            "type": "string",
+            "description": "Stable id, e.g. acme-lang-001"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short human-readable title for the entry."
+          },
+          "description": {
+            "type": "string",
+            "description": "Plain-language description of the entry."
+          },
+          "severity": {
+            "enum": [
+              "blocker",
+              "high",
+              "medium",
+              "low",
+              "nit"
+            ],
+            "description": "Selected severity; allowed values are `blocker`, `high`, `medium`, `low`, `nit`."
+          },
           "kind": {
             "enum": [
               "typecheck_disabled",
@@ -37,35 +79,96 @@
               "naming",
               "duplicate_brick",
               "other"
-            ]
+            ],
+            "description": "Classification assigned to the entry."
           },
           "scope": {
             "type": "object",
+            "description": "Fields that describe the scope.",
             "properties": {
-              "brick_id": { "type": "string" },
-              "package": { "type": "string" },
-              "files": { "type": "array", "items": { "type": "string" } }
+              "brick_id": {
+                "type": "string",
+                "description": "Stable identifier of the brick associated with this record."
+              },
+              "package": {
+                "type": "string",
+                "description": "Package for the scope."
+              },
+              "files": {
+                "type": "array",
+                "description": "Ordered files values for the scope.",
+                "items": {
+                  "type": "string"
+                }
+              }
             }
           },
           "blocks_promotion_to": {
             "type": "array",
-            "items": { "enum": ["candidate", "verified", "canonical", "publishable"] }
+            "description": "Ordered blocks promotion to values for the entry.",
+            "items": {
+              "enum": [
+                "candidate",
+                "verified",
+                "canonical",
+                "publishable"
+              ]
+            }
           },
           "linked_to": {
             "type": "object",
+            "description": "Fields that describe the linked to.",
             "properties": {
-              "reuse_receipt_id": { "type": "string" },
-              "github_issue": { "type": "string" },
-              "linear_id": { "type": "string" }
+              "reuse_receipt_id": {
+                "type": "string",
+                "description": "Reuse receipt identifier for the linked to."
+              },
+              "github_issue": {
+                "type": "string",
+                "description": "Github issue for the linked to."
+              },
+              "linear_id": {
+                "type": "string",
+                "description": "Linear identifier for the linked to."
+              }
             }
           },
-          "opened_at": { "type": "string", "format": "date-time" },
-          "opened_by": { "type": "string" },
-          "closed_at": { "type": "string", "format": "date-time" },
-          "closed_by": { "type": "string" },
-          "resolution": { "type": "string" },
-          "status": { "enum": ["open", "in_progress", "blocked", "resolved", "wontfix"] },
-          "estimated_effort_hours": { "type": "number" },
+          "opened_at": {
+            "type": "string",
+            "description": "Time when the backlog entry was opened, in ISO 8601 date-time format.",
+            "format": "date-time"
+          },
+          "opened_by": {
+            "type": "string",
+            "description": "Identifier of the actor that opened the backlog entry."
+          },
+          "closed_at": {
+            "type": "string",
+            "description": "Time when the backlog entry was closed, in ISO 8601 date-time format.",
+            "format": "date-time"
+          },
+          "closed_by": {
+            "type": "string",
+            "description": "Identifier of the actor that closed the backlog entry."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Recorded outcome and rationale for closing the item."
+          },
+          "status": {
+            "enum": [
+              "open",
+              "in_progress",
+              "blocked",
+              "resolved",
+              "wontfix"
+            ],
+            "description": "Current status of the entry."
+          },
+          "estimated_effort_hours": {
+            "type": "number",
+            "description": "Estimated engineering hours required to resolve the item."
+          },
           "estimated_token_cost": {
             "type": "integer",
             "description": "Tokens to fix, estimated. Used by sma-state to surface low-effort/high-value cleanup."

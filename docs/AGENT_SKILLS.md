@@ -1,5 +1,7 @@
 # Agent Skills
 
+This guide explains the agent skills that install, teach, and enforce Sweetspot Modular Architecture. Agent maintainers and repository operators need it when they configure an automation harness. Read it before enabling a skill or changing how agents discover project rules. Remember that a skill must load the repository contract before it acts.
+
 SMA works best when the agent can load the rules automatically.
 
 The canonical SMA skills live in:
@@ -51,4 +53,3 @@ Purpose:
 ## Rule
 
 If an agent changes a reusable module, it should either update the brick manifest or explicitly state why the module is not an SMA brick.
-

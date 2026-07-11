@@ -2,43 +2,103 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sweetspot.local/schemas/project.index.schema.json",
   "title": "Sweetspot Project Index",
+  "description": "This schema defines the compact project index used to identify a repository, its modules, manifests, and scan state. Project maintainers, scanners, and registry tooling need it during project bootstrap and discovery. Read it before registering the repository or diagnosing why modules are absent from the portfolio. Remember that the index must point to the manifests that exist in the checked-out project.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "project", "modules"],
+  "required": [
+    "schema_version",
+    "project",
+    "modules"
+  ],
   "properties": {
-    "schema_version": { "type": "string", "const": "1.0.0" },
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version that this document conforms to.",
+      "const": "1.0.0"
+    },
     "project": {
       "type": "object",
+      "description": "Project identifier associated with the record.",
       "additionalProperties": false,
-      "required": ["id", "name", "root"],
+      "required": [
+        "id",
+        "name",
+        "root"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "root": { "type": "string" },
-        "repository": { "type": "string" },
-        "commit": { "type": "string" },
+        "id": {
+          "type": "string",
+          "description": "Stable identifier of the project."
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the project."
+        },
+        "root": {
+          "type": "string",
+          "description": "Repository root represented by this record."
+        },
+        "repository": {
+          "type": "string",
+          "description": "Repository location for the project."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit identifier associated with the recorded work."
+        },
         "stack": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered stack values for the project.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "modules": {
       "type": "array",
+      "description": "Modules registered for this project.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["brick_id", "manifest_path", "status"],
+        "required": [
+          "brick_id",
+          "manifest_path",
+          "status"
+        ],
         "properties": {
-          "brick_id": { "type": "string" },
-          "manifest_path": { "type": "string" },
+          "brick_id": {
+            "type": "string",
+            "description": "Stable identifier of the brick associated with this record."
+          },
+          "manifest_path": {
+            "type": "string",
+            "description": "Repository-relative path to the referenced manifest."
+          },
           "status": {
             "type": "string",
-            "enum": ["experimental", "project_bound", "variant", "duplicate", "legacy", "candidate", "canonical"]
+            "description": "Current status of the module.",
+            "enum": [
+              "experimental",
+              "project_bound",
+              "variant",
+              "duplicate",
+              "legacy",
+              "candidate",
+              "canonical"
+            ]
           },
-          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-          "notes": { "type": "string" }
+          "score": {
+            "type": "integer",
+            "description": "Score as a whole number for the module.",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes about the module."
+          }
         }
       }
     }

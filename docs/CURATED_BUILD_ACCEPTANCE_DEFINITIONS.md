@@ -1,5 +1,7 @@
 # Curated Build Acceptance Definitions
 
+This reference defines the evidence required at each acceptance state for a curated build. Build owners and reviewers need it when deciding whether a candidate may advance. Read it before assigning a status or approving private publication. Remember that the status follows the weakest required proof, not the amount of work invested.
+
 Status: conservative acceptance bars for curated builds under `builds/`.
 
 This doc defines the minimum bar for four curated-build states:
@@ -22,8 +24,8 @@ Current repo reality on `2026-04-22`:
 
 Use this with:
 
-- [docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md](~/DEV/SMARCH/docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md)
-- [docs/CURATED_BUILD_PRIVATE_PUBLISH_LANE.md](~/DEV/SMARCH/docs/CURATED_BUILD_PRIVATE_PUBLISH_LANE.md)
+- [docs/CURATED_BUILD_LIFECYCLE_PLAYBOOK.md](CURATED_BUILD_LIFECYCLE_PLAYBOOK.md)
+- [docs/CURATED_BUILD_PRIVATE_PUBLISH_LANE.md](CURATED_BUILD_PRIVATE_PUBLISH_LANE.md)
 - `security/build-verification.generated.json`
 
 ## Main Rule

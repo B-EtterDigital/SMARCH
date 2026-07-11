@@ -1,5 +1,7 @@
 # Brick Template
 
+This guide explains the files and placeholders used to start a portable Sweetspot brick. Brick authors and project integrators need it before copying or adapting this template. Read it when you create the manifest and again before you publish the brick for reuse. Remember to replace every placeholder with evidence that matches the brick's real source, ports, and gates.
+
 Copy `module.sweetspot.json` into the root of a reusable module and adapt it.
 
 Required next steps:
@@ -15,4 +17,3 @@ Required next steps:
 ```bash
 node ~/DEV/SMARCH/tools/sma-validate.mjs --manifest module.sweetspot.json
 ```
-

@@ -1,5 +1,7 @@
 # Agent Skills
 
+This overview explains the supported agent skill packages and the two installation routes provided by SMARCH. Workspace maintainers need it when they add the bundle to Claude Code, Codex, OpenCode, or a generic agent runner. Read it before choosing a plugin install or a project-local install. Remember to regenerate plugin metadata after the skill inventory or package version changes.
+
 ## Claude Code plugin
 
 Install the six-skill SMARCH bundle from GitHub in one shell command:

@@ -1,5 +1,7 @@
 # Build Layer Implementation Plan
 
+This plan describes how SMARCH will represent and validate reusable builds assembled from several bricks. Maintainers implementing the build layer need it before changing schemas, scanners, registries, or promotion tooling. Read it when selecting the next implementation slice or checking a design decision against the intended model. Remember that a build must preserve the contracts and evidence of every brick it composes.
+
 Status: proposed implementation outline.
 
 This document defines the missing layer above bricks in SMA/SMARCH. It is
@@ -8,9 +10,9 @@ anchored in the current repo vision and the current scanner reality:
 - The product story is already `vision -> selected bricks -> integration plan -> clone`
   in the value masterplan.
 - The registry is already broad, but trust and cloneability are still weak in
-  [scans/all-projects/latest.registry.json](~/DEV/SMARCH/scans/all-projects/latest.registry.json).
-- The current brick model in [README.md](~/DEV/SMARCH/README.md) and
-  [schemas/brick.manifest.schema.json](~/DEV/SMARCH/schemas/brick.manifest.schema.json)
+  `scans/all-projects/latest.registry.json`.
+- The current brick model in [README.md](../README.md) and
+  [schemas/brick.manifest.schema.json](../schemas/brick.manifest.schema.json)
   is necessary but not sufficient for capability-level reuse.
 
 ## Why Builds Are Necessary
@@ -435,7 +437,7 @@ Required publication controls:
 
 Add these first:
 
-- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](~/DEV/SMARCH/docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md)
+- [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
 - `docs/BUILD_MANIFEST_SPEC.md`
 - `docs/BUILD_LIFECYCLE.md`
 - `docs/BUILD_MARKETPLACE_MODEL.md`

@@ -1,5 +1,7 @@
 # Moderation transparency
 
+This page explains how SMARCH moderates public project signs and uploaded images, including blocked content, reports, and appeals. Project owners, contributors, and moderators should read it before publishing or reviewing public content. Return to it when a submission is rejected or a report needs follow-up. Remember that uncertain or failed moderation checks keep content private until review.
+
 Every project sign (text + link) and every uploaded image in the SMARCH space is
 AI-moderated before it becomes public. Moderation is fail-closed: if the check errors or
 is uncertain, the content is not published.

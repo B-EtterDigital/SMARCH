@@ -1,5 +1,7 @@
 # Sweetspot Modular Architecture
 
+This document defines the core Sweetspot architecture, its brick types, and the proof model that makes reuse safe. Engineers, reviewers, and project leads need it as the primary conceptual reference for the system. Read it before designing module boundaries or deciding which gates a brick must satisfy. Remember that a brick is reusable only when its boundaries and evidence travel with its code.
+
 SMA turns Sweetspot projects into a module supply chain: small, isolated, security-scored bricks that can be copied between projects without dragging hidden risk behind them.
 
 The key discipline is simple:
@@ -14,7 +16,7 @@ A seasoned engineer will probably like the instinct and distrust the packaging.
 
 They will like:
 - The 400-600 line pressure because it reduces agent collisions, review fatigue, and merge risk.
-- SSI because it limits UI blast radius in the same spirit as fault containment.
+- [SSI](GLOSSARY.md#ssi) because it limits UI blast radius in the same spirit as fault containment.
 - SSA-v2 because it forces secrets and privileged calls behind a server-side boundary.
 - The brick registry idea because reusable modules are only useful when discoverable and scored.
 - Multi-agent file ownership because uncontrolled parallel edits are where AI development becomes expensive.
@@ -53,7 +55,7 @@ SSTT task
   -> Registry scores and indexes the brick
 ```
 
-SMA does not replace SSA-v2, SSI, SSTF, SPE, SRS, SSRA, or SSTT. It binds them into one copyable module contract.
+SMA does not replace SSA-v2, SSI, [SSTF](GLOSSARY.md#sstf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), SSRA, or SSTT. It binds them into one copyable module contract.
 SVD is optional: it is used when a brick or build needs visual proof of a user journey.
 
 ## Brick Types
@@ -107,7 +109,7 @@ Rules:
 - Every agent handoff updates provenance.
 - Security or release agents can veto canonical status.
 
-### SVA: Sweetspot Vulnerability Audit
+### [SVA](GLOSSARY.md#sva): Sweetspot Vulnerability Audit
 
 Purpose: make VibeSec-style security review a gate, not a memory exercise.
 
@@ -125,7 +127,7 @@ Severity rule:
 - `medium` findings require an owner and deadline.
 - `low` findings require documentation.
 
-### SRLS: Sweetspot RLS Standard
+### [SRLS](GLOSSARY.md#srls): Sweetspot RLS Standard
 
 Purpose: make database access portable and testable.
 
@@ -144,7 +146,7 @@ Hard blocks:
 - No broad `using (true)` on user/private data.
 - No `SECURITY DEFINER` without explicit scoping and `search_path`.
 
-### SEV: Sweetspot Environment Validation
+### [SEV](GLOSSARY.md#sev): Sweetspot Environment Validation
 
 Purpose: stop secret leaks and bad repo setup.
 
@@ -182,7 +184,7 @@ Rules:
 - Data class determines required RLS, logging, redaction, export, and retention rules.
 - SRS logs must redact `pii`, `payment`, `credential`, `health_sensitive`, and `regulated` data.
 
-### SSC: Sweetspot Supply Chain And Provenance
+### [SSC](GLOSSARY.md#ssc): Sweetspot Supply Chain And Provenance
 
 Purpose: know where a brick came from and whether it can be trusted.
 

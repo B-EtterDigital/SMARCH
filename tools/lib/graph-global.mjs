@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery } from "./graph-embeddings.mjs";
+import { communitySummaryBlock } from "./graph-summaries.mjs";
 
 const GLOBAL_QUERY_SCRIPT = String.raw`
 import json
@@ -84,11 +86,36 @@ export function globalGraphPath(home = process.env.HOME || homedir()) {
   return path.join(home, ".graphify", "global-graph.json");
 }
 
+function graphNodes(graph) {
+  const nodes = graph?.nodes ?? graph?.elements?.nodes;
+  return Array.isArray(nodes) ? nodes : [];
+}
+
+function nodeId(node) {
+  return String(node?.id ?? node?.data?.id ?? "").trim();
+}
+
+function portfolioTag(node) {
+  const repo = String(node?.repo ?? node?.data?.repo ?? "").trim();
+  if (repo) return repo;
+  const id = nodeId(node);
+  return id.includes("::") ? id.split("::", 1)[0] : "untagged";
+}
+
+function allowedNodeIds(graph, tags) {
+  if (!tags.length) return undefined;
+  const wanted = new Set(tags.map((tag) => tag.toLowerCase()));
+  return new Set(graphNodes(graph)
+    .filter((node) => wanted.has(portfolioTag(node).toLowerCase()))
+    .map(nodeId)
+    .filter(Boolean));
+}
+
 /**
- * @param {{ question?: string, tags?: string | string[], budget?: string | number, home?: string, graphifyPath?: string }} [options]
+ * @param {{ question?: string, tags?: string | string[], budget?: string | number, home?: string, graphifyPath?: string, embedder?: object }} [options]
  */
-export function queryGlobalGraph(options = {}) {
-  const { question, tags = [], budget = 2000, home, graphifyPath } = options;
+export async function queryGlobalGraph(options = {}) {
+  const { question, tags = [], budget = 2000, home, graphifyPath, embedder } = options;
   const query = String(question || "").trim();
   if (!query) throw new Error("global query requires a question");
   const parsedBudget = Number(budget);
@@ -104,9 +131,18 @@ export function queryGlobalGraph(options = {}) {
     );
   }
 
+  const normalizedTags = normalizeTags(tags);
+  const graph = JSON.parse(readFileSync(graphPath, "utf8"));
+  const ranked = await semanticRerankQuery({
+    graphPath,
+    question: query,
+    embedder,
+    allowedNodeIds: allowedNodeIds(graph, normalizedTags),
+  });
+
   const result = spawnSync(
     graphifyPython(graphifyPath),
-    ["-c", GLOBAL_QUERY_SCRIPT, graphPath, JSON.stringify(normalizeTags(tags)), String(parsedBudget), query],
+    ["-c", GLOBAL_QUERY_SCRIPT, graphPath, JSON.stringify(normalizedTags), String(parsedBudget), ranked.expandedQuestion],
     {
       encoding: "utf8",
       env: { ...process.env, HOME: resolvedHome },
@@ -118,10 +154,39 @@ export function queryGlobalGraph(options = {}) {
     const details = String(result.stderr || result.stdout || `exit ${result.status}`).trim();
     throw new Error(`Global graph query failed: ${details}`);
   }
-  return String(result.stdout || "").trimEnd();
+  const traversalOutput = String(result.stdout || "").trimEnd();
+  const communityBlock = communitySummaryBlock({
+    graphPath,
+    question: normalizedTags.length ? "" : query,
+    hits: ranked.hits,
+    traversalOutput,
+  });
+  return communityBlock
+    ? `${communityBlock}\n\n## Traversal result\n${traversalOutput}`
+    : traversalOutput;
 }
 
 function fixtureGraph(tag) {
+  const semanticNodes = tag === "alpha" ? [
+    { id: "session-signin", label: "session-signin", community: "alpha-session", source_snippet: "Establishes a user session." },
+    {
+      id: "session-summary",
+      label: "Community alpha-session summary",
+      type: "community_summary",
+      kind: "community_summary",
+      community: "alpha-session",
+      summary: "Map context for session persistence.",
+      source_snippet: "Map context for session persistence.",
+      sma_generated: "community_summary",
+    },
+  ] : [];
+  const semanticLinks = tag === "alpha" ? [{
+    source: "session-summary",
+    target: "session-signin",
+    relation: "rationale_for",
+    type: "rationale_for",
+    sma_generated: "community_summary",
+  }] : [];
   return {
     directed: false,
     multigraph: false,
@@ -129,8 +194,12 @@ function fixtureGraph(tag) {
     nodes: [
       { id: `${tag}-target`, label: `shared target ${tag}`, source_file: `${tag}/target.mjs` },
       { id: `${tag}-detail`, label: `${tag} detail ${"x".repeat(120)}`, source_file: `${tag}/detail.mjs` },
+      ...semanticNodes,
     ],
-    links: [{ source: `${tag}-target`, target: `${tag}-detail`, relation: "contains" }],
+    links: [
+      { source: `${tag}-target`, target: `${tag}-detail`, relation: "contains" },
+      ...semanticLinks,
+    ],
   };
 }
 
@@ -139,7 +208,7 @@ function assertSelftest(condition, message) {
 }
 
 /** @param {{ graphifyPath?: string }} [options] */
-export function selftestGlobalQuery(options = {}) {
+export async function selftestGlobalQuery(options = {}) {
   const { graphifyPath } = options;
   const root = mkdtempSync(path.join(tmpdir(), "sma-graph-global-"));
   const home = path.join(root, "home");
@@ -156,20 +225,33 @@ export function selftestGlobalQuery(options = {}) {
       assertSelftest(added.status === 0, `${tag} fixture should be added to the global graph`);
     }
 
-    const combined = queryGlobalGraph({ question: "shared target", budget: 1000, home, graphifyPath: launcher });
+    const graphPath = globalGraphPath(home);
+    const semanticEmbedder = createDeterministicHashEmbedder({ aliases: { auth: "session", login: "signin", flow: "" } });
+    await buildEmbeddingIndex({ graphPath, embedder: semanticEmbedder });
+
+    const combined = await queryGlobalGraph({ question: "shared target", budget: 1000, home, graphifyPath: launcher, embedder: semanticEmbedder });
     assertSelftest(combined.includes("NODE [alpha] shared target alpha"), "alpha result should be tag-prefixed");
     assertSelftest(combined.includes("NODE [beta] shared target beta"), "beta result should be tag-prefixed");
 
-    const filtered = queryGlobalGraph({ question: "shared target", tags: "alpha", budget: 1000, home, graphifyPath: launcher });
+    const filtered = await queryGlobalGraph({ question: "shared target", tags: "alpha", budget: 1000, home, graphifyPath: launcher, embedder: semanticEmbedder });
     assertSelftest(filtered.includes("[alpha]"), "tag filter should retain matching nodes");
     assertSelftest(!filtered.includes("[beta]"), "tag filter should exclude other portfolios");
 
-    const truncated = queryGlobalGraph({ question: "shared target", budget: 10, home, graphifyPath: launcher });
+    const semantic = await queryGlobalGraph({ question: "auth login flow", budget: 1000, home, graphifyPath: launcher, embedder: semanticEmbedder });
+    assertSelftest(semantic.includes("NODE [alpha] session-signin"), "global query should use semantic reranking to seed traversal");
+    assertSelftest(semantic.startsWith("## Community summaries"), "global query should prepend matching community summaries");
+    assertSelftest(semantic.includes("Map context for session persistence."), "global query should include semantic community context");
+
+    const semanticFiltered = await queryGlobalGraph({ question: "auth login flow", tags: "beta", budget: 1000, home, graphifyPath: launcher, embedder: semanticEmbedder });
+    assertSelftest(!semanticFiltered.includes("[alpha]"), "semantic reranking should honor global tag filters");
+    assertSelftest(!semanticFiltered.includes("Map context for session persistence."), "community summaries should honor global tag filters");
+
+    const truncated = await queryGlobalGraph({ question: "shared target", budget: 10, home, graphifyPath: launcher, embedder: semanticEmbedder });
     assertSelftest(truncated.includes("truncated"), "budget should truncate query output");
 
     let missingError = "";
     try {
-      queryGlobalGraph({ question: "anything", home: path.join(root, "missing-home"), graphifyPath: launcher });
+      await queryGlobalGraph({ question: "anything", home: path.join(root, "missing-home"), graphifyPath: launcher });
     } catch (error) {
       missingError = error instanceof Error ? error.message : String(error);
     }

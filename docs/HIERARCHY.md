@@ -1,5 +1,7 @@
 # SMA Hierarchy
 
+This reference explains how Sweetspot projects organize products, builds, bricks, components, and files. Architects and registry maintainers need it when choosing the correct boundary for new work. Read it before creating a manifest or moving an artifact between hierarchy levels. Remember that each level owns a distinct contract and should not masquerade as a smaller reusable unit.
+
 SMA needs a clean hierarchy so the registry does not become a pile of random folders or half-defined artifacts.
 
 ## Structure Hierarchy

@@ -1,5 +1,7 @@
 # SMARCH Canonicalization Playbook
 
+This playbook explains how a project-specific brick earns a place in the canonical SMARCH layer. Maintainers and project owners need it when they evaluate mature implementations for reuse. Read it after the source project has real runtime evidence and before moving code into the central registry. Remember that the project remains the source of truth until the canonical candidate passes the full promotion review.
+
 This is the line between central SMARCH work and project-by-project truth work.
 
 The central layer is responsible for:

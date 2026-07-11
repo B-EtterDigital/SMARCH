@@ -32,11 +32,17 @@ import { SMA_ROOT } from "./lib/sma-paths.mjs";
 import {
   readFileSync,
   existsSync,
+  mkdtempSync,
   mkdirSync,
   realpathSync,
   readdirSync,
+  rmSync,
   statSync,
+  symlinkSync,
+  writeFileSync,
 } from 'node:fs';
+import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { argv, exit } from 'node:process';
 import { spawnSync } from 'node:child_process';
@@ -255,14 +261,22 @@ export function installRelease(options = {}) {
     targetRoot,
   ];
   if (options.force) cloneArgs.push('--force');
+  const cloneRunner = options.runClone || runClone;
 
   options.logger?.log?.(`install ${brick}@${version} → ${target}${options.write ? ' (writing)' : ' (dry-run)'}`);
+  let previewPlan = null;
   if (options.write) {
-    const preview = runClone(cloneArgs, 'pipe');
+    const preview = cloneRunner(cloneArgs, 'pipe');
     const previewClone = parseCloneOutput(preview.stdout);
     validateCloneWritePlan(targetRoot, previewClone?.plan);
+    previewPlan = previewClone.plan;
   }
-  const res = runClone(options.write ? [...cloneArgs, '--write'] : cloneArgs, options.stdio);
+  const res = cloneRunner(options.write ? [...cloneArgs, '--write'] : cloneArgs, options.stdio);
+
+  // The preview and write are separate clone processes. Re-resolve the exact
+  // previewed destinations after the write so a directory swapped to an
+  // escaping symlink in that interval cannot produce a successful install.
+  if (options.write) validateCloneWritePlan(targetRoot, previewPlan);
 
   const clone = parseCloneOutput(res.stdout, false);
   return {
@@ -319,6 +333,7 @@ function parseCloneOutput(stdout, required = true) {
 }
 
 function validateCloneWritePlan(targetRoot, plan) {
+  validateTargetRootIdentity(targetRoot);
   if (!plan || typeof plan !== 'object' || !Array.isArray(plan.actions)) {
     throw new StoreInstallRefusedError('write-plan-invalid');
   }
@@ -342,6 +357,75 @@ function validateCloneWritePlan(targetRoot, plan) {
       });
     }
     validateWriteDestination(targetRoot, destination, `control_plane.${name}`);
+  }
+}
+
+function validateTargetRootIdentity(targetRoot) {
+  let currentRoot;
+  try {
+    currentRoot = realpathSync(targetRoot);
+  } catch (error) {
+    throw new StoreInstallRefusedError('target-root-unresolvable', {
+      target_root: targetRoot,
+      cause: error instanceof Error ? error.message : String(error),
+    });
+  }
+  if (currentRoot !== targetRoot) {
+    throw new StoreInstallRefusedError('target-root-changed', {
+      target_root: targetRoot,
+      resolved_path: currentRoot,
+    });
+  }
+}
+
+function runSelftest() {
+  const root = mkdtempSync(resolve(tmpdir(), 'sma-store-race-'));
+  try {
+    const brick = 'race-fixture';
+    const version = '1.0.0';
+    const releaseDir = resolve(root, 'releases', brick);
+    const target = resolve(root, 'target');
+    const safeParent = resolve(target, 'safe');
+    const outside = resolve(root, 'outside');
+    mkdirSync(releaseDir, { recursive: true });
+    mkdirSync(safeParent, { recursive: true });
+    mkdirSync(outside, { recursive: true });
+    writeFileSync(resolve(releaseDir, `${version}.json`), JSON.stringify({
+      release: { artifact_id: brick, version, status: 'published' },
+      content: { artifacts: [{ path: 'safe/payload.txt' }] },
+    }));
+
+    const plan = {
+      actions: [{ kind: 'copy_file', dst: resolve(safeParent, 'payload.txt') }],
+      control_plane: {},
+    };
+    let cloneCalls = 0;
+    const runCloneFixture = (cloneArgs) => {
+      cloneCalls += 1;
+      if (cloneArgs.includes('--write')) {
+        rmSync(safeParent, { recursive: true, force: true });
+        symlinkSync(outside, safeParent, 'dir');
+      }
+      return { status: 0, stdout: JSON.stringify({ plan }), stderr: '' };
+    };
+
+    assert.throws(
+      () => installRelease({
+        root,
+        brick,
+        version,
+        target,
+        write: true,
+        runClone: runCloneFixture,
+        logger: null,
+      }),
+      (error) => error instanceof StoreInstallRefusedError
+        && error.details.reason === 'write-symlink-outside-target',
+    );
+    assert.equal(cloneCalls, 2);
+    process.stdout.write('sma-store install-race selftest: PASS\n');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 }
 
@@ -529,5 +613,6 @@ function parseArgs(list) {
 }
 
 if (argv[1] && resolve(argv[1]) === fileURLToPath(import.meta.url)) {
-  main();
+  if (argv[2] === '--selftest') runSelftest();
+  else main();
 }

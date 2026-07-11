@@ -1,5 +1,7 @@
 # Adoption Roadmap
 
+This roadmap explains how to introduce Sweetspot Modular Architecture to a project in controlled stages. Project leads and engineers adopting the system should use it before changing repository structure or enforcement. Read it when planning an initial rollout or deciding which proof gate comes next. Remember that each phase should establish working evidence before the team advances.
+
 Use this order to introduce SMA without overwhelming users.
 
 ## Phase 1: Inventory
@@ -29,10 +31,10 @@ Exit criteria:
 
 ## Phase 3: Gates
 
-- Add SSTF tests.
-- Add SVA security checks.
-- Add SEV env validation.
-- Add SPE measurements for UI/perf-heavy bricks.
+- Add [SSTF](GLOSSARY.md#sstf) tests.
+- Add [SVA](GLOSSARY.md#sva) security checks.
+- Add [SEV](GLOSSARY.md#sev) env validation.
+- Add [SPE](GLOSSARY.md#spe) measurements for UI/perf-heavy bricks.
 - Run `sma-validate.mjs` in CI.
 
 Exit criteria:
@@ -65,4 +67,3 @@ Track:
 Exit criteria:
 
 - SMA has evidence, not just belief
-

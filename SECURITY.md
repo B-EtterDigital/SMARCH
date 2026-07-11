@@ -1,5 +1,7 @@
 # Security
 
+This policy explains how contributors report vulnerabilities and which security checks protect reusable Sweetspot code. Contributors, maintainers, and security reviewers need it before disclosing an issue or approving a release. Read it when handling a security report, adding a sensitive dependency, or reviewing gate evidence. Remember to keep vulnerability details private until maintainers complete triage and coordinate disclosure.
+
 SMA treats reusable code as supply chain.
 
 ## Report A Security Issue
@@ -30,4 +32,3 @@ Canonical bricks cannot have:
 - `.env.example` must contain placeholders only.
 - Public client variables are public forever.
 - Server-only variables must not be imported into frontend modules.
-

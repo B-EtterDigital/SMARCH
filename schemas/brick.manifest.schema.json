@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sweetspot.local/schemas/brick.manifest.schema.json",
   "title": "Sweetspot Brick Manifest",
+  "description": "This schema defines the complete manifest for a reusable Sweetspot brick, including ownership, boundaries, interfaces, security, quality, economics, and provenance. Brick authors, reviewers, scanners, and release tools need it whenever they create or validate a module manifest. Read it before registering a brick or changing a field that affects portability and promotion. Remember that user-facing reuse claims must be backed by the manifest evidence and gates recorded here.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,46 +23,85 @@
   "properties": {
     "schema_version": {
       "type": "string",
+      "description": "Schema version that this document conforms to.",
       "const": "1.0.0"
     },
     "brick": {
       "type": "object",
+      "description": "Fields that describe the brick.",
       "additionalProperties": false,
-      "required": ["id", "name", "kind", "status", "version", "language"],
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "status",
+        "version",
+        "language"
+      ],
       "properties": {
         "id": {
           "type": "string",
+          "description": "Stable identifier of the brick.",
           "pattern": "^[a-z0-9][a-z0-9._-]{2,120}$"
         },
         "name": {
           "type": "string",
+          "description": "Human-readable name of the brick.",
           "minLength": 2
         },
         "kind": {
           "type": "string",
-          "enum": ["module", "submodule", "module_group", "adapter", "guard", "tooling", "template"]
+          "description": "Classification assigned to the brick.",
+          "enum": [
+            "module",
+            "submodule",
+            "module_group",
+            "adapter",
+            "guard",
+            "tooling",
+            "template"
+          ]
         },
         "status": {
           "type": "string",
-          "enum": ["experimental", "project_bound", "variant", "duplicate", "legacy", "candidate", "canonical"]
+          "description": "Current status of the brick.",
+          "enum": [
+            "experimental",
+            "project_bound",
+            "variant",
+            "duplicate",
+            "legacy",
+            "candidate",
+            "canonical"
+          ]
         },
         "version": {
-          "type": "string"
+          "type": "string",
+          "description": "Version assigned to the brick."
         },
         "language": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered language values for the brick.",
+          "items": {
+            "type": "string"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "frameworks": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered frameworks values for the brick.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "domain": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered domain values for the brick.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "registry_origin": {
@@ -75,15 +115,34 @@
           "description": "Optional. Declares the brick author's stance on downstream copies. Read by sma-propagate.mjs to decide auto-fan-out vs notify-only.",
           "properties": {
             "policy": {
-              "enum": ["track-canonical", "pin-version", "fork-snapshot", "manual"],
+              "enum": [
+                "track-canonical",
+                "pin-version",
+                "fork-snapshot",
+                "manual"
+              ],
               "description": "track-canonical: dependents should auto-update on minor/patch. pin-version: dependents stay on declared version. fork-snapshot: copy-and-own; no upstream propagation expected. manual: case-by-case."
             },
-            "auto_pr_on_minor": { "type": "boolean", "default": false },
-            "auto_pr_on_patch": { "type": "boolean", "default": false },
-            "deprecation_window_days": { "type": "integer", "minimum": 0 },
+            "auto_pr_on_minor": {
+              "type": "boolean",
+              "description": "Whether a compatible minor source release should open an automated pull request.",
+              "default": false
+            },
+            "auto_pr_on_patch": {
+              "type": "boolean",
+              "description": "Whether a compatible patch source release should open an automated pull request.",
+              "default": false
+            },
+            "deprecation_window_days": {
+              "type": "integer",
+              "description": "Number of days a deprecated interface remains supported.",
+              "minimum": 0
+            },
             "notify_owners": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Slack/email handles to ping when a release artifact is cut."
             }
           }
@@ -92,58 +151,135 @@
     },
     "hierarchy": {
       "type": "object",
+      "description": "Fields that describe the hierarchy.",
       "additionalProperties": false,
-      "required": ["level"],
+      "required": [
+        "level"
+      ],
       "properties": {
         "level": {
           "type": "string",
-          "enum": ["brick_group", "brick", "module", "submodule", "component"]
+          "description": "Selected level; allowed values are `brick_group`, `brick`, `module`, `submodule`, `component`.",
+          "enum": [
+            "brick_group",
+            "brick",
+            "module",
+            "submodule",
+            "component"
+          ]
         },
-        "group_id": { "type": "string" },
-        "parent_brick_id": { "type": "string" },
-        "parent_module_id": { "type": "string" },
+        "group_id": {
+          "type": "string",
+          "description": "Group identifier for the hierarchy."
+        },
+        "parent_brick_id": {
+          "type": "string",
+          "description": "Parent brick identifier for the hierarchy."
+        },
+        "parent_module_id": {
+          "type": "string",
+          "description": "Parent module identifier for the hierarchy."
+        },
         "contains": {
           "type": "array",
+          "description": "Ordered contains values for the hierarchy.",
           "items": {
             "type": "string",
-            "enum": ["brick", "module", "submodule", "component", "service", "adapter", "hook", "utility", "file"]
+            "enum": [
+              "brick",
+              "module",
+              "submodule",
+              "component",
+              "service",
+              "adapter",
+              "hook",
+              "utility",
+              "file"
+            ]
           },
           "uniqueItems": true
         },
         "component_policy": {
           "type": "string",
-          "enum": ["internal_by_default", "manifest_required", "public_component_brick"]
+          "description": "Selected component policy; allowed values are `internal_by_default`, `manifest_required`, `public_component_brick`.",
+          "enum": [
+            "internal_by_default",
+            "manifest_required",
+            "public_component_brick"
+          ]
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the hierarchy."
+        }
       }
     },
     "source": {
       "type": "object",
+      "description": "Fields that describe the source.",
       "additionalProperties": false,
-      "required": ["project", "paths"],
+      "required": [
+        "project",
+        "paths"
+      ],
       "properties": {
-        "project": { "type": "string" },
-        "repository": { "type": "string" },
-        "commit": { "type": "string" },
-        "archive_hash": { "type": "string" },
+        "project": {
+          "type": "string",
+          "description": "Project identifier associated with the source."
+        },
+        "repository": {
+          "type": "string",
+          "description": "Repository location for the source."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit identifier associated with the recorded work."
+        },
+        "archive_hash": {
+          "type": "string",
+          "description": "Archive hash for the source."
+        },
         "paths": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Repository-relative paths associated with the source.",
+          "items": {
+            "type": "string"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "copied_from": {
           "type": "array",
+          "description": "Ordered copied from values for the source.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["project", "brick_id"],
+            "required": [
+              "project",
+              "brick_id"
+            ],
             "properties": {
-              "project": { "type": "string" },
-              "brick_id": { "type": "string" },
-              "commit": { "type": "string" },
-              "path": { "type": "string" },
-              "copied_at": { "type": "string", "format": "date-time" }
+              "project": {
+                "type": "string",
+                "description": "Project identifier associated with the copied from."
+              },
+              "brick_id": {
+                "type": "string",
+                "description": "Stable identifier of the brick associated with this record."
+              },
+              "commit": {
+                "type": "string",
+                "description": "Git commit identifier associated with the recorded work."
+              },
+              "path": {
+                "type": "string",
+                "description": "Repository-relative path to the copied from."
+              },
+              "copied_at": {
+                "type": "string",
+                "description": "Time recorded for copied at, in ISO 8601 date-time format.",
+                "format": "date-time"
+              }
             }
           }
         }
@@ -151,14 +287,26 @@
     },
     "owner": {
       "type": "object",
+      "description": "Fields that describe the owner.",
       "additionalProperties": false,
-      "required": ["primary"],
+      "required": [
+        "primary"
+      ],
       "properties": {
-        "primary": { "type": "string" },
-        "team": { "type": "string" },
+        "primary": {
+          "type": "string",
+          "description": "Primary for the owner."
+        },
+        "team": {
+          "type": "string",
+          "description": "Team for the owner."
+        },
         "reviewers": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered reviewers values for the owner.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
@@ -167,7 +315,10 @@
       "type": "object",
       "additionalProperties": false,
       "description": "The brick's OWN license and openness — distinct from supply_chain.licenses (which are dependency licenses). Optional in the schema; resolved and enforced by the license-ledger + license-lattice gate. Fail-safe: an absent/unknown license is treated as closed.",
-      "required": ["spdx", "openness"],
+      "required": [
+        "spdx",
+        "openness"
+      ],
       "properties": {
         "spdx": {
           "type": "string",
@@ -175,66 +326,114 @@
         },
         "openness": {
           "type": "string",
-          "enum": ["closed", "source-available", "open"],
+          "enum": [
+            "closed",
+            "source-available",
+            "open"
+          ],
           "description": "The redistribution axis. A composed build's openness can never exceed the MEET of its bricks' openness."
         },
         "visibility": {
           "type": "string",
-          "enum": ["private", "internal", "community", "public"],
+          "enum": [
+            "private",
+            "internal",
+            "community",
+            "public"
+          ],
           "description": "Access tier for this brick. A build's visibility can never exceed the MEET of its bricks' visibility."
         },
         "redistribute": {
           "type": "string",
-          "enum": ["forbidden", "with-attribution", "allowed"]
+          "description": "Selected redistribute; allowed values are `forbidden`, `with-attribution`, `allowed`.",
+          "enum": [
+            "forbidden",
+            "with-attribution",
+            "allowed"
+          ]
         },
-        "commercial_use": { "type": "boolean" },
-        "attribution_required": { "type": "boolean" },
+        "commercial_use": {
+          "type": "boolean",
+          "description": "Whether commercial use applies to the license."
+        },
+        "attribution_required": {
+          "type": "boolean",
+          "description": "Whether attribution required applies to the license."
+        },
         "inherited_from": {
           "type": "string",
           "description": "brick_id this license/openness was inherited from when the brick was forked or copied."
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the license."
+        }
       }
     },
     "boundaries": {
       "type": "object",
+      "description": "Fields that describe the boundaries.",
       "additionalProperties": false,
-      "required": ["owned_paths", "public_paths", "private_paths"],
+      "required": [
+        "owned_paths",
+        "public_paths",
+        "private_paths"
+      ],
       "properties": {
         "owned_paths": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered owned paths values for the boundary.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "public_paths": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered public paths values for the boundary.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "private_paths": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered private paths values for the boundary.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "forbidden_imports": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered forbidden imports values for the boundary.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "allowed_side_effects": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Side effects this component is permitted to perform.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "classification": {
       "type": "object",
+      "description": "Fields that describe the classification.",
       "additionalProperties": false,
-      "required": ["data_classes", "risk"],
+      "required": [
+        "data_classes",
+        "risk"
+      ],
       "properties": {
         "data_classes": {
           "type": "array",
+          "description": "Ordered data classes values for the classification.",
           "items": {
             "type": "string",
             "enum": [
@@ -253,102 +452,246 @@
         },
         "risk": {
           "type": "string",
-          "enum": ["low", "medium", "high", "critical"]
+          "description": "Selected risk; allowed values are `low`, `medium`, `high`, `critical`.",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the classification."
+        }
       }
     },
     "sweetspot": {
       "type": "object",
+      "description": "Fields that describe the sweetspot.",
       "additionalProperties": false,
-      "required": ["ssa_v2", "ssi", "sstf", "spe", "srs", "ssra", "sas", "sva", "srls", "sev", "ssc", "sai"],
+      "required": [
+        "ssa_v2",
+        "ssi",
+        "sstf",
+        "spe",
+        "srs",
+        "ssra",
+        "sas",
+        "sva",
+        "srls",
+        "sev",
+        "ssc",
+        "sai"
+      ],
       "properties": {
-        "ssa_v2": { "$ref": "#/$defs/gate_score" },
-        "ssi": { "$ref": "#/$defs/gate_score" },
-        "sstf": { "$ref": "#/$defs/gate_score" },
-        "spe": { "$ref": "#/$defs/gate_score" },
-        "srs": { "$ref": "#/$defs/gate_score" },
-        "ssra": { "$ref": "#/$defs/gate_score" },
-        "sas": { "$ref": "#/$defs/gate_score" },
-        "sva": { "$ref": "#/$defs/gate_score" },
-        "srls": { "$ref": "#/$defs/gate_score" },
-        "sev": { "$ref": "#/$defs/gate_score" },
-        "ssc": { "$ref": "#/$defs/gate_score" },
-        "sai": { "$ref": "#/$defs/gate_score" }
+        "ssa_v2": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssa version 2."
+        },
+        "ssi": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssi."
+        },
+        "sstf": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sstf."
+        },
+        "spe": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for spe."
+        },
+        "srs": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for srs."
+        },
+        "ssra": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssra."
+        },
+        "sas": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sas."
+        },
+        "sva": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sva."
+        },
+        "srls": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for srls."
+        },
+        "sev": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sev."
+        },
+        "ssc": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssc."
+        },
+        "sai": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sai."
+        }
       }
     },
     "interfaces": {
       "type": "object",
+      "description": "Fields that describe the interfaces.",
       "additionalProperties": false,
       "properties": {
         "public_api": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Public interfaces that consumers may depend on.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "adapters": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered adapters values for the interface.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "forbidden_dependencies": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Dependencies this component must not import or require.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "required_dependencies": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Dependencies this component needs to function.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "security": {
       "type": "object",
+      "description": "Fields that describe the security.",
       "additionalProperties": false,
-      "required": ["rls", "env", "vulnerability_findings"],
+      "required": [
+        "rls",
+        "env",
+        "vulnerability_findings"
+      ],
       "properties": {
         "rls": {
           "type": "object",
+          "description": "Fields that describe the row-level security.",
           "additionalProperties": false,
-          "required": ["required", "status"],
+          "required": [
+            "required",
+            "status"
+          ],
           "properties": {
-            "required": { "type": "boolean" },
-            "status": { "type": "string", "enum": ["not_applicable", "missing", "partial", "complete"] },
-            "matrix_path": { "type": "string" },
+            "required": {
+              "type": "boolean",
+              "description": "Whether required applies to the row-level security."
+            },
+            "status": {
+              "type": "string",
+              "description": "Current status of the rl.",
+              "enum": [
+                "not_applicable",
+                "missing",
+                "partial",
+                "complete"
+              ]
+            },
+            "matrix_path": {
+              "type": "string",
+              "description": "Recorded matrix path for the row-level security."
+            },
             "negative_tests": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Tests that prove forbidden access or cross-boundary behavior fails.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             }
           }
         },
         "env": {
           "type": "object",
+          "description": "Fields that describe the environment.",
           "additionalProperties": false,
-          "required": ["required", "status", "variables"],
+          "required": [
+            "required",
+            "status",
+            "variables"
+          ],
           "properties": {
-            "required": { "type": "boolean" },
-            "status": { "type": "string", "enum": ["not_applicable", "missing", "partial", "complete"] },
+            "required": {
+              "type": "boolean",
+              "description": "Whether required applies to the environment."
+            },
+            "status": {
+              "type": "string",
+              "description": "Current status of the environment.",
+              "enum": [
+                "not_applicable",
+                "missing",
+                "partial",
+                "complete"
+              ]
+            },
             "variables": {
               "type": "array",
-              "items": { "$ref": "#/$defs/env_var" },
+              "description": "Ordered variables values for the environment.",
+              "items": {
+                "$ref": "#/$defs/env_var"
+              },
               "uniqueItems": true
             }
           }
         },
         "vulnerability_findings": {
           "type": "object",
+          "description": "Fields that describe the vulnerability findings.",
           "additionalProperties": false,
-          "required": ["critical", "high", "medium", "low"],
+          "required": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ],
           "properties": {
-            "critical": { "type": "integer", "minimum": 0 },
-            "high": { "type": "integer", "minimum": 0 },
-            "medium": { "type": "integer", "minimum": 0 },
-            "low": { "type": "integer", "minimum": 0 },
+            "critical": {
+              "type": "integer",
+              "description": "Critical as a whole number for the vulnerability finding.",
+              "minimum": 0
+            },
+            "high": {
+              "type": "integer",
+              "description": "High as a whole number for the vulnerability finding.",
+              "minimum": 0
+            },
+            "medium": {
+              "type": "integer",
+              "description": "Medium as a whole number for the vulnerability finding.",
+              "minimum": 0
+            },
+            "low": {
+              "type": "integer",
+              "description": "Low as a whole number for the vulnerability finding.",
+              "minimum": 0
+            },
             "report_paths": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Paths to reports that support the recorded findings.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             }
           }
@@ -357,75 +700,175 @@
     },
     "supply_chain": {
       "type": "object",
+      "description": "Fields that describe the supply chain.",
       "additionalProperties": false,
-      "required": ["dependencies", "licenses", "checksums"],
+      "required": [
+        "dependencies",
+        "licenses",
+        "checksums"
+      ],
       "properties": {
         "dependencies": {
           "type": "array",
+          "description": "Ordered dependencies values for the supply chain.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "purpose"],
+            "required": [
+              "name",
+              "purpose"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "version": { "type": "string" },
-              "license": { "type": "string" },
-              "purpose": { "type": "string" },
-              "risk": { "type": "string", "enum": ["low", "medium", "high", "unknown"] }
+              "name": {
+                "type": "string",
+                "description": "Human-readable name of the dependency."
+              },
+              "version": {
+                "type": "string",
+                "description": "Version assigned to the dependency."
+              },
+              "license": {
+                "type": "string",
+                "description": "Recorded license for the items."
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Recorded purpose for the items."
+              },
+              "risk": {
+                "type": "string",
+                "description": "Selected risk; allowed values are `low`, `medium`, `high`, `unknown`.",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "unknown"
+                ]
+              }
             }
           }
         },
         "licenses": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered licenses values for the supply chain.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "checksums": {
           "type": "array",
+          "description": "Ordered checksums values for the supply chain.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["path", "sha256"],
+            "required": [
+              "path",
+              "sha256"
+            ],
             "properties": {
-              "path": { "type": "string" },
-              "sha256": { "type": "string" }
+              "path": {
+                "type": "string",
+                "description": "Repository-relative path to the checksum."
+              },
+              "sha256": {
+                "type": "string",
+                "description": "SHA-256 digest used to verify file or artifact integrity."
+              }
             }
           }
         },
-        "sbom_path": { "type": "string" }
+        "sbom_path": {
+          "type": "string",
+          "description": "Path to the software bill of materials for this artifact."
+        }
       }
     },
     "quality": {
       "type": "object",
+      "description": "Fields that describe the quality.",
       "additionalProperties": false,
-      "required": ["score", "line_count", "code_budget", "test_commands", "verification"],
+      "required": [
+        "score",
+        "line_count",
+        "code_budget",
+        "test_commands",
+        "verification"
+      ],
       "properties": {
-        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "score": {
+          "type": "integer",
+          "description": "Score as a whole number for the quality.",
+          "minimum": 0,
+          "maximum": 100
+        },
         "line_count": {
           "type": "object",
+          "description": "Fields that describe the line count.",
           "additionalProperties": false,
-          "required": ["max_file_lines", "over_600_count"],
+          "required": [
+            "max_file_lines",
+            "over_600_count"
+          ],
           "properties": {
-            "max_file_lines": { "type": "integer", "minimum": 0 },
-            "over_600_count": { "type": "integer", "minimum": 0 }
+            "max_file_lines": {
+              "type": "integer",
+              "description": "Max file lines as a whole number for the line count.",
+              "minimum": 0
+            },
+            "over_600_count": {
+              "type": "integer",
+              "description": "Number of over 600 records for the line count.",
+              "minimum": 0
+            }
           }
         },
         "code_budget": {
           "type": "object",
+          "description": "Fields that describe the code budget.",
           "additionalProperties": false,
-          "required": ["status", "feature_lines", "file_count", "dependency_count"],
+          "required": [
+            "status",
+            "feature_lines",
+            "file_count",
+            "dependency_count"
+          ],
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["lean", "acceptable", "bloated", "unknown"]
+              "description": "Current status of the code budget.",
+              "enum": [
+                "lean",
+                "acceptable",
+                "bloated",
+                "unknown"
+              ]
             },
-            "feature_lines": { "type": "integer", "minimum": 0 },
-            "file_count": { "type": "integer", "minimum": 0 },
-            "dependency_count": { "type": "integer", "minimum": 0 },
-            "notes": { "type": "string" },
+            "feature_lines": {
+              "type": "integer",
+              "description": "Feature lines as a whole number for the code budget.",
+              "minimum": 0
+            },
+            "file_count": {
+              "type": "integer",
+              "description": "Number of file records for the code budget.",
+              "minimum": 0
+            },
+            "dependency_count": {
+              "type": "integer",
+              "description": "Number of dependency records for the code budget.",
+              "minimum": 0
+            },
+            "notes": {
+              "type": "string",
+              "description": "Additional notes about the code budget."
+            },
             "exceptions": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered exceptions values for the code budget.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "static_tokens_estimate": {
@@ -442,75 +885,154 @@
               "type": "string",
               "description": "Method that produced the estimate, e.g. 'heuristic@3.8x' or 'tiktoken@gpt-4o@3.8x'."
             },
-            "last_estimated_at": { "type": "string", "format": "date-time" }
+            "last_estimated_at": {
+              "type": "string",
+              "description": "Time recorded for last estimated at, in ISO 8601 date-time format.",
+              "format": "date-time"
+            }
           }
         },
         "test_commands": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Commands that verify the component or artifact.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "verification": {
           "type": "array",
-          "items": { "$ref": "#/$defs/verification_event" }
+          "description": "Ordered verification values for the quality.",
+          "items": {
+            "$ref": "#/$defs/verification_event"
+          }
         }
       }
     },
     "clone": {
       "type": "object",
+      "description": "Fields that describe the clone.",
       "additionalProperties": false,
-      "required": ["readiness", "adaptation_points", "install_steps", "known_traps"],
+      "required": [
+        "readiness",
+        "adaptation_points",
+        "install_steps",
+        "known_traps"
+      ],
       "properties": {
         "readiness": {
           "type": "string",
-          "enum": ["blocked", "manual_only", "guided", "copy_ready"]
+          "description": "Selected readiness; allowed values are `blocked`, `manual_only`, `guided`, `copy_ready`.",
+          "enum": [
+            "blocked",
+            "manual_only",
+            "guided",
+            "copy_ready"
+          ]
         },
         "adaptation_points": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Documented places where consumers may adapt the reused work.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "install_steps": {
           "type": "array",
-          "items": { "type": "string" }
+          "description": "Ordered install steps values for the clone.",
+          "items": {
+            "type": "string"
+          }
         },
         "known_traps": {
           "type": "array",
-          "items": { "type": "string" }
+          "description": "Ordered known traps values for the clone.",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
     "provenance": {
       "type": "object",
+      "description": "Evidence describing where the content came from and who changed it.",
       "additionalProperties": false,
-      "required": ["created_by", "touched_by", "reviewed_by", "source_chain"],
+      "required": [
+        "created_by",
+        "touched_by",
+        "reviewed_by",
+        "source_chain"
+      ],
       "properties": {
-        "created_by": { "$ref": "#/$defs/touch_event" },
+        "created_by": {
+          "$ref": "#/$defs/touch_event",
+          "description": "Structured value recorded for created by."
+        },
         "touched_by": {
           "type": "array",
-          "items": { "$ref": "#/$defs/touch_event" }
+          "description": "Ordered touched by values for the provenance.",
+          "items": {
+            "$ref": "#/$defs/touch_event"
+          }
         },
         "reviewed_by": {
           "type": "array",
-          "items": { "$ref": "#/$defs/touch_event" }
+          "description": "Ordered reviewed by values for the provenance.",
+          "items": {
+            "$ref": "#/$defs/touch_event"
+          }
         },
         "source_chain": {
           "type": "array",
+          "description": "Ordered source chain values for the provenance.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["project", "brick_id"],
+            "required": [
+              "project",
+              "brick_id"
+            ],
             "properties": {
-              "project": { "type": "string" },
-              "brick_id": { "type": "string" },
-              "commit": { "type": "string" },
-              "path": { "type": "string" },
-              "event": { "type": "string", "enum": ["created", "copied", "forked", "merged", "promoted"] },
-              "timestamp": { "type": "string", "format": "date-time" }
+              "project": {
+                "type": "string",
+                "description": "Project identifier associated with the source chain."
+              },
+              "brick_id": {
+                "type": "string",
+                "description": "Stable identifier of the brick associated with this record."
+              },
+              "commit": {
+                "type": "string",
+                "description": "Git commit identifier associated with the recorded work."
+              },
+              "path": {
+                "type": "string",
+                "description": "Repository-relative path to the source chain."
+              },
+              "event": {
+                "type": "string",
+                "description": "Selected event; allowed values are `created`, `copied`, `forked`, `merged`, `promoted`.",
+                "enum": [
+                  "created",
+                  "copied",
+                  "forked",
+                  "merged",
+                  "promoted"
+                ]
+              },
+              "timestamp": {
+                "type": "string",
+                "description": "Time when the event occurred, in ISO 8601 date-time format.",
+                "format": "date-time"
+              }
             }
           }
         },
-        "seal": { "$ref": "#/$defs/provenance_seal" }
+        "seal": {
+          "$ref": "#/$defs/provenance_seal",
+          "description": "Structured value recorded for seal."
+        }
       }
     }
   },
@@ -519,31 +1041,77 @@
       "type": "object",
       "additionalProperties": false,
       "description": "Tamper-evident hash chain over provenance events anchored to the content fingerprint. Generated by tools/sma-provenance-ledger.mjs and verified by tools/sma-provenance-verify.mjs. Editing history breaks the head; signing closes the recompute-forgery gap.",
-      "required": ["algo", "head"],
+      "required": [
+        "algo",
+        "head"
+      ],
       "properties": {
-        "algo": { "type": "string", "description": "e.g. sha256-chain-v1" },
-        "anchor": { "type": "string", "description": "H(algo:brick_id:content_hash) — binds the seal to the source fingerprint." },
-        "head": { "type": "string", "description": "Chain head after folding in every provenance event in order." },
-        "chain_length": { "type": "integer", "minimum": 0 },
-        "events_digest": { "type": "string" },
-        "signature": { "type": "string", "description": "Optional ed25519 signature over head (hex)." },
-        "key_id": { "type": "string", "description": "Short id of the signing public key (security/keys/seal.<key_id>.pub.pem)." }
+        "algo": {
+          "type": "string",
+          "description": "e.g. sha256-chain-v1"
+        },
+        "anchor": {
+          "type": "string",
+          "description": "H(algo:brick_id:content_hash) — binds the seal to the source fingerprint."
+        },
+        "head": {
+          "type": "string",
+          "description": "Chain head after folding in every provenance event in order."
+        },
+        "chain_length": {
+          "type": "integer",
+          "description": "Chain length as a whole number for the provenance seal.",
+          "minimum": 0
+        },
+        "events_digest": {
+          "type": "string",
+          "description": "Events digest for the provenance seal."
+        },
+        "signature": {
+          "type": "string",
+          "description": "Optional ed25519 signature over head (hex)."
+        },
+        "key_id": {
+          "type": "string",
+          "description": "Short id of the signing public key (security/keys/seal.<key_id>.pub.pem)."
+        }
       }
     },
     "gate_score": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "score"],
+      "required": [
+        "status",
+        "score"
+      ],
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["not_applicable", "missing", "partial", "passing", "blocked"]
+          "description": "Current status of the gate score.",
+          "enum": [
+            "not_applicable",
+            "missing",
+            "partial",
+            "passing",
+            "blocked"
+          ]
         },
-        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "notes": { "type": "string" },
+        "score": {
+          "type": "integer",
+          "description": "Score as a whole number for the gate score.",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the gate score."
+        },
         "evidence": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered evidence values for the gate score.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
@@ -551,68 +1119,183 @@
     "env_var": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "scope", "required_in"],
+      "required": [
+        "name",
+        "scope",
+        "required_in"
+      ],
       "properties": {
-        "name": { "type": "string" },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the environment var."
+        },
         "scope": {
           "type": "string",
-          "enum": ["server_only", "public_client", "ci_only", "local_only"]
+          "description": "Selected scope; allowed values are `server_only`, `public_client`, `ci_only`, `local_only`.",
+          "enum": [
+            "server_only",
+            "public_client",
+            "ci_only",
+            "local_only"
+          ]
         },
         "required_in": {
           "type": "array",
-          "items": { "type": "string", "enum": ["local", "preview", "production", "test", "ci"] },
+          "description": "Ordered required in values for the environment var.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "local",
+              "preview",
+              "production",
+              "test",
+              "ci"
+            ]
+          },
           "uniqueItems": true
         },
         "forbidden_in": {
           "type": "array",
-          "items": { "type": "string", "enum": ["client_bundle", "logs", "docs", "tests", "ci"] },
+          "description": "Ordered forbidden in values for the environment var.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "client_bundle",
+              "logs",
+              "docs",
+              "tests",
+              "ci"
+            ]
+          },
           "uniqueItems": true
         },
-        "example": { "type": "string" }
+        "example": {
+          "type": "string",
+          "description": "Example for the environment var."
+        }
       }
     },
     "verification_event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "status"],
+      "required": [
+        "command",
+        "status"
+      ],
       "properties": {
-        "command": { "type": "string" },
-        "status": { "type": "string", "enum": ["pass", "fail", "skipped", "blocked"] },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "output_path": { "type": "string" },
-        "notes": { "type": "string" }
+        "command": {
+          "type": "string",
+          "description": "Command used to produce or verify this evidence."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the verification event.",
+          "enum": [
+            "pass",
+            "fail",
+            "skipped",
+            "blocked"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Time when the event occurred, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Path to the stored command output or evidence artifact."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the verification event."
+        }
       }
     },
     "touch_event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["actor_kind", "actor_id", "role", "timestamp", "summary"],
+      "required": [
+        "actor_kind",
+        "actor_id",
+        "role",
+        "timestamp",
+        "summary"
+      ],
       "properties": {
         "actor_kind": {
           "type": "string",
-          "enum": ["human", "ai_model", "agent", "automation", "tool"]
+          "description": "Category of actor that performed the action.",
+          "enum": [
+            "human",
+            "ai_model",
+            "agent",
+            "automation",
+            "tool"
+          ]
         },
-        "actor_id": { "type": "string" },
-        "provider": { "type": "string" },
-        "model": { "type": "string" },
+        "actor_id": {
+          "type": "string",
+          "description": "Identifier of the human, agent, automation, or tool that performed the action."
+        },
+        "provider": {
+          "type": "string",
+          "description": "Provider for the touch event."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier recorded for an AI-driven actor."
+        },
         "role": {
           "type": "string",
-          "enum": ["architect", "implementer", "reviewer", "security", "tester", "refactor", "release", "scanner"]
+          "description": "Selected role; allowed values are `architect`, `implementer`, `reviewer`, `security`, `tester`, `refactor`, `release`, `scanner`.",
+          "enum": [
+            "architect",
+            "implementer",
+            "reviewer",
+            "security",
+            "tester",
+            "refactor",
+            "release",
+            "scanner"
+          ]
         },
-        "session_id": { "type": "string" },
-        "task_id": { "type": "string" },
-        "commit": { "type": "string" },
+        "session_id": {
+          "type": "string",
+          "description": "Identifier of the agent session that produced this value."
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Identifier of the task associated with this value."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit identifier associated with the recorded work."
+        },
         "files_touched": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Repository-relative files changed by the recorded work.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "verification": {
           "type": "array",
-          "items": { "$ref": "#/$defs/verification_event" }
+          "description": "Ordered verification values for the touch event.",
+          "items": {
+            "$ref": "#/$defs/verification_event"
+          }
         },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "summary": { "type": "string" },
+        "timestamp": {
+          "type": "string",
+          "description": "Time when the event occurred, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Summary for the touch event."
+        },
         "intent": {
           "type": "string",
           "description": "What the actor was trying to do. The 'why' Entire-style. Strongly encouraged for ai_model and agent actors."
@@ -623,19 +1306,31 @@
         },
         "rejected_alternatives": {
           "type": "array",
+          "description": "Alternatives considered and rejected before this action.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["alternative", "reason"],
+            "required": [
+              "alternative",
+              "reason"
+            ],
             "properties": {
-              "alternative": { "type": "string" },
-              "reason": { "type": "string" }
+              "alternative": {
+                "type": "string",
+                "description": "An approach that was considered but not selected."
+              },
+              "reason": {
+                "type": "string",
+                "description": "Plain-language reason for this decision."
+              }
             }
           }
         },
         "linked_backlog": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "description": "Backlog entry ids related to this touch."
         },
@@ -645,20 +1340,36 @@
         },
         "context_event_ids": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true,
           "description": "agent-context event_ids for this touch."
         },
         "attestation": {
           "type": "object",
+          "description": "Fields that describe the attestation.",
           "additionalProperties": false,
           "properties": {
             "method": {
               "type": "string",
-              "enum": ["manual", "git_commit", "agent_runner", "ci_job", "scanner"]
+              "description": "Selected method; allowed values are `manual`, `git_commit`, `agent_runner`, `ci_job`, `scanner`.",
+              "enum": [
+                "manual",
+                "git_commit",
+                "agent_runner",
+                "ci_job",
+                "scanner"
+              ]
             },
-            "reference": { "type": "string" },
-            "hash": { "type": "string" }
+            "reference": {
+              "type": "string",
+              "description": "Reference for the attestation."
+            },
+            "hash": {
+              "type": "string",
+              "description": "Hash for the attestation."
+            }
           }
         }
       }

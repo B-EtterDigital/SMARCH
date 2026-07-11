@@ -1,4 +1,6 @@
-# P10 — SRS Integration & Observability
+# P10 — [SRS](../docs/GLOSSARY.md#srs) Integration & Observability
+
+This document defines how Sweetspot services report failures, breadcrumbs, and health signals through the project observability layer. Engineers who add runtime paths or diagnose production behavior need it. Read it before wiring error handling and before claiming that a failure path is observable. Remember that a caught error still needs useful context and a real reporting path.
 
 ## Overview
 

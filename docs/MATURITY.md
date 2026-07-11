@@ -1,5 +1,7 @@
 # Maturity
 
+This document states which parts of Sweetspot Modular Architecture work today and which still need field proof. Adopters, maintainers, and public communicators need it before relying on or describing the framework. Read it when assessing release risk, planning validation, or writing public claims. Remember to match every maturity claim to current evidence rather than the intended roadmap.
+
 Current status: alpha working framework.
 
 This means:
@@ -38,4 +40,3 @@ Safe claim:
 Unsafe claim:
 
 > SMA is the architecture everyone should use.
-

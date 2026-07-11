@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sweetspot.local/schemas/build.manifest.schema.json",
   "title": "Sweetspot Build Manifest",
+  "description": "This schema defines a build manifest that combines project identity, source inputs, dependencies, verification, security, release evidence, and provenance. Build-system authors, release operators, and auditors need it when they generate or validate a distributable build record. Read it before publishing an artifact or comparing build evidence across environments. Remember that its source, checks, and produced artifacts must refer to the same run.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -24,27 +25,42 @@
   "properties": {
     "schema_version": {
       "type": "string",
+      "description": "Schema version that this document conforms to.",
       "const": "1.0.0"
     },
     "build": {
       "type": "object",
+      "description": "Fields that describe the build.",
       "additionalProperties": false,
-      "required": ["id", "name", "slug", "kind", "status", "version", "visibility", "stability"],
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "kind",
+        "status",
+        "version",
+        "visibility",
+        "stability"
+      ],
       "properties": {
         "id": {
           "type": "string",
+          "description": "Stable identifier of the build.",
           "pattern": "^[a-z0-9][a-z0-9._-]{2,120}$"
         },
         "name": {
           "type": "string",
+          "description": "Human-readable name of the build.",
           "minLength": 2
         },
         "slug": {
           "type": "string",
+          "description": "Slug for the build.",
           "pattern": "^[a-z0-9][a-z0-9-]{2,120}$"
         },
         "kind": {
           "type": "string",
+          "description": "Classification assigned to the build.",
           "enum": [
             "capability_build",
             "workflow_build",
@@ -55,111 +71,211 @@
         },
         "status": {
           "type": "string",
-          "enum": ["experimental", "candidate", "verified", "canonical", "deprecated", "unsafe"]
+          "description": "Current status of the build.",
+          "enum": [
+            "experimental",
+            "candidate",
+            "verified",
+            "canonical",
+            "deprecated",
+            "unsafe"
+          ]
         },
         "version": {
-          "type": "string"
+          "type": "string",
+          "description": "Version assigned to the build."
         },
         "domain": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered domain values for the build.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "runtimes": {
           "type": "array",
+          "description": "Ordered runtimes values for the build.",
           "items": {
             "type": "string",
-            "enum": ["node", "browser", "edge", "electron", "supabase", "worker", "python", "go", "rust"]
+            "enum": [
+              "node",
+              "browser",
+              "edge",
+              "electron",
+              "supabase",
+              "worker",
+              "python",
+              "go",
+              "rust"
+            ]
           },
           "minItems": 1,
           "uniqueItems": true
         },
         "visibility": {
           "type": "string",
-          "enum": ["private", "internal", "community", "public"]
+          "description": "Selected visibility; allowed values are `private`, `internal`, `community`, `public`.",
+          "enum": [
+            "private",
+            "internal",
+            "community",
+            "public"
+          ]
         },
         "stability": {
           "type": "string",
-          "enum": ["evolving", "stable", "hardened", "frozen"]
+          "description": "Selected stability; allowed values are `evolving`, `stable`, `hardened`, `frozen`.",
+          "enum": [
+            "evolving",
+            "stable",
+            "hardened",
+            "frozen"
+          ]
         },
         "trust_tier": {
           "type": "string",
-          "enum": ["experimental", "reviewed", "verified", "canonical"]
+          "description": "Selected trust tier; allowed values are `experimental`, `reviewed`, `verified`, `canonical`.",
+          "enum": [
+            "experimental",
+            "reviewed",
+            "verified",
+            "canonical"
+          ]
         },
-        "summary": { "type": "string" }
+        "summary": {
+          "type": "string",
+          "description": "Summary for the build."
+        }
       }
     },
     "source": {
       "type": "object",
+      "description": "Fields that describe the source.",
       "additionalProperties": false,
-      "required": ["project", "paths", "derived_from_bricks"],
+      "required": [
+        "project",
+        "paths",
+        "derived_from_bricks"
+      ],
       "properties": {
-        "project": { "type": "string" },
-        "repository": { "type": "string" },
-        "commit": { "type": "string" },
-        "archive_hash": { "type": "string" },
+        "project": {
+          "type": "string",
+          "description": "Project identifier associated with the source."
+        },
+        "repository": {
+          "type": "string",
+          "description": "Repository location for the source."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit identifier associated with the recorded work."
+        },
+        "archive_hash": {
+          "type": "string",
+          "description": "Archive hash for the source."
+        },
         "paths": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Repository-relative paths associated with the source.",
+          "items": {
+            "type": "string"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "derived_from_bricks": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_brick_ref" },
+          "description": "Ordered derived from bricks values for the source.",
+          "items": {
+            "$ref": "#/$defs/build_brick_ref"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "supporting_artifacts": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered supporting artifacts values for the source.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "owner": {
       "type": "object",
+      "description": "Fields that describe the owner.",
       "additionalProperties": false,
-      "required": ["primary"],
+      "required": [
+        "primary"
+      ],
       "properties": {
-        "primary": { "type": "string" },
-        "team": { "type": "string" },
+        "primary": {
+          "type": "string",
+          "description": "Primary for the owner."
+        },
+        "team": {
+          "type": "string",
+          "description": "Team for the owner."
+        },
         "reviewers": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered reviewers values for the owner.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "composition": {
       "type": "object",
+      "description": "Fields that describe the composition.",
       "additionalProperties": false,
-      "required": ["brick_refs", "flows", "shared_contracts"],
+      "required": [
+        "brick_refs",
+        "flows",
+        "shared_contracts"
+      ],
       "properties": {
         "brick_refs": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_brick_ref" },
+          "description": "Ordered brick refs values for the composition.",
+          "items": {
+            "$ref": "#/$defs/build_brick_ref"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "flows": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_flow" },
+          "description": "Ordered flows values for the composition.",
+          "items": {
+            "$ref": "#/$defs/build_flow"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
         "optional_bricks": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_brick_ref" },
+          "description": "Ordered optional bricks values for the composition.",
+          "items": {
+            "$ref": "#/$defs/build_brick_ref"
+          },
           "uniqueItems": true
         },
         "alternatives": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_alternative" },
+          "description": "Ordered alternatives values for the composition.",
+          "items": {
+            "$ref": "#/$defs/build_alternative"
+          },
           "uniqueItems": true
         },
         "shared_contracts": {
           "type": "array",
+          "description": "Ordered shared contracts values for the composition.",
           "items": {
             "type": "string",
             "enum": [
@@ -183,18 +299,36 @@
         },
         "topology": {
           "type": "string",
-          "enum": ["linear", "fanout", "hub_spoke", "hub_and_spoke", "pipeline", "event_driven", "orchestrated_flow", "hybrid"]
+          "description": "Selected topology; allowed values are `linear`, `fanout`, `hub_spoke`, `hub_and_spoke`, `pipeline`, `event_driven`, `orchestrated_flow`, `hybrid`.",
+          "enum": [
+            "linear",
+            "fanout",
+            "hub_spoke",
+            "hub_and_spoke",
+            "pipeline",
+            "event_driven",
+            "orchestrated_flow",
+            "hybrid"
+          ]
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the composition."
+        }
       }
     },
     "classification": {
       "type": "object",
+      "description": "Fields that describe the classification.",
       "additionalProperties": false,
-      "required": ["data_classes", "risk"],
+      "required": [
+        "data_classes",
+        "risk"
+      ],
       "properties": {
         "data_classes": {
           "type": "array",
+          "description": "Ordered data classes values for the classification.",
           "items": {
             "type": "string",
             "enum": [
@@ -213,275 +347,551 @@
         },
         "risk": {
           "type": "string",
-          "enum": ["low", "medium", "high", "critical"]
+          "description": "Selected risk; allowed values are `low`, `medium`, `high`, `critical`.",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the classification."
+        }
       }
     },
     "sweetspot": {
       "type": "object",
+      "description": "Fields that describe the sweetspot.",
       "additionalProperties": false,
-      "required": ["ssa_v2", "ssi", "sstf", "spe", "srs", "ssra", "sas", "sva", "srls", "sev", "ssc", "sai"],
+      "required": [
+        "ssa_v2",
+        "ssi",
+        "sstf",
+        "spe",
+        "srs",
+        "ssra",
+        "sas",
+        "sva",
+        "srls",
+        "sev",
+        "ssc",
+        "sai"
+      ],
       "properties": {
-        "ssa_v2": { "$ref": "#/$defs/gate_score" },
-        "ssi": { "$ref": "#/$defs/gate_score" },
-        "sstf": { "$ref": "#/$defs/gate_score" },
-        "spe": { "$ref": "#/$defs/gate_score" },
-        "srs": { "$ref": "#/$defs/gate_score" },
-        "ssra": { "$ref": "#/$defs/gate_score" },
-        "sas": { "$ref": "#/$defs/gate_score" },
-        "sva": { "$ref": "#/$defs/gate_score" },
-        "srls": { "$ref": "#/$defs/gate_score" },
-        "sev": { "$ref": "#/$defs/gate_score" },
-        "ssc": { "$ref": "#/$defs/gate_score" },
-        "sai": { "$ref": "#/$defs/gate_score" }
+        "ssa_v2": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssa version 2."
+        },
+        "ssi": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssi."
+        },
+        "sstf": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sstf."
+        },
+        "spe": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for spe."
+        },
+        "srs": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for srs."
+        },
+        "ssra": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssra."
+        },
+        "sas": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sas."
+        },
+        "sva": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sva."
+        },
+        "srls": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for srls."
+        },
+        "sev": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sev."
+        },
+        "ssc": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for ssc."
+        },
+        "sai": {
+          "$ref": "#/$defs/gate_score",
+          "description": "Structured value recorded for sai."
+        }
       }
     },
     "interfaces": {
       "type": "object",
+      "description": "Fields that describe the interfaces.",
       "additionalProperties": false,
       "properties": {
         "entrypoints": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered entrypoints values for the interface.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "ui_surfaces": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered ui surfaces values for the interface.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "events": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered events values for the interface.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "api_endpoints": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered API endpoints values for the interface.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "commands": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered commands values for the interface.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "contracts": {
       "type": "object",
+      "description": "Fields that describe the contracts.",
       "additionalProperties": false,
-      "required": ["env", "data", "auth", "rls", "network", "performance"],
+      "required": [
+        "env",
+        "data",
+        "auth",
+        "rls",
+        "network",
+        "performance"
+      ],
       "properties": {
         "env": {
           "type": "object",
+          "description": "Fields that describe the environment.",
           "additionalProperties": false,
-          "required": ["required", "optional", "forbidden"],
+          "required": [
+            "required",
+            "optional",
+            "forbidden"
+          ],
           "properties": {
             "required": {
               "type": "array",
-              "items": { "$ref": "#/$defs/env_var" },
+              "description": "Ordered required values for the environment.",
+              "items": {
+                "$ref": "#/$defs/env_var"
+              },
               "uniqueItems": true
             },
             "optional": {
               "type": "array",
-              "items": { "$ref": "#/$defs/env_var" },
+              "description": "Ordered optional values for the environment.",
+              "items": {
+                "$ref": "#/$defs/env_var"
+              },
               "uniqueItems": true
             },
             "forbidden": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered forbidden values for the environment.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             }
           }
         },
         "data": {
           "type": "object",
+          "description": "Fields that describe the data.",
           "additionalProperties": false,
-          "required": ["inputs", "outputs", "stores"],
+          "required": [
+            "inputs",
+            "outputs",
+            "stores"
+          ],
           "properties": {
             "inputs": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered inputs values for the data.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "outputs": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered outputs values for the data.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "stores": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered stores values for the data.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "tables": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered tables values for the data.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
-            "retention": { "type": "string" }
+            "retention": {
+              "type": "string",
+              "description": "Retention for the data."
+            }
           }
         },
         "auth": {
           "type": "object",
+          "description": "Fields that describe the auth.",
           "additionalProperties": false,
-          "required": ["required", "modes"],
+          "required": [
+            "required",
+            "modes"
+          ],
           "properties": {
-            "required": { "type": "boolean" },
+            "required": {
+              "type": "boolean",
+              "description": "Whether required applies to the auth."
+            },
             "modes": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered modes values for the auth.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "roles": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered roles values for the auth.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
-            "notes": { "type": "string" }
+            "notes": {
+              "type": "string",
+              "description": "Additional notes about the auth."
+            }
           }
         },
         "rls": {
           "type": "object",
+          "description": "Fields that describe the row-level security.",
           "additionalProperties": false,
-          "required": ["required", "status"],
+          "required": [
+            "required",
+            "status"
+          ],
           "properties": {
-            "required": { "type": "boolean" },
-            "status": { "type": "string", "enum": ["not_applicable", "missing", "partial", "complete"] },
+            "required": {
+              "type": "boolean",
+              "description": "Whether required applies to the row-level security."
+            },
+            "status": {
+              "type": "string",
+              "description": "Current status of the rl.",
+              "enum": [
+                "not_applicable",
+                "missing",
+                "partial",
+                "complete"
+              ]
+            },
             "tables": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered tables values for the rl.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
-            "matrix_path": { "type": "string" },
+            "matrix_path": {
+              "type": "string",
+              "description": "Recorded matrix path for the row-level security."
+            },
             "negative_tests": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Tests that prove forbidden access or cross-boundary behavior fails.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             }
           }
         },
         "network": {
           "type": "object",
+          "description": "Fields that describe the network.",
           "additionalProperties": false,
-          "required": ["outbound_hosts", "webhooks"],
+          "required": [
+            "outbound_hosts",
+            "webhooks"
+          ],
           "properties": {
             "outbound_hosts": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered outbound hosts values for the network.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "webhooks": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered webhooks values for the network.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             },
             "inbound_endpoints": {
               "type": "array",
-              "items": { "type": "string" },
+              "description": "Ordered inbound endpoints values for the network.",
+              "items": {
+                "type": "string"
+              },
               "uniqueItems": true
             }
           }
         },
         "performance": {
           "type": "object",
+          "description": "Fields that describe the performance.",
           "additionalProperties": false,
-          "required": ["latency_budget_ms", "queue_allowed"],
+          "required": [
+            "latency_budget_ms",
+            "queue_allowed"
+          ],
           "properties": {
-            "latency_budget_ms": { "type": "integer", "minimum": 0 },
-            "queue_allowed": { "type": "boolean" },
-            "concurrency_hint": { "type": "integer", "minimum": 1 },
-            "notes": { "type": "string" }
+            "latency_budget_ms": {
+              "type": "integer",
+              "description": "Latency budget ms as a whole number for the performance.",
+              "minimum": 0
+            },
+            "queue_allowed": {
+              "type": "boolean",
+              "description": "Whether queue allowed applies to the performance."
+            },
+            "concurrency_hint": {
+              "type": "integer",
+              "description": "Concurrency hint as a whole number for the performance.",
+              "minimum": 1
+            },
+            "notes": {
+              "type": "string",
+              "description": "Additional notes about the performance."
+            }
           }
         }
       }
     },
     "verification": {
       "type": "object",
+      "description": "Fields that describe the verification.",
       "additionalProperties": false,
-      "required": ["status", "fixture_targets", "smoke_commands", "integration_targets", "evidence"],
+      "required": [
+        "status",
+        "fixture_targets",
+        "smoke_commands",
+        "integration_targets",
+        "evidence"
+      ],
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["missing", "planned", "partial", "verified", "canonical", "blocked"]
+          "description": "Current status of the verification.",
+          "enum": [
+            "missing",
+            "planned",
+            "partial",
+            "verified",
+            "canonical",
+            "blocked"
+          ]
         },
         "fixture_targets": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered fixture targets values for the verification.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "smoke_commands": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered smoke commands values for the verification.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "integration_targets": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered integration targets values for the verification.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "evidence": {
           "type": "array",
-          "items": { "$ref": "#/$defs/verification_event" }
+          "description": "Ordered evidence values for the verification.",
+          "items": {
+            "$ref": "#/$defs/verification_event"
+          }
         },
-        "last_verified_at": { "type": "string", "format": "date-time" }
+        "last_verified_at": {
+          "type": "string",
+          "description": "Time recorded for last verified at, in ISO 8601 date-time format.",
+          "format": "date-time"
+        }
       }
     },
     "clone": {
       "type": "object",
+      "description": "Fields that describe the clone.",
       "additionalProperties": false,
-      "required": ["readiness", "greenfield_support", "required_ports", "install_steps", "post_clone_checks", "rollback_steps"],
+      "required": [
+        "readiness",
+        "greenfield_support",
+        "required_ports",
+        "install_steps",
+        "post_clone_checks",
+        "rollback_steps"
+      ],
       "properties": {
         "readiness": {
           "type": "string",
-          "enum": ["blocked", "manual_only", "guided", "copy_ready"]
+          "description": "Selected readiness; allowed values are `blocked`, `manual_only`, `guided`, `copy_ready`.",
+          "enum": [
+            "blocked",
+            "manual_only",
+            "guided",
+            "copy_ready"
+          ]
         },
-        "greenfield_support": { "type": "boolean" },
-        "matching_architecture_support": { "type": "boolean" },
+        "greenfield_support": {
+          "type": "boolean",
+          "description": "Whether greenfield support applies to the clone."
+        },
+        "matching_architecture_support": {
+          "type": "boolean",
+          "description": "Whether matching architecture support applies to the clone."
+        },
         "required_ports": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered required ports values for the clone.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "file_map": {
           "type": "array",
-          "items": { "$ref": "#/$defs/file_map_entry" }
+          "description": "Ordered file map values for the clone.",
+          "items": {
+            "$ref": "#/$defs/file_map_entry"
+          }
         },
         "install_steps": {
           "type": "array",
-          "items": { "type": "string" }
+          "description": "Ordered install steps values for the clone.",
+          "items": {
+            "type": "string"
+          }
         },
         "post_clone_checks": {
           "type": "array",
-          "items": { "type": "string" }
+          "description": "Ordered post clone checks values for the clone.",
+          "items": {
+            "type": "string"
+          }
         },
         "rollback_steps": {
           "type": "array",
-          "items": { "type": "string" }
+          "description": "Ordered rollback steps values for the clone.",
+          "items": {
+            "type": "string"
+          }
         },
         "known_traps": {
           "type": "array",
-          "items": { "type": "string" }
+          "description": "Ordered known traps values for the clone.",
+          "items": {
+            "type": "string"
+          }
         },
         "target_docs": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered target docs values for the clone.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "upgrade": {
       "type": "object",
+      "description": "Fields that describe the upgrade.",
       "additionalProperties": false,
-      "required": ["channel", "compatibility_policy", "migration_hooks", "supersedes", "replacement_policy"],
+      "required": [
+        "channel",
+        "compatibility_policy",
+        "migration_hooks",
+        "supersedes",
+        "replacement_policy"
+      ],
       "properties": {
         "channel": {
           "type": "string",
-          "enum": ["pinned", "patch_safe", "minor_safe", "review_required", "experimental"]
+          "description": "Selected channel; allowed values are `pinned`, `patch_safe`, `minor_safe`, `review_required`, `experimental`.",
+          "enum": [
+            "pinned",
+            "patch_safe",
+            "minor_safe",
+            "review_required",
+            "experimental"
+          ]
         },
         "compatibility_policy": {
           "type": "string",
+          "description": "Selected compatibility policy; allowed values are `manifested_ports_only`, `same_runtime_family`, `manual_adapter_review`, `project_specific`.",
           "enum": [
             "manifested_ports_only",
             "same_runtime_family",
@@ -491,48 +901,89 @@
         },
         "migration_hooks": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered migration hooks values for the upgrade.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "supersedes": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered supersedes values for the upgrade.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "replacement_policy": {
           "type": "string",
+          "description": "Selected replacement policy; allowed values are `automatic_if_contract_compatible`, `manual_review_if_contract_changes`, `manual_only`.",
           "enum": [
             "automatic_if_contract_compatible",
             "manual_review_if_contract_changes",
             "manual_only"
           ]
         },
-        "rollback_supported": { "type": "boolean" },
+        "rollback_supported": {
+          "type": "boolean",
+          "description": "Whether rollback supported applies to the upgrade."
+        },
         "breaking_change_signals": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered breaking change signals values for the upgrade.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "publishing": {
       "type": "object",
+      "description": "Fields that describe the publishing.",
       "additionalProperties": false,
-      "required": ["visibility", "publishable", "redaction_profile", "license"],
+      "required": [
+        "visibility",
+        "publishable",
+        "redaction_profile",
+        "license"
+      ],
       "properties": {
         "visibility": {
           "type": "string",
-          "enum": ["private", "internal", "community", "public"]
+          "description": "Selected visibility; allowed values are `private`, `internal`, `community`, `public`.",
+          "enum": [
+            "private",
+            "internal",
+            "community",
+            "public"
+          ]
         },
-        "publishable": { "type": "boolean" },
+        "publishable": {
+          "type": "boolean",
+          "description": "Whether publishable applies to the publishing."
+        },
         "redaction_profile": {
           "type": "string",
-          "enum": ["internal-default", "community-default", "public-hardened", "custom"]
+          "description": "Selected redaction profile; allowed values are `internal-default`, `community-default`, `public-hardened`, `custom`.",
+          "enum": [
+            "internal-default",
+            "community-default",
+            "public-hardened",
+            "custom"
+          ]
         },
-        "license": { "type": "string" },
+        "license": {
+          "type": "string",
+          "description": "License for the publishing."
+        },
         "openness": {
           "type": "string",
-          "enum": ["closed", "source-available", "open"],
+          "enum": [
+            "closed",
+            "source-available",
+            "open"
+          ],
           "description": "Declared redistribution openness. The license-lattice gate blocks any value more open than the MEET of the build's component bricks."
         },
         "lattice": {
@@ -540,55 +991,131 @@
           "additionalProperties": false,
           "description": "Computed lower bound from the component bricks (written by sma-license-gate). Advisory record of what the composition actually permits.",
           "properties": {
-            "effective_openness": { "type": "string", "enum": ["closed", "source-available", "open"] },
-            "effective_visibility": { "type": "string", "enum": ["private", "internal", "community", "public"] },
-            "most_restrictive_brick": { "type": "string" },
-            "computed_at": { "type": "string", "format": "date-time" }
+            "effective_openness": {
+              "type": "string",
+              "description": "Selected effective openness; allowed values are `closed`, `source-available`, `open`.",
+              "enum": [
+                "closed",
+                "source-available",
+                "open"
+              ]
+            },
+            "effective_visibility": {
+              "type": "string",
+              "description": "Selected effective visibility; allowed values are `private`, `internal`, `community`, `public`.",
+              "enum": [
+                "private",
+                "internal",
+                "community",
+                "public"
+              ]
+            },
+            "most_restrictive_brick": {
+              "type": "string",
+              "description": "Most restrictive brick for the lattice."
+            },
+            "computed_at": {
+              "type": "string",
+              "description": "Time recorded for computed at, in ISO 8601 date-time format.",
+              "format": "date-time"
+            }
           }
         },
         "exposed_docs": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered exposed docs values for the publishing.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "excluded_assets": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered excluded assets values for the publishing.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "economics": {
       "type": "object",
+      "description": "Fields that describe the economics.",
       "additionalProperties": false,
-      "required": ["estimated_prompt_token_savings", "estimated_clone_time_minutes", "maintenance_score"],
+      "required": [
+        "estimated_prompt_token_savings",
+        "estimated_clone_time_minutes",
+        "maintenance_score"
+      ],
       "properties": {
-        "estimated_prompt_token_savings": { "type": "integer", "minimum": 0 },
-        "estimated_clone_time_minutes": { "type": "integer", "minimum": 0 },
-        "estimated_update_time_minutes": { "type": "integer", "minimum": 0 },
-        "maintenance_score": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "notes": { "type": "string" }
+        "estimated_prompt_token_savings": {
+          "type": "integer",
+          "description": "Estimated prompt token savings as a whole number for the economic.",
+          "minimum": 0
+        },
+        "estimated_clone_time_minutes": {
+          "type": "integer",
+          "description": "Estimated clone time minutes as a whole number for the economic.",
+          "minimum": 0
+        },
+        "estimated_update_time_minutes": {
+          "type": "integer",
+          "description": "Estimated update time minutes as a whole number for the economic.",
+          "minimum": 0
+        },
+        "maintenance_score": {
+          "type": "integer",
+          "description": "Maintenance score as a whole number for the economic.",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the economic."
+        }
       }
     },
     "provenance": {
       "type": "object",
+      "description": "Evidence describing where the content came from and who changed it.",
       "additionalProperties": false,
-      "required": ["created_by", "touched_by", "reviewed_by", "source_chain"],
+      "required": [
+        "created_by",
+        "touched_by",
+        "reviewed_by",
+        "source_chain"
+      ],
       "properties": {
-        "created_by": { "$ref": "#/$defs/touch_event" },
+        "created_by": {
+          "$ref": "#/$defs/touch_event",
+          "description": "Structured value recorded for created by."
+        },
         "touched_by": {
           "type": "array",
-          "items": { "$ref": "#/$defs/touch_event" }
+          "description": "Ordered touched by values for the provenance.",
+          "items": {
+            "$ref": "#/$defs/touch_event"
+          }
         },
         "reviewed_by": {
           "type": "array",
-          "items": { "$ref": "#/$defs/touch_event" }
+          "description": "Ordered reviewed by values for the provenance.",
+          "items": {
+            "$ref": "#/$defs/touch_event"
+          }
         },
         "source_chain": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_source_event" }
+          "description": "Ordered source chain values for the provenance.",
+          "items": {
+            "$ref": "#/$defs/build_source_event"
+          }
         },
-        "seal": { "$ref": "#/$defs/provenance_seal" }
+        "seal": {
+          "$ref": "#/$defs/provenance_seal",
+          "description": "Structured value recorded for seal."
+        }
       }
     }
   },
@@ -597,31 +1124,77 @@
       "type": "object",
       "additionalProperties": false,
       "description": "Tamper-evident hash chain over provenance events anchored to the content fingerprint. Generated by tools/sma-provenance-ledger.mjs and verified by tools/sma-provenance-verify.mjs.",
-      "required": ["algo", "head"],
+      "required": [
+        "algo",
+        "head"
+      ],
       "properties": {
-        "algo": { "type": "string" },
-        "anchor": { "type": "string" },
-        "head": { "type": "string" },
-        "chain_length": { "type": "integer", "minimum": 0 },
-        "events_digest": { "type": "string" },
-        "signature": { "type": "string" },
-        "key_id": { "type": "string" }
+        "algo": {
+          "type": "string",
+          "description": "Algo for the provenance seal."
+        },
+        "anchor": {
+          "type": "string",
+          "description": "Anchor for the provenance seal."
+        },
+        "head": {
+          "type": "string",
+          "description": "Head for the provenance seal."
+        },
+        "chain_length": {
+          "type": "integer",
+          "description": "Chain length as a whole number for the provenance seal.",
+          "minimum": 0
+        },
+        "events_digest": {
+          "type": "string",
+          "description": "Events digest for the provenance seal."
+        },
+        "signature": {
+          "type": "string",
+          "description": "Signature for the provenance seal."
+        },
+        "key_id": {
+          "type": "string",
+          "description": "Key identifier for the provenance seal."
+        }
       }
     },
     "gate_score": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "score"],
+      "required": [
+        "status",
+        "score"
+      ],
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["not_applicable", "missing", "partial", "passing", "blocked"]
+          "description": "Current status of the gate score.",
+          "enum": [
+            "not_applicable",
+            "missing",
+            "partial",
+            "passing",
+            "blocked"
+          ]
         },
-        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "notes": { "type": "string" },
+        "score": {
+          "type": "integer",
+          "description": "Score as a whole number for the gate score.",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the gate score."
+        },
         "evidence": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered evidence values for the gate score.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
@@ -629,70 +1202,191 @@
     "env_var": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "scope", "required_in"],
+      "required": [
+        "name",
+        "scope",
+        "required_in"
+      ],
       "properties": {
-        "name": { "type": "string" },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the environment var."
+        },
         "scope": {
           "type": "string",
-          "enum": ["server_only", "public_client", "ci_only", "local_only"]
+          "description": "Selected scope; allowed values are `server_only`, `public_client`, `ci_only`, `local_only`.",
+          "enum": [
+            "server_only",
+            "public_client",
+            "ci_only",
+            "local_only"
+          ]
         },
         "required_in": {
           "type": "array",
-          "items": { "type": "string", "enum": ["local", "preview", "production", "test", "ci"] },
+          "description": "Ordered required in values for the environment var.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "local",
+              "preview",
+              "production",
+              "test",
+              "ci"
+            ]
+          },
           "uniqueItems": true
         },
         "forbidden_in": {
           "type": "array",
-          "items": { "type": "string", "enum": ["client_bundle", "logs", "docs", "tests", "ci"] },
+          "description": "Ordered forbidden in values for the environment var.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "client_bundle",
+              "logs",
+              "docs",
+              "tests",
+              "ci"
+            ]
+          },
           "uniqueItems": true
         },
-        "example": { "type": "string" }
+        "example": {
+          "type": "string",
+          "description": "Example for the environment var."
+        }
       }
     },
     "verification_event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "status"],
+      "required": [
+        "command",
+        "status"
+      ],
       "properties": {
-        "command": { "type": "string" },
-        "status": { "type": "string", "enum": ["planned", "pass", "fail", "skipped", "blocked", "verified"] },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "output_path": { "type": "string" },
-        "notes": { "type": "string" }
+        "command": {
+          "type": "string",
+          "description": "Command used to produce or verify this evidence."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the verification event.",
+          "enum": [
+            "planned",
+            "pass",
+            "fail",
+            "skipped",
+            "blocked",
+            "verified"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Time when the event occurred, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Path to the stored command output or evidence artifact."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the verification event."
+        }
       }
     },
     "touch_event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["actor_kind", "actor_id", "role", "timestamp", "summary"],
+      "required": [
+        "actor_kind",
+        "actor_id",
+        "role",
+        "timestamp",
+        "summary"
+      ],
       "properties": {
         "actor_kind": {
           "type": "string",
-          "enum": ["human", "ai_model", "agent", "automation", "tool"]
+          "description": "Category of actor that performed the action.",
+          "enum": [
+            "human",
+            "ai_model",
+            "agent",
+            "automation",
+            "tool"
+          ]
         },
-        "actor_id": { "type": "string" },
-        "provider": { "type": "string" },
-        "model": { "type": "string" },
+        "actor_id": {
+          "type": "string",
+          "description": "Identifier of the human, agent, automation, or tool that performed the action."
+        },
+        "provider": {
+          "type": "string",
+          "description": "Provider for the touch event."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model identifier recorded for an AI-driven actor."
+        },
         "role": {
           "type": "string",
-          "enum": ["architect", "implementer", "reviewer", "security", "tester", "refactor", "release", "scanner"]
+          "description": "Selected role; allowed values are `architect`, `implementer`, `reviewer`, `security`, `tester`, `refactor`, `release`, `scanner`.",
+          "enum": [
+            "architect",
+            "implementer",
+            "reviewer",
+            "security",
+            "tester",
+            "refactor",
+            "release",
+            "scanner"
+          ]
         },
-        "session_id": { "type": "string" },
-        "task_id": { "type": "string" },
-        "commit": { "type": "string" },
+        "session_id": {
+          "type": "string",
+          "description": "Identifier of the agent session that produced this value."
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Identifier of the task associated with this value."
+        },
+        "commit": {
+          "type": "string",
+          "description": "Git commit identifier associated with the recorded work."
+        },
         "files_touched": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Repository-relative files changed by the recorded work.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "summary": { "type": "string" },
+        "timestamp": {
+          "type": "string",
+          "description": "Time when the event occurred, in ISO 8601 date-time format.",
+          "format": "date-time"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Summary for the touch event."
+        },
         "attestation": {
           "type": "object",
+          "description": "Fields that describe the attestation.",
           "additionalProperties": false,
           "properties": {
-            "method": { "type": "string" },
-            "reference": { "type": "string" }
+            "method": {
+              "type": "string",
+              "description": "Method for the attestation."
+            },
+            "reference": {
+              "type": "string",
+              "description": "Reference for the attestation."
+            }
           }
         }
       }
@@ -700,11 +1394,19 @@
     "build_brick_ref": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["brick_id", "role", "required"],
+      "required": [
+        "brick_id",
+        "role",
+        "required"
+      ],
       "properties": {
-        "brick_id": { "type": "string" },
+        "brick_id": {
+          "type": "string",
+          "description": "Stable identifier of the brick associated with this record."
+        },
         "role": {
           "type": "string",
+          "description": "Selected role; allowed values are `account_linking`, `admin_checkout_testing`, `admin_gateway`, `admin_shell`, `request_orchestrator`, `auth_entrypoint`, `auth_callback`, `provider_adapter`, `policy_gate`, `storage_adapter`, `asset_post_processor`, `asset_proxy`, `delivery_proxy`, `queue_worker`, `ui_surface`, `billing_ui`, `subscription_ui`, `usage_meter`, `test_harness`, `regression_harness`, `fallback_provider`, `moderation_gate`, `telemetry_facade`, `billing_orchestrator`, `credits_control`, `provider_balance_control`, `qa_configuration_control`, `rate_limit_control`, `rate_limit_dashboard`, `non_prod_auth_stub`, `story_prompting_extension`.",
           "enum": [
             "account_linking",
             "admin_checkout_testing",
@@ -739,107 +1441,228 @@
             "story_prompting_extension"
           ]
         },
-        "required": { "type": "boolean" },
-        "order": { "type": "integer", "minimum": 0 },
-        "project": { "type": "string" },
-        "path": { "type": "string" },
-        "notes": { "type": "string" }
+        "required": {
+          "type": "boolean",
+          "description": "Whether required applies to the build brick ref."
+        },
+        "order": {
+          "type": "integer",
+          "description": "Order as a whole number for the build brick ref.",
+          "minimum": 0
+        },
+        "project": {
+          "type": "string",
+          "description": "Project identifier associated with the build brick ref."
+        },
+        "path": {
+          "type": "string",
+          "description": "Repository-relative path to the build brick ref."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the build brick ref."
+        }
       }
     },
     "build_flow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "steps"],
+      "required": [
+        "id",
+        "name",
+        "steps"
+      ],
       "properties": {
         "id": {
           "type": "string",
+          "description": "Stable identifier of the build flow.",
           "pattern": "^[a-z0-9][a-z0-9._-]{1,80}$"
         },
-        "name": { "type": "string" },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the build flow."
+        },
         "steps": {
           "type": "array",
-          "items": { "$ref": "#/$defs/build_step" },
+          "description": "Ordered steps values for the build flow.",
+          "items": {
+            "$ref": "#/$defs/build_step"
+          },
           "minItems": 1
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the build flow."
+        }
       }
     },
     "build_step": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name"],
+      "required": [
+        "id",
+        "name"
+      ],
       "properties": {
         "id": {
           "type": "string",
+          "description": "Stable identifier of the build step.",
           "pattern": "^[a-z0-9][a-z0-9._-]{1,80}$"
         },
-        "name": { "type": "string" },
-        "order": { "type": "integer", "minimum": 0 },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the build step."
+        },
+        "order": {
+          "type": "integer",
+          "description": "Order as a whole number for the build step.",
+          "minimum": 0
+        },
         "brick_refs": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered brick refs values for the build step.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "inputs": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered inputs values for the build step.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "outputs": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered outputs values for the build step.",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the build step."
+        }
       }
     },
     "build_alternative": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["slot", "brick_ids"],
+      "required": [
+        "slot",
+        "brick_ids"
+      ],
       "properties": {
-        "slot": { "type": "string" },
+        "slot": {
+          "type": "string",
+          "description": "Slot for the build alternative."
+        },
         "brick_ids": {
           "type": "array",
-          "items": { "type": "string" },
+          "description": "Ordered brick ids values for the build alternative.",
+          "items": {
+            "type": "string"
+          },
           "minItems": 1,
           "uniqueItems": true
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the build alternative."
+        }
       }
     },
     "file_map_entry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["source_path", "target_path", "ownership"],
+      "required": [
+        "source_path",
+        "target_path",
+        "ownership"
+      ],
       "properties": {
-        "source_path": { "type": "string" },
-        "target_path": { "type": "string" },
+        "source_path": {
+          "type": "string",
+          "description": "Repository-relative source path supplied by the reusable brick."
+        },
+        "target_path": {
+          "type": "string",
+          "description": "Repository-relative destination path for the placed file or directory."
+        },
         "ownership": {
           "type": "string",
-          "enum": ["managed", "extensible", "adapter", "manual"]
+          "description": "Selected ownership; allowed values are `managed`, `extensible`, `adapter`, `manual`.",
+          "enum": [
+            "managed",
+            "extensible",
+            "adapter",
+            "manual"
+          ]
         },
-        "notes": { "type": "string" }
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the file map entry."
+        }
       }
     },
     "build_source_event": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["project", "artifact_id", "artifact_type", "event", "timestamp"],
+      "required": [
+        "project",
+        "artifact_id",
+        "artifact_type",
+        "event",
+        "timestamp"
+      ],
       "properties": {
-        "project": { "type": "string" },
-        "artifact_id": { "type": "string" },
+        "project": {
+          "type": "string",
+          "description": "Project identifier associated with the build source event."
+        },
+        "artifact_id": {
+          "type": "string",
+          "description": "Artifact identifier for the build source event."
+        },
         "artifact_type": {
           "type": "string",
-          "enum": ["brick", "build", "release", "fixture"]
+          "description": "Selected artifact type; allowed values are `brick`, `build`, `release`, `fixture`.",
+          "enum": [
+            "brick",
+            "build",
+            "release",
+            "fixture"
+          ]
         },
-        "commit": { "type": "string" },
-        "path": { "type": "string" },
+        "commit": {
+          "type": "string",
+          "description": "Git commit identifier associated with the recorded work."
+        },
+        "path": {
+          "type": "string",
+          "description": "Repository-relative path to the build source event."
+        },
         "event": {
           "type": "string",
-          "enum": ["created", "composed", "verified", "published", "forked", "superseded", "referenced"]
+          "description": "Selected event; allowed values are `created`, `composed`, `verified`, `published`, `forked`, `superseded`, `referenced`.",
+          "enum": [
+            "created",
+            "composed",
+            "verified",
+            "published",
+            "forked",
+            "superseded",
+            "referenced"
+          ]
         },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": {
+          "type": "string",
+          "description": "Time when the event occurred, in ISO 8601 date-time format.",
+          "format": "date-time"
+        }
       }
     }
   }

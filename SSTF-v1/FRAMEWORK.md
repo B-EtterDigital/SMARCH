@@ -1,4 +1,6 @@
-# SWEETSPOT TESTING FRAMEWORK V1 (SSTF-v1)
+# SWEETSPOT TESTING FRAMEWORK V1 ([SSTF-v1](../docs/GLOSSARY.md#sstf))
+
+This document defines the Sweetspot test architecture, test patterns, and confidence model. Engineers and reviewers need it when they add coverage, choose a test layer, or assess a release gate. Read it before writing a new test suite and when a test strategy leaves a domain risk unclear. Remember to cover behavior at the cheapest layer that can prove it without hiding integration risk.
 
 **A reusable, production-grade testing architecture for full-stack web applications**
 
@@ -499,7 +501,7 @@ vi.mock('@/types/acme-story-episode', () => ({}));
 | Activity | Hours | Notes |
 |----------|-------|-------|
 | Initial 26 suites (541 tests) | ~8h | Bulk coverage of wired features |
-| Error reporting deep dive (88 tests) | ~2h | 4-layer SSI architecture |
+| Error reporting deep dive (88 tests) | ~2h | 4-layer [SSI](../docs/GLOSSARY.md#ssi) architecture |
 | Domain expansion (12 files, 555 tests) | ~4h | Stores, hooks, utils, services, contexts |
 | Test infrastructure (setup, config, runner) | ~1h | One-time investment |
 | SSTF-v1 documentation | ~1h | This document |

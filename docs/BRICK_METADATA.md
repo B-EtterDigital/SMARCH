@@ -1,5 +1,7 @@
 # Brick Metadata
 
+This reference explains the metadata that makes a reusable brick understandable to tools and reviewers. Brick authors and registry maintainers need it while creating or reviewing a manifest. Read it before publishing a brick or changing its boundaries, evidence, or provenance. Remember that metadata is a contract backed by the brick's current code and proof.
+
 Every reusable brick gets a `module.sweetspot.json` file at its module root.
 
 The file has two jobs:
@@ -29,7 +31,7 @@ SVD requirements are documented in [SWEETSPOT_VISUAL_DEMO.md](SWEETSPOT_VISUAL_D
 | `owner` | Primary owner, team, reviewers |
 | `boundaries` | Owned paths, public paths, private paths, forbidden imports |
 | `classification` | Data sensitivity and risk |
-| `sweetspot` | Gate status for SSA-v2, SSI, SSTF, SPE, SRS, SSRA, SAS, SVA, SRLS, SEV, SSC, SAI |
+| `sweetspot` | Gate status for SSA-v2, [SSI](GLOSSARY.md#ssi), [SSTF](GLOSSARY.md#sstf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), SSRA, SAS, [SVA](GLOSSARY.md#sva), [SRLS](GLOSSARY.md#srls), [SEV](GLOSSARY.md#sev), [SSC](GLOSSARY.md#ssc), SAI |
 | `interfaces` | Public API, adapters, dependencies, forbidden dependencies |
 | `security` | RLS, env, vulnerabilities |
 | `supply_chain` | Dependencies, licenses, checksums, SBOM path |

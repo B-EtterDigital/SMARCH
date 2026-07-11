@@ -1,12 +1,13 @@
 # SMA × Codex CLI integration
 
+This guide explains how local Codex commands enrich and query the Sweetspot brick registry. Operators who maintain agent-facing documentation and registry intelligence need it during setup or troubleshooting. Read it before running the integration commands or interpreting their generated output. Remember that Codex enriches checked-in project evidence; it does not replace validation of the source bricks.
+
 SMA can use the locally-installed `codex` CLI (OpenAI Codex, model `gpt-5.4`) to
 turn the brick registry from a structural catalogue into an agent-queryable
 knowledge base with MSDN-grade documentation, cross-brick connections, auto-
 generated starter tests, and a vision → bricks ranker.
 
-This document is the user-facing guide. For the why/what see
-[`PHASE_PLAN_COMPLETE.md`](../PHASE_PLAN_COMPLETE.md).
+This document is the user-facing guide. [FRAMEWORK.md](FRAMEWORK.md) explains the architecture it extends.
 
 ## Prerequisites
 

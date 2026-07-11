@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -52,6 +53,9 @@ async function validateInventory(inventory) {
     if (typeof entry.bundle !== "boolean") {
       fail(`skills.${entry.name}.bundle must be a boolean`);
     }
+    if (entry.bundle) {
+      requireNonEmptyString(entry.smokeTrigger, `skills.${entry.name}.smokeTrigger`);
+    }
     if (entries.has(entry.name)) {
       fail(`duplicate skill inventory entry: ${entry.name}`);
     }
@@ -84,6 +88,97 @@ async function validateInventory(inventory) {
   }
 
   return bundled;
+}
+
+function parseSkillFrontmatter(markdown, relativePath) {
+  const frontmatter = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---/);
+  if (!frontmatter) fail(`${relativePath} is missing YAML frontmatter`);
+
+  const name = frontmatter[1].match(/^name:\s*(.+?)\s*$/m)?.[1];
+  const description = frontmatter[1].match(/^description:\s*(.+?)\s*$/m)?.[1];
+  requireNonEmptyString(name, `${relativePath} frontmatter.name`);
+  requireNonEmptyString(description, `${relativePath} frontmatter.description`);
+  return { name, description };
+}
+
+async function installedSkillMetadata(profileSkillsRoot) {
+  const entries = (await fs.readdir(profileSkillsRoot, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .sort((left, right) => left.name.localeCompare(right.name));
+  const metadata = [];
+
+  for (const entry of entries) {
+    const skillPath = path.join(profileSkillsRoot, entry.name, "SKILL.md");
+    const relativePath = path.relative(path.dirname(profileSkillsRoot), skillPath);
+    const parsed = parseSkillFrontmatter(await fs.readFile(skillPath, "utf8"), relativePath);
+    if (parsed.name !== entry.name) {
+      fail(`${relativePath} frontmatter.name must match installed directory ${entry.name}`);
+    }
+    metadata.push(parsed);
+  }
+
+  return metadata;
+}
+
+function resolveTrigger(metadata, trigger) {
+  const normalized = trigger.trim().toLowerCase();
+  return metadata
+    .filter((skill) => skill.description.toLowerCase().includes(normalized))
+    .map((skill) => skill.name)
+    .sort();
+}
+
+function assertTriggerResolves(metadata, entry) {
+  const matches = resolveTrigger(metadata, entry.smokeTrigger);
+  if (matches.length !== 1 || matches[0] !== entry.name) {
+    fail(
+      `trigger smoke failed for ${entry.name}: ${JSON.stringify(entry.smokeTrigger)} resolved to ${matches.join(", ") || "none"}`
+    );
+  }
+}
+
+async function smokeInstallBundledSkills(inventory, bundled, selftest) {
+  const profileRoot = await fs.mkdtemp(path.join(os.tmpdir(), "smarch-plugin-profile-"));
+  const profileSkillsRoot = path.join(profileRoot, ".claude", "skills");
+
+  try {
+    await fs.mkdir(profileSkillsRoot, { recursive: true });
+    for (const name of bundled) {
+      await fs.cp(
+        path.join(root, "skills", name),
+        path.join(profileSkillsRoot, name),
+        { recursive: true }
+      );
+    }
+
+    const metadata = await installedSkillMetadata(profileSkillsRoot);
+    const installed = metadata.map((skill) => skill.name).sort();
+    if (JSON.stringify(installed) !== JSON.stringify(bundled)) {
+      fail(`clean-profile install drift (expected: ${bundled.join(", ")}; installed: ${installed.join(", ")})`);
+    }
+
+    const bundledEntries = inventory.skills
+      .filter((entry) => entry.bundle)
+      .sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of bundledEntries) assertTriggerResolves(metadata, entry);
+
+    if (selftest) {
+      let rejected = false;
+      try {
+        assertTriggerResolves(metadata, {
+          ...bundledEntries[0],
+          smokeTrigger: "__smarch_missing_trigger_selftest__"
+        });
+      } catch (error) {
+        rejected = String(error?.message || error).includes("trigger smoke failed");
+      }
+      if (!rejected) fail("trigger smoke negative selftest did not fail closed");
+    }
+
+    return { installed, resolved: bundledEntries.length, negativeRejected: selftest };
+  } finally {
+    await fs.rm(profileRoot, { recursive: true, force: true });
+  }
 }
 
 function generatePlugin(inventory, version, bundled) {
@@ -140,10 +235,13 @@ async function syncFile(filePath, expected, check) {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== "--check")) {
-    fail(`unknown argument: ${args.find((arg) => arg !== "--check")}`);
+  const allowedArgs = new Set(["--check", "--selftest"]);
+  if (args.some((arg) => !allowedArgs.has(arg))) {
+    fail(`unknown argument: ${args.find((arg) => !allowedArgs.has(arg))}`);
   }
   const check = args.includes("--check");
+  const selftest = args.includes("--selftest");
+  if (selftest && !check) fail("--selftest requires --check");
   const [inventory, packageJson] = await Promise.all([
     readJson(inventoryPath),
     readJson(packagePath),
@@ -160,9 +258,17 @@ async function main() {
     await syncFile(filePath, expected, check);
   }
 
+  const smoke = check
+    ? await smokeInstallBundledSkills(inventory, bundled, selftest)
+    : null;
+
   const action = check ? "verified" : "generated";
   console.log(`[sma-plugin-sync] ${action} ${outputs.length} manifests at version ${packageJson.version}`);
   console.log(`[sma-plugin-sync] bundled skills (${bundled.length}): ${bundled.join(", ")}`);
+  if (smoke) {
+    console.log(`[sma-plugin-sync] clean-profile trigger smoke passed (${smoke.resolved}/${smoke.installed.length})`);
+    if (smoke.negativeRejected) console.log("[sma-plugin-sync] trigger smoke negative selftest rejected unresolved input");
+  }
 }
 
 main().catch((error) => {

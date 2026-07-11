@@ -1,5 +1,7 @@
 # Provenance Seal + License Lattice
 
+This design explains how SMARCH records creator history, license constraints, and release openness for reusable bricks. Registry maintainers, legal reviewers, and release operators need it before importing or publishing code. Read it when a brick changes source, license, visibility, or distribution terms. Remember that downstream releases may preserve or tighten source restrictions but must not erase them.
+
 A tamper-evident creator trail, a per-brick license/openness axis, and a
 monotonic enforcement gate that stops a brick from being **stolen** or
 **released as open when its source was closed**.

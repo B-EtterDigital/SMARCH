@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sweetspot.local/schemas/release.schema.json",
   "title": "Sweetspot Artifact Release",
+  "description": "This schema defines a versioned brick release with source identity, compatibility, artifacts, integrity checks, verification, rollout guidance, and provenance. Brick maintainers, consumers, and release tooling need it when they publish or install a reusable version. Read it before cutting a release or deciding whether an update is safe for a dependent project. Remember that release metadata must describe the exact artifacts and evidence shipped under that version.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -15,10 +16,12 @@
   "properties": {
     "schema_version": {
       "type": "string",
+      "description": "Schema version that this document conforms to.",
       "const": "1.0.0"
     },
     "release": {
       "type": "object",
+      "description": "Fields that describe the release.",
       "additionalProperties": false,
       "required": [
         "artifact_type",
@@ -34,50 +37,78 @@
       "properties": {
         "release_id": {
           "type": "string",
+          "description": "Stable identifier of the release associated with this record.",
           "pattern": "^[a-z0-9][a-z0-9._:@-]{2,180}$"
         },
         "artifact_type": {
-          "$ref": "#/$defs/artifact_type"
+          "$ref": "#/$defs/artifact_type",
+          "description": "Structured value recorded for artifact type."
         },
         "artifact_id": {
-          "$ref": "#/$defs/artifact_id"
+          "$ref": "#/$defs/artifact_id",
+          "description": "Structured value recorded for artifact identifier."
         },
         "version": {
-          "$ref": "#/$defs/semver"
+          "$ref": "#/$defs/semver",
+          "description": "Version assigned to the release."
         },
         "channel": {
           "type": "string",
-          "enum": ["dev", "alpha", "beta", "candidate", "stable", "lts", "hotfix"]
+          "description": "Selected channel; allowed values are `dev`, `alpha`, `beta`, `candidate`, `stable`, `lts`, `hotfix`.",
+          "enum": [
+            "dev",
+            "alpha",
+            "beta",
+            "candidate",
+            "stable",
+            "lts",
+            "hotfix"
+          ]
         },
         "status": {
           "type": "string",
-          "enum": ["draft", "published", "deprecated", "yanked", "superseded"]
+          "description": "Current status of the release.",
+          "enum": [
+            "draft",
+            "published",
+            "deprecated",
+            "yanked",
+            "superseded"
+          ]
         },
         "source_project": {
-          "type": "string"
+          "type": "string",
+          "description": "Source project for the release."
         },
         "source_manifest_path": {
-          "type": "string"
+          "type": "string",
+          "description": "Source manifest path for the release."
         },
         "created_at": {
           "type": "string",
+          "description": "Time recorded for created at, in ISO 8601 date-time format.",
           "format": "date-time"
         },
         "published_at": {
           "type": "string",
+          "description": "Time recorded for published at, in ISO 8601 date-time format.",
           "format": "date-time"
         },
         "source_commit": {
-          "$ref": "#/$defs/hash_like"
+          "$ref": "#/$defs/hash_like",
+          "description": "Structured value recorded for source commit."
         },
         "registry_snapshot_sha": {
-          "$ref": "#/$defs/hash_like"
+          "$ref": "#/$defs/hash_like",
+          "description": "SHA-256 digest of the global registry snapshot used to build this index."
         },
         "content_hash": {
-          "$ref": "#/$defs/hash_like"
+          "$ref": "#/$defs/hash_like",
+          "description": "Structured value recorded for content hash."
         },
         "previous_release": {
-          "type": "string"
+          "type": "string",
+          "description": "Previous release for the release."
         },
         "registry_origin": {
           "type": "string",
@@ -86,29 +117,37 @@
         },
         "supersedes": {
           "type": "array",
+          "description": "Ordered supersedes values for the release.",
           "items": {
             "type": "string"
           },
           "uniqueItems": true
         },
         "replacement_release": {
-          "type": "string"
+          "type": "string",
+          "description": "Replacement release for the release."
         },
         "breaking": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether breaking applies to the release."
         },
         "notes": {
-          "type": "string"
+          "type": "string",
+          "description": "Additional notes about the release."
         }
       }
     },
     "content": {
       "type": "object",
+      "description": "Fields that describe the content.",
       "additionalProperties": false,
-      "required": ["included_paths"],
+      "required": [
+        "included_paths"
+      ],
       "properties": {
         "included_paths": {
           "type": "array",
+          "description": "Ordered included paths values for the content.",
           "items": {
             "type": "string"
           },
@@ -117,6 +156,7 @@
         },
         "portable_docs": {
           "type": "array",
+          "description": "Ordered portable docs values for the content.",
           "items": {
             "type": "string"
           },
@@ -124,6 +164,7 @@
         },
         "entrypoints": {
           "type": "array",
+          "description": "Ordered entrypoints values for the content.",
           "items": {
             "type": "string"
           },
@@ -131,23 +172,40 @@
         },
         "artifacts": {
           "type": "array",
+          "description": "Artifacts produced or referenced by this record.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["path", "kind", "sha256"],
+            "required": [
+              "path",
+              "kind",
+              "sha256"
+            ],
             "properties": {
               "path": {
-                "type": "string"
+                "type": "string",
+                "description": "Repository-relative path to the artifact."
               },
               "kind": {
                 "type": "string",
-                "enum": ["file", "directory", "doc", "asset", "config", "migration", "test"]
+                "description": "Classification assigned to the artifact.",
+                "enum": [
+                  "file",
+                  "directory",
+                  "doc",
+                  "asset",
+                  "config",
+                  "migration",
+                  "test"
+                ]
               },
               "sha256": {
-                "$ref": "#/$defs/hash_like"
+                "$ref": "#/$defs/hash_like",
+                "description": "SHA-256 digest used to verify file or artifact integrity."
               },
               "executable": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Whether executable applies to the items."
               }
             }
           }
@@ -156,35 +214,47 @@
     },
     "contracts": {
       "type": "object",
+      "description": "Fields that describe the contracts.",
       "additionalProperties": false,
-      "required": ["hashes", "runtimes"],
+      "required": [
+        "hashes",
+        "runtimes"
+      ],
       "properties": {
         "hashes": {
           "type": "object",
+          "description": "Fields that describe the hashes.",
           "additionalProperties": false,
           "properties": {
             "env": {
-              "$ref": "#/$defs/hash_like"
+              "$ref": "#/$defs/hash_like",
+              "description": "Structured value recorded for environment."
             },
             "interfaces": {
-              "$ref": "#/$defs/hash_like"
+              "$ref": "#/$defs/hash_like",
+              "description": "Structured value recorded for interfaces."
             },
             "data": {
-              "$ref": "#/$defs/hash_like"
+              "$ref": "#/$defs/hash_like",
+              "description": "Structured value recorded for data."
             },
             "rls": {
-              "$ref": "#/$defs/hash_like"
+              "$ref": "#/$defs/hash_like",
+              "description": "Structured value recorded for row-level security."
             },
             "dependencies": {
-              "$ref": "#/$defs/hash_like"
+              "$ref": "#/$defs/hash_like",
+              "description": "Structured value recorded for dependencies."
             },
             "verification": {
-              "$ref": "#/$defs/hash_like"
+              "$ref": "#/$defs/hash_like",
+              "description": "Structured value recorded for verification."
             }
           }
         },
         "runtimes": {
           "type": "array",
+          "description": "Ordered runtimes values for the contract.",
           "items": {
             "type": "string"
           },
@@ -193,6 +263,7 @@
         },
         "required_env": {
           "type": "array",
+          "description": "Ordered required environment values for the contract.",
           "items": {
             "type": "string"
           },
@@ -200,6 +271,7 @@
         },
         "optional_env": {
           "type": "array",
+          "description": "Ordered optional environment values for the contract.",
           "items": {
             "type": "string"
           },
@@ -207,6 +279,7 @@
         },
         "forbidden_env": {
           "type": "array",
+          "description": "Ordered forbidden environment values for the contract.",
           "items": {
             "type": "string"
           },
@@ -214,6 +287,7 @@
         },
         "data_classes": {
           "type": "array",
+          "description": "Ordered data classes values for the contract.",
           "items": {
             "type": "string",
             "enum": [
@@ -232,6 +306,7 @@
         },
         "public_interfaces": {
           "type": "array",
+          "description": "Ordered public interfaces values for the contract.",
           "items": {
             "type": "string"
           },
@@ -239,45 +314,64 @@
         },
         "dependency_refs": {
           "type": "array",
+          "description": "Ordered dependency refs values for the contract.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["artifact_type", "artifact_id"],
+            "required": [
+              "artifact_type",
+              "artifact_id"
+            ],
             "properties": {
               "artifact_type": {
-                "$ref": "#/$defs/artifact_type"
+                "$ref": "#/$defs/artifact_type",
+                "description": "Structured value recorded for artifact type."
               },
               "artifact_id": {
-                "$ref": "#/$defs/artifact_id"
+                "$ref": "#/$defs/artifact_id",
+                "description": "Structured value recorded for artifact identifier."
               },
               "version_range": {
-                "type": "string"
+                "type": "string",
+                "description": "Recorded version range for the items."
               },
               "release_ref": {
-                "type": "string"
+                "type": "string",
+                "description": "Recorded release ref for the items."
               },
               "required": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Whether required applies to the items."
               }
             }
           }
         },
         "external_packages": {
           "type": "array",
+          "description": "Ordered external packages values for the contract.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
               "name": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable name of the external package."
               },
               "version_range": {
-                "type": "string"
+                "type": "string",
+                "description": "Recorded version range for the items."
               },
               "scope": {
                 "type": "string",
-                "enum": ["runtime", "build", "dev"]
+                "description": "Selected scope; allowed values are `runtime`, `build`, `dev`.",
+                "enum": [
+                  "runtime",
+                  "build",
+                  "dev"
+                ]
               }
             }
           }
@@ -286,19 +380,31 @@
     },
     "verification": {
       "type": "object",
+      "description": "Fields that describe the verification.",
       "additionalProperties": false,
-      "required": ["status"],
+      "required": [
+        "status"
+      ],
       "properties": {
         "status": {
           "type": "string",
-          "enum": ["unverified", "candidate", "verified", "canonical", "failed"]
+          "description": "Current status of the verification.",
+          "enum": [
+            "unverified",
+            "candidate",
+            "verified",
+            "canonical",
+            "failed"
+          ]
         },
         "verified_at": {
           "type": "string",
+          "description": "Time recorded for verified at, in ISO 8601 date-time format.",
           "format": "date-time"
         },
         "fixture_targets": {
           "type": "array",
+          "description": "Ordered fixture targets values for the verification.",
           "items": {
             "type": "string"
           },
@@ -306,6 +412,7 @@
         },
         "smoke_commands": {
           "type": "array",
+          "description": "Ordered smoke commands values for the verification.",
           "items": {
             "type": "string"
           },
@@ -313,6 +420,7 @@
         },
         "integration_targets": {
           "type": "array",
+          "description": "Ordered integration targets values for the verification.",
           "items": {
             "type": "string"
           },
@@ -320,41 +428,57 @@
         },
         "checks": {
           "type": "array",
+          "description": "Ordered checks values for the verification.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "status"],
+            "required": [
+              "name",
+              "status"
+            ],
             "properties": {
               "name": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable name of the check."
               },
               "status": {
                 "type": "string",
-                "enum": ["passed", "failed", "skipped"]
+                "description": "Current status of the check.",
+                "enum": [
+                  "passed",
+                  "failed",
+                  "skipped"
+                ]
               },
               "command": {
-                "type": "string"
+                "type": "string",
+                "description": "Command used to produce or verify this evidence."
               },
               "evidence_path": {
-                "type": "string"
+                "type": "string",
+                "description": "Recorded evidence path for the items."
               }
             }
           }
         },
         "rollback_supported": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether rollback supported applies to the verification."
         }
       }
     },
     "migration": {
       "type": "object",
+      "description": "Fields that describe the migration.",
       "additionalProperties": false,
       "properties": {
         "notes": {
-          "type": "string"
+          "type": "string",
+          "description": "Additional notes about the migration."
         },
         "commands": {
           "type": "array",
+          "description": "Ordered commands values for the migration.",
           "items": {
             "type": "string"
           },
@@ -362,6 +486,7 @@
         },
         "manual_steps": {
           "type": "array",
+          "description": "Ordered manual steps values for the migration.",
           "items": {
             "type": "string"
           },
@@ -371,13 +496,16 @@
     },
     "rollback": {
       "type": "object",
+      "description": "Fields that describe the rollback.",
       "additionalProperties": false,
       "properties": {
         "notes": {
-          "type": "string"
+          "type": "string",
+          "description": "Additional notes about the rollback."
         },
         "commands": {
           "type": "array",
+          "description": "Ordered commands values for the rollback.",
           "items": {
             "type": "string"
           },
@@ -385,6 +513,7 @@
         },
         "artifact_paths": {
           "type": "array",
+          "description": "Ordered artifact paths values for the rollback.",
           "items": {
             "type": "string"
           },
@@ -394,34 +523,54 @@
     },
     "provenance": {
       "type": "object",
+      "description": "Evidence describing where the content came from and who changed it.",
       "additionalProperties": false,
-      "required": ["created_by"],
+      "required": [
+        "created_by"
+      ],
       "properties": {
         "created_by": {
-          "$ref": "#/$defs/actor_record"
+          "$ref": "#/$defs/actor_record",
+          "description": "Structured value recorded for created by."
         },
         "reviewed_by": {
           "type": "array",
+          "description": "Ordered reviewed by values for the provenance.",
           "items": {
             "$ref": "#/$defs/actor_record"
           }
         },
         "source_chain": {
           "type": "array",
+          "description": "Ordered source chain values for the provenance.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["kind", "ref"],
+            "required": [
+              "kind",
+              "ref"
+            ],
             "properties": {
               "kind": {
                 "type": "string",
-                "enum": ["manifest", "registry", "build", "brick", "release", "commit", "doc"]
+                "description": "Classification assigned to the source chain.",
+                "enum": [
+                  "manifest",
+                  "registry",
+                  "build",
+                  "brick",
+                  "release",
+                  "commit",
+                  "doc"
+                ]
               },
               "ref": {
-                "type": "string"
+                "type": "string",
+                "description": "Recorded ref for the items."
               },
               "hash": {
-                "$ref": "#/$defs/hash_like"
+                "$ref": "#/$defs/hash_like",
+                "description": "Structured value recorded for hash."
               }
             }
           }
@@ -436,24 +585,33 @@
     },
     "artifact_type": {
       "type": "string",
-      "enum": ["brick", "build"]
+      "enum": [
+        "brick",
+        "build"
+      ]
     },
     "actor_record": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["actor"],
+      "required": [
+        "actor"
+      ],
       "properties": {
         "actor": {
-          "type": "string"
+          "type": "string",
+          "description": "Actor for the actor record."
         },
         "tool": {
-          "type": "string"
+          "type": "string",
+          "description": "Tool for the actor record."
         },
         "model": {
-          "type": "string"
+          "type": "string",
+          "description": "Model identifier recorded for an AI-driven actor."
         },
         "timestamp": {
           "type": "string",
+          "description": "Time when the event occurred, in ISO 8601 date-time format.",
           "format": "date-time"
         }
       }

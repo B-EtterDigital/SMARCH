@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "root": "tools/evals/fixtures/portfolio",
+  "digest": "b80f74f3f625db9798fd343ee9965b59fddff4f1271380236daf6540ce6b67b3",
+  "fileCount": 86,
+  "totalBytes": 327095
+}

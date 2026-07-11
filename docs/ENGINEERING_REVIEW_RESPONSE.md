@@ -1,5 +1,7 @@
 # Engineering Review Response
 
+This document records the main engineering critiques of Sweetspot Modular Architecture and the concrete response to each one. Maintainers, reviewers, and adopters need it when they challenge the system's tradeoffs or verify that a concern has an operational answer. Read it before changing the architecture in response to a recurring objection. Remember that a response counts only when repository rules and tooling enforce it.
+
 This file records the skeptical senior-engineer review and the design response.
 
 ## Critique: Too Many Acronyms
@@ -127,4 +129,3 @@ It is:
 > AI-heavy teams need reusable modules with explicit boundaries, proof, provenance, and rejection rules.
 
 That is a defensible engineering position.
-

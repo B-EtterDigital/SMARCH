@@ -1,5 +1,7 @@
 # Sweetspot Visual Demo (SVD)
 
+This document defines how a Sweetspot walkthrough becomes repeatable visual proof. Product teams, implementers, and reviewers need it when a feature claim depends on screenshots, recorded flows, or visual acceptance. Read it before planning the demo and again before accepting its proof packet. Remember that every captured step must map to a real product state and a stated outcome.
+
 Sweetspot Visual Demo is a known optional SMA module for demo, walkthrough, onboarding, and release-proof flows. It is not a required gate for every brick. Use it when a project needs visual proof that a user journey works, can be replayed, and can be reviewed without guessing what happened.
 
 SVD turns a walkthrough into a structured proof packet:
@@ -10,7 +12,7 @@ SVD turns a walkthrough into a structured proof packet:
 - screenshot quality checks that confirm the feature is visible before the artifact is accepted
 - subtle annotations that link claim numbers to the exact UI being discussed
 - a gallery that can be opened, exited, replayed, and shared
-- SRS breadcrumbs for every important step and failure
+- [SRS](GLOSSARY.md#srs) breadcrumbs for every important step and failure
 - privacy-safe artifact metadata for review and regression testing
 
 ## When To Use It
@@ -24,7 +26,7 @@ Use SVD for:
 - multi-user or live-session proof
 - visual regression packets for complex UI
 
-Do not use SVD as a replacement for unit, integration, security, or performance tests. It complements SSTF, SRS, SSI, and SSRA by making user-visible behavior reviewable.
+Do not use SVD as a replacement for unit, integration, security, or performance tests. It complements [SSTF](GLOSSARY.md#sstf), SRS, [SSI](GLOSSARY.md#ssi), and SSRA by making user-visible behavior reviewable.
 
 ## SVD Levels
 

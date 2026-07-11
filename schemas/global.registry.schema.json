@@ -2,74 +2,207 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sweetspot.local/schemas/global.registry.schema.json",
   "title": "Sweetspot Global Registry",
+  "description": "This schema defines the generated portfolio registry of projects, bricks, candidate groups, health scores, and scan findings. Scanner authors, controllers, and dashboard maintainers need it when they produce or consume portfolio-wide state. Read it before changing registry generation or interpreting aggregate counts. Remember that generated registry claims reflect the scanned inputs and must not be edited by hand.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "generated_at", "projects", "bricks"],
+  "required": [
+    "schema_version",
+    "generated_at",
+    "projects",
+    "bricks"
+  ],
   "properties": {
-    "schema_version": { "type": "string", "const": "1.0.0" },
-    "generated_at": { "type": "string" },
-    "scan_root": { "type": "string" },
-    "scan_project_id": { "type": ["string", "null"] },
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version that this document conforms to.",
+      "const": "1.0.0"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "Time when this document was generated, in ISO 8601 date-time format."
+    },
+    "scan_root": {
+      "type": "string",
+      "description": "Scan root for the record."
+    },
+    "scan_project_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Scan project identifier for the record."
+    },
     "scanned_project_roots": {
       "type": "array",
+      "description": "Ordered scanned project roots values for the record.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["root", "id"],
+        "required": [
+          "root",
+          "id"
+        ],
         "properties": {
-          "root": { "type": "string" },
-          "id": { "type": "string" }
+          "root": {
+            "type": "string",
+            "description": "Repository root represented by this record."
+          },
+          "id": {
+            "type": "string",
+            "description": "Stable identifier of the scanned project root."
+          }
         }
       }
     },
-    "count": { "type": "integer", "minimum": 0 },
-    "failure_count": { "type": "integer", "minimum": 0 },
-    "validation_error_count": { "type": "integer", "minimum": 0 },
-    "validation_warning_count": { "type": "integer", "minimum": 0 },
-    "unmanifested_count": { "type": "integer", "minimum": 0 },
-    "candidate_group_count": { "type": "integer", "minimum": 0 },
+    "count": {
+      "type": "integer",
+      "description": "Number of records represented by the record.",
+      "minimum": 0
+    },
+    "failure_count": {
+      "type": "integer",
+      "description": "Number of failure records for the record.",
+      "minimum": 0
+    },
+    "validation_error_count": {
+      "type": "integer",
+      "description": "Number of validation error records for the record.",
+      "minimum": 0
+    },
+    "validation_warning_count": {
+      "type": "integer",
+      "description": "Number of validation warning records for the record.",
+      "minimum": 0
+    },
+    "unmanifested_count": {
+      "type": "integer",
+      "description": "Number of unmanifested records for the record.",
+      "minimum": 0
+    },
+    "candidate_group_count": {
+      "type": "integer",
+      "description": "Number of candidate group records for the record.",
+      "minimum": 0
+    },
     "projects": {
       "type": "array",
+      "description": "Ordered projects values for the record.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "root"],
+        "required": [
+          "id",
+          "root"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "root": { "type": "string" },
-          "repository": { "type": "string" },
-          "brick_count": { "type": "integer", "minimum": 0 },
-          "unmanifested_count": { "type": "integer", "minimum": 0 },
-          "candidate_group_count": { "type": "integer", "minimum": 0 },
+          "id": {
+            "type": "string",
+            "description": "Stable identifier of the project."
+          },
+          "root": {
+            "type": "string",
+            "description": "Repository root represented by this record."
+          },
+          "repository": {
+            "type": "string",
+            "description": "Repository location for the project."
+          },
+          "brick_count": {
+            "type": "integer",
+            "description": "Number of brick records for the project.",
+            "minimum": 0
+          },
+          "unmanifested_count": {
+            "type": "integer",
+            "description": "Number of unmanifested records for the project.",
+            "minimum": 0
+          },
+          "candidate_group_count": {
+            "type": "integer",
+            "description": "Number of candidate group records for the project.",
+            "minimum": 0
+          },
           "status_counts": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "description": "Fields that describe the status counts.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "health_counts": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "description": "Fields that describe the health counts.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "candidate_type_counts": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "description": "Fields that describe the candidate type counts.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "candidate_role_counts": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "description": "Fields that describe the candidate role counts.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
-          "error_count": { "type": "integer", "minimum": 0 },
-          "warning_count": { "type": "integer", "minimum": 0 },
-          "average_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "error_count": {
+            "type": "integer",
+            "description": "Number of error records for the project.",
+            "minimum": 0
+          },
+          "warning_count": {
+            "type": "integer",
+            "description": "Number of warning records for the project.",
+            "minimum": 0
+          },
+          "average_score": {
+            "type": "integer",
+            "description": "Average score as a whole number for the project.",
+            "minimum": 0,
+            "maximum": 100
+          },
           "security_gate": {
             "type": "object",
+            "description": "Fields that describe the security gate.",
             "additionalProperties": false,
-            "required": ["status", "findings", "high_or_critical"],
+            "required": [
+              "status",
+              "findings",
+              "high_or_critical"
+            ],
             "properties": {
-              "status": { "type": "string" },
-              "findings": { "type": "integer", "minimum": 0 },
-              "high_or_critical": { "type": "integer", "minimum": 0 },
-              "scanned_files": { "type": "integer", "minimum": 0 },
-              "truncated": { "type": "boolean" }
+              "status": {
+                "type": "string",
+                "description": "Current status of the security gate."
+              },
+              "findings": {
+                "type": "integer",
+                "description": "Findings as a whole number for the security gate.",
+                "minimum": 0
+              },
+              "high_or_critical": {
+                "type": "integer",
+                "description": "High or critical as a whole number for the security gate.",
+                "minimum": 0
+              },
+              "scanned_files": {
+                "type": "integer",
+                "description": "Scanned files as a whole number for the security gate.",
+                "minimum": 0
+              },
+              "truncated": {
+                "type": "boolean",
+                "description": "Whether truncated applies to the security gate."
+              }
             }
           }
         }
@@ -77,27 +210,61 @@
     },
     "candidate_groups": {
       "type": "array",
+      "description": "Ordered candidate groups values for the record.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["project", "id", "name", "path", "candidate_count"],
+        "required": [
+          "project",
+          "id",
+          "name",
+          "path",
+          "candidate_count"
+        ],
         "properties": {
-          "project": { "type": "string" },
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "path": { "type": "string" },
-          "candidate_count": { "type": "integer", "minimum": 0 },
+          "project": {
+            "type": "string",
+            "description": "Project identifier associated with the candidate group."
+          },
+          "id": {
+            "type": "string",
+            "description": "Stable identifier of the candidate group."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of the candidate group."
+          },
+          "path": {
+            "type": "string",
+            "description": "Repository-relative path to the candidate group."
+          },
+          "candidate_count": {
+            "type": "integer",
+            "description": "Number of candidate records for the candidate group.",
+            "minimum": 0
+          },
           "candidate_type_counts": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "description": "Fields that describe the candidate type counts.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "candidate_role_counts": {
             "type": "object",
-            "additionalProperties": { "type": "integer", "minimum": 0 }
+            "description": "Fields that describe the candidate role counts.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "sample_paths": {
             "type": "array",
-            "items": { "type": "string" },
+            "description": "Ordered sample paths values for the candidate group.",
+            "items": {
+              "type": "string"
+            },
             "uniqueItems": true
           }
         }
@@ -105,92 +272,236 @@
     },
     "unmanifested_bricks": {
       "type": "array",
+      "description": "Ordered unmanifested bricks values for the record.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["project", "path", "candidate_type", "status", "reason"],
+        "required": [
+          "project",
+          "path",
+          "candidate_type",
+          "status",
+          "reason"
+        ],
         "properties": {
-          "project": { "type": "string" },
-          "path": { "type": "string" },
-          "relative_path": { "type": "string" },
-          "candidate_type": { "type": "string" },
-          "hierarchy_role": { "type": "string" },
-          "brick_group": { "type": "string" },
-          "group_name": { "type": "string" },
-          "group_path": { "type": "string" },
-          "status": { "type": "string", "const": "unmanifested" },
-          "reason": { "type": "string" }
+          "project": {
+            "type": "string",
+            "description": "Project identifier associated with the unmanifested brick."
+          },
+          "path": {
+            "type": "string",
+            "description": "Repository-relative path to the unmanifested brick."
+          },
+          "relative_path": {
+            "type": "string",
+            "description": "Recorded relative path for the items."
+          },
+          "candidate_type": {
+            "type": "string",
+            "description": "Recorded candidate type for the items."
+          },
+          "hierarchy_role": {
+            "type": "string",
+            "description": "Recorded hierarchy role for the items."
+          },
+          "brick_group": {
+            "type": "string",
+            "description": "Recorded brick group for the items."
+          },
+          "group_name": {
+            "type": "string",
+            "description": "Recorded group name for the items."
+          },
+          "group_path": {
+            "type": "string",
+            "description": "Recorded group path for the items."
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the unmanifested brick.",
+            "const": "unmanifested"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Plain-language reason for this decision."
+          }
         }
       }
     },
     "bricks": {
       "type": "array",
+      "description": "Ordered bricks values for the record.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "status", "manifest_path"],
+        "required": [
+          "id",
+          "name",
+          "status",
+          "manifest_path"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "kind": { "type": "string" },
-          "status": { "type": "string" },
-          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-          "project": { "type": "string" },
-          "manifest_path": { "type": "string" },
-          "brick_group": { "type": ["string", "null"] },
+          "id": {
+            "type": "string",
+            "description": "Stable identifier of the brick."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of the brick."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Classification assigned to the brick."
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the brick."
+          },
+          "score": {
+            "type": "integer",
+            "description": "Score as a whole number for the brick.",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "project": {
+            "type": "string",
+            "description": "Project identifier associated with the brick."
+          },
+          "manifest_path": {
+            "type": "string",
+            "description": "Repository-relative path to the referenced manifest."
+          },
+          "brick_group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Recorded brick group for the items."
+          },
           "hierarchy": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Recorded hierarchy for the items.",
             "additionalProperties": true
           },
           "data_classes": {
             "type": "array",
-            "items": { "type": "string" },
+            "description": "Ordered data classes values for the brick.",
+            "items": {
+              "type": "string"
+            },
             "uniqueItems": true
           },
           "models": {
             "type": "array",
-            "items": { "type": "string" },
+            "description": "Ordered models values for the brick.",
+            "items": {
+              "type": "string"
+            },
             "uniqueItems": true
           },
           "source_paths": {
             "type": "array",
-            "items": { "type": "string" },
+            "description": "Ordered source paths values for the brick.",
+            "items": {
+              "type": "string"
+            },
             "uniqueItems": true
           },
           "domain": {
             "type": "array",
-            "items": { "type": "string" },
+            "description": "Ordered domain values for the brick.",
+            "items": {
+              "type": "string"
+            },
             "uniqueItems": true
           },
           "feature_cluster": {
             "type": "object",
+            "description": "Fields that describe the feature cluster.",
             "additionalProperties": false,
-            "required": ["id", "name", "description"],
+            "required": [
+              "id",
+              "name",
+              "description"
+            ],
             "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
-              "description": { "type": "string" }
+              "id": {
+                "type": "string",
+                "description": "Stable identifier of the feature cluster."
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable name of the feature cluster."
+              },
+              "description": {
+                "type": "string",
+                "description": "Plain-language description of the feature cluster."
+              }
             }
           },
-          "risk": { "type": "string" },
-          "clone_readiness": { "type": "string" },
+          "risk": {
+            "type": "string",
+            "description": "Recorded risk for the items."
+          },
+          "clone_readiness": {
+            "type": "string",
+            "description": "Recorded clone readiness for the items."
+          },
           "health": {
             "type": "object",
+            "description": "Fields that describe the health.",
             "additionalProperties": false,
-            "required": ["status", "error_count", "warning_count"],
+            "required": [
+              "status",
+              "error_count",
+              "warning_count"
+            ],
             "properties": {
-              "status": { "type": "string", "enum": ["ok", "warn", "fail"] },
-              "error_count": { "type": "integer", "minimum": 0 },
-              "warning_count": { "type": "integer", "minimum": 0 },
+              "status": {
+                "type": "string",
+                "description": "Current status of the health.",
+                "enum": [
+                  "ok",
+                  "warn",
+                  "fail"
+                ]
+              },
+              "error_count": {
+                "type": "integer",
+                "description": "Number of error records for the health.",
+                "minimum": 0
+              },
+              "warning_count": {
+                "type": "integer",
+                "description": "Number of warning records for the health.",
+                "minimum": 0
+              },
               "errors": {
                 "type": "array",
-                "items": { "type": "string" }
+                "description": "Ordered errors values for the health.",
+                "items": {
+                  "type": "string"
+                }
               },
               "warnings": {
                 "type": "array",
-                "items": { "type": "string" }
+                "description": "Ordered warnings values for the health.",
+                "items": {
+                  "type": "string"
+                }
               },
-              "calculated_score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 }
+              "calculated_score": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Calculated score for the health.",
+                "minimum": 0,
+                "maximum": 100
+              }
             }
           }
         }
@@ -198,13 +509,23 @@
     },
     "failures": {
       "type": "array",
+      "description": "Ordered failures values for the record.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["manifest_path", "error"],
+        "required": [
+          "manifest_path",
+          "error"
+        ],
         "properties": {
-          "manifest_path": { "type": "string" },
-          "error": { "type": "string" }
+          "manifest_path": {
+            "type": "string",
+            "description": "Repository-relative path to the referenced manifest."
+          },
+          "error": {
+            "type": "string",
+            "description": "Recorded error for the items."
+          }
         }
       }
     }

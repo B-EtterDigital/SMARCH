@@ -1,5 +1,7 @@
 # Multi-Agent Operations Guide
 
+This guide explains how operators coordinate concurrent agents without losing ownership, evidence, or cleanup discipline. Controllers and execution agents need it before they claim work or integrate parallel changes. Read it while planning a work wave, resolving a collision, or preparing a handoff. Remember that each writable surface needs one clear owner at a time.
+
 The operator's guide for the SMA Gen3 multi-agent layer.
 
 This is the operator's manual for the lease, agent-context, merge, and release-store layers. If you only read one section, read **The 30-second flow**.

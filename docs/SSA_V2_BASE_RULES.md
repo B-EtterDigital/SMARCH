@@ -1,4 +1,6 @@
-# SSA-v2 Base Rules
+# [SSA-v2](GLOSSARY.md#ssa-v2) Base Rules
+
+This document sets the baseline architecture rules for code that enters a Sweetspot project. Implementers and reviewers need it when they design a brick, service boundary, data path, or user interface. Read it before coding and use it again during review. Remember that evidence at explicit boundaries carries more weight than a claim in prose.
 
 SSA-v2 is the security and architecture boundary for Sweetspot bricks.
 
@@ -119,4 +121,3 @@ Every visible component renders correctly across the project's configured themes
 - banning one-off pixel values for genuine geometry (canvas math, SVG `viewBox`, animation timing curves)
 - preventing product-specific palettes from being defined as tokens (a brick's brand accent token is fine; a brick hardcoding `#FF8A3D` is not)
 - forcing all components into a single design system — product-specific surfaces (Acme Story canvas nodes, game UI) can have their own visual language, but must still be theme-aware and respect accessibility prefs
-

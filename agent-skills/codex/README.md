@@ -1,5 +1,7 @@
 # Codex SMA Skills
 
+This guide shows how to install the SMARCH skill bundle for Codex and which project instruction files Codex reads. Developers who want Codex to follow Sweetspot project rules need it during workspace setup. Read it before running the installer or debugging a missing skill. Remember that the project instruction snippet keeps the rules visible even when a skill loader is inactive.
+
 Install:
 
 ```bash

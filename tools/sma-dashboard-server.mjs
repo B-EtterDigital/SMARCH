@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { timingSafeEqual } from "node:crypto";
 import fs from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEV_ROOT } from "./lib/sma-paths.mjs";
 
-const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const dashboardServerPath = fileURLToPath(import.meta.url);
+const smaRoot = path.resolve(path.dirname(dashboardServerPath), "..");
 
 const defaults = {
   wiki: path.join(smaRoot, "wiki"),
   scans: path.join(smaRoot, "scans"),
   allowRoot: DEV_ROOT,
   host: "127.0.0.1",
-  port: 4777
+  port: 4777,
+  unsafeMutations: false,
+  selftest: false
 };
 
 const browseExcludedDirs = new Set([
@@ -25,8 +29,11 @@ const browseExcludedDirs = new Set([
   "node_modules"
 ]);
 
-function parseArgs(argv) {
-  const options = { ...defaults };
+function parseArgs(argv, env = process.env) {
+  const options = {
+    ...defaults,
+    authToken: env.SMA_DASHBOARD_AUTH_TOKEN?.trim() || ""
+  };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -47,6 +54,10 @@ function parseArgs(argv) {
     } else if (arg === "--port" && next) {
       options.port = Number(next);
       i += 1;
+    } else if (arg === "--unsafe-mutations") {
+      options.unsafeMutations = true;
+    } else if (arg === "--selftest") {
+      options.selftest = true;
     } else if (arg === "--help" || arg === "-h") {
       console.log(`SMA dashboard server
 
@@ -59,12 +70,138 @@ Options:
   --allow-root  Highest folder the browser may browse or scan
   --host        Bind host. Default: 127.0.0.1
   --port        Bind port. Default: 4777
+  --unsafe-mutations
+                Enable POST /api/scan and /api/setup. Loopback only unless
+                SMA_DASHBOARD_AUTH_TOKEN is set; non-loopback requests must
+                send Authorization: Bearer <token>.
 `);
       process.exit(0);
     }
   }
 
   return options;
+}
+
+function isLoopbackHost(host) {
+  const normalized = host.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  return normalized === "localhost"
+    || normalized === "::1"
+    || normalized.startsWith("127.")
+    || normalized.startsWith("::ffff:127.");
+}
+
+function validateStartupPolicy(options) {
+  if (options.unsafeMutations && !isLoopbackHost(options.host) && !options.authToken) {
+    throw new Error(
+      "Refusing non-loopback dashboard mutation mode without SMA_DASHBOARD_AUTH_TOKEN"
+    );
+  }
+}
+
+function suppliedBearerToken(req) {
+  const authorization = req.headers.authorization;
+  if (typeof authorization !== "string") return "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || "";
+}
+
+function tokensMatch(supplied, expected) {
+  if (!supplied || !expected) return false;
+  const suppliedBuffer = Buffer.from(supplied);
+  const expectedBuffer = Buffer.from(expected);
+  return suppliedBuffer.length === expectedBuffer.length
+    && timingSafeEqual(suppliedBuffer, expectedBuffer);
+}
+
+function mutationAuthorized(req, options) {
+  if (!options.unsafeMutations) return false;
+  if (isLoopbackHost(options.host)) return true;
+  return tokensMatch(suppliedBearerToken(req), options.authToken);
+}
+
+function denyMutation(res, options) {
+  if (!options.unsafeMutations) {
+    sendJson(res, 403, {
+      error: "Dashboard mutations are disabled; restart with --unsafe-mutations to enable them"
+    });
+    return;
+  }
+
+  sendJson(res, 401, {
+    error: "Valid bearer token required for dashboard mutations on a non-loopback bind"
+  });
+}
+
+function expectUnsafeNonLoopbackStartupRefusal() {
+  return new Promise((resolve, reject) => {
+    const env = { ...process.env };
+    delete env.SMA_DASHBOARD_AUTH_TOKEN;
+
+    const child = spawn(process.execPath, [
+      dashboardServerPath,
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "0",
+      "--unsafe-mutations"
+    ], { env, stdio: ["ignore", "pipe", "pipe"] });
+    let output = "";
+    const timeout = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("selftest: unsafe non-loopback startup did not refuse before binding"));
+    }, 2000);
+
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timeout);
+      if (code === 0 || !output.includes("Refusing non-loopback dashboard mutation mode")) {
+        reject(new Error(
+          `selftest: expected authenticated startup refusal, got exit ${code}: ${output.trim()}`
+        ));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+async function runSelftest() {
+  await expectUnsafeNonLoopbackStartupRefusal();
+
+  const readOnlyOptions = parseArgs([], {});
+  if (mutationAuthorized({ headers: {} }, readOnlyOptions)) {
+    throw new Error("selftest: dashboard mutations were enabled by default");
+  }
+
+  const authenticatedRemoteOptions = parseArgs([
+    "--host",
+    "0.0.0.0",
+    "--unsafe-mutations"
+  ], { SMA_DASHBOARD_AUTH_TOKEN: "selftest-token" });
+  validateStartupPolicy(authenticatedRemoteOptions);
+
+  if (!mutationAuthorized({
+    headers: { authorization: "Bearer selftest-token" }
+  }, authenticatedRemoteOptions)) {
+    throw new Error("selftest: valid non-loopback bearer token was rejected");
+  }
+
+  if (mutationAuthorized({
+    headers: { authorization: "Bearer wrong-token" }
+  }, authenticatedRemoteOptions)) {
+    throw new Error("selftest: invalid non-loopback bearer token was accepted");
+  }
+
+  console.log("sma-dashboard-server selftest passed");
 }
 
 function inside(parent, child) {
@@ -394,9 +531,16 @@ async function serveStatic(res, options, requestUrl) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+
+  if (options.selftest) {
+    await runSelftest();
+    return;
+  }
+
   options.wiki = path.resolve(options.wiki);
   options.scans = path.resolve(options.scans);
   options.allowRoot = path.resolve(options.allowRoot);
+  validateStartupPolicy(options);
 
   const server = http.createServer(async (req, res) => {
     const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
@@ -408,11 +552,19 @@ async function main() {
       }
 
       if (req.method === "POST" && requestUrl.pathname === "/api/scan") {
+        if (!mutationAuthorized(req, options)) {
+          denyMutation(res, options);
+          return;
+        }
         await scanProject(res, options, req);
         return;
       }
 
       if (req.method === "POST" && requestUrl.pathname === "/api/setup") {
+        if (!mutationAuthorized(req, options)) {
+          denyMutation(res, options);
+          return;
+        }
         await setupProject(res, options, req);
         return;
       }

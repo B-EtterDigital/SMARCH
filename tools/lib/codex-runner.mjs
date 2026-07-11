@@ -18,15 +18,15 @@
  * Cache lives at ~/.cache/sma-codex/<sha256>.json and is keyed by
  * (model + prompt + schema). Hits are free.
  *
- * The runner uses --skip-git-repo-check, --sandbox read-only by default so it
- * never accidentally writes anything from inside the model's tool calls. The
- * cwd defaults to a tmp dir so codex doesn't try to inspect this repo.
+ * Execution is delegated to the shared workforce contract with the Codex
+ * backend in read-only mode so model, effort, timeout, and backend policy stay
+ * centralized.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
-import { spawn } from "node:child_process";
+import { dispatch } from "./workforce/contract.mjs";
 
 const DEFAULT_MODEL = "gpt-5.4";
 const CACHE_DIR = path.join(os.homedir(), ".cache", "sma-codex");
@@ -68,51 +68,24 @@ async function writeCache(key, payload) {
   await fs.writeFile(path.join(CACHE_DIR, `${key}.json`), JSON.stringify(payload));
 }
 
-function spawnCodex({ prompt, schemaPath, model, timeoutMs, lastMessageFile, cwd }) {
-  return new Promise((resolve) => {
-    const args = [
-      "exec",
-      "--skip-git-repo-check",
-      "--sandbox", "read-only",
-      "-m", model,
-      "--output-last-message", lastMessageFile
-    ];
-    if (schemaPath) {
-      args.push("--output-schema", schemaPath);
-    }
-
-    let stderr = "";
-    const started = Date.now();
-    const child = spawn("codex", args, {
-      cwd,
-      env: process.env
-    });
-
-    let killTimer = null;
-    if (timeoutMs > 0) {
-      killTimer = setTimeout(() => {
-        try { child.kill("SIGKILL"); } catch {}
-      }, timeoutMs);
-    }
-
-    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-    child.stdout.on("data", () => {}); // discard streamed events; we read --output-last-message
-    child.stdin.write(prompt);
-    child.stdin.end();
-
-    child.on("error", (err) => {
-      if (killTimer) clearTimeout(killTimer);
-      resolve({ ok: false, error: err.message, stderr, durationMs: Date.now() - started });
-    });
-    child.on("close", (code) => {
-      if (killTimer) clearTimeout(killTimer);
-      if (code !== 0) {
-        resolve({ ok: false, error: `codex exit ${code}`, stderr, durationMs: Date.now() - started });
-      } else {
-        resolve({ ok: true, durationMs: Date.now() - started, stderr });
-      }
-    });
+async function dispatchCodex({ prompt, schemaPath, model, timeoutMs }, dispatchFn = dispatch) {
+  const started = Date.now();
+  const result = await dispatchFn(prompt, {
+    backend: "codex",
+    model,
+    schema: schemaPath || undefined,
+    readOnly: true,
+    timeoutMs,
   });
+  const durationMs = Date.now() - started;
+  const stderr = result.raw?.stderr || "";
+  if (!result.ok) {
+    const exitCode = result.raw?.exitCode;
+    const error = result.raw?.error
+      || (Number.isInteger(exitCode) ? `codex exit ${exitCode}` : "workforce codex dispatch failed");
+    return { ok: false, error, stderr, durationMs };
+  }
+  return { ok: true, output: result.output, stderr, durationMs };
 }
 
 /** @param {CodexOptions} [options] */
@@ -139,20 +112,17 @@ export async function codex({
   }
 
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "sma-codex-"));
-  const lastMessageFile = path.join(tmp, "last.txt");
   let schemaPath = null;
   if (schema) {
     schemaPath = path.join(tmp, "schema.json");
     await fs.writeFile(schemaPath, JSON.stringify(schema));
   }
 
-  const spawned = await spawnCodex({
+  const spawned = await dispatchCodex({
     prompt,
     schemaPath,
     model,
     timeoutMs,
-    lastMessageFile,
-    cwd: tmp
   });
 
   if (!spawned.ok) {
@@ -160,13 +130,9 @@ export async function codex({
     return spawned;
   }
 
-  let raw = "";
-  try {
-    raw = await fs.readFile(lastMessageFile, "utf8");
-  } catch (err) {
-    try { await fs.rm(tmp, { recursive: true, force: true }); } catch {}
-    return { ok: false, error: `failed to read codex output: ${err.message}`, stderr: spawned.stderr, durationMs: spawned.durationMs };
-  }
+  const raw = typeof spawned.output === "string"
+    ? spawned.output
+    : JSON.stringify(spawned.output ?? "");
 
   let result;
   if (schema) {
@@ -252,4 +218,4 @@ export async function codexBatch(items, { concurrency = 3, model = DEFAULT_MODEL
   return results;
 }
 
-export const internals = { CACHE_DIR, cacheKey };
+export const internals = { CACHE_DIR, cacheKey, dispatchCodex };

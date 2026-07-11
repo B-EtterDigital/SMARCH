@@ -1,5 +1,7 @@
 # SCAT — Sweetspot Core Agent Testloop
 
+This guide defines the optional core-agent test loop used to gather live product evidence. Agent-runtime maintainers and project owners need it when they want an agent to verify a feature through the real application surface. Read it before adopting the loop or changing its evidence contract. Remember that the loop strengthens runtime proof while leaving normal Sweetspot ownership and release gates in force.
+
 **Status:** optional SMA Gen3 addon · **Scope:** acme-desktop only (initial) · **Created:** 2026-07-05 (live-proven the same night on MODDIC Nemotron)
 
 ## What it is
@@ -77,7 +79,7 @@ that no jest test reaches.
 
 ## Relationship to the family
 
-- SMA Gen3: SCAT is an optional layer like SUP/SMOA/SFF — it changes how
+- SMA Gen3: SCAT is an optional layer like [SUP](GLOSSARY.md#sup)/[SMOA](GLOSSARY.md#smoa)/[SFF](GLOSSARY.md#sff) — it changes how
   runtime proof is gathered, never how work is gated.
 - SMOA: under SMOA, SCAT steering/asserting is the ORCHESTRATOR's work
   (planning + verification), while fixes it discovers go to the codex
