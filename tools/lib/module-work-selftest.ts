@@ -9,7 +9,9 @@
  */
 /** Selftest harness for sma-module-work-packets.mjs. */
 
-export function runModuleWorkSelfTest(harness) {
+type SelfTestHarness = Record<string, any>;
+
+export function runModuleWorkSelfTest(harness: SelfTestHarness): number {
   const {
     DEFAULT_DISPATCH_DIR,
     DEFAULT_STALE_UNCLAIMED_DISPATCH_MS,
@@ -181,7 +183,7 @@ export function runModuleWorkSelfTest(harness) {
     }) === claimNext,
     'dispatch observation advertises generic claim-next',
   );
-  const observationArtifact = {
+  const observationArtifact: Record<string, any> = {
     schema_version: '1.0.0',
     kind: 'module-work-observation',
     generated_at: '2026-01-01T00:00:00.000Z',
@@ -354,6 +356,6 @@ export function runModuleWorkSelfTest(harness) {
 
 
 
-function assertSelfTest(condition, message) {
+function assertSelfTest(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }

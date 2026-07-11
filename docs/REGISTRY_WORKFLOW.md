@@ -30,19 +30,27 @@ Each project should eventually have:
 
 ## Global Index
 
-The global SMA registry lives here:
+The current merged SMA registry lives here:
 
 ```
 ~/DEV/SMARCH/registry/
-  projects.json
-  global-modules.json
-  canonical-map.json
-  duplicates.json
-  model-provenance.json
-  security-findings.json
+  global-modules.generated.json
+  provenance-ledger.generated.json
+  license-ledger.generated.json
+  active-leases.generated.json
+  public-ledger.generated.json
 ```
 
-Generated scanner output should use a `.generated.json` suffix until reviewed.
+`global-modules.generated.json` contains the merged project list, bricks,
+candidate groups, unmanifested candidates, failures, and scanner reports. The
+separate provenance and license ledgers carry their respective evidence. Files
+such as `projects.json`, `canonical-map.json`, and `duplicates.json` are not
+current standalone registry outputs; consumers should read the generated
+registry fields instead of assuming those legacy conceptual filenames exist.
+
+Generated scanner and controller output uses a `.generated.json` suffix. Treat
+it as derived evidence and regenerate it from source projects rather than
+editing it by hand.
 
 ## Hierarchy-Aware Scan Output
 

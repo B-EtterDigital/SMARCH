@@ -1,16 +1,20 @@
 # Build Layer Implementation Plan
 
-This plan describes how SMARCH will represent and validate reusable builds assembled from several bricks. Maintainers implementing the build layer need it before changing schemas, scanners, registries, or promotion tooling. Read it when selecting the next implementation slice or checking a design decision against the intended model. Remember that a build must preserve the contracts and evidence of every brick it composes.
+This plan records how SMARCH came to represent and validate reusable builds assembled from several bricks. Maintainers extending the build layer need it before changing schemas, scanners, registries, or promotion tooling. Read it when selecting the next implementation slice or checking a design decision against the intended model. Remember that a build must preserve the contracts and evidence of every brick it composes.
 
-Status: proposed implementation outline.
+Status: implemented foundation with remaining adoption and proof work.
 
-This document defines the missing layer above bricks in SMA/SMARCH. It is
-anchored in the current repo vision and the current scanner reality:
+This document defines the layer above bricks in SMA/SMARCH. The schema,
+scanner candidate report, verifier, promotion, clone, release, publish, and
+index tooling now exist. The repository currently has no curated build
+manifests under `builds/`, so operational proof and adoption remain open.
+
+The design is anchored in the repo vision and scanner reality:
 
 - The product story is already `vision -> selected bricks -> integration plan -> clone`
   in the value masterplan.
-- The registry is already broad, but trust and cloneability are still weak in
-  `scans/all-projects/latest.registry.json`.
+- The registry is broad, while trust and cloneability remain explicit gates in
+  `registry/global-modules.generated.json`.
 - The current brick model in [README.md](../README.md) and
   [schemas/brick.manifest.schema.json](../schemas/brick.manifest.schema.json)
   is necessary but not sufficient for capability-level reuse.
@@ -20,14 +24,14 @@ anchored in the current repo vision and the current scanner reality:
 Bricks are the right unit for indexing, auditing, and copying code. They are
 not the right unit for expressing complete reusable capability.
 
-Today SMA can answer:
+Before the build layer shipped, SMA could answer:
 
 - what a brick is
 - where it came from
 - what it touches
 - how reusable it might be
 
-It cannot yet answer well enough:
+It could not answer well enough:
 
 - what complete capability already exists here
 - which exact set of bricks must travel together
@@ -48,18 +52,16 @@ Those are not bricks. They are composed capabilities. SMA needs a first-class
 
 ## Current Constraints From Scanner Reality
 
-The current merged registry shows why the build layer cannot wait:
+The scanner now mines capability candidates into
+`scanner_report.build_report`, and authored manifests use
+`schemas/build.manifest.schema.json`. Those two surfaces deliberately remain
+separate: a detected candidate is discovery evidence, while an authored build
+is the reviewable capability object.
 
-- `3481` bricks across `5` projects
-- readiness `43 / F`
-- compliance `75 / C`
-- `1948` undeclared env refs
-- `1923` boundary remediation actions
-- effectively `0` `copy_ready` bricks across the scanned projects
-
-This means the scanner already has enough raw graph and quality signal to mine
-build candidates, but the system still lacks a trustworthy capability-level
-object.
+The current repository contains only `builds/.gitkeep`, so there is no curated
+build inventory to verify, promote, release, or publish. The foundation is
+implemented; trustworthy source manifests and runtime-grade evidence are the
+current constraint.
 
 ## Core Model
 
@@ -90,7 +92,7 @@ Builds should not replace bricks. They should sit above them.
 - Canonical bricks remain the trust substrate for canonical builds.
 - Projects remain private and may contain unpublished build manifests.
 
-Recommended rules:
+Current rules:
 
 - Bricks stay the copy boundary for fine-grained reuse.
 - Builds become the default planning boundary for agent workflows.
@@ -98,143 +100,24 @@ Recommended rules:
 
 ## Build Manifest Shape
 
-Add a new schema and manifest type:
+The implemented schema and example are:
 
 - `schemas/build.manifest.schema.json`
 - `examples/build.sweetspot.json`
-- default filename: `build.sweetspot.json`
+- curated discovery suffix: `*.build.sweetspot.json`
 
-Suggested shape:
+`examples/build.sweetspot.json` remains the generic schema example; tools that
+scan `builds/` discover curated manifests by the suffix above.
 
-```json
-{
-  "schema_version": "1.0.0",
-  "build": {
-    "id": "sma.build.ai-image-generation.multi-provider.v1",
-    "name": "AI Image Generation",
-    "slug": "ai-image-generation",
-    "status": "candidate",
-    "version": "0.1.0",
-    "kind": "capability_build",
-    "domain": ["ai", "media", "generation"],
-    "runtimes": ["node", "browser", "edge"],
-    "visibility": "private",
-    "stability": "evolving"
-  },
-  "source": {
-    "project": "acme-studio",
-    "paths": ["apps/web/src/features/image-gen"],
-    "derived_from_bricks": [
-      {
-        "brick_id": "acme-studio.acme-studio.service-module.apps-web-src-services-image.1234abcd",
-        "role": "provider_adapter",
-        "required": true
-      }
-    ]
-  },
-  "composition": {
-    "brick_refs": [
-      {
-        "brick_id": "acme-studio....",
-        "role": "provider_adapter",
-        "required": true,
-        "order": 20
-      }
-    ],
-    "flows": [
-      {
-        "id": "generate_image",
-        "steps": [
-          "request_validation",
-          "policy_gate",
-          "provider_selection",
-          "job_dispatch",
-          "asset_persist",
-          "result_publish"
-        ]
-      }
-    ],
-    "optional_bricks": [],
-    "alternatives": [],
-    "shared_contracts": ["env", "storage", "authz", "telemetry"]
-  },
-  "interfaces": {
-    "entrypoints": ["generateImage()", "POST /api/images", "ImageGenPanel"],
-    "ui_surfaces": ["prompt_panel", "history_panel", "provider_status"],
-    "events": ["image.requested", "image.completed", "image.failed"],
-    "api_endpoints": ["POST /api/images", "GET /api/images/:id"],
-    "commands": ["npm run smoke:image-gen"]
-  },
-  "contracts": {
-    "env": {
-      "required": ["FAL_KEY"],
-      "optional": ["OPENAI_API_KEY"],
-      "forbidden": ["service_role_on_client"]
-    },
-    "data": {
-      "inputs": ["prompt", "style", "aspect_ratio"],
-      "outputs": ["image_url", "provider_job_id"],
-      "stores": ["generated_assets"]
-    },
-    "auth": {
-      "required": true,
-      "modes": ["user_session", "admin_override"]
-    },
-    "rls": {
-      "required": true,
-      "tables": ["generated_assets", "usage_events"]
-    },
-    "network": {
-      "outbound_hosts": ["fal.ai"],
-      "webhooks": []
-    },
-    "performance": {
-      "latency_budget_ms": 2000,
-      "queue_allowed": true
-    }
-  },
-  "verification": {
-    "status": "candidate",
-    "fixture_targets": ["fixtures/next-image-gen", "fixtures/electron-image-gen"],
-    "smoke_commands": ["npm run smoke:image-gen"],
-    "integration_targets": ["next-app", "electron-app"],
-    "evidence": []
-  },
-  "clone": {
-    "readiness": "guided",
-    "greenfield_support": true,
-    "required_ports": ["auth_facade", "blob_store", "telemetry"],
-    "file_map": [],
-    "install_steps": [],
-    "post_clone_checks": [],
-    "rollback_steps": []
-  },
-  "upgrade": {
-    "channel": "minor_safe",
-    "compatibility_policy": "manifested_ports_only",
-    "migration_hooks": [],
-    "supersedes": [],
-    "replacement_policy": "manual_review_if_contract_changes"
-  },
-  "publishing": {
-    "visibility": "private",
-    "publishable": false,
-    "redaction_profile": "internal-default",
-    "license": "private"
-  },
-  "economics": {
-    "estimated_prompt_token_savings": 0,
-    "estimated_clone_time_minutes": 0,
-    "maintenance_score": 0
-  },
-  "provenance": {
-    "created_by": {},
-    "touched_by": [],
-    "reviewed_by": [],
-    "source_chain": []
-  }
-}
-```
+Current example shape (kept in sync with `examples/build.sweetspot.json`):
+
+[`examples/build.sweetspot.json`](../examples/build.sweetspot.json) is the
+runnable, schema-backed example. The schema currently requires
+`schema_version`, `build`, `source`, `owner`, `composition`, `classification`,
+`sweetspot`, `interfaces`, `contracts`, `verification`, `clone`, `upgrade`,
+`publishing`, `economics`, and `provenance` at the top level. Keep the example
+file as the single source of truth instead of duplicating its full manifest
+here.
 
 ## Manifest Design Rules
 
@@ -433,31 +316,35 @@ Required publication controls:
 - prompt leakage scrub check
 - sensitive provenance trimming
 
-## Suggested Repo Artifacts
+## Implemented Repo Artifacts
 
-Add these first:
+The current implementation uses:
 
 - [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
-- `docs/BUILD_MANIFEST_SPEC.md`
-- `docs/BUILD_LIFECYCLE.md`
-- `docs/BUILD_MARKETPLACE_MODEL.md`
 - `schemas/build.manifest.schema.json`
 - `examples/build.sweetspot.json`
-- `tools/sma-build-detect.mjs`
+- `tools/sma-scan.mjs` for `scanner_report.build_report`
 - `tools/sma-build-verify.mjs`
 - `tools/sma-build-promote.mjs`
-- `security/build_publish_gate.json`
+- `tools/sma-build-index.mjs`
+- `tools/sma-build-packets.mjs`
+- `tools/sma-clone.mjs`
+- `tools/sma-release.mjs`
+- `tools/sma-publish.mjs`
+- `tools/sma-codex-rank.mjs` for build-first ranking
+- generated wiki build-registry and capability views
 
-Then extend existing outputs:
+The originally proposed `docs/BUILD_MANIFEST_SPEC.md`,
+`docs/BUILD_LIFECYCLE.md`, `docs/BUILD_MARKETPLACE_MODEL.md`,
+`tools/sma-build-detect.mjs`, and `security/build_publish_gate.json` were not
+created under those names. Their responsibilities moved into the schema,
+scanner, lifecycle playbooks, verifier, publish tool, and generated views
+listed above.
 
-- `scans/*/latest.registry.json` with `build_report`
-- `wiki/` with build catalog, build trust panels, and build comparison views
-- `sma-codex-rank` to prefer builds before bricks
-- `sma-clone` to clone builds and emit build lockfiles
+## Original Parallel Workstreams
 
-## Parallel Workstreams
-
-This can be tackled in parallel if the contracts freeze first.
+These workstreams describe the implementation decomposition that produced the
+current foundation. They are historical context, not the current task queue.
 
 ### Agent 1: Manifest And Schema
 - define build schema
@@ -502,9 +389,10 @@ Controls:
 - keep brick refs authoritative for code-level truth
 - block publication for unsafe redaction or unresolved contracts
 
-## Acceptance Criteria
+## Production-Readiness Acceptance Criteria
 
-The build layer should not be considered real until all of these pass:
+The foundation is implemented, but the build layer should not be described as
+production-proven until all of these pass with current curated manifests:
 
 1. `Schema`
 - `schemas/build.manifest.schema.json` validates at least `3` authored example builds.
@@ -538,9 +426,9 @@ The build layer should not be considered real until all of these pass:
 - one build can be exported through a publish gate with redactions applied and
   without leaking project-only composition data
 
-## Recommended First Milestone
+## Original First Milestone
 
-The first milestone should stay narrow:
+The original milestone stayed narrow:
 
 - define the schema
 - author `3` manual build manifests
@@ -548,6 +436,8 @@ The first milestone should stay narrow:
 - verify `2` of them end to end
 - teach the ranker one build-first path
 
-Do not start with coins, public marketplace economics, or broad community
-claims. First prove that builds are a better planning and cloning unit than raw
-bricks.
+The schema and core toolchain shipped, but the repository no longer contains
+the three curated manifests assumed by this milestone. The next evidence slice
+is therefore to author current manifests and prove that builds are a better
+planning and cloning unit than raw bricks. Do not start with coins, public
+marketplace economics, or broad community claims.

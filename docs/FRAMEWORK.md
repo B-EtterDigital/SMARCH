@@ -240,7 +240,13 @@ Detailed contract: [SWEETSPOT_VISUAL_DEMO.md](SWEETSPOT_VISUAL_DEMO.md).
 | `candidate` | Almost reusable, missing one or two gates |
 | `canonical` | Preferred brick for new projects |
 
-Minimum canonical thresholds:
+Canonical review targets:
+
+The validator requires every gate to carry a numeric score and blocks a
+canonical brick when a required gate is `missing` or `blocked`. It enforces
+`quality.score >= 90`, but the per-gate numbers below remain review policy
+rather than separate numeric validator thresholds.
+
 - SSA-v2: 90+
 - SSI: 90+ when UI/runtime isolation applies
 - SSTF: 80+
@@ -302,13 +308,17 @@ module-root/
 Global:
 
 ```
-SWEETSPOT_REGISTRY/
-  global-modules.json
-  canonical-map.json
-  duplicates.json
-  security-findings.json
-  model-provenance.json
+registry/
+  global-modules.generated.json  # bricks, scanner findings, duplicate clusters,
+                                 # and canonicalization evidence
+wiki/
+  SMA_STATE.generated.json       # generated trust and portfolio state
+  CANONICALIZATION.generated.html
 ```
+
+The generated registry embeds canonicalization and duplicate-cluster evidence;
+the current tools do not emit separate `canonical-map.json` or
+`duplicates.json` files.
 
 ## Model Provenance
 

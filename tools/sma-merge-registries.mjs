@@ -10,9 +10,9 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/stable-generated.mjs";
+import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/stable-generated.ts";
 import { buildCanonicalizationReport, emptyCanonicalizationReport } from "./sma-canonicalization.mjs";
-import { SMA_ROOT, smaPath } from "./lib/sma-paths.mjs";
+import { SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const defaults = {
   out: smaPath("registry/all-projects.generated.json"),

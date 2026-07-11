@@ -23,8 +23,8 @@ import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadPortfolioConfig } from './portfolio-config.mjs';
 
-export { PROJECTS_ROOT } from './sma-paths.mjs';
-import { PROJECTS_ROOT } from './sma-paths.mjs';
+export { PROJECTS_ROOT } from './sma-paths.ts';
+import { PROJECTS_ROOT } from './sma-paths.ts';
 
 // Inverted from registry/portfolio.config.json::overrides.
 export const PROJECT_PATH_OVERRIDES = Object.fromEntries(

@@ -35,7 +35,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
-import { SMA_ROOT } from "./lib/sma-paths.mjs";
+import { SMA_ROOT } from "./lib/sma-paths.ts";
 
 
 const HANDOFFS = resolve(SMA_ROOT, 'handoffs/backfill');

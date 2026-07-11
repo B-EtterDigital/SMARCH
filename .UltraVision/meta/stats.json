@@ -1,18 +1,18 @@
 {
-  "generated": "2026-07-11T01:00:12+00:00",
+  "generated": "2026-07-11T01:22:07+00:00",
   "totals": {
     "tasks": 1702,
-    "active": 1701,
-    "done": 164,
-    "obsolete": 1,
-    "percent_complete": 9.64,
-    "est_minutes_remaining": 43225
+    "active": 1699,
+    "done": 461,
+    "obsolete": 3,
+    "percent_complete": 27.13,
+    "est_minutes_remaining": 38725
   },
   "by_status": {
-    "claimed": 2,
-    "done": 164,
-    "obsolete": 1,
-    "todo": 1535
+    "claimed": 1,
+    "done": 461,
+    "obsolete": 3,
+    "todo": 1237
   },
   "by_complexity": {
     "C1": 954,

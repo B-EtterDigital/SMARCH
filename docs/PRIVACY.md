@@ -1,57 +1,67 @@
-# Privacy, data protection, and residency (GDPR + Swiss FADP)
+# Privacy, data protection, and residency
 
-This document describes how the SMARCH service handles personal data, international transfers, retention, and user rights. Operators, engineers, and privacy reviewers need it when they change data flows or answer a compliance request. Read it before introducing a processor, storage region, moderation path, or retention rule. Remember that the implemented data flow and the written register must agree.
+This document describes the privacy boundary of the SMARCH repository as it
+exists today. Operators, engineers, and privacy reviewers need it when they
+change scanning, telemetry, generated artifacts, or an optional remote
+integration. Read it before pointing SMARCH at a repository that contains
+personal or confidential data. Remember that generated evidence can repeat
+paths, identifiers, and command text from the source project.
 
-This documents how the SMARCH space processes personal data and how it meets EU GDPR
-and Swiss revFADP (revDSG) requirements. It is the processor register + transfer basis
-that the moderation and storage code implements. Pair it with `docs/TRANSPARENCY.md`
-(what moderation blocks) and `docs/MODERATION.md` (how moderation works).
+## Current product boundary
 
-## Roles
-- Controller: the SMARCH operator.
-- Processors / sub-processors:
-  - **WorkOS** - authentication (identity, session). EU data residency available.
-  - **Netlify** - hosting + Blobs storage of signs, images, profiles, presence, analytics, edits.
-  - **Moderation provider** - selected by `MOD_PROVIDER`:
-    - `fal` (default): fal.ai, model Google Gemini. US processor. Requires SCCs + the
-      EU-US Data Privacy Framework basis + a signed DPA before EU production use.
-    - `mistral-eu`: Mistral AI, EU-hosted. Keeps moderation inside the EU (no US transfer).
-    - `disabled-strict`: no AI processor; everything is blocked (fail-closed).
+SMARCH is a local-first architecture toolkit. This repository does not provide
+a hosted user service, authentication system, upload endpoint, moderation
+provider, or data-subject-request API. In particular, it does not implement the
+previously documented WorkOS, Netlify Blobs, `MOD_PROVIDER`, or
+`/api/march-erase` flows.
 
-## Personal data processed + legal basis (GDPR Art. 6)
-| Data | Purpose | Basis |
-|---|---|---|
-| Auth identity + session | let a builder sign in and own their builds | contract (Art. 6(1)(b)) |
-| Project signs (title, text, link) | public sharing | consent (Art. 6(1)(a)) |
-| Uploaded images | public sharing | consent; images may show faces = special category (Art. 9) - explicit consent + image moderation |
-| Content sent to the moderation provider | keep the space safe/lawful | legitimate interest (Art. 6(1)(f)) + Art. 9 for images |
-| Presence (position, name) | live multiplayer, opt-in | consent; ephemeral (see retention) |
-| Profile (name, color, bio) | attribution | consent |
-| Analytics (event counts) | owner build stats | legitimate interest, aggregated |
-| Attribution `by` maps | credit bricks | legitimate interest |
+Do not use this page as a GDPR or Swiss FADP register for a product built with
+SMARCH. Each consuming product must document its own controllers, processors,
+legal bases, regions, transfers, retention periods, and rights workflows from
+its deployed implementation.
 
-## International transfers
-- `MOD_PROVIDER=mistral-eu` + Netlify Blobs EU region + WorkOS EU residency = **no personal
-  data leaves the EU/EEA**. This is the recommended EU/Swiss production configuration.
-- `MOD_PROVIDER=fal` transfers sign text + images to the US - only permissible with SCCs +
-  DPF + DPA in place; document them here before enabling in EU production.
+## Data the local tools can record
 
-## Retention
-- Presence: ephemeral, ~15s freshness, TTL-pruned. Moderation cache: 30 days (hashes, not raw PII).
-- Analytics: 30-day daily buckets, aggregated. Signs/images/profiles: until the builder erases them.
+Depending on the command, SMARCH can read source files, manifests, git state,
+and configured project paths, then write local artifacts such as:
 
-## Data-subject rights
-- **Access (Art. 15):** `GET /api/march-erase` returns a manifest of the caller's held data.
-- **Erasure (Art. 17):** `POST /api/march-erase` deletes signs/profile/presence/analytics/tokens
-  and anonymizes shared-brick attribution to `removed` (others' bricks are not deleted).
-- Rectification: edit profile/signs. Objection/restriction: stop submitting; erase.
+- registry, scan, state, wiki, security, release, and handoff outputs;
+- `.smarch/agent-context/<brick-id>.ndjson`, including agent and session
+  attribution, intent, decisions, evidence, and touched paths;
+- local logs and generated reports containing command output or findings.
 
-## Swiss revFADP (revDSG)
-The above aligns with the revised Swiss FADP (in force since Sep 2023): processor register,
-data minimization, transparency, and data-subject rights. Supervisory authority: EDOEB (FDPIC).
-Swiss users are covered by the same EU-residency configuration.
+These artifacts can contain repository-relative or absolute paths, agent or
+session identifiers, commit metadata, and snippets or diagnostics derived from
+the inspected project. They are not automatically anonymized merely because
+they are generated files.
 
-## Configuration knobs (no redeploy)
-`MOD_PROVIDER`, `MISTRAL_KEY`, `FAL_KEY` (env) + the `march-config` blob `moderation` key
-(model, policy text, maxLen, timeoutMs, retries). Policy can be tuned by editing the blob;
-no code change or redeploy required.
+## Operator responsibilities
+
+- Run SMARCH only against repositories you are authorized to inspect.
+- Keep secrets and unnecessary personal data out of manifests, prompts,
+  evidence commands, agent-context notes, and generated documentation.
+- Review generated artifacts before publishing, syncing, or attaching them to
+  an issue or release.
+- Apply filesystem permissions, repository access controls, retention, backup,
+  and deletion policies appropriate to the source project's data.
+- Treat optional remote stores, model providers, CI systems, and publication
+  targets as separate processors; review their configuration and terms before
+  enabling them.
+
+## Retention and deletion
+
+SMARCH does not impose a universal retention period. Local artifacts remain
+until the operator removes them or the repository's own cleanup and version
+control policy does. Deleting a working-tree file does not remove copies from
+git history, backups, CI logs, published releases, or remote services.
+
+## Compliance evidence, not certification
+
+`npm run compliance` and `npm run gate:compliance` inspect declared projects
+for implementation evidence and report covered, partial, or missing controls.
+They do not provide hosting, consent management, legal advice, or regulatory
+certification. A passing technical gate is only one input to a product-specific
+privacy review.
+
+See [Moderation transparency](TRANSPARENCY.md) for the current moderation and
+platform-safety audit boundary.

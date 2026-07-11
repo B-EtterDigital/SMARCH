@@ -14,11 +14,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PROJECT_ABSOLUTE_OVERRIDES } from "./lib/context-log.mjs";
-import { buildEmbeddingIndex, selftestEmbeddingContentAddress, semanticRerankQuery } from "./lib/graph-embeddings.mjs";
+import { buildEmbeddingIndex, selftestEmbeddingContentAddress, semanticRerankQuery } from "./lib/graph-embeddings.ts";
 import { queryGlobalGraph, selftestGlobalQuery } from "./lib/graph-global.mjs";
 import { communitySummaryBlock, generateCommunitySummaries, selftestCommunitySummaries } from "./lib/graph-summaries.mjs";
-import { sourceFreshness } from "./lib/graph-staleness.mjs";
-import { mergeNamespacedGraphs, namespaceGraph, resolveGraphNodeInput } from "./lib/graph-union.mjs";
+import { sourceFreshness } from "./lib/graph-staleness.ts";
+import { mergeNamespacedGraphs, namespaceGraph, resolveGraphNodeInput } from "./lib/graph-union.ts";
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRegistry = path.join(smaRoot, "registry", "global-modules.generated.json");

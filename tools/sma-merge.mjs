@@ -36,7 +36,7 @@
  *             [--notes "..."] [--by <id>]
  */
 
-import { PROJECTS_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 import {
   readFileSync,
   writeFileSync,

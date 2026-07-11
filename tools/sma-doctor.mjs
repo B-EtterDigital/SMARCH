@@ -11,7 +11,7 @@
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { PROJECTS_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 
 import {
   compareBy,

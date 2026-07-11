@@ -28,7 +28,7 @@
  */
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { smaPath } from "./lib/sma-paths.mjs";
+import { smaPath } from "./lib/sma-paths.ts";
 
 function parseArgs(argv) {
   const passthrough = [];

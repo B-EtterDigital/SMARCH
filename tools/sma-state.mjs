@@ -22,7 +22,7 @@ import { collectGlobalGen3 } from "./lib/gen3-state.mjs";
 import {
   normalizeSmaStateSnapshot,
   writeJsonIfMeaningfulChanged,
-} from "./lib/stable-generated.mjs";
+} from "./lib/stable-generated.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");

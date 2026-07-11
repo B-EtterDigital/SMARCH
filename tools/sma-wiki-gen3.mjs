@@ -9,7 +9,7 @@
  * Glossary: [Gen3](../docs/GLOSSARY.md).
  */
 
-import { SMA_ROOT } from "./lib/sma-paths.mjs";
+import { SMA_ROOT } from "./lib/sma-paths.ts";
 import {
   readFileSync,
   writeFileSync,

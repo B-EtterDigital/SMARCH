@@ -12,9 +12,13 @@ import fs from 'node:fs/promises';
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-export async function writeJsonIfMeaningfulChanged(filePath, value, {
-  normalize = (item) => item,
-} = {}) {
+type JsonRecord = Record<string, any>;
+type WriteResult = { written: boolean; path: string };
+type Normalizer<T> = (item: T) => unknown;
+
+export async function writeJsonIfMeaningfulChanged<T>(filePath: string, value: T, {
+  normalize = (item: T) => item,
+}: { normalize?: Normalizer<T> } = {}): Promise<WriteResult> {
   const nextText = `${JSON.stringify(value, null, 2)}\n`;
   const nextComparable = comparableJson(normalize(value));
   if (existsSync(filePath)) {
@@ -24,7 +28,8 @@ export async function writeJsonIfMeaningfulChanged(filePath, value, {
       if (comparableJson(normalize(previous)) === nextComparable) {
         return { written: false, path: filePath };
       }
-    } catch {
+    } catch (error) {
+      console.error('[stable-generated] regenerating unreadable JSON artifact', { filePath, error });
       // Regenerate corrupt or non-JSON artifacts.
     }
   }
@@ -34,13 +39,14 @@ export async function writeJsonIfMeaningfulChanged(filePath, value, {
   return { written: true, path: filePath };
 }
 
-export function writeTextIfChanged(filePath, text) {
+export function writeTextIfChanged(filePath: string, text: string): WriteResult {
   if (existsSync(filePath)) {
     try {
       if (readFileSync(filePath, 'utf8') === text) {
         return { written: false, path: filePath };
       }
-    } catch {
+    } catch (error) {
+      console.error('[stable-generated] regenerating unreadable text artifact', { filePath, error });
       // Regenerate unreadable artifacts.
     }
   }
@@ -50,7 +56,7 @@ export function writeTextIfChanged(filePath, text) {
   return { written: true, path: filePath };
 }
 
-export function normalizeSmaStateSnapshot(snapshot) {
+export function normalizeSmaStateSnapshot(snapshot: JsonRecord): JsonRecord {
   const clone = jsonClone(snapshot);
   if (clone && typeof clone === 'object') {
     clone.generated_at = '<generated_at>';
@@ -64,7 +70,7 @@ export function normalizeSmaStateSnapshot(snapshot) {
   return clone;
 }
 
-export function normalizeRegistrySnapshot(snapshot) {
+export function normalizeRegistrySnapshot(snapshot: JsonRecord): JsonRecord {
   const clone = jsonClone(snapshot);
   if (clone && typeof clone === 'object') {
     clone.generated_at = '<generated_at>';
@@ -72,7 +78,7 @@ export function normalizeRegistrySnapshot(snapshot) {
   return clone;
 }
 
-export function stableLease(lease) {
+export function stableLease(lease: JsonRecord): JsonRecord {
   if (!lease || typeof lease !== 'object') return lease;
   const clone = { ...lease };
   delete clone.expires_at;
@@ -80,10 +86,10 @@ export function stableLease(lease) {
   return clone;
 }
 
-function comparableJson(value) {
+function comparableJson(value: unknown): string | undefined {
   return JSON.stringify(value);
 }
 
-function jsonClone(value) {
+function jsonClone<T>(value: T): T {
   return value === undefined ? value : JSON.parse(JSON.stringify(value));
 }

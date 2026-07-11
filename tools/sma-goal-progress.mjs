@@ -15,7 +15,7 @@
  * Gen3 dashboard renders by default.
  */
 
-import { SMA_ROOT, projectsPath } from "./lib/sma-paths.mjs";
+import { SMA_ROOT, projectsPath } from "./lib/sma-paths.ts";
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { argv, exit } from 'node:process';

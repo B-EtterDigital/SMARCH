@@ -32,7 +32,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSy
 import { resolve, join, relative } from 'node:path';
 import { argv, exit } from 'node:process';
 import { createHash } from 'node:crypto';
-import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 
 const SMA_REGISTRY = smaPath('registry');

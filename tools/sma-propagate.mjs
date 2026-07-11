@@ -34,7 +34,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, readdirSy
 import { resolve, join, dirname } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { argv, exit } from 'node:process';
-import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 
 const DEPENDENTS_INDEX = join(SMA_ROOT, 'registry/dependents.generated.json');

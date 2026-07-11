@@ -9,7 +9,9 @@
  */
 /** Selftest harness for sma-parallel-preflight.mjs. */
 
-export function runParallelPreflightSelftest(harness) {
+type SelftestHarness = Record<string, any>;
+
+export function runParallelPreflightSelftest(harness: SelftestHarness): void {
   const {
     buildBigPicture,
     buildControllerBlockerPackets,
@@ -548,6 +550,6 @@ export function runParallelPreflightSelftest(harness) {
   console.log('OK sma-parallel-preflight selftest');
 }
 
-function assertSelftest(condition, message) {
+function assertSelftest(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`selftest failed: ${message}`);
 }

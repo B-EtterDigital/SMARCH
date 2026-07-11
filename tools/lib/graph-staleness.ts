@@ -3,6 +3,18 @@ import path from "node:path";
 
 const IGNORED_SOURCE_PATH = /(^|\/)(\.git|node_modules|graphify-out|dist|build|coverage|\.next|out|tmp|temp)(\/|$)/;
 
+type Gen3Module = { id?: string; name?: string; label?: string; paths?: string[] };
+type Gen3Config = { modules?: Gen3Module[] };
+type ModuleTarget = Gen3Module & { root?: string; scanRoot?: string };
+type GraphStat = { mtimeMs: number };
+type GraphFreshness = {
+  graphFreshness: 'fresh' | 'stale' | null;
+  graphFresh: boolean | null;
+  graphStale: boolean;
+  sourceUpdatedAt: string | null;
+  sourceGlobs: string[];
+};
+
 /**
  * Resolve the configured ownership globs for a graph module target.
  *
@@ -10,7 +22,7 @@ const IGNORED_SOURCE_PATH = /(^|\/)(\.git|node_modules|graphify-out|dist|build|c
  * @param {object|null|undefined} moduleTarget Module target with an id or name.
  * @returns {string[]} Normalized, non-empty ownership globs.
  */
-export function moduleOwnershipGlobs(gen3Config, moduleTarget) {
+export function moduleOwnershipGlobs(gen3Config: Gen3Config | null | undefined, moduleTarget: ModuleTarget | null | undefined): string[] {
   try {
     const modules = Array.isArray(gen3Config?.modules) ? gen3Config.modules : [];
     const wantedIds = new Set([moduleTarget?.id, moduleTarget?.name]
@@ -33,7 +45,7 @@ export function moduleOwnershipGlobs(gen3Config, moduleTarget) {
  * @param {string[]} patterns Positive and negated source glob patterns.
  * @returns {number|null} Newest matching mtime in milliseconds, or null when no file matches.
  */
-export function newestMatchingSourceMtime(projectRoot, patterns) {
+export function newestMatchingSourceMtime(projectRoot: string, patterns: string[]): number | null {
   try {
     const normalizedPatterns = patterns.map((item) => {
       const negated = item.startsWith("!");
@@ -49,10 +61,10 @@ export function newestMatchingSourceMtime(projectRoot, patterns) {
     const positiveMatchers = positivePatterns.map(globPatternRegex);
     const negativeMatchers = negativePatterns.map(globPatternRegex);
     const roots = [...new Set(positivePatterns.map((item) => globStaticRoot(projectRoot, item)))];
-    const visited = new Set();
-    let newestMtimeMs = null;
+    const visited = new Set<string>();
+    let newestMtimeMs: number | null = null;
 
-    function visit(candidate) {
+    function visit(candidate: string): void {
       const resolved = path.resolve(candidate);
       if (visited.has(resolved) || !existsSync(resolved)) return;
       visited.add(resolved);
@@ -87,7 +99,7 @@ export function newestMatchingSourceMtime(projectRoot, patterns) {
  * @param {object|null|undefined} gen3Config Parsed sma.gen3.json content.
  * @returns {{graphFreshness: string|null, graphFresh: boolean|null, graphStale: boolean, sourceUpdatedAt: string|null, sourceGlobs: string[]}}
  */
-export function sourceFreshness(projectRoot, moduleTarget, graphStat, gen3Config) {
+export function sourceFreshness(projectRoot: string, moduleTarget: ModuleTarget | null | undefined, graphStat: GraphStat | null | undefined, gen3Config: Gen3Config | null | undefined): GraphFreshness {
   try {
     if (!moduleTarget || !graphStat) {
       return { graphFreshness: null, graphFresh: null, graphStale: false, sourceUpdatedAt: null, sourceGlobs: [] };
@@ -116,7 +128,7 @@ export function sourceFreshness(projectRoot, moduleTarget, graphStat, gen3Config
   }
 }
 
-function globPatternRegex(pattern) {
+function globPatternRegex(pattern: string): RegExp {
   const normalized = String(pattern || "")
     .replace(/\\/g, "/")
     .replace(/^\.\//, "")
@@ -143,7 +155,7 @@ function globPatternRegex(pattern) {
   return new RegExp(`^${source}$`);
 }
 
-function globStaticRoot(projectRoot, pattern) {
+function globStaticRoot(projectRoot: string, pattern: string): string {
   const normalized = String(pattern || "").replace(/^!/, "").replace(/\\/g, "/").replace(/^\.\//, "");
   const wildcardIndex = normalized.search(/[?*]/);
   const prefix = wildcardIndex === -1 ? normalized : normalized.slice(0, wildcardIndex);
@@ -154,13 +166,13 @@ function globStaticRoot(projectRoot, pattern) {
   return path.dirname(resolved);
 }
 
-function structuredStalenessError(operation, error) {
-  if (error?.code === "SMA_GRAPH_STALENESS_ERROR") return error;
-  const structured = /** @type {Error & {code?: string}} */ (new Error(JSON.stringify({
+function structuredStalenessError(operation: string, error: unknown): Error & { code?: string } {
+  if (error && typeof error === 'object' && 'code' in error && error.code === "SMA_GRAPH_STALENESS_ERROR") return error as Error & { code?: string };
+  const structured = new Error(JSON.stringify({
     event: "graph_staleness_error",
     operation,
     message: error instanceof Error ? error.message : String(error),
-  })));
+  })) as Error & { code?: string };
   structured.code = "SMA_GRAPH_STALENESS_ERROR";
   structured.cause = error;
   return structured;

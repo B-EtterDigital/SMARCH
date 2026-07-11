@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery } from "./graph-embeddings.mjs";
+import { buildEmbeddingIndex, createDeterministicHashEmbedder, semanticRerankQuery } from "./graph-embeddings.ts";
 import { communitySummaryBlock } from "./graph-summaries.mjs";
 
 const GLOBAL_QUERY_SCRIPT = String.raw`

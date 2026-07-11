@@ -4,9 +4,13 @@ This document sets the baseline architecture rules for code that enters a Sweets
 
 SSA-v2 is the security and architecture boundary for Sweetspot bricks.
 
-**Enforcement:** Most of these rules are wired into two gates that block
-promotion when violated. See `tools/README.gates.md`. Rules that live in
-docs alone get routed around — gates that exit non-zero don't.
+**Enforcement:** Selected machine-detectable parts of these rules are wired
+into two gates that can block promotion. See `tools/README.gates.md`. The
+current rule gate checks production `console.log`, hex colors outside token
+files, `select('*')`, and declared source-path existence; the scope-drift gate
+compares declared capability with implementation evidence. The remaining rules
+still require manifest, test, security, and review evidence and must not be
+described as automatically enforced.
 
 - `sma-rule-gate` — runs the rules below against a manifest's source paths
   and refuses to promote on blocking findings.
@@ -73,6 +77,11 @@ Every dependency should justify:
 - 600 lines is the hard limit
 - split by responsibility, not by arbitrary line count
 - generated/vendor files must be marked as exceptions
+
+The 600-line limit is the SSA review contract. The repository-wide
+`source:size:gate` currently protects a separate legacy ceiling for new or
+growing files at 1,900 lines; passing that coarse migration gate does not prove
+this rule.
 
 ## Rule 6: Bricks Expose Ports, Not Project Assumptions
 

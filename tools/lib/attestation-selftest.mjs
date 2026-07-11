@@ -25,7 +25,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { intotoStatement, spdxDocument, cyclonedxDocument } from './attestation.mjs';
+import { intotoStatement, spdxDocument, cyclonedxDocument } from './attestation.ts';
 import { leafHash, buildMerkle, inclusionProof } from './merkle.mjs';
 import { verifyBundle } from '../sma-attest-verify.mjs';
 

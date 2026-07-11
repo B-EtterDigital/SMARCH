@@ -16,10 +16,10 @@ Use this together with:
 
 Current repo reality:
 
-- there are `3` curated builds under `builds/`
-- all `3` are still `candidate`
-- none should be treated as privately publishable yet
-- none should be treated as a published release yet
+- `builds/` contains no curated `*.build.sweetspot.json` manifests
+- `examples/build.sweetspot.json` is an example, not publishable inventory
+- no repository build should be treated as candidate, privately publishable,
+  or a published release
 
 ## Conservative Rule
 
@@ -203,7 +203,8 @@ Bad:
 
 ## What This Doc Deliberately Does Not Claim
 
-- It does not claim the current curated builds have completed this lane.
+- It does not claim that this repository currently contains a curated build
+  eligible to enter this lane.
 - It does not claim verification replaces install verification on the target.
 - It does not claim private publishability is the same as community-safe
   publishing.

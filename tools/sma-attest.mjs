@@ -34,7 +34,7 @@ import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { leafHash, buildMerkle, inclusionProof, verifyBrickInclusion } from './lib/merkle.mjs';
-import { intotoStatement, spdxDocument, cyclonedxDocument } from './lib/attestation.mjs';
+import { intotoStatement, spdxDocument, cyclonedxDocument } from './lib/attestation.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PROV_LEDGER = resolve(SMA_ROOT, 'registry/provenance-ledger.generated.json');

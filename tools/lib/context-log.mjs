@@ -32,8 +32,8 @@ import { PROJECT_PATH_OVERRIDES, resolveProjectRoot } from './project-paths.mjs'
 
 export { PROJECT_PATH_OVERRIDES };
 
-export { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.mjs';
-import { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.mjs';
+export { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.ts';
+import { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.ts';
 export const SCHEMA_VERSION = '1.0.0';
 
 // Project ids that intentionally live outside PROJECTS_ROOT. The SMA control

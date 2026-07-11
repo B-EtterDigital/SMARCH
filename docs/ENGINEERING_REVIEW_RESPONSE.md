@@ -18,7 +18,7 @@ Artifacts:
 
 - `docs/PUBLIC_POSITIONING.md`
 - `docs/TERMINOLOGY.md`
-- `wiki/NEW_USER_PATH.md`
+- `docs/intro/START_HERE.md`
 
 ## Critique: Methodology Without Enforcement
 
@@ -71,8 +71,9 @@ Artifacts:
 
 - `docs/REGISTRY_WORKFLOW.md`
 - `docs/GOVERNANCE.md`
-- `registry/canonical-map.json`
-- `registry/duplicates.json`
+- `registry/global-modules.generated.json` (`canonicalization` and
+  `scanner_report.duplicate_clusters`)
+- `tools/sma-canonicalization.mjs`
 
 ## Critique: Subjective Quality Scores
 

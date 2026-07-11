@@ -43,8 +43,8 @@ import { existsSync, readFileSync, mkdirSync, writeFileSync, chmodSync, statSync
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { resolveBrickPath } from './lib/source-path-resolver.mjs';
-import { writeJsonIfMeaningfulChanged } from './lib/stable-generated.mjs';
+import { resolveBrickPath } from './lib/source-path-resolver.ts';
+import { writeJsonIfMeaningfulChanged } from './lib/stable-generated.ts';
 import { fingerprintSource, computeSeal, signSealHead, generateSealKeypair } from './lib/provenance-seal.mjs';
 import { classifyLicense } from './lib/license-lattice.mjs';
 import { canonicalIdentity, sameIdentity, ownerFor } from './lib/ownership.mjs';

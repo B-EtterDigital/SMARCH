@@ -11,7 +11,7 @@ import {
   findProject,
   maybeReadJson,
 } from "../lib/sma-adoption.mjs";
-import { SMA_ROOT } from "../lib/sma-paths.mjs";
+import { SMA_ROOT } from "../lib/sma-paths.ts";
 
 const STATE_CANDIDATES = [
   "wiki/SMA_STATE.generated.json",

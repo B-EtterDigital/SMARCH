@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { argv, exit } from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { writeJsonIfMeaningfulChanged, writeTextIfChanged } from './lib/stable-generated.mjs';
+import { writeJsonIfMeaningfulChanged, writeTextIfChanged } from './lib/stable-generated.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_OUT = resolve(SMA_ROOT, 'handoffs/operator-packet.generated.json');

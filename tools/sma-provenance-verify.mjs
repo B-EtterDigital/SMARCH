@@ -34,7 +34,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { resolveBrickPath } from './lib/source-path-resolver.mjs';
+import { resolveBrickPath } from './lib/source-path-resolver.ts';
 import { verifySeal, verifySealSignature, fingerprintSource } from './lib/provenance-seal.mjs';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');

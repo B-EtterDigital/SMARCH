@@ -12,7 +12,7 @@
  * project-local, and cheap to write while many agents are active.
  */
 
-import { SMA_ROOT } from "./lib/sma-paths.mjs";
+import { SMA_ROOT } from "./lib/sma-paths.ts";
 import { argv, exit, env } from 'node:process';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';

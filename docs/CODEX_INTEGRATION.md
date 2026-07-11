@@ -23,7 +23,9 @@ npm run codex:ping
 # Should print PONG
 ```
 
-## The six Codex-powered tools
+## The six Codex-powered workflows
+
+The shared runner underpins six user-facing workflows:
 
 | Tool | Script | What it does |
 |---|---|---|
@@ -126,8 +128,8 @@ npm run promote
   a conservative 2–3.
 - **Scoped runs.** Always combine with `--filter`, `--project`, or
   `--limit` on first try. Full-registry runs are expensive.
-- **Status filtering.** `codex:wiki --statuses canonical,candidate` skips the
-  ~3,400 project-bound bricks that nobody will reuse anyway.
+- **Status filtering.** `codex:wiki --statuses canonical,candidate` skips
+  project-bound bricks without relying on a point-in-time registry count.
 
 ## Extending
 

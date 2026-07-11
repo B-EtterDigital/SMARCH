@@ -12,6 +12,17 @@
 import { existsSync, statSync } from 'node:fs';
 import { resolve, dirname, relative, sep } from 'node:path';
 
+type BrickPathInput = {
+  manifest_path?: string;
+  source_paths?: string[];
+};
+
+type ResolvedBrickPath = {
+  absolutePath: string;
+  gitRelativePath: string;
+  source: 'manifest' | 'src-direct' | 'src-stripped';
+};
+
 /**
  * Returns { absolutePath, gitRelativePath, source } or null.
  *
@@ -19,7 +30,7 @@ import { resolve, dirname, relative, sep } from 'node:path';
  *   gitRelativePath  — POSIX-style path from projectAbs to absolutePath
  *   source           — 'manifest' | 'src-direct' | 'src-stripped'
  */
-export function resolveBrickPath(brick, projectAbs) {
+export function resolveBrickPath(brick: BrickPathInput | null | undefined, projectAbs: string): ResolvedBrickPath | null {
   if (!brick || !projectAbs) return null;
 
   // 1. manifest_path is the most reliable signal
@@ -85,11 +96,11 @@ export function resolveBrickPath(brick, projectAbs) {
 /**
  * Convenience: just the git-relative path (POSIX style), or null.
  */
-export function gitRelativePath(brick, projectAbs) {
+export function gitRelativePath(brick: BrickPathInput | null | undefined, projectAbs: string): string | null {
   const r = resolveBrickPath(brick, projectAbs);
   return r ? r.gitRelativePath : null;
 }
 
-function posix(p) {
+function posix(p: string): string {
   return String(p).split(sep).join('/');
 }

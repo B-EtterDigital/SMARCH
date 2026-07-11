@@ -58,7 +58,7 @@
  * cannot remove a successor's lock.
  */
 
-import { SMA_ROOT } from "./lib/sma-paths.mjs";
+import { SMA_ROOT } from "./lib/sma-paths.ts";
 import {
   readFileSync,
   writeFileSync,

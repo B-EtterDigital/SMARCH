@@ -11,7 +11,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { PROJECTS_ROOT } from "./sma-paths.mjs";
+import { PROJECTS_ROOT } from "./sma-paths.ts";
 import { loadPortfolioConfig } from "./portfolio-config.mjs";
 
 const portfolioConfig = loadPortfolioConfig();

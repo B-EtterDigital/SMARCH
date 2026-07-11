@@ -9,33 +9,51 @@ const OLLAMA_MODEL = "nomic-embed-text";
 const TRANSFORMERS_MODEL = "Xenova/all-MiniLM-L6-v2";
 const DEFAULT_TOP_K = 50;
 
-function graphNodes(graph) {
+type GraphNode = Record<string, any>;
+type Graph = Record<string, any> & { nodes?: GraphNode[]; elements?: { nodes?: GraphNode[] } };
+type Embedder = { backend: string; model: string; embed(texts: string[]): Promise<number[][]> };
+type EmbedderOptions = {
+  embedder?: Embedder;
+  backend?: string;
+  fetchImpl?: typeof globalThis.fetch;
+  timeoutMs?: number;
+  importTransformers?: () => Promise<any>;
+};
+type IndexPaths = { root: string; vectorsPath: string; idsPath: string; metaPath: string };
+type EmbeddingIndex = { meta: Record<string, any>; ids: string[]; buffer: Buffer };
+type LexicalHit = { id: string; label: string; lexicalScore: number; index: number };
+type SemanticHit = { id: string; semanticScore: number };
+type RankedHit = { id: string; label: string; lexicalScore: number; semanticScore: number; score: number };
+type SemanticQueryResult = { usedSemantic: boolean; hits: Array<LexicalHit | RankedHit>; expandedQuestion: string; reason?: string };
+type AssertResult = (condition: unknown, message: string) => void;
+
+function graphNodes(graph: Graph): GraphNode[] {
   const nodes = graph?.nodes ?? graph?.elements?.nodes;
   return Array.isArray(nodes) ? nodes : [];
 }
 
-function canonicalize(value) {
+function canonicalize(value: any): any {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
 }
 
-export function graphNodeContentHash(graph) {
+export function graphNodeContentHash(graph: Graph): string {
   const canonicalNodes = graphNodes(graph)
     .map((node) => JSON.stringify(canonicalize(node)))
     .sort();
   return createHash("sha256").update(JSON.stringify(canonicalNodes)).digest("hex");
 }
 
-function nodeId(node) {
+function nodeId(node: GraphNode): string {
   return String(node?.id ?? "").trim();
 }
 
-function nodeLabel(node) {
+function nodeLabel(node: GraphNode): string {
   return String(node?.label ?? node?.name ?? nodeId(node)).trim();
 }
 
-function sourceSnippet(node) {
+function sourceSnippet(node: GraphNode): string {
   const candidate = [
     node?.source_snippet,
     node?.snippet,
@@ -48,13 +66,13 @@ function sourceSnippet(node) {
   return String(candidate ?? "").replace(/\s+/g, " ").trim().slice(0, 256);
 }
 
-export function embeddingTextForNode(node) {
+export function embeddingTextForNode(node: GraphNode): string {
   const label = nodeLabel(node);
   const snippet = sourceSnippet(node);
   return snippet ? `${label}\n${snippet}` : label;
 }
 
-function normalizeVector(values) {
+function normalizeVector(values: Iterable<unknown> | ArrayLike<unknown> | null | undefined): number[] {
   const vector = Array.from(values ?? [], Number);
   if (!vector.length || vector.some((value) => !Number.isFinite(value))) {
     throw new Error("local embedder returned an invalid vector");
@@ -63,9 +81,9 @@ function normalizeVector(values) {
   return magnitude > 0 ? vector.map((value) => value / magnitude) : vector;
 }
 
-function normalizeBatch(vectors, expectedCount) {
+function normalizeBatch(vectors: unknown, expectedCount: number): number[][] {
   if (!Array.isArray(vectors) || vectors.length !== expectedCount) {
-    throw new Error(`local embedder returned ${vectors?.length ?? 0} vectors for ${expectedCount} inputs`);
+    throw new Error(`local embedder returned ${Array.isArray(vectors) ? vectors.length : 0} vectors for ${expectedCount} inputs`);
   }
   const normalized = vectors.map(normalizeVector);
   const dims = normalized[0]?.length ?? 0;
@@ -75,7 +93,7 @@ function normalizeBatch(vectors, expectedCount) {
   return normalized;
 }
 
-async function ollamaEmbedding(prompt, fetchImpl, timeoutMs) {
+async function ollamaEmbedding(prompt: string, fetchImpl: typeof globalThis.fetch, timeoutMs: number): Promise<number[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -94,21 +112,21 @@ async function ollamaEmbedding(prompt, fetchImpl, timeoutMs) {
   }
 }
 
-async function createOllamaEmbedder({ fetchImpl = globalThis.fetch, timeoutMs = 2_000 } = {}) {
+async function createOllamaEmbedder({ fetchImpl = globalThis.fetch, timeoutMs = 2_000 }: EmbedderOptions = {}): Promise<Embedder> {
   if (typeof fetchImpl !== "function") throw new Error("fetch is unavailable");
   await ollamaEmbedding("local embedder probe", fetchImpl, timeoutMs);
   return {
     backend: "ollama",
     model: OLLAMA_MODEL,
-    async embed(texts) {
-      const vectors = [];
+    async embed(texts: string[]) {
+      const vectors: number[][] = [];
       for (const text of texts) vectors.push(await ollamaEmbedding(text, fetchImpl, timeoutMs));
       return normalizeBatch(vectors, texts.length);
     },
   };
 }
 
-function tensorVector(output) {
+function tensorVector(output: any): number[] {
   if (typeof output?.tolist === "function") {
     const listed = output.tolist();
     return Array.isArray(listed?.[0]) ? listed[0] : listed;
@@ -118,7 +136,7 @@ function tensorVector(output) {
   throw new Error("transformers embedder returned an unsupported tensor");
 }
 
-async function createTransformersEmbedder(importTransformers) {
+async function createTransformersEmbedder(importTransformers?: () => Promise<any>): Promise<Embedder> {
   const packageName = "@xenova/transformers";
   const loadTransformers = importTransformers ?? (() => import(packageName));
   const transformers = await loadTransformers();
@@ -128,8 +146,8 @@ async function createTransformersEmbedder(importTransformers) {
   return {
     backend: "transformers",
     model: "all-MiniLM-L6-v2",
-    async embed(texts) {
-      const vectors = [];
+    async embed(texts: string[]) {
+      const vectors: number[][] = [];
       for (const text of texts) {
         const output = await extractor(text, { pooling: "mean", normalize: true });
         vectors.push(tensorVector(output));
@@ -139,27 +157,29 @@ async function createTransformersEmbedder(importTransformers) {
   };
 }
 
-export async function resolveLocalEmbedder(options = {}) {
+export async function resolveLocalEmbedder(options: EmbedderOptions = {}): Promise<Embedder | null> {
   if (options.embedder) return options.embedder;
   const requiredBackend = options.backend ?? null;
   if (!requiredBackend || requiredBackend === "ollama") {
     try {
       return await createOllamaEmbedder(options);
-    } catch {
+    } catch (error) {
+      console.error('[graph-embeddings] ollama embedder unavailable', { backend: 'ollama', error });
       if (requiredBackend === "ollama") return null;
     }
   }
   if (!requiredBackend || requiredBackend === "transformers") {
     try {
       return await createTransformersEmbedder(options.importTransformers);
-    } catch {
+    } catch (error) {
+      console.error('[graph-embeddings] transformers embedder unavailable', { backend: 'transformers', error });
       return null;
     }
   }
   return null;
 }
 
-function indexPaths(graphPath) {
+function indexPaths(graphPath: string): IndexPaths {
   const root = path.join(path.dirname(path.resolve(graphPath)), "embeddings");
   return {
     root,
@@ -169,7 +189,7 @@ function indexPaths(graphPath) {
   };
 }
 
-function vectorBuffer(vectors, dims) {
+function vectorBuffer(vectors: number[][], dims: number): Buffer {
   const buffer = Buffer.allocUnsafe(vectors.length * dims * Float32Array.BYTES_PER_ELEMENT);
   let offset = 0;
   for (const vector of vectors) {
@@ -181,7 +201,7 @@ function vectorBuffer(vectors, dims) {
   return buffer;
 }
 
-export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onWarning = console.warn, ...embedderOptions }) {
+export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onWarning = console.warn, ...embedderOptions }: { graphPath: string; embedder?: Embedder; onWarning?: (warning: string) => void } & EmbedderOptions) {
   const absoluteGraphPath = path.resolve(graphPath);
   const graph = JSON.parse(readFileSync(absoluteGraphPath, "utf8"));
   const nodes = graphNodes(graph).filter((node) => nodeId(node));
@@ -214,7 +234,7 @@ export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onW
   return { built: true, ...meta, ...paths };
 }
 
-function readEmbeddingIndex(graphPath, graph) {
+function readEmbeddingIndex(graphPath: string, graph: Graph): EmbeddingIndex | null {
   const paths = indexPaths(graphPath);
   if (![paths.vectorsPath, paths.idsPath, paths.metaPath].every(existsSync)) return null;
   const meta = JSON.parse(readFileSync(paths.metaPath, "utf8"));
@@ -229,10 +249,10 @@ function readEmbeddingIndex(graphPath, graph) {
   return { meta, ids, buffer };
 }
 
-function cosineRows(index, queryVector, topK, allowedNodeIds = null) {
+function cosineRows(index: EmbeddingIndex, queryVector: number[], topK: number, allowedNodeIds: Set<string> | null = null): SemanticHit[] {
   const dims = index.meta.dims;
   if (queryVector.length !== dims) throw new Error(`embedding dimensions changed: index=${dims}, query=${queryVector.length}`);
-  const scored = [];
+  const scored: SemanticHit[] = [];
   for (let row = 0; row < index.ids.length; row += 1) {
     if (allowedNodeIds && !allowedNodeIds.has(index.ids[row])) continue;
     let score = 0;
@@ -243,11 +263,11 @@ function cosineRows(index, queryVector, topK, allowedNodeIds = null) {
   return scored.sort((left, right) => right.semanticScore - left.semanticScore || left.id.localeCompare(right.id)).slice(0, topK);
 }
 
-function searchTokens(value) {
+function searchTokens(value: unknown): string[] {
   return String(value ?? "").toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? [];
 }
 
-export function substringIdfHits(graph, question) {
+export function substringIdfHits(graph: Graph, question: string): LexicalHit[] {
   const nodes = graphNodes(graph).filter((node) => nodeId(node));
   const terms = [...new Set(searchTokens(question))];
   if (!terms.length) return [];
@@ -273,9 +293,9 @@ export function substringIdfHits(graph, question) {
     .sort((left, right) => right.lexicalScore - left.lexicalScore || left.label.length - right.label.length || left.id.localeCompare(right.id));
 }
 
-function reciprocalRankMerge(nodesById, lexical, semantic, limit) {
-  const merged = new Map();
-  const add = (hit, rank, field) => {
+function reciprocalRankMerge(nodesById: Map<string, { id: string; label: string }>, lexical: LexicalHit[], semantic: SemanticHit[], limit: number): RankedHit[] {
+  const merged = new Map<string, RankedHit>();
+  const add = (hit: LexicalHit | SemanticHit, rank: number, field: 'lexicalScore' | 'semanticScore') => {
     const prior = merged.get(hit.id) ?? { id: hit.id, label: nodesById.get(hit.id)?.label ?? hit.id, lexicalScore: 0, semanticScore: -1, score: 0 };
     prior[field] = hit[field];
     prior.score += 1 / (60 + rank + 1);
@@ -289,7 +309,7 @@ function reciprocalRankMerge(nodesById, lexical, semantic, limit) {
     || left.id.localeCompare(right.id)).slice(0, limit);
 }
 
-export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, allowedNodeIds = undefined, onWarning = console.warn, ...embedderOptions }) {
+export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, allowedNodeIds = undefined, onWarning = console.warn, ...embedderOptions }: { graphPath: string; question: string; embedder?: Embedder; topK?: number; allowedNodeIds?: Iterable<string>; onWarning?: (warning: string) => void } & EmbedderOptions): Promise<any> {
   const absoluteGraphPath = path.resolve(graphPath);
   const graph = JSON.parse(readFileSync(absoluteGraphPath, "utf8"));
   const allowed = allowedNodeIds ? new Set([...allowedNodeIds].map(String)) : null;
@@ -316,7 +336,7 @@ export async function semanticRerankQuery({ graphPath, question, embedder = unde
   };
 }
 
-function hashString(value) {
+function hashString(value: string): number {
   let hash = 2166136261;
   for (const char of value) {
     hash ^= char.codePointAt(0);
@@ -325,12 +345,12 @@ function hashString(value) {
   return hash;
 }
 
-export function createDeterministicHashEmbedder({ dims = 32, aliases = {} } = {}) {
+export function createDeterministicHashEmbedder({ dims = 32, aliases = {} }: { dims?: number; aliases?: Record<string, string> } = {}): Embedder {
   assertLocaleStableSelftest();
   return {
     backend: "stub",
     model: "deterministic-hash-v1",
-    async embed(texts) {
+    async embed(texts: string[]) {
       return texts.map((text) => {
         const vector = Array(dims).fill(0);
         for (const rawToken of searchTokens(text)) {
@@ -345,7 +365,7 @@ export function createDeterministicHashEmbedder({ dims = 32, aliases = {} } = {}
   };
 }
 
-export async function selftestEmbeddingContentAddress({ fixtureRoot, assert: assertResult }) {
+export async function selftestEmbeddingContentAddress({ fixtureRoot, assert: assertResult }: { fixtureRoot: string; assert: AssertResult }): Promise<void> {
   const graphRoot = path.join(fixtureRoot, "embedding-fixture", "graphify-out");
   const graphPath = path.join(graphRoot, "graph.json");
   mkdirSync(graphRoot, { recursive: true });
@@ -379,14 +399,14 @@ export async function selftestEmbeddingContentAddress({ fixtureRoot, assert: ass
   const stale = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });
   assertResult(!stale.usedSemantic, "content changes with an unchanged graph mtime must invalidate the embedding index");
 
-  const warnings = [];
+  const warnings: string[] = [];
   const missing = await buildEmbeddingIndex({ graphPath, backend: "unavailable-fixture", onWarning: (warning) => warnings.push(warning) });
   assertResult(!missing.built && warnings.length === 1, "missing local embedder should warn exactly once and skip");
 }
 
 let localeStableSelftestComplete = false;
 
-function assertLocaleStableSelftest() {
+function assertLocaleStableSelftest(): void {
   if (localeStableSelftestComplete
     || process.argv[2] !== "selftest"
     || process.env.SMA_GRAPH_EMBEDDINGS_LOCALE_PROBE === "1") return;

@@ -16,17 +16,19 @@ It is intentionally conservative.
 
 Current repo reality:
 
-- there are `3` curated builds under `builds/`
-- all `3` are still `candidate`
-- none should be treated as canonical
-- none should be treated as privately publishable yet
-- the build layer is real, but proof is still ahead of trust in most areas
+- `builds/` contains no curated `*.build.sweetspot.json` manifests
+- the build schema, verifier, promotion, release, publish, clone, and index
+  tooling exist
+- `examples/build.sweetspot.json` is a schema example, not a promoted build
+- no repository build should currently be treated as candidate, verified,
+  canonical, or privately publishable
 
 Source of truth:
 
-- `builds/acme-desktop/workos-auth-billing.build.sweetspot.json`
-- `builds/acme-studio/admin-ops-control-plane.build.sweetspot.json`
-- `builds/acme-studio/ai-image-generation.build.sweetspot.json`
+- `schemas/build.manifest.schema.json`
+- `examples/build.sweetspot.json`
+- `tools/sma-build-verify.mjs`
+- `tools/sma-build-promote.mjs`
 - [docs/BUILD_LAYER_IMPLEMENTATION_PLAN.md](BUILD_LAYER_IMPLEMENTATION_PLAN.md)
 - [docs/GOVERNANCE.md](GOVERNANCE.md)
 
@@ -81,7 +83,7 @@ A curated candidate must have:
 - explicit provenance
 - no invented runtime proof
 
-This is the stage the current `3` curated builds are in.
+This is the first stage a future curated manifest under `builds/` may enter.
 
 ## Candidate Checklist
 
@@ -202,59 +204,13 @@ Publishing track:
 
 Do not force both tracks to move together.
 
-## Current Curated Builds
+## Current Curated Inventory
 
-## AI Image Generation
-
-Current posture:
-
-- strongest of the three curated builds
-- still `candidate`
-- has a real source-side regression harness
-- still missing recorded build-level rerun evidence
-- still not privately publishable
-
-What likely moves it to verified:
-
-- re-run and record the image-generation harness or equivalent smoke at build level
-- attach tenant-isolation/proxy checks as evidence
-- confirm clone/update behavior against a target or fixture
-
-## WorkOS Auth And Billing
-
-Current posture:
-
-- meaningful capability boundary
-- still `candidate`
-- still manually risky
-- entitlement, callback, and billing proof are incomplete
-- still not privately publishable
-
-What likely moves it to verified:
-
-- recorded sign-in, callback, and billing smoke
-- explicit entitlement and negative-path review
-- clearer install/update evidence on a matching target
-
-## Admin Ops Control Plane
-
-Current posture:
-
-- high-value but highest-risk build of the three
-- `candidate`
-- `manual_only`
-- verification intentionally blocked by missing authz/audit proof
-- absolutely not publishable yet
-
-What likely moves it to verified:
-
-- privileged auth review
-- audit trail review
-- negative-path verification
-- very explicit rollback and approval evidence
-
-This build may remain non-canonical for longer than the others, and that is
-fine.
+There is no current curated inventory. The three manifests previously described
+here are not present under `builds/`, so their old source-specific readiness
+claims are no longer evidence. Reintroducing any of those capabilities requires
+a current manifest plus fresh verification; the historical names alone confer
+no lifecycle state.
 
 ## Section-By-Section Rules For Curated Builds
 

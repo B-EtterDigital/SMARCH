@@ -11,9 +11,9 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { featureClusterForBrick } from "./lib/feature-clusters.mjs";
-import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/stable-generated.mjs";
+import { normalizeRegistrySnapshot, writeJsonIfMeaningfulChanged } from "./lib/stable-generated.ts";
 import { validateManifest } from "./sma-validate.mjs";
-import { PROJECTS_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultOptions = {
   root: PROJECTS_ROOT,

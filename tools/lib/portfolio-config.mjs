@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { SMA_ROOT } from "./sma-paths.mjs";
+import { SMA_ROOT } from "./sma-paths.ts";
 
 const DEFAULT_CONFIG = {
   priority_project_ids: [],

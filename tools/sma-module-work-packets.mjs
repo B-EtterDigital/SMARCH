@@ -16,7 +16,7 @@ import { modulePathSamples, modulesOverlap, overlappingModulePathPairs, overlapp
 import { agentPacketDescriptor, agentPacketPayload, writeAgentPackets } from './lib/module-work-agent-packets.mjs';
 import { latestObservationForDispatch } from './lib/module-work-observations.mjs';
 import { formatExternalActiveLeases, moduleConflictCommand, moduleObservationBigPicture, modulePrompt, moduleWatchBigPicture, renderDispatchMarkdown, renderModuleWatchConsole, renderObservationMarkdown } from './lib/module-work-renderers.mjs';
-import { runModuleWorkSelfTest } from './lib/module-work-selftest.mjs';
+import { runModuleWorkSelfTest } from './lib/module-work-selftest.ts';
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const START_EDIT = resolve(TOOLS_DIR, 'sma-start-edit.mjs');

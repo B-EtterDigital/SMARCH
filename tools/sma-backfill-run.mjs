@@ -44,9 +44,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { resolveBrickPath } from './lib/source-path-resolver.mjs';
+import { resolveBrickPath } from './lib/source-path-resolver.ts';
 import { resolveProjectRoot as canonicalProjectRoot } from './lib/project-paths.mjs';
-import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.ts";
 
 
 

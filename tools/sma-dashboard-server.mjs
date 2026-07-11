@@ -14,7 +14,7 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEV_ROOT } from "./lib/sma-paths.mjs";
+import { DEV_ROOT } from "./lib/sma-paths.ts";
 
 const dashboardServerPath = fileURLToPath(import.meta.url);
 const smaRoot = path.resolve(path.dirname(dashboardServerPath), "..");

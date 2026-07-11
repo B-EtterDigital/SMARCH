@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PROJECTS_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 

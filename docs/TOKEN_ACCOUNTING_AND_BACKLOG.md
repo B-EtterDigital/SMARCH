@@ -11,7 +11,7 @@ This is mandatory for every SMA-clone, every brick promotion, and every session 
 ## The three tools
 
 ### `tools/sma-token-count.mjs`
-Estimates generation tokens per brick or build. Default heuristic: chars / 3.7 for TS, chars / 3.5 for JSON/MD. Multiplier 3.8× for "realistic regenerate cost" (direct + iteration + design discussion). `--method=tiktoken` available for exact BPE counts when accuracy matters.
+Estimates generation tokens per brick or build. Default heuristic: chars / 3.7 for TS-like files, chars / 3.5 for JSON/Markdown/SQL. Multiplier 3.8× for "realistic regenerate cost" (direct + iteration + design discussion). `--method=tiktoken` requests BPE counts when the optional `tiktoken` package is installed; otherwise the tool warns and falls back to the heuristic.
 
 ```bash
 node tools/sma-token-count.mjs --root /path/to/project --write
@@ -85,12 +85,12 @@ If you can't fix it in-session, open a ticket. The cost is logged; future-you (o
 
 | Trigger | Required steps |
 |---|---|
-| `sma-clone.mjs` invocation | Auto-emit reuse receipt + suggest backlog entries for unresolved gates |
+| `sma-clone.mjs` invocation | Clone writes import/provenance records and a checklist; then run `sma-reuse-receipt.mjs --write` explicitly for token accounting |
 | Manual copy of bricks | Run `sma-reuse-receipt.mjs` manually with `--item` per copy |
-| Promotion: `candidate → verified` | Backlog must be empty for the brick (or all entries marked `wontfix` with rationale) |
-| Promotion: `verified → canonical` | Backlog must be empty AND all gates `passing` |
-| Nightly CI | `sma-token-count --write` per project + `sma-backlog aggregate` |
-| `pnpm sma:state` | Surface backlog counts, top-savings receipts, and worst-debt projects |
+| Promotion: `candidate → verified` | Process requirement: backlog must be empty for the brick, or every remaining entry must be closed with a written rationale; the backlog CLI records this debt but does not make every promotion tool enforce it automatically |
+| Promotion: `verified → canonical` | Process requirement: backlog must be empty and all gates must be `passing`; verify both before promotion |
+| Scheduled accounting, when configured | Run `sma-token-count.mjs --write` per project, then `sma-backlog.mjs aggregate`; this repository does not currently ship a nightly workflow for it |
+| Backlog review | Use `node tools/sma-backlog.mjs stats` and inspect `registry/backlog.generated.json`; the current state generator does not embed token/backlog summaries |
 
 ## Estimate calibration
 

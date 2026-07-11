@@ -70,7 +70,7 @@ Demotion statuses:
 | Tester | [SSTF](GLOSSARY.md#sstf) coverage and regression confidence |
 | Performance | [SPE](GLOSSARY.md#spe) thresholds and N+1 risk |
 | Release | SSRA readiness and deployment risk |
-| Registry Maintainer | canonical map, duplicate map, metadata quality |
+| Registry Maintainer | canonicalization evidence, duplicate clusters, metadata quality |
 
 One person can hold multiple roles in small projects, but the role must still be recorded.
 

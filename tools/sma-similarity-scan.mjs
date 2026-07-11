@@ -13,7 +13,7 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from '
 import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { resolveBrickPath } from './lib/source-path-resolver.mjs';
+import { resolveBrickPath } from './lib/source-path-resolver.ts';
 import { normalizeSource, kGramShingles, simhash, hamming, winnow, jaccard } from './lib/similarity.mjs';
 import { canonicalIdentity, ownerFor, sameIdentity } from './lib/ownership.mjs';
 

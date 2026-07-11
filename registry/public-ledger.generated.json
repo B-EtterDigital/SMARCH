@@ -1,6 +1,6 @@
 {
  "schema": "smarch-public-ledger-v1",
- "generated_at": "2026-07-11T01:22:01.271Z",
+ "generated_at": "2026-07-11T01:55:05.943Z",
  "repo": "B-EtterDigital/SMARCH",
  "branch": "main",
  "algo": "sha256-chain-v2",
@@ -9,10 +9,10 @@
   {
    "brick_id": "smarch.tools.sma-ci",
    "path": "tools/sma-ci.mjs",
-   "content_hash": "6e68f52258fa96218c8fb382f615b9ca88765977166ff1305339198cb7b10215",
-   "anchor": "fef01ebf03a1901b4c1176ecab377e9bec9d78c47135fbe47b735c8e0d98625c",
-   "head": "759cd937423df46befd01bdc19711710925f9f1fced4651aec8326d368eb6648",
-   "chain_length": 1,
+   "content_hash": "c3ef03fa026cd7efeca57f496b57bcb9a91fa091b39a5f4184cb7eae22e06a7b",
+   "anchor": "81d0a97181ed485763eb31aa317fd8c5b6528dc24fe7adfb995a3cd63e4f77c1",
+   "head": "e1a590177d13fb2b56d13eb62bee0069218dcce0e3c665e4c0cee29e49be2233",
+   "chain_length": 2,
    "events": [
     {
      "actor_kind": "human",
@@ -21,16 +21,24 @@
      "timestamp": "2026-07-10T19:56:58+07:00",
      "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
      "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:22:02+07:00",
+     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
+     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
     }
    ]
   },
   {
    "brick_id": "smarch.tools.sma-scan",
    "path": "tools/sma-scan.mjs",
-   "content_hash": "be9c5e358ebe59a70c4dbf1c92d05b59c8895ce496db4a9422479bcaf8754de0",
-   "anchor": "15a0c70dba55c3899a991f8af501b42d32f54a55bffb15e99cda5e54bfbcd044",
-   "head": "9f7a4f5641f339df90df48ac7a105bf90250ab83f55a8b549d4fab7a61614498",
-   "chain_length": 3,
+   "content_hash": "f2c08a638f8c1d1d97a6bc0f4d9320afd756e38d73b5786a1ef94778cece2df9",
+   "anchor": "7c16fb5665d555c24f003b0753d5d7f7ec66d2941903eb39563ef73fe310910f",
+   "head": "7c8c5d257666aeffa9f23f58bb85a903e4ee6c7b28fbc18dd2774c5c3772a00a",
+   "chain_length": 4,
    "events": [
     {
      "actor_kind": "human",
@@ -55,6 +63,14 @@
      "timestamp": "2026-07-10T22:55:20+07:00",
      "commit": "92ca3d3848658b9145248eec8c81494e80640cc4",
      "summary": "SMOA wave-2: typecheck green (95→0 + 5 real bug fixes), fail-closed scanner, MCP server, GLOSSARY, leak scrubs"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:22:02+07:00",
+     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
+     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
     }
    ]
   },
@@ -63,8 +79,8 @@
    "path": "tools/install-agent-skills.mjs",
    "content_hash": "8faf890ba67931687105959953db1cae114a92466494778f5d7505d748c26f06",
    "anchor": "51437f9f1c986b19edc723090bc54468d78a9d9d773ca53322bdfa5b65c3f835",
-   "head": "d515a5b8346a823da883c3e1ce373a55ff8d14c819d4209c6d10343bb6f76736",
-   "chain_length": 2,
+   "head": "c2d9c88809e56ab791a5b0939b7e1be76f1e3d079d7491f49d7a61e787faf67c",
+   "chain_length": 3,
    "events": [
     {
      "actor_kind": "human",
@@ -81,6 +97,14 @@
      "timestamp": "2026-07-10T23:48:12+07:00",
      "commit": "43370a2a6a54b0e0c5760e623b7f6e4d120794df",
      "summary": "SMOA waves 3+4: security-hardened sync, workforce lib, ambient hooks, embeddings, capsule tier, schema types, intro lane opens"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:22:02+07:00",
+     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
+     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
     }
    ]
   },
@@ -89,8 +113,8 @@
    "path": "tools/lib/provenance-seal.mjs",
    "content_hash": "88b1b6f848b21673327d348e783c2cc1563d68e21bfb9f8bb4bcac6ec04bd99d",
    "anchor": "9894792fe6ac2a72693234c931c06085ffcb788afe6f9077c98d132ffbad2fe7",
-   "head": "5dd12c808ddbe6aab0fd3c43c3c03fac0a9776319d051fe013b58c2f6d00db48",
-   "chain_length": 1,
+   "head": "64d673b9200d92733fa4c376fb5953e037efb3b573c659b94a8057a7eb9b34c2",
+   "chain_length": 2,
    "events": [
     {
      "actor_kind": "human",
@@ -99,6 +123,14 @@
      "timestamp": "2026-07-10T19:56:58+07:00",
      "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
      "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:22:02+07:00",
+     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
+     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
     }
    ]
   },
@@ -107,8 +139,8 @@
    "path": "tools/lib/license-lattice.mjs",
    "content_hash": "eeef2176fccbbf171b87df41b82c69a12996f793951aa486dac818bacdcfb42a",
    "anchor": "27d39f26c00b369d4c606ea4c423e5bd943d55c5a921ec658fb8bdcb03d6fac1",
-   "head": "fd4c76d68053506a29714f07f64dfdd81f8b45bfab20936d50a50ae19b450e96",
-   "chain_length": 1,
+   "head": "e2db54b02a48854f68a806a9ca58fb1bb12e18e5339cb38bced9f47aa9c24421",
+   "chain_length": 2,
    "events": [
     {
      "actor_kind": "human",
@@ -117,6 +149,14 @@
      "timestamp": "2026-07-10T19:56:58+07:00",
      "commit": "56a3a094b0d791af1ce9f4c2d487d1ed504f3ec2",
      "summary": "SMARCH — Sweetspot Modular Architecture (SMA Gen3), initial open-source release"
+    },
+    {
+     "actor_kind": "human",
+     "actor_id": "dev@b-etter.digital",
+     "role": "implementer",
+     "timestamp": "2026-07-11T08:22:02+07:00",
+     "commit": "c13b9f9145b45189b0b6494ff3ef0b8a364a83be",
+     "summary": "SMOA wave-9: the literate codebase — WHY headers + runnable examples across every tool"
     }
    ]
   }

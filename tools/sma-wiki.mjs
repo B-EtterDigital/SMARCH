@@ -12,7 +12,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { attachFeatureCluster, featureClusterForBrick as featureClusterFor } from "./lib/feature-clusters.mjs";
-import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");

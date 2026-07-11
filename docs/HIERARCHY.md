@@ -91,7 +91,10 @@ So yes: builds include bricks. Bricks include modules. Modules can include compo
 
 ## Scanner Roles
 
-The scanner mainly discovers brick-level structure today. Build detection is the next layer above that.
+The scanner discovers brick-level structure and also emits capability-level
+build candidates under `scanner_report.build_report`. Detected candidates are
+discovery evidence, not installable builds; install and promotion still require
+an authored build manifest.
 
 For structural discovery, the scanner assigns unmanifested candidates a hierarchy role:
 
@@ -103,15 +106,15 @@ For structural discovery, the scanner assigns unmanifested candidates a hierarch
 
 Candidate groups keep noisy families together. For example, hundreds of Supabase functions should show as function groups first, then individual candidates underneath.
 
-When build detection is added, it should group recurring brick constellations into capability-level `build` objects rather than flattening everything into more bricks.
+Build detection groups recurring brick constellations into capability-level
+candidates rather than flattening everything into more bricks.
 
 ## Examples
 
 ### Build
 
 ```text
-builds/ai-image-generation
-  build.sweetspot.json
+builds/ai-image-generation.build.sweetspot.json
   brick refs:
     image provider brick
     queue brick

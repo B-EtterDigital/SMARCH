@@ -2,9 +2,9 @@
 
 This guide describes the reusable compliance checks for data protection and platform safety in Sweetspot projects. Product owners, security reviewers, and engineers handling regulated data need it before release. Read it while classifying a project, wiring compliance evidence, or reviewing an unresolved legal gate. Remember that the layer records engineering evidence and blockers; it does not substitute for legal review.
 
-A declarative, reusable pre-release compliance gate that ships with SMA so every
-project enforces EU + Swiss data-protection and platform-safety obligations from
-day one — not as a late scramble.
+A declarative, reusable pre-release compliance gate that ships with SMA so a
+project can enforce EU + Swiss data-protection and platform-safety obligations
+from day one — not as a late scramble.
 
 ## Files
 
@@ -30,7 +30,9 @@ node tools/sma-compliance-gate.mjs --root <project> --json    # machine-readable
 
 - `npm run gate:compliance` runs it against the current repo and is part of
   `gate:all` → `gate:promote`, so a release with an unmet **blocker** fails.
-- `sma-init-project` scaffolds the gate into every new project's release commands.
+- `sma-init-project` prints the direct compliance-gate command in its
+  `next_commands` output. A project still has to wire that command into its own
+  release workflow; SMARCH itself includes `gate:compliance` in `gate:all`.
 
 ## Severity model
 

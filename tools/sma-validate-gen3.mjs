@@ -13,7 +13,7 @@ import { argv, exit } from 'node:process';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { projectRoot } from './lib/context-log.mjs';
-import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.ts";
 
 
 const LEASES_PATH = resolve(SMA_ROOT, 'registry/active-leases.generated.json');

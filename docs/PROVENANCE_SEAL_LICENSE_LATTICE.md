@@ -13,7 +13,9 @@ monotonic enforcement gate that stops a brick from being **stolen** or
 
 ## Why this exists
 
-SMA's manifest schema already described a rich provenance/licensing model, but:
+At the initial provenance audit, SMA's manifest schema already described a rich
+provenance/licensing model, but the scanned portfolio had these gaps (the counts
+below are historical audit evidence, not the current registry size):
 
 - **~3,148 indexed bricks had zero provenance** — the scanner stripped it, and
   only the 4 curated builds carried authorship.
@@ -31,8 +33,10 @@ This system populates, enforces, and seals all of that.
 
 Every brick's authorship is reconstructed from git history:
 `created_by` (oldest commit), `touched_by` (recent commits), and a
-`contributors` ledger (commit counts + first/last dates per identity). Keyed by
-`brick_id`, because 3,146 / 3,148 bricks have no manifest file.
+`contributors` ledger (commit counts + first/last dates per identity). It is
+keyed by `brick_id`; at the initial audit, 3,146 of 3,148 indexed entries had no
+manifest file. Current counts must be read from the generated registry and
+ledgers rather than copied from this snapshot.
 
 ### 2. License as a per-brick axis (`registry/license-ledger.generated.json`)
 

@@ -18,7 +18,7 @@
  * working.
  */
 
-import { PROJECTS_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,

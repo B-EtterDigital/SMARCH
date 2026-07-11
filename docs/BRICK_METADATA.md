@@ -21,7 +21,12 @@ Optional SMA modules use the same manifest contract as any other brick. For Swee
 
 SVD requirements are documented in [SWEETSPOT_VISUAL_DEMO.md](SWEETSPOT_VISUAL_DEMO.md).
 
-## Required Sections
+## Manifest Sections
+
+Every section below is required by `schemas/brick.manifest.schema.json` except
+`hierarchy`, which remains optional for experimental and project-bound bricks.
+The validator expects candidate and canonical bricks to declare
+`hierarchy.level`.
 
 | Section | Purpose |
 |---------|---------|

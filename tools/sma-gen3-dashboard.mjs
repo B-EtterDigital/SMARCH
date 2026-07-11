@@ -35,8 +35,8 @@ import { argv, exit } from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { isVolatileSmaRegenLease, readActiveLeases } from './lib/gen3-state.mjs';
 import { buildGoalProgressReport, goalProgressDashboardStyles, renderGoalProgressSection } from './lib/gen3-goal-progress.mjs';
-import { writeTextIfChanged } from './lib/stable-generated.mjs';
-import { SMA_ROOT } from "./lib/sma-paths.mjs";
+import { writeTextIfChanged } from './lib/stable-generated.ts';
+import { SMA_ROOT } from "./lib/sma-paths.ts";
 
 
 const DEFAULT_STATE = resolve(SMA_ROOT, 'wiki/SMA_STATE.generated.json');

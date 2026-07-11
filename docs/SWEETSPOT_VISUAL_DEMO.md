@@ -4,6 +4,12 @@ This document defines how a Sweetspot walkthrough becomes repeatable visual proo
 
 Sweetspot Visual Demo is a known optional SMA module for demo, walkthrough, onboarding, and release-proof flows. It is not a required gate for every brick. Use it when a project needs visual proof that a user journey works, can be replayed, and can be reviewed without guessing what happened.
 
+The repository currently ships SVD as a `candidate`, `guided` contract in
+`examples/sweetspot-visual-demo.module.sweetspot.json`; it does not ship a
+standalone SVD capture or gallery generator. A consuming project must wire the
+driver, artifact storage, validation, redaction, and gallery surfaces listed in
+the manifest's adaptation points before claiming a live SVD implementation.
+
 SVD turns a walkthrough into a structured proof packet:
 
 - a script with persona, route, flags, version, and expected outcomes

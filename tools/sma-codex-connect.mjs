@@ -22,7 +22,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { codexBatch } from "./lib/codex-runner.mjs";
-import { smaPath } from "./lib/sma-paths.mjs";
+import { smaPath } from "./lib/sma-paths.ts";
 
 function parseArgs(argv) {
   const opts = {

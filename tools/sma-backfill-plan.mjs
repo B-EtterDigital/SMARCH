@@ -38,9 +38,9 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 
 import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
 import { execFileSync } from 'node:child_process';
-import { resolveBrickPath } from './lib/source-path-resolver.mjs';
+import { resolveBrickPath } from './lib/source-path-resolver.ts';
 import { resolveProjectRoot as canonicalProjectRoot } from './lib/project-paths.mjs';
-import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, SMA_ROOT } from "./lib/sma-paths.ts";
 
 function readdirSyncSafe(p) {
   try { return readdirSync(p); } catch { return []; }

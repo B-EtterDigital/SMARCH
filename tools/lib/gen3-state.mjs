@@ -19,7 +19,7 @@
  * (no I/O outside readFileSync/readdirSync).
  */
 
-import { SMA_ROOT } from "./sma-paths.mjs";
+import { SMA_ROOT } from "./sma-paths.ts";
 import {
   readFileSync,
   existsSync,

@@ -5,10 +5,10 @@
  * The scanner, release store, provenance ledger, and verifier consume these objects without hidden input or output.
  * Given identical inputs, each exporter returns byte-stable data suitable for comparison and signing.
  * Format terms are defined in docs/GLOSSARY.md.
- * @example node --input-type=module -e "import { intotoStatement } from './tools/lib/attestation.mjs'; console.log(intotoStatement({ brick_id: 'demo', content_hash: 'abc' }).subject[0])"
+ * @example node --input-type=module -e "import { intotoStatement } from './tools/lib/attestation.ts'; console.log(intotoStatement({ brick_id: 'demo', content_hash: 'abc' }).subject[0])"
  */
 /**
- * attestation.mjs — pure, deterministic exporters that turn a brick's
+ * attestation.ts — pure, deterministic exporters that turn a brick's
  * provenance + license + fingerprint facts into STANDARD-FORMAT attestations a
  * third party can consume with off-the-shelf tooling:
  *
@@ -30,6 +30,38 @@
 
 import { createHash } from 'node:crypto';
 
+type Contributor = { actor_id?: string; name?: string; commits?: number; first?: string; last?: string };
+type Brick = {
+  brick_id: string;
+  project?: string;
+  content_hash?: string;
+  file_count?: number;
+  byte_count?: number;
+  spdx?: string;
+  license_class?: string;
+  openness?: string;
+  visibility?: string;
+  attribution_required?: boolean;
+  seal?: { algo?: string; anchor?: string; head?: string; chain_length?: number };
+  created_by?: { actor_id?: string; role?: string; commit?: string; timestamp?: string };
+  contributors?: Contributor[];
+};
+type Component = { name?: string; brick_id?: string; content_hash?: string; spdx?: string; version?: string | number; uri?: string };
+type JsonDocument = Record<string, any>;
+type CdxComponent = { type: string; 'bom-ref': string; name: string; version?: string; licenses?: JsonDocument[]; hashes?: JsonDocument[] };
+type SpdxPackage = {
+  SPDXID: string;
+  name: string;
+  downloadLocation: string;
+  filesAnalyzed: boolean;
+  licenseConcluded: string;
+  licenseDeclared: string;
+  copyrightText: string;
+  supplier?: string;
+  checksums: Array<{ algorithm: string; checksumValue: string }>;
+  versionInfo?: string;
+};
+
 export const IN_TOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
 export const SLSA_PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
 export const BUILDER_ID = 'https://sma.local/brick-scanner';
@@ -38,20 +70,20 @@ export const BUILD_TYPE = 'https://sma.local/brick-scan/v1';
 const NOASSERTION = 'NOASSERTION';
 const EPOCH = '1970-01-01T00:00:00Z'; // deterministic fallback when no timestamp given
 
-const sha256Hex = (s) => createHash('sha256').update(String(s)).digest('hex');
+const sha256Hex = (s: unknown): string => createHash('sha256').update(String(s)).digest('hex');
 
 /** SPDXID element ids allow only [A-Za-z0-9.-]; map anything else to '-'. */
-function sanitizeSpdxId(s) {
+function sanitizeSpdxId(s: unknown): string {
   return String(s || 'unknown').replace(/[^A-Za-z0-9.-]/g, '-');
 }
 
 /** Format 32 hex chars as a well-formed (format-valid) UUID for CycloneDX urn. */
-function toUuid(hex) {
+function toUuid(hex: unknown): string {
   const h = String(hex || '').replace(/[^0-9a-f]/gi, '').toLowerCase().padEnd(32, '0').slice(0, 32);
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
-function supplierOf(brick) {
+function supplierOf(brick: Brick): string {
   const c = (brick.contributors && brick.contributors[0]) || null;
   const name = c?.name || c?.actor_id || brick.created_by?.actor_id || null;
   return name ? `Organization: ${name}` : NOASSERTION;
@@ -65,14 +97,14 @@ function supplierOf(brick) {
  * builder, records the provenance seal head (as invocationId), and lists the
  * component + contributor inputs as resolvedDependencies (materials).
  */
-export function intotoStatement(brick, components = [], timestamp = null) {
+export function intotoStatement(brick: Brick, components: Component[] = [], timestamp: string | null = null): JsonDocument {
   const contentHash = brick.content_hash || null;
   const subject = [{
     name: brick.brick_id,
     digest: contentHash ? { sha256: contentHash } : {},
   }];
 
-  const resolvedDependencies = [];
+  const resolvedDependencies: JsonDocument[] = [];
   if (brick.created_by?.commit) {
     resolvedDependencies.push({
       uri: `git+commit:${brick.created_by.commit}`,
@@ -93,7 +125,7 @@ export function intotoStatement(brick, components = [], timestamp = null) {
     });
   }
   (components || []).forEach((comp, i) => {
-    const dep = {
+    const dep: JsonDocument = {
       uri: comp.uri || `component:${comp.brick_id || comp.name || `c${i}`}`,
       name: comp.name || comp.brick_id || `component-${i}`,
     };
@@ -152,26 +184,14 @@ export function intotoStatement(brick, components = [], timestamp = null) {
 // --- SPDX 2.3 --------------------------------------------------------------
 
 /** Minimal, valid SPDX 2.3 JSON SBOM: one package for the brick + one per component. */
-export function spdxDocument(brick, components = [], timestamp = null) {
+export function spdxDocument(brick: Brick, components: Component[] = [], timestamp: string | null = null): JsonDocument {
   const contentHash = brick.content_hash || null;
   const created = timestamp || EPOCH;
   const brickTag = sanitizeSpdxId(brick.brick_id);
   const mainId = `SPDXRef-Package-${brickTag}`;
   const namespaceSeed = contentHash || sha256Hex(brick.brick_id);
 
-  /** @type {Array<{
-   * SPDXID: string,
-   * name: string,
-   * downloadLocation: string,
-   * filesAnalyzed: boolean,
-   * licenseConcluded: string,
-   * licenseDeclared: string,
-   * copyrightText: string,
-   * supplier?: string,
-   * checksums: Array<{algorithm: string, checksumValue: string}>,
-   * versionInfo?: string
-   * }>} */
-  const packages = [{
+  const packages: SpdxPackage[] = [{
     SPDXID: mainId,
     name: brick.brick_id,
     downloadLocation: NOASSERTION,
@@ -190,7 +210,7 @@ export function spdxDocument(brick, components = [], timestamp = null) {
 
   (components || []).forEach((comp, i) => {
     const cid = `SPDXRef-Component-${sanitizeSpdxId(comp.brick_id || comp.name || `c${i}`)}`;
-    const pkg = {
+    const pkg: SpdxPackage = {
       SPDXID: cid,
       name: comp.name || comp.brick_id || `component-${i}`,
       downloadLocation: NOASSERTION,
@@ -222,15 +242,15 @@ export function spdxDocument(brick, components = [], timestamp = null) {
 
 // --- CycloneDX 1.5 ---------------------------------------------------------
 
-function cdxLicenses(spdx) {
+function cdxLicenses(spdx?: string): JsonDocument[] {
   if (!spdx) return [{ license: { name: NOASSERTION } }];
   // SPDX license EXPRESSIONS (operators/spaces) go in `expression`; single ids in `license.id`.
   if (/\s|\bOR\b|\bAND\b|\bWITH\b/.test(spdx)) return [{ expression: spdx }];
   return [{ license: { id: spdx } }];
 }
 
-function cdxComponent(name, spdx, contentHash, version) {
-  const comp = {
+function cdxComponent(name: unknown, spdx?: string, contentHash?: string | null, version?: string | number): CdxComponent {
+  const comp: CdxComponent = {
     type: 'library',
     'bom-ref': `component:${name}`,
     name: String(name),
@@ -242,7 +262,7 @@ function cdxComponent(name, spdx, contentHash, version) {
 }
 
 /** Minimal, valid CycloneDX 1.5 JSON SBOM. The brick is components[0]. */
-export function cyclonedxDocument(brick, components = [], timestamp = null) {
+export function cyclonedxDocument(brick: Brick, components: Component[] = [], timestamp: string | null = null): JsonDocument {
   const contentHash = brick.content_hash || null;
   const serialSeed = contentHash || sha256Hex(brick.brick_id);
 

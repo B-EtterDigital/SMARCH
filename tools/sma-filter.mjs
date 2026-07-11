@@ -35,7 +35,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.mjs";
+import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const reusableKinds = new Set([
   "library_module", "utility_module", "utility_file",

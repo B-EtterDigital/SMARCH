@@ -157,7 +157,7 @@
     "goal:progress": "node tools/sma-goal-progress.mjs",
     "site": "node tools/sma-brick-wall-lego.mjs && node tools/sma-wiki-html.mjs && node tools/sma-codex-wiki-index.mjs",
     "ci": "node tools/sma-ci.mjs --root ~/DEV/Projects --registry registry/global-modules.generated.json --wiki wiki",
-    "provenance:selftest": "node tools/lib/license-lattice-selftest.mjs && node tools/lib/provenance-seal-selftest.mjs && node tools/lib/merkle-selftest.mjs && node tools/lib/export-guard-selftest.mjs && node tools/lib/export-coverage-selftest.mjs && node tools/lib/similarity-selftest.mjs && node tools/lib/license-evidence-selftest.mjs && node tools/lib/attestation-selftest.mjs",
+    "provenance:selftest": "node tools/lib/license-lattice-selftest.mjs && node tools/lib/provenance-seal-selftest.mjs && node tools/lib/merkle-selftest.mjs && node tools/lib/export-guard-selftest.mjs && node tools/lib/export-coverage-selftest.ts && node tools/lib/similarity-selftest.mjs && node tools/lib/license-evidence-selftest.mjs && node tools/lib/attestation-selftest.mjs",
     "attest": "node tools/sma-attest.mjs",
     "attest:verify": "node tools/sma-attest-verify.mjs",
     "similarity:scan": "node tools/sma-similarity-scan.mjs",

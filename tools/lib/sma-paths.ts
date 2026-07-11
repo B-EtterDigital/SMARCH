@@ -1,5 +1,5 @@
 /**
- * sma-paths.mjs — single source of truth for where SMA lives on disk.
+ * sma-paths.ts — single source of truth for where SMA lives on disk.
  *
  * Every tool derives its roots from here instead of hardcoding machine paths.
  *
@@ -27,11 +27,11 @@ export const PROJECTS_ROOT = process.env.SMA_PROJECTS_ROOT
   : path.resolve(DEV_ROOT, "Projects");
 
 /** Absolute path inside the SMA control-plane repo. */
-export function smaPath(...segments) {
+export function smaPath(...segments: string[]): string {
   return path.join(SMA_ROOT, ...segments);
 }
 
 /** Absolute path inside the projects portfolio root. */
-export function projectsPath(...segments) {
+export function projectsPath(...segments: string[]): string {
   return path.join(PROJECTS_ROOT, ...segments);
 }

@@ -14,13 +14,12 @@ This doc defines the minimum bar for four curated-build states:
 It is intentionally stricter than scanner confidence and intentionally more
 honest than marketing language.
 
-Current repo reality on `2026-04-22`:
+Current repo reality:
 
-- there are `3` curated builds under `builds/`
-- all `3` are still `candidate`
-- none should be treated as `verified`
-- none should be treated as `private publishable`
-- none should be treated as a published release approved for reuse
+- `builds/` contains no curated `*.build.sweetspot.json` manifests
+- `examples/build.sweetspot.json` is a schema example, not curated inventory
+- no build in this repository should currently be described as `candidate`,
+  `verified`, `private publishable`, or an approved published release
 
 Use this with:
 
@@ -244,12 +243,9 @@ If the answer is unclear, keep the build at the lower state.
 
 ## Current Honest Interpretation For This Repo
 
-Given the current verifier output:
-
-- `candidate` is real
-- `verified` still requires more runtime-grade evidence
-- `private publishable` is blocked by both proof and leak-review issues
-- `published release` should not be treated as approved reuse until the earlier
-  bars are satisfied
+There is currently no curated manifest for the verifier to advance. The
+acceptance bars remain active policy, but no repository build presently
+qualifies for any of the four states. Add a real curated manifest under
+`builds/` before interpreting verifier or publish output as lifecycle evidence.
 
 That is not a failure of the model. It is the model doing its job honestly.

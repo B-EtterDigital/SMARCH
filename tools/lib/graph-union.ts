@@ -1,26 +1,36 @@
 const NAMESPACE_SEPARATOR = "::";
 
-function graphArray(value) {
+type GraphRecord = Record<string, any>;
+type Graph = GraphRecord & {
+  nodes?: GraphRecord[];
+  edges?: GraphRecord[];
+  links?: GraphRecord[];
+  hyperedges?: GraphRecord[];
+  elements?: { nodes?: GraphRecord[]; edges?: GraphRecord[] };
+};
+type GraphEntry = { graph: Graph; namespace: string };
+
+function graphArray(value: unknown): GraphRecord[] {
   return Array.isArray(value) ? value : [];
 }
 
-export function graphNodes(graph) {
+export function graphNodes(graph: Graph): GraphRecord[] {
   return graphArray(graph?.nodes ?? graph?.elements?.nodes);
 }
 
-export function graphEdges(graph) {
+export function graphEdges(graph: Graph): GraphRecord[] {
   return graphArray(graph?.edges ?? graph?.links ?? graph?.elements?.edges);
 }
 
-export function graphHyperedges(graph) {
+export function graphHyperedges(graph: Graph): GraphRecord[] {
   return graphArray(graph?.hyperedges);
 }
 
-function namespaceId(namespace, id) {
+function namespaceId(namespace: string, id: unknown): string {
   return `${namespace}${NAMESPACE_SEPARATOR}${String(id)}`;
 }
 
-function edgeKey(edge) {
+function edgeKey(edge: GraphRecord): string {
   return [
     edge.source,
     edge.target,
@@ -31,15 +41,15 @@ function edgeKey(edge) {
   ].map((value) => String(value ?? "")).join("\0");
 }
 
-function hyperedgeKey(edge) {
+function hyperedgeKey(edge: GraphRecord): string {
   return JSON.stringify(edge);
 }
 
-export function namespaceGraph(graph, namespace) {
+export function namespaceGraph(graph: Graph, namespace: string): Graph {
   const normalizedNamespace = String(namespace || "").trim();
   if (!normalizedNamespace) throw new Error("graph union namespace must not be empty");
 
-  const idMap = new Map();
+  const idMap = new Map<string, string>();
   const nodes = graphNodes(graph)
     .filter((node) => node?.id)
     .map((node) => {
@@ -52,7 +62,7 @@ export function namespaceGraph(graph, namespace) {
         original_id: String(node.original_id ?? id),
       };
     });
-  const namespacedReference = (id) => idMap.get(String(id)) ?? namespaceId(normalizedNamespace, id);
+  const namespacedReference = (id: unknown): string => idMap.get(String(id)) ?? namespaceId(normalizedNamespace, id);
   const edges = graphEdges(graph)
     .filter((edge) => edge?.source && edge?.target)
     .map((edge) => ({
@@ -80,10 +90,10 @@ export function namespaceGraph(graph, namespace) {
   return { ...metadata, nodes, edges, hyperedges };
 }
 
-export function mergeNamespacedGraphs(entries) {
-  const nodes = new Map();
-  const edges = new Map();
-  const hyperedges = new Map();
+export function mergeNamespacedGraphs(entries: GraphEntry[]) {
+  const nodes = new Map<string, GraphRecord>();
+  const edges = new Map<string, GraphRecord>();
+  const hyperedges = new Map<string, GraphRecord>();
   let inputTokens = 0;
   let outputTokens = 0;
 
@@ -105,7 +115,7 @@ export function mergeNamespacedGraphs(entries) {
   };
 }
 
-export function resolveGraphNodeInput(graph, input) {
+export function resolveGraphNodeInput(graph: Graph, input: unknown): string {
   const requested = String(input || "").trim();
   if (!requested) return requested;
   const nodes = graphNodes(graph);
