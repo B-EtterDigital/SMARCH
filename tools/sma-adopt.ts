@@ -68,7 +68,8 @@ function writeIfAbsent(path: string, contents: string, force: boolean, created: 
 
 function main(): number {
   const opts = parseArgs(process.argv.slice(2));
-  if (!existsSync(opts.target)) throw new Error(`target does not exist: ${opts.target}`);
+  // A user adopting into a new location expects it created, not an error.
+  if (!existsSync(opts.target)) mkdirSync(opts.target, { recursive: true });
   const created: string[] = [];
   const skipped: string[] = [];
 
