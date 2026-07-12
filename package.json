@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "sma": "tools/sma.mjs"
+    "sma": "tools/sma.ts"
   },
   "scripts": {
     "scan": "node tools/sma-scan.ts --root ~/DEV/Projects --out registry/global-modules.generated.json",
@@ -181,7 +181,7 @@
     "plugin:check": "node tools/sma-plugin-sync.mjs --check",
     "evals:bench": "node tools/evals/bench.mjs"
   },
-  "description": "SMARCH — Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
+  "description": "SMARCH \u2014 Sweetspot Modular Architecture (SMA Gen3): a module contract and multi-agent control plane for AI-assisted software teams.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -198,5 +198,27 @@
   },
   "optionalDependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0"
-  }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "files": [
+    "tools/",
+    "schemas/",
+    "docs/",
+    "skills/",
+    "agent-skills/",
+    "templates/",
+    "examples/",
+    "SPE/",
+    "SRS/",
+    "SSTF-v1/",
+    "registry/*.example.json",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "AGENTS.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md"
+  ]
 }
