@@ -8,5 +8,9 @@
     "@googlemail.",
     "spineclinic"
   ],
-  "private_identifiers": []
+  "private_identifiers": [],
+  "machine_identity": [
+    "bdd-main",
+    "@warp"
+  ]
 }

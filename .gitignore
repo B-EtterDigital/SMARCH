@@ -42,3 +42,8 @@ graphify-out/
 
 # Local debugging and browser/session captures
 .playwright-mcp/
+
+# Runtime/build/generated artifacts — never in a release tree
+.smarch/
+web/dist/
+security/*.generated.ndjson

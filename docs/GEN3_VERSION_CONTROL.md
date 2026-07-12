@@ -72,18 +72,18 @@ LINE-RANGE | LAST CHANGE                             | ACTOR                    
 -----------+-----------------------------------------+--------------------------+------------------------------------------------------------------+-----------------------------------------------------------------
 250-257    | 56a3a094 2026-07-10 SMARCH — Sweetspot… | pre-Gen3 history         | pre-Gen3 history                                                 | pre-Gen3 history
 258        | 8cec3532 2026-07-12 V-21 wave 18: stri… | pre-Gen3 history         | pre-Gen3 history                                                 | pre-Gen3 history
-259-262    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+259-262    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
 263        | 56a3a094 2026-07-10 SMARCH — Sweetspot… | pre-Gen3 history         | pre-Gen3 history                                                 | pre-Gen3 history
-264-269    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+264-269    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
 270        | 8cec3532 2026-07-12 V-21 wave 18: stri… | pre-Gen3 history         | pre-Gen3 history                                                 | pre-Gen3 history
-271        | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
-272-274    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
-275        | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
-276-278    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+271        | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+272-274    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+275        | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+276-278    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
 279        | 8cec3532 2026-07-12 V-21 wave 18: stri… | pre-Gen3 history         | pre-Gen3 history                                                 | pre-Gen3 history
 280-281    | 56a3a094 2026-07-10 SMARCH — Sweetspot… | pre-Gen3 history         | pre-Gen3 history                                                 | pre-Gen3 history
-282        | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
-283-293    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | bdd-main@019f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+282        | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
+283-293    | 6f295d2f 2026-07-11 SMOA wave-6: atomi… | dev@1f4d06        | implemented atomic owner-safe …; why: serialize every acquire …  | node tools/sma-lease.mjs selftest && npm run gen3:self… (exit 0)
 ```
 
 Umbrella CLI integration note for the orchestrator: register `blame` in

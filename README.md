@@ -62,7 +62,7 @@ whose authority, proven how:
 
 ```text
 $ sma blame --intent tools/sma-lease.ts --lines 259:262
-259-262 | 6f295d2f 2026-07-11 | bdd-main@019f4d06 | implemented atomic owner-safe
+259-262 | 6f295d2f 2026-07-11 | dev@1f4d06 | implemented atomic owner-safe
         | locking; why: serialize every acquire | node …sma-lease… selftest (exit 0)
 ```
 
