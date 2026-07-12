@@ -1,6 +1,6 @@
 ---
 name: sma-enforcer
-description: Enforce Sweetspot Modular Architecture in a project by scanning for bricks, validating module.sweetspot.json manifests, reporting brick health/status/provenance, running SMA security and canonical gates, regenerating the brick wiki, AND coordinating multi-agent work via leases and the agent-context log. Use when asked to apply SMA, audit SMA compliance, identify reusable bricks, check canonical readiness, prepare multi-agent work, or enforce SSA/SSI/SSTF/SPE/SRS/SVA/SRLS/SEV gates.
+description: Enforce Sweetspot Modular Architecture in a project by scanning for bricks, validating module.sweetspot.json manifests, reporting brick health/status/provenance, running SMA security and canonical gates, regenerating the brick wiki, AND coordinating multi-agent work via leases and the agent-context log. Use when asked to apply SMA, audit SMA compliance, identify reusable bricks, check canonical readiness, prepare multi-agent work, or enforce SSA/SSI/STF/SPE/SRS/SVA/SRLS/SEV gates.
 ---
 
 # SMA Enforcer

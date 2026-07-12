@@ -8,7 +8,7 @@ definition. Each term stands on its own.
 ## Find the term for your task
 
 - **Package or reuse code:** [brick](#brick), [manifest](#manifest), [registry](#registry), [canonical](#canonical), [capsule](#capsule).
-- **Prove that code is ready:** [gate](#gate), [SSA-v2](#ssa-v2), [SSI](#ssi), [SSTF](#sstf), [SPE](#spe), [SRS](#srs), [SVA](#sva), [SRLS](#srls), [SEV](#sev), [SSC](#ssc), [provenance seal](#provenance-seal), [license lattice](#license-lattice).
+- **Prove that code is ready:** [gate](#gate), [SSA-v2](#ssa-v2), [SSI](#ssi), [STF](#stf), [SPE](#spe), [SRS](#srs), [SVA](#sva), [SRLS](#srls), [SEV](#sev), [SSC](#ssc), [provenance seal](#provenance-seal), [license lattice](#license-lattice).
 - **Coordinate agents safely:** [Gen3](#gen3), [lease](#lease), [agent-context](#agent-context), [conflict report](#conflict-report).
 - **Use an optional workflow:** [SUP](#sup), [SMOA](#smoa), [SFF](#sff).
 
@@ -108,9 +108,9 @@ SSC, Sweetspot Supply Chain and Provenance, records where a brick came from and 
 
 SSI is the failure-isolation and access-gating contract. It keeps a brick from taking down its host by requiring safe loading and fallback behavior, and it makes feature, tier, authentication, or authorization access explicit where those gates apply.
 
-## SSTF
+## STF
 
-SSTF is the testing-proof contract. It requires executable coverage for expected behavior, edge cases, service contracts, security regressions, and clone adapters so a copied brick arrives with proof of what it does and where it can fail.
+STF is the testing-proof contract. It requires executable coverage for expected behavior, edge cases, service contracts, security regressions, and clone adapters so a copied brick arrives with proof of what it does and where it can fail.
 
 ## SUP
 

@@ -28,17 +28,17 @@ folder of reusable workflow instructions—is installed. Reading is safe;
 commands such as `claim`, `complete`, and `verify` change plan state and belong
 to an active agent workflow, not this lesson.
 
-You need Git for this exercise because `git archive` copies the committed plan
-into the temporary folder. You do not need the optional SUP skill: the lesson
-still reads the task directly when `uvp.py` is absent.
+The lesson copies a small committed example plan (`examples/ultravision-lesson`)
+into a temporary folder and reads one task from it. You do not need the optional
+SUP skill: the lesson still reads the task directly when `uvp.py` is absent.
 
 ## Try it
 
 Run this block from the SMARCH folder. It rebuilds the **fixture portfolio**, a
 small collection of safe practice projects at
-`tools/evals/fixtures/portfolio`, copies the **committed snapshot**—the version
-saved in Git—of `.UltraVision` into a temporary folder, and reads lesson 17's
-task. It also tries the read-only `uvp next` command when the optional helper is
+`tools/evals/fixtures/portfolio`, copies the committed **example plan** at
+`examples/ultravision-lesson` into a temporary folder, and reads its one task.
+It also tries the read-only `uvp next` command when the optional helper is
 installed. Nothing in the real plan is changed.
 
 ```bash
@@ -52,7 +52,7 @@ cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO" >/dev/null
 mkdir -p "$PLAN_COPY"
-git archive HEAD .UltraVision | tar -x -C "$PLAN_COPY"
+cp -r "$SMARCH_DIR/examples/ultravision-lesson/.UltraVision" "$PLAN_COPY/"
 
 node --input-type=module <<'NODE'
 import fs from "node:fs";
@@ -79,9 +79,12 @@ console.log(`Gate: ${task.gates[0]}`);
 NODE
 
 if [ -f "$UVP" ]; then
-  python3 "$UVP" --root "$PLAN_COPY/.UltraVision" next \
-    --module docs --limit 1 >/dev/null
-  echo "Optional uvp read: completed"
+  if python3 "$UVP" --root "$PLAN_COPY/.UltraVision" next \
+    --module docs --limit 1 >/dev/null 2>&1; then
+    echo "Optional uvp read: completed"
+  else
+    echo "Optional uvp read: skipped (minimal example plan)"
+  fi
 else
   echo "Optional uvp read: skipped (SUP skill is not installed)"
 fi
@@ -109,8 +112,8 @@ python3 ~/.claude/skills/f5-ultravisionplan/scripts/uvp.py --root .UltraVision n
 ```
 
 > **Stuck? This is normal.** `Optional uvp read: skipped` is a valid result, not
-> a missing prerequisite. If `git archive` fails instead, confirm you are in
-> the SMARCH Git checkout and run the complete block again.
+> a missing prerequisite. If the copy step fails instead, confirm you are in
+> the SMARCH checkout and run the complete block again.
 
 ## What you just did
 

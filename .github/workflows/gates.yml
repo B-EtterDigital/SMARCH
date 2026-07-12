@@ -10,7 +10,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24 }
       - name: install dependencies
-        run: npm install
+        run: npm ci
+      - name: install dashboard dependencies (the quality gate lints web/src with types)
+        run: npm --prefix web ci
       - name: enforce the code-quality ratchet
         run: npm run gate:quality
 
@@ -22,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24 }
       - name: install dependencies
-        run: npm install
+        run: npm ci
       - name: run the TypeScript and Gen3 gate battery
         run: npm run check
       - name: scan repository history for leaked secrets

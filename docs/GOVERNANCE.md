@@ -68,7 +68,7 @@ Demotion statuses:
 |------|----------------|
 | Architect | Boundary, public API, adapter shape |
 | Security | secrets, authz, RLS, env, vulnerability checks |
-| Tester | [SSTF](GLOSSARY.md#sstf) coverage and regression confidence |
+| Tester | [STF](GLOSSARY.md#stf) coverage and regression confidence |
 | Performance | [SPE](GLOSSARY.md#spe) thresholds and N+1 risk |
 | Release | SSRA readiness and deployment risk |
 | Registry Maintainer | canonicalization evidence, duplicate clusters, metadata quality |

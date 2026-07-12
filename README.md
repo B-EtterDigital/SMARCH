@@ -137,7 +137,7 @@ license arrives by email while checkout is built:
 | `agent-skills/` | Install instructions for Claude Code, Codex, and OpenCode |
 | `examples/` | Example brick and build manifests (fictional `acme-*` portfolio) |
 | `templates/` | Files to copy into new projects and modules |
-| `SPE/`, `SRS/`, `SSTF-v1/` | Performance, observability, and test-framework source material |
+| `SSA-v2/`, `SSI/`, `SPE/`, `SRS/`, `STF-v1/` | The five pillars: security/architecture boundary, isolation, performance, observability, and test-framework source material |
 
 ## Pointing it at your own code
 
@@ -192,7 +192,7 @@ The optional skill layers (install with
 ## Minimum Bar
 
 A brick is not registry-grade until these are explicit: minimum responsible
-code, SSA-v2 boundary, SSI isolation (when applicable), SSTF tests, SPE
+code, SSA-v2 boundary, SSI isolation (when applicable), STF tests, SPE
 performance expectations, SRS observability, security audit, RLS/storage
 matrix (when data access applies), env and secret contract, provenance
 record, and clone instructions.

@@ -198,7 +198,7 @@ export function courseHtml(bricks: CompactBrick[]): string {
     <div class="grid">
       <article class="card"><p class="eyebrow">SSA-v2</p><h3>Security Boundary</h3><p>No frontend secrets, no privileged direct calls, explicit data paths.</p></article>
       <article class="card"><p class="eyebrow">SSI</p><h3>Failure Isolation</h3><p>Lazy safety, error boundary, fallback, and access gate.</p></article>
-      <article class="card"><p class="eyebrow">SSTF</p><h3>Proof Tests</h3><p>Behavior, contracts, edge cases, and security regressions.</p></article>
+      <article class="card"><p class="eyebrow">STF</p><h3>Proof Tests</h3><p>Behavior, contracts, edge cases, and security regressions.</p></article>
       <article class="card"><p class="eyebrow">SVA</p><h3>Vulnerability Gate</h3><p>Secrets, authz, RLS, dependency, and attack-surface checks.</p></article>
     </div>
   </section>

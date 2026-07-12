@@ -40,7 +40,7 @@ These names are useful in tooling and manifests, but should not be the first thi
 |------|---------------|
 | SSA-v2 | Security and architecture boundary |
 | [SSI](GLOSSARY.md#ssi) | Failure isolation and access gating |
-| [SSTF](GLOSSARY.md#sstf) | Testing proof |
+| [STF](GLOSSARY.md#stf) | Testing proof |
 | [SPE](GLOSSARY.md#spe) | Performance proof |
 | [SRS](GLOSSARY.md#srs) | Observability proof |
 | SSRA | Release readiness |

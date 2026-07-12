@@ -10,7 +10,7 @@ The documentation module teaches the framework and records its public contracts.
 
 - `docs/**`, `examples/**`, and `templates/project/**`
 - `templates/agents/**` and `templates/brick/**`
-- `SPE/**`, `SRS/**`, and `SSTF-v1/**`
+- `SSA-v2/**`, `SSI/**`, `SPE/**`, `SRS/**`, and `STF-v1/**`
 - Root public documents listed under the docs module in `sma.gen3.json`
 
 ## Gates
@@ -21,7 +21,7 @@ The module gate is available to Gen3 module dispatch, but the current GitHub wor
 
 ## Public seams
 
-Guides, examples, agent/project/brick templates, SPE/SRS/SSTF documents, and the root public documents registered in `sma.gen3.json` are the module's seams. Commands and schemas remain authoritative in their implementation modules; documentation links to them and states their observed behavior.
+Guides, examples, agent/project/brick templates, SPE/SRS/STF documents, and the root public documents registered in `sma.gen3.json` are the module's seams. Commands and schemas remain authoritative in their implementation modules; documentation links to them and states their observed behavior.
 
 ## Graph and ownership query
 

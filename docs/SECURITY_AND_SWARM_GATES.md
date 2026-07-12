@@ -12,7 +12,7 @@ The goal is not more ceremony. The goal is making multi-agent development and hi
 |-------|------|
 | SSA-v2 | Security and architecture boundary |
 | [SSI](GLOSSARY.md#ssi) | Runtime isolation and access gates |
-| [SSTF](GLOSSARY.md#sstf) | Behavior and regression tests |
+| [STF](GLOSSARY.md#stf) | Behavior and regression tests |
 | [SPE](GLOSSARY.md#spe) | Performance limits |
 | [SRS](GLOSSARY.md#srs) | Observability and incident evidence |
 | SSRA | Release readiness |

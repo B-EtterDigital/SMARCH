@@ -32,7 +32,7 @@ Exit criteria:
 
 ## Phase 3: Gates
 
-- Add [SSTF](GLOSSARY.md#sstf) tests.
+- Add [STF](GLOSSARY.md#stf) tests.
 - Add [SVA](GLOSSARY.md#sva) security checks.
 - Add [SEV](GLOSSARY.md#sev) env validation.
 - Add [SPE](GLOSSARY.md#spe) measurements for UI/perf-heavy bricks.

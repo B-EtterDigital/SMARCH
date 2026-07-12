@@ -292,9 +292,11 @@
         "templates/agents/**",
         "templates/project/**",
         "templates/brick/**",
+        "SSA-v2/**",
+        "SSI/**",
         "SPE/**",
         "SRS/**",
-        "SSTF-v1/**"
+        "STF-v1/**"
       ],
       "requiredLocalGates": [
         "npm run source:size:gate"

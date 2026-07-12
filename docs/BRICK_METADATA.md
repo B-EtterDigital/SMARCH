@@ -37,7 +37,7 @@ The validator expects candidate and canonical bricks to declare
 | `owner` | Primary owner, team, reviewers |
 | `boundaries` | Owned paths, public paths, private paths, forbidden imports |
 | `classification` | Data sensitivity and risk |
-| `sweetspot` | Gate status for SSA-v2, [SSI](GLOSSARY.md#ssi), [SSTF](GLOSSARY.md#sstf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), SSRA, SAS, [SVA](GLOSSARY.md#sva), [SRLS](GLOSSARY.md#srls), [SEV](GLOSSARY.md#sev), [SSC](GLOSSARY.md#ssc), SAI |
+| `sweetspot` | Gate status for SSA-v2, [SSI](GLOSSARY.md#ssi), [STF](GLOSSARY.md#stf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), SSRA, SAS, [SVA](GLOSSARY.md#sva), [SRLS](GLOSSARY.md#srls), [SEV](GLOSSARY.md#sev), [SSC](GLOSSARY.md#ssc), SAI |
 | `interfaces` | Public API, adapters, dependencies, forbidden dependencies |
 | `security` | RLS, env, vulnerabilities |
 | `supply_chain` | Dependencies, licenses, checksums, SBOM path |

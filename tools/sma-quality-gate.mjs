@@ -110,6 +110,17 @@ function measureTypeScript() {
 }
 
 function measureEslint() {
+  // web/ is a separate package with its own deps. Type-aware linting of
+  // web/src needs its node_modules present, or every dependency import
+  // resolves to `any` and no-unsafe-* floods with hundreds of phantom errors
+  // (exactly what a fresh CI clone hit). Fail with an actionable message
+  // instead of a misleading count.
+  if (!existsSync(resolve(ROOT, "web/node_modules"))) {
+    throw codedError(
+      "WEB_DEPS_MISSING",
+      "web/node_modules is absent but the quality gate lints web/src with types. Run `npm --prefix web ci` first — linting without it yields false no-unsafe-* errors.",
+    );
+  }
   const result = runBin("eslint", [
     "--format",
     "json",

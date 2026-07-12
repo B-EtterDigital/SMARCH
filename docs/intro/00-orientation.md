@@ -57,7 +57,7 @@ ignore.
   the system and how to install those instructions.
 - **`examples/` and `templates/`** provide fictional samples and starting points
   you can inspect without risking a real project.
-- **`SPE/`, `SRS/`, and `SSTF-v1/`** contain source material for performance,
+- **`SPE/`, `SRS/`, and `STF-v1/`** contain source material for performance,
   observability, and testing practices.
 
 You can leave that list here. The lessons return to each area when you need it.

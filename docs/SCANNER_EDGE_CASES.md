@@ -25,7 +25,7 @@ The scanner must skip obvious archive-like folders such as:
 - `stream_preview_release`
 - `fix-push`
 - `backup`
-- generated collection folders starting with `SSA_SSI_SSTF_SPA_COLLECTION_`
+- generated collection folders starting with `SSA_SSI_STF_SPA_COLLECTION_`
 
 Do not silently merge active and archived code into one registry.
 

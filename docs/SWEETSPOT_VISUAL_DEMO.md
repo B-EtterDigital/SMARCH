@@ -32,7 +32,7 @@ Use SVD for:
 - multi-user or live-session proof
 - visual regression packets for complex UI
 
-Do not use SVD as a replacement for unit, integration, security, or performance tests. It complements [SSTF](GLOSSARY.md#sstf), SRS, [SSI](GLOSSARY.md#ssi), and SSRA by making user-visible behavior reviewable.
+Do not use SVD as a replacement for unit, integration, security, or performance tests. It complements [STF](GLOSSARY.md#stf), SRS, [SSI](GLOSSARY.md#ssi), and SSRA by making user-visible behavior reviewable.
 
 ## SVD Levels
 

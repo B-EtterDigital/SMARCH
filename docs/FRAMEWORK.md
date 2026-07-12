@@ -46,7 +46,7 @@ SSTT task
   -> SEV declares environment and secret rules
   -> SRLS declares database/storage access rules
   -> SSI isolates runtime failure and access gates
-  -> SSTF proves behavior and security cases
+  -> STF proves behavior and security cases
   -> SPE proves performance limits
   -> SVA runs vulnerability checks
   -> SRS records errors, degradation, and audit signals
@@ -56,7 +56,7 @@ SSTT task
   -> Registry scores and indexes the brick
 ```
 
-SMA does not replace SSA-v2, SSI, [SSTF](GLOSSARY.md#sstf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), SSRA, or SSTT. It binds them into one copyable module contract.
+SMA does not replace SSA-v2, SSI, [STF](GLOSSARY.md#stf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), SSRA, or SSTT. It binds them into one copyable module contract.
 SVD is optional: it is used when a brick or build needs visual proof of a user journey.
 
 ## Brick Types
@@ -83,7 +83,7 @@ A brick has ten required contracts. If one is missing, it can still be copied ma
 2. `Boundaries`: public API, private files, allowed dependencies, forbidden dependencies.
 3. `SSA-v2`: minimum responsible code, no frontend secrets, no direct privileged APIs, explicit DB columns, no unscoped server calls.
 4. `SSI`: lazy import safety, error boundary, suspense/skeleton, feature/tier/auth gates where relevant.
-5. `SSTF`: tests for behavior, edge cases, service contracts, security regressions, and clone adapters.
+5. `STF`: tests for behavior, edge cases, service contracts, security regressions, and clone adapters.
 6. `SPE`: measurable limits for requests, memory, DOM weight, bundle cost, latency, and N+1 patterns.
 7. `SRS`: error codes, degradation paths, privacy-safe observability, incident breadcrumbs.
 8. `Security`: VibeSec-style vuln checks, RLS matrix, env/secret validation, data classification.
@@ -250,7 +250,7 @@ rather than separate numeric validator thresholds.
 
 - SSA-v2: 90+
 - SSI: 90+ when UI/runtime isolation applies
-- SSTF: 80+
+- STF: 80+
 - SPE: green or documented non-applicability
 - SRS: observability hooks present
 - SVA: no high or critical findings
@@ -267,7 +267,7 @@ Use scores to rank, not to hide weak spots.
 |------|--------|
 | SSA-v2 boundary discipline | 15 |
 | SSI isolation | 10 |
-| SSTF confidence | 15 |
+| STF confidence | 15 |
 | SPE performance | 10 |
 | SRS observability | 10 |
 | SVA vulnerability posture | 15 |
@@ -350,7 +350,7 @@ Do not make model provenance a leaderboard. A brick made by a famous model can s
 3. Read clone contract before copying.
 4. Copy files, never move them from source.
 5. Adapt only declared adapter points.
-6. Run SSA, SSI, SSTF, SPE, SVA, SRLS, and SEV gates.
+6. Run SSA, SSI, STF, SPE, SVA, SRLS, and SEV gates.
 7. Record new source chain and model touch event.
 8. If improvements are general, promote the source brick or create a new variant.
 

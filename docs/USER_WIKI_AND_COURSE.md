@@ -62,7 +62,7 @@ New users should learn in this order:
 2. Why small files and isolation help AI teams.
 3. How [SSA-v2](GLOSSARY.md#ssa-v2) protects secrets and data boundaries.
 4. How [SSI](GLOSSARY.md#ssi) prevents one broken module from taking down the app.
-5. How [SSTF](GLOSSARY.md#sstf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), and security gates prove the brick.
+5. How [STF](GLOSSARY.md#stf), [SPE](GLOSSARY.md#spe), [SRS](GLOSSARY.md#srs), and security gates prove the brick.
 6. How to read a brick manifest.
 7. How to copy a brick safely.
 8. How model provenance helps trace changes.

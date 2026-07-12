@@ -1,4 +1,4 @@
-# SWEETSPOT TESTING FRAMEWORK V1 ([SSTF-v1](../docs/GLOSSARY.md#sstf))
+# SWEETSPOT TESTING FRAMEWORK V1 ([STF-v1](../docs/GLOSSARY.md#stf))
 
 This document defines the Sweetspot test architecture, test patterns, and confidence model. Engineers and reviewers need it when they add coverage, choose a test layer, or assess a release gate. Read it before writing a new test suite and when a test strategy leaves a domain risk unclear. Remember to cover behavior at the cheapest layer that can prove it without hiding integration risk.
 
@@ -10,7 +10,7 @@ Created: March 2026 | Reference Implementation: Acme Studio (~1,460 tests across
 
 ## 1. PHILOSOPHY
 
-The Sweetspot Testing Framework targets the **maximum confidence-per-test ratio**. Instead of chasing 100% line coverage (which is expensive and misleading), SSTF focuses on **domain coverage** -- ensuring every distinct module, behavior, and integration point is verified through the right test type at the right layer.
+The Sweetspot Testing Framework targets the **maximum confidence-per-test ratio**. Instead of chasing 100% line coverage (which is expensive and misleading), STF focuses on **domain coverage** -- ensuring every distinct module, behavior, and integration point is verified through the right test type at the right layer.
 
 ### Core Principles
 
@@ -72,7 +72,7 @@ project-root/
       TEST-MANIFEST.md       # Complete test inventory
       frontend/              # Symlinks to actual test files
       backend/               # Symlinks to actual test files
-    SSTF-v1/
+    STF-v1/
       FRAMEWORK.md           # This document
 ```
 
@@ -504,7 +504,7 @@ vi.mock('@/types/acme-story-episode', () => ({}));
 | Error reporting deep dive (88 tests) | ~2h | 4-layer [SSI](../docs/GLOSSARY.md#ssi) architecture |
 | Domain expansion (12 files, 555 tests) | ~4h | Stores, hooks, utils, services, contexts |
 | Test infrastructure (setup, config, runner) | ~1h | One-time investment |
-| SSTF-v1 documentation | ~1h | This document |
+| STF-v1 documentation | ~1h | This document |
 | **Total** | **~16h** | **1,096 frontend + ~117 backend** |
 
 ### 7.2 Cost Per Test
@@ -532,7 +532,7 @@ Total wall time:    ~63 seconds
 
 ---
 
-## 8. APPLYING SSTF TO A NEW PROJECT
+## 8. APPLYING STF TO A NEW PROJECT
 
 ### Step 1: Bootstrap (30 min)
 
@@ -625,7 +625,7 @@ test:
 - Database migration correctness (need separate DB test suite)
 
 ### The Sweetspot:
-**SSTF gives you ~80% confidence at ~20% of the cost of "100% coverage".**
+**STF gives you ~80% confidence at ~20% of the cost of "100% coverage".**
 
 The remaining 20% confidence comes from:
 - Manual QA for visual/UX
@@ -892,5 +892,5 @@ BACKEND
 
 ---
 
-*SSTF-v1 -- The Sweetspot Testing Framework*
+*STF-v1 -- The Sweetspot Testing Framework*
 *Because the best test suite is the one that actually runs, passes, and catches bugs.*

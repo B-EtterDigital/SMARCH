@@ -17,13 +17,16 @@ const workflow = readFileSync(new URL("../.github/workflows/gates.yml", import.m
 /** @type {Array<[RegExp, string]>} */
 const required = [
   [/pull_request\s*:/, "pull_request trigger"],
-  [/\brun:\s*npm install\b/, "npm install"],
+  [/\brun:\s*npm ci\b/, "npm ci (reproducible install from the locked tree)"],
+  [/\brun:\s*npm --prefix web ci\b/, "dashboard dependencies (the quality gate lints web/src with types)"],
+  [/\brun:\s*npm run gate:quality\b/, "code-quality ratchet"],
   [/\brun:\s*npm run check\b/, "npm run check"],
   [/uses:\s*gitleaks\/gitleaks-action@v2\b/, "gitleaks action"],
   [/\brun:\s*node tools\/sma-leak-gate\.mjs\b/, "repository leak gate"],
   [/\brun:\s*node tools\/evals\/journeys\/index\.mjs\b/, "journeys index"],
   [/\brun:\s*node tools\/evals\/fixture-snapshot\.mjs --check\b/, "fixture snapshot check"],
   [/\brun:\s*node tools\/gen-public-ledger\.mjs\b/, "public ledger generation"],
+  [/\brun:\s*node tools\/evals\/stranger-smoke\.mjs\b/, "stranger smoke test"],
 ];
 
 for (const [pattern, label] of required) {
