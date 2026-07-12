@@ -62,3 +62,17 @@ Every signal and outcome is appended to the `spl-process-lifecycle` context log 
 | Windows | PowerShell `Get-Process` plus matching `StartTime.Ticks` | `Get-Process.SessionId` | `Stop-Process`, grace, then `-Force` | CIM logical CPUs, load percentage, and physical memory |
 
 All adapters preserve the PID-plus-opaque-start-token contract and recheck identity immediately before termination. The macOS and Windows budget APIs do not expose comparable swap detail through these probes, so `swap_used_pct` is reported as `0`; available physical memory and load still drive pressure. Unsupported future platforms fail with typed `SPL_PLATFORM_UNSUPPORTED` and this documentation pointer.
+
+## Verified end to end
+
+`sma spl-exec` is not aspirational — driven on a real process, the child
+registers ACTIVE against its lease mid-run and auto-unregisters on exit:
+
+```text
+$ sma spl-exec --lease auto --label demo -- bash -c 'sleep 4'
+# mid-run:  sma spl list  →  PID … lease-… ACTIVE  demo
+# after:    registry events: 1 registered, 1 unregistered   (0 left ACTIVE)
+```
+
+If the wrapper is killed uncleanly instead of exiting, the child's lease
+expires and the next `sma spl reap` reclaims it. No orphan survives its owner.
