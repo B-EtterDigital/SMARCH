@@ -11,6 +11,9 @@ without turning the repo into a junk drawer.
 > boundaries and evidence. The registry only matters if bad bricks are
 > rejected.
 
+**New here? Start with the bet:** [Why SMARCH](docs/WHY_SMARCH.md) — the case
+for where coding is going and the four mechanisms that pay off if it's right.
+
 [![gates](https://github.com/B-EtterDigital/SMARCH/actions/workflows/gates.yml/badge.svg)](https://github.com/B-EtterDigital/SMARCH/actions/workflows/gates.yml)
 ![license](https://img.shields.io/badge/license-Apache--2.0-blue)
 [![site](https://img.shields.io/badge/site-smarch.netlify.app-ffc21f)](https://smarch.netlify.app)
