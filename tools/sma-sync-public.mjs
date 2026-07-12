@@ -33,6 +33,7 @@ const TOOL_PATH = fileURLToPath(import.meta.url);
 const SMA_ROOT = resolve(dirname(TOOL_PATH), '..');
 const LEAK_GATE_PATH = resolve(SMA_ROOT, 'tools/sma-leak-gate.mjs');
 const DEFAULT_CONFIG = 'registry/sync-public.config.json';
+const DEFAULT_PRIVATE_OVERLAY = 'registry/private-overlay.json';
 const GITLEAKS_CONFIG = '.gitleaks.toml';
 const APPLY_JOURNAL_VERSION = 1;
 
@@ -40,6 +41,7 @@ const APPLY_JOURNAL_VERSION = 1;
 /** @typedef {{from: string, to: string}} Replacement */
 /** @typedef {Replacement & {count: number}} ReplacementCount */
 /** @typedef {{allowlistGlobs: string[], excludeGlobs: string[], replacements: Replacement[]}} SyncConfig */
+/** @typedef {{path: string, privateGlobs: string[], privatePatterns: string[]}} PrivateOverlay */
 /** @typedef {{status: string, exit: number | null, output: string}} GateReport */
 /** @typedef {{status: string, mode: string, from: string, to: string, config: string, add_count: number, change_count: number, remove_count: number, adds: string[], changes: string[], removes: string[], replacement_counts: ReplacementCount[], leak_gate: GateReport | null, gitleaks: GateReport | null}} SyncReport */
 /** @typedef {{status: number | null, stdout: string, stderr: string, error?: NodeJS.ErrnoException}} SpawnResult */
@@ -109,7 +111,8 @@ function executeSync(options, execution = {}) {
 
   const configPath = resolve(options.config || join(fromRoot, DEFAULT_CONFIG));
   const config = readConfig(configPath);
-  const sourceFiles = collectFiles(fromRoot).filter((file) => isSelected(file, config));
+  const overlay = readPrivateOverlay(join(fromRoot, DEFAULT_PRIVATE_OVERLAY));
+  const sourceFiles = collectFiles(fromRoot).filter((file) => isSelected(file, config) && !isPrivateFile(fromRoot, file, overlay));
   const targetFiles = existsSync(toRoot) ? collectFiles(toRoot).filter((file) => isSelected(file, config)) : [];
   const tempRoot = mkdtempSync(join(tmpdir(), 'sma-sync-public-'));
   const stageRoot = join(tempRoot, 'stage');
@@ -171,7 +174,7 @@ function executeSync(options, execution = {}) {
       gitleaks: null,
     };
 
-    const leakResult = runLeakGate(stageRoot);
+    const leakResult = runLeakGate(stageRoot, overlay.path);
     report.leak_gate = {
       status: leakResult.status === 0 ? 'passed' : 'failed',
       exit: leakResult.status,
@@ -213,6 +216,40 @@ function executeSync(options, execution = {}) {
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
+}
+
+/** @param {string} filePath @returns {PrivateOverlay} */
+function readPrivateOverlay(filePath) {
+  if (!existsSync(filePath)) return { path: filePath, privateGlobs: [], privatePatterns: [] };
+  let payload;
+  try { payload = JSON.parse(readFileSync(filePath, 'utf8')); } catch (error) {
+    throw codedError('OVERLAY_INVALID', `cannot parse private overlay: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw codedError('OVERLAY_INVALID', 'private overlay must be a JSON object');
+  const object = /** @type {Record<string, unknown>} */ (payload);
+  const privateGlobs = optionalStringArray(object.private_globs, 'private_globs');
+  const privatePatterns = [
+    ...optionalStringArray(object.private_endpoint_patterns, 'private_endpoint_patterns'),
+    ...optionalStringArray(object.private_name_patterns, 'private_name_patterns'),
+  ];
+  return { path: filePath, privateGlobs, privatePatterns };
+}
+
+/** @param {unknown} value @param {string} name */
+function optionalStringArray(value, name) {
+  if (value === undefined) return [];
+  return validateStringArray(value, name);
+}
+
+/** @param {string} root @param {string} file @param {PrivateOverlay} overlay */
+function isPrivateFile(root, file, overlay) {
+  if (normalizePath(file) === DEFAULT_PRIVATE_OVERLAY) return true;
+  if (overlay.privateGlobs.some((glob) => matchesGlob(file, glob))) return true;
+  const text = decodeText(readFileSync(resolve(root, file)));
+  if (text === null) return false;
+  if (text.split(/\r?\n/).some((line) => /^\s*(?:(?:\/\/|#|;|\/\*+|\*|<!--)\s*)?@sma-private(?:\s*(?:\*\/|-->)\s*)?$/.test(line))) return true;
+  const normalized = text.toLowerCase();
+  return overlay.privatePatterns.some((pattern) => normalized.includes(pattern.toLowerCase()));
 }
 
 /** @param {string} filePath @returns {SyncConfig} */
@@ -312,8 +349,8 @@ function matchesGlob(file, glob) {
   return new RegExp(`${source}$`).test(file);
 }
 
-/** @param {string} stageRoot @returns {import('node:child_process').SpawnSyncReturns<string>} */
-function runLeakGate(stageRoot) {
+/** @param {string} stageRoot @param {string} overlayPath @returns {import('node:child_process').SpawnSyncReturns<string>} */
+function runLeakGate(stageRoot, overlayPath) {
   try {
     execFileSync('git', ['init', '-q'], { cwd: stageRoot, stdio: ['ignore', 'ignore', 'pipe'] });
     execFileSync('git', ['add', '-f', '--', '.'], { cwd: stageRoot, stdio: ['ignore', 'ignore', 'pipe'] });
@@ -322,7 +359,8 @@ function runLeakGate(stageRoot) {
     const detail = failure.stderr?.toString('utf8').trim() || failure.message;
     throw codedError('STAGING_GIT_FAILED', detail);
   }
-  return spawnSync(process.execPath, [LEAK_GATE_PATH], { cwd: stageRoot, encoding: 'utf8' });
+  const overlayArgs = existsSync(overlayPath) ? ['--overlay', overlayPath] : [];
+  return spawnSync(process.execPath, [LEAK_GATE_PATH, '--json', ...overlayArgs], { cwd: stageRoot, encoding: 'utf8' });
 }
 
 /** @param {string} stageRoot @param {Execution} execution @returns {{available: boolean, status: number | null, stdout: string, stderr: string}} */
@@ -626,6 +664,44 @@ function runSelftest() {
     assert(readFileSync(join(scrubTarget, 'note.txt'), 'utf8') === 'owner=<private-home>\n', 'scrub replacement was not applied');
     assert(gitleaksCalls.length === 1, 'gitleaks was not run for the staging tree');
     assertGitleaksInvocation(gitleaksCalls[0]);
+
+    const overlaySource = join(fixtureRoot, 'overlay-source');
+    const overlayTarget = join(fixtureRoot, 'overlay-target');
+    mkdirSync(join(overlaySource, 'registry'), { recursive: true });
+    mkdirSync(join(overlaySource, 'internal'), { recursive: true });
+    writeFileSync(join(overlaySource, 'registry/private-overlay.json'), JSON.stringify({
+      private_globs: ['internal/**'],
+      private_endpoint_patterns: ['https://private.invalid'],
+      private_name_patterns: ['Internal Widget'],
+    }));
+    writeFileSync(join(overlaySource, 'public.txt'), 'public\n');
+    writeFileSync(join(overlaySource, 'marked.txt'), '# @sma-private\n');
+    writeFileSync(join(overlaySource, 'internal/globbed.txt'), 'clean\n');
+    writeFileSync(join(overlaySource, 'endpoint.txt'), 'https://private.invalid\n');
+    writeFileSync(join(overlaySource, 'name.txt'), 'Internal Widget\n');
+    const overlayConfig = join(fixtureRoot, 'overlay-config.json');
+    writeFileSync(overlayConfig, JSON.stringify({ allowlist_globs: ['**/*.txt'], exclude_globs: [], replacements: [] }));
+    executeSync({ from: overlaySource, to: overlayTarget, config: overlayConfig, write: true }, passingGitleaks);
+    assert(existsSync(join(overlayTarget, 'public.txt')), 'public overlay fixture was not copied');
+    for (const privateFile of ['marked.txt', 'internal/globbed.txt', 'endpoint.txt', 'name.txt']) {
+      assert(!existsSync(join(overlayTarget, privateFile)), `private overlay fixture was copied: ${privateFile}`);
+    }
+    for (const [privateFile, content, expectedCategory] of [
+      ['marked.txt', '# @sma-private\n', 'private_marker'],
+      ['internal/globbed.txt', 'clean\n', 'private_overlay'],
+      ['endpoint.txt', 'https://private.invalid\n', 'private_endpoint'],
+      ['name.txt', 'Internal Widget\n', 'private_name'],
+    ]) {
+      const planted = join(fixtureRoot, `planted-${privateFile.replaceAll('/', '-')}`);
+      mkdirSync(join(planted, 'registry'), { recursive: true });
+      writeFileSync(join(planted, 'registry/private-overlay.json'), readFileSync(join(overlaySource, 'registry/private-overlay.json')));
+      mkdirSync(dirname(join(planted, privateFile)), { recursive: true });
+      writeFileSync(join(planted, privateFile), content);
+      const result = runLeakGate(planted, join(planted, 'registry/private-overlay.json'));
+      assert(result.status === 1, `force-planted private fixture passed leak gate: ${privateFile}`);
+      const plantedResult = /** @type {{hits: Array<{category: string}>}} */ (JSON.parse(result.stdout));
+      assert(plantedResult.hits.some((hit) => hit.category === expectedCategory), `force-planted fixture missing ${expectedCategory}`);
+    }
 
     const emptyConfig = join(fixtureRoot, 'empty-config.json');
     writeFileSync(emptyConfig, JSON.stringify({ allowlist_globs: [], exclude_globs: [], replacements: [] }));

@@ -26,14 +26,16 @@ const TOOL_PATH = fileURLToPath(import.meta.url);
 const SMA_ROOT = resolve(dirname(TOOL_PATH), '..');
 const PATTERNS_PATH = resolve(SMA_ROOT, 'registry/leak-patterns.json');
 const PATTERNS_REPO_PATH = 'registry/leak-patterns.json';
+const DEFAULT_OVERLAY_REPO_PATH = 'registry/private-overlay.json';
 
 // The gate and its pattern file necessarily contain pattern-shaped text
 // (selftest fixtures, the patterns themselves) — scanning them is always a
 // false positive. Everything else stays in scope.
-const SELF_EXCLUDE = new Set(['tools/sma-leak-gate.mjs', PATTERNS_REPO_PATH]);
+const SELF_EXCLUDE = new Set(['tools/sma-leak-gate.mjs', PATTERNS_REPO_PATH, 'registry/private-overlay.example.json']);
 const root = resolve(process.cwd());
 
-/** @typedef {{ allow?: string, json?: boolean, selftest?: boolean }} LeakOptions */
+/** @typedef {{ allow?: string, overlay?: string, json?: boolean, selftest?: boolean }} LeakOptions */
+/** @typedef {{ privateGlobs: string[], privatePatterns: LeakPattern[] }} PrivateOverlay */
 /** @typedef {{ category: string, pattern: string, normalized: string }} LeakPattern */
 /** @typedef {{ path: string, pattern: string }} LeakException */
 /** @typedef {{ check: "content" | "pathname", path: string, line: number, column: number, pattern: string, category: string }} LeakHit */
@@ -62,6 +64,9 @@ try {
 /** @param {LeakOptions} options @param {string} repoRoot @returns {LeakResult} */
 function scanLeaks(options, repoRoot) {
   const patterns = readPatterns(PATTERNS_PATH);
+  const overlayPath = options.overlay ? resolve(options.overlay) : resolve(repoRoot, DEFAULT_OVERLAY_REPO_PATH);
+  const overlay = readPrivateOverlay(overlayPath);
+  const overlayRepoPath = pathWithin(repoRoot, overlayPath);
   const exceptions = options.allow ? readExceptions(resolve(options.allow)) : [];
   const files = trackedFiles(repoRoot);
   const patternRegistryPath = pathWithin(repoRoot, PATTERNS_PATH);
@@ -72,6 +77,9 @@ function scanLeaks(options, repoRoot) {
   let allowedCount = 0;
 
   for (const file of files) {
+    if (!SELF_EXCLUDE.has(file) && overlay.privateGlobs.some((glob) => matchesGlob(file, glob))) {
+      hits.push({ check: 'pathname', path: file, line: 0, column: 1, pattern: 'private_glob', category: 'private_overlay' });
+    }
     for (const entry of patterns) {
       for (const matchIndex of findMatchIndexes(file.toLowerCase(), entry.normalized)) {
         /** @type {LeakHit} */
@@ -91,7 +99,7 @@ function scanLeaks(options, repoRoot) {
       }
     }
 
-    if (file === patternRegistryPath || file === allowPath || SELF_EXCLUDE.has(file)) continue;
+    if (file === patternRegistryPath || file === allowPath || file === overlayRepoPath || SELF_EXCLUDE.has(file)) continue;
     const absolutePath = resolve(repoRoot, file);
     if (!existsSync(absolutePath) || !lstatSync(absolutePath).isFile()) continue;
     const text = readTextFile(absolutePath);
@@ -100,7 +108,10 @@ function scanLeaks(options, repoRoot) {
     const lines = text.split(/\r?\n/);
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex];
-      for (const entry of patterns) {
+      if (isPrivateMarkerLine(line)) {
+        hits.push({ check: 'content', path: file, line: lineIndex + 1, column: line.indexOf('@sma-private') + 1, pattern: '@sma-private', category: 'private_marker' });
+      }
+      for (const entry of [...patterns, ...overlay.privatePatterns]) {
         for (const matchIndex of findMatchIndexes(line.toLowerCase(), entry.normalized)) {
           if (isSafePlaceholder(line, matchIndex, entry.pattern)) continue;
           /** @type {LeakHit} */
@@ -133,6 +144,55 @@ function scanLeaks(options, repoRoot) {
     hits,
   };
   return result;
+}
+
+/** @param {string} filePath @returns {PrivateOverlay} */
+function readPrivateOverlay(filePath) {
+  if (!existsSync(filePath)) return { privateGlobs: [], privatePatterns: [] };
+  let payload;
+  try { payload = JSON.parse(readFileSync(filePath, 'utf8')); } catch (error) {
+    throw codedError('OVERLAY_INVALID', `cannot parse private overlay: ${errorMessage(error)}`);
+  }
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw codedError('OVERLAY_INVALID', 'private overlay must be a JSON object');
+  const object = /** @type {Record<string, unknown>} */ (payload);
+  const privateGlobs = overlayStrings(object.private_globs, 'private_globs');
+  const endpointPatterns = overlayStrings(object.private_endpoint_patterns, 'private_endpoint_patterns');
+  const namePatterns = overlayStrings(object.private_name_patterns, 'private_name_patterns');
+  const privatePatterns = [
+    ...endpointPatterns.map((pattern) => ({ category: 'private_endpoint', pattern, normalized: pattern.toLowerCase() })),
+    ...namePatterns.map((pattern) => ({ category: 'private_name', pattern, normalized: pattern.toLowerCase() })),
+  ];
+  return { privateGlobs, privatePatterns };
+}
+
+/** @param {unknown} value @param {string} name @returns {string[]} */
+function overlayStrings(value, name) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !item)) throw codedError('OVERLAY_INVALID', `${name} must be an array of non-empty strings`);
+  return /** @type {string[]} */ (value);
+}
+
+/** @param {string} line */
+function isPrivateMarkerLine(line) {
+  // The marker must be the leading token of the line (after an optional comment
+  // or frontmatter prefix), so a real declaration — with or without a trailing
+  // reason — is caught, while an incidental mention inside code or prose is not.
+  return /^\s*(?:\/\/+|#+|;+|\/\*+|\*|<!--|---)?\s*@sma-private(?![-\w])/.test(line);
+}
+
+/** @param {string} file @param {string} glob */
+function matchesGlob(file, glob) {
+  const normalizedGlob = normalizePath(glob);
+  let source = '^';
+  for (let index = 0; index < normalizedGlob.length; index += 1) {
+    const char = normalizedGlob[index];
+    if (char === '*' && normalizedGlob[index + 1] === '*') {
+      if (normalizedGlob[index + 2] === '/') { source += '(?:.*/)?'; index += 2; } else { source += '.*'; index += 1; }
+    } else if (char === '*') source += '[^/]*';
+    else if (char === '?') source += '[^/]';
+    else source += char.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+  }
+  return new RegExp(`${source}$`).test(file);
 }
 
 /** @param {string} filePath @returns {LeakPattern[]} */
@@ -270,16 +330,50 @@ function runSelftest() {
       'placeholder=/home/[redacted] real=/home/private\n'
       + 'public=[team@gmail.com](mailto:team@gmail.com) private=owner@gmail.com\n',
     );
-    execFileSync('git', ['add', '--', 'mixed.txt', 'docs/@gmail.com/clean.txt'], { cwd: fixtureRoot, stdio: 'ignore' });
+    mkdirSync(resolve(fixtureRoot, 'registry'), { recursive: true });
+    writeFileSync(resolve(fixtureRoot, 'registry/private-overlay.json'), JSON.stringify({
+      private_globs: ['private/**'],
+      private_endpoint_patterns: ['https://private.invalid'],
+      private_name_patterns: ['Internal Widget'],
+    }));
+    mkdirSync(resolve(fixtureRoot, 'private'), { recursive: true });
+    writeFileSync(resolve(fixtureRoot, 'marked.txt'), '// @sma-private\n');
+    // A marker followed by an explanatory reason must still be caught — people
+    // annotate why a file is private, and forgetting the gate must be impossible.
+    writeFileSync(resolve(fixtureRoot, 'marked-reason.txt'), '// @sma-private internal watchdog bridge; never release\n');
+    writeFileSync(resolve(fixtureRoot, 'private/globbed.txt'), 'clean fixture\n');
+    writeFileSync(resolve(fixtureRoot, 'endpoint.txt'), 'url=https://private.invalid\n');
+    writeFileSync(resolve(fixtureRoot, 'name.txt'), 'service=Internal Widget\n');
+    // A file that merely mentions the token inside code/prose must NOT be flagged.
+    writeFileSync(resolve(fixtureRoot, 'mentions.txt'), 'const doc = "search for @sma-private-style markers";\n');
+    execFileSync('git', ['add', '--', '.'], { cwd: fixtureRoot, stdio: 'ignore' });
 
     const failed = spawnTool(fixtureRoot);
     assert(failed.status === 1, `leak hits must exit 1, received ${failed.status}`);
-    const failedResult = JSON.parse(failed.stdout);
-    assert(failedResult.hit_count === 3, `expected one pathname and two content hits, received ${failedResult.hit_count}`);
-    assert(failedResult.hits.filter((/** @type {{ check: string; }} */ hit) => hit.check === 'pathname').length === 1, 'private identifier in a tracked pathname must produce a pathname hit');
-    assert(failedResult.hits.every((/** @type {{ column: number; }} */ hit) => hit.column > 1), 'per-match hits must include their columns');
+    const failedResult = /** @type {LeakResult} */ (JSON.parse(failed.stdout));
+    assert(failedResult.hit_count === 8, `expected eight leak hits, received ${failedResult.hit_count}`);
+    assert(
+      failedResult.hits.some((hit) => hit.path === 'marked-reason.txt' && hit.pattern === '@sma-private'),
+      'a private marker with a trailing reason must be flagged',
+    );
+    assert(
+      !failedResult.hits.some((hit) => hit.path === 'mentions.txt'),
+      'an incidental in-code mention of the token must not be flagged',
+    );
+    assert(failedResult.hits.some((hit) => hit.category === 'private_marker'), 'private marker was not detected');
+    assert(failedResult.hits.some((hit) => hit.category === 'private_overlay'), 'overlay glob was not detected');
+    assert(failedResult.hits.some((hit) => hit.category === 'private_endpoint'), 'private endpoint was not detected');
+    assert(failedResult.hits.some((hit) => hit.category === 'private_name'), 'private name was not detected');
+    assert(failedResult.hits.some((hit) => hit.check === 'pathname' && hit.path === 'docs/@gmail.com/clean.txt'), 'private identifier in a tracked pathname must produce a pathname hit');
+    assert(failedResult.hits.filter((hit) => hit.check === 'content').every((hit) => hit.column > 1), 'content matches must include their columns');
 
     rmSync(resolve(fixtureRoot, 'docs'), { recursive: true, force: true });
+    rmSync(resolve(fixtureRoot, 'private'), { recursive: true, force: true });
+    rmSync(resolve(fixtureRoot, 'marked.txt'), { force: true });
+    rmSync(resolve(fixtureRoot, 'marked-reason.txt'), { force: true });
+    rmSync(resolve(fixtureRoot, 'mentions.txt'), { force: true });
+    rmSync(resolve(fixtureRoot, 'endpoint.txt'), { force: true });
+    rmSync(resolve(fixtureRoot, 'name.txt'), { force: true });
     writeFileSync(
       fixturePath,
       'placeholder=/home/[redacted]\npublic=[team@gmail.com](mailto:team@gmail.com)\n',
@@ -366,6 +460,13 @@ function parseArgs(list) {
       const next = list[index + 1];
       if (!next || next.startsWith('--')) throw codedError('ARGUMENT_INVALID', '--allow requires a file path');
       out.allow = next;
+      index += 1;
+      continue;
+    }
+    if (arg === '--overlay') {
+      const next = list[index + 1];
+      if (!next || next.startsWith('--')) throw codedError('ARGUMENT_INVALID', '--overlay requires a file path');
+      out.overlay = next;
       index += 1;
       continue;
     }

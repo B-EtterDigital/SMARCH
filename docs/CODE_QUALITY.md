@@ -32,6 +32,12 @@ does. A rule without a gate is an opinion; we don't ship opinions.
    audit-claims` re-runs samples; dilution is a defect.)
 8. **Rust holds the same bar.** `cargo clippy -- -D warnings` + `cargo test`
    in the gate once `rust-core` graduates from scaffold.
+9. **Private additions fail closed.** Internal-only files carry an
+   `@sma-private` comment/frontmatter marker or match the local gitignored
+   `registry/private-overlay.json`. Public sync excludes those files before
+   copying, and the overlay-aware leak gate rejects any that are force-planted
+   in a release tree. Operators can add internal functionality without making
+   release safety depend on remembering a manual cleanup step.
 
 ## The gate
 

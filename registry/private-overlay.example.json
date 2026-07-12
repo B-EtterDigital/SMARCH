@@ -1,0 +1,13 @@
+{
+  "$comment": "Copy this file to registry/private-overlay.json in the source repository. The local file is gitignored and must never be copied to a public release. Globs are repository-relative. Endpoint and name patterns are literal, case-insensitive strings; any matching file content is private-only.",
+  "private_globs": [
+    "internal/**",
+    "**/*.private.*"
+  ],
+  "private_endpoint_patterns": [
+    "https://internal.example.invalid"
+  ],
+  "private_name_patterns": [
+    "Example Internal Service"
+  ]
+}

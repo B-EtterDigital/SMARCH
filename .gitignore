@@ -7,6 +7,7 @@ node_modules/
 
 # Machine-local portfolio description (copy from portfolio.config.example.json)
 registry/portfolio.config.json
+registry/private-overlay.json
 
 # Generated runtime artifacts — every operator regenerates their own
 registry/*.generated.json

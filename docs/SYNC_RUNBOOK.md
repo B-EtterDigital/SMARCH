@@ -4,6 +4,21 @@ Use this checklist when publishing the private SMARCH tree or cutting a public
 release. The sync is dry-run by default and writes only after both leak gates
 pass.
 
+## Private overlays
+
+Add internal-only files freely, then declare them private in either of two ways:
+
+- Put `@sma-private` on its own comment or frontmatter line in the file.
+- Copy `registry/private-overlay.example.json` to the gitignored
+  `registry/private-overlay.json`, then list private file globs and literal
+  endpoint or name patterns there.
+
+The source overlay is loaded automatically. Private exclusions take precedence
+over the public allowlist, and the staged release is checked again with the same
+overlay. The marker, the local overlay manifest, matching paths, and files that
+contain declared private patterns cannot enter the public tree. Forgetting an
+exclusion therefore blocks the release instead of relying on operator review.
+
 ## Sync the public tree
 
 1. Preview the exact add, change, and remove set:
