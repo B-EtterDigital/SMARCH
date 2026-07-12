@@ -17,6 +17,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  ensureFixtureLedger,
   expectFailure,
   expectSuccess,
   generateFixturePortfolio,
@@ -29,6 +30,8 @@ const BUDGET_MS = 5 * 60 * 1000;
 
 async function runOnce() {
   return withTemp("smarch-quickstart-5min-", async (root) => {
+    const cleanupLedger = await ensureFixtureLedger();
+    try {
     const portfolio = await generateFixturePortfolio(root);
     const registry = path.join(root, "quickstart.registry.json");
     const state = path.join(root, "quickstart.state.json");
@@ -80,6 +83,9 @@ async function runOnce() {
       install_status: record.status,
       failure_branches: ["missing-registry-state", "unknown-brick"]
     };
+    } finally {
+      await cleanupLedger();
+    }
   });
 }
 

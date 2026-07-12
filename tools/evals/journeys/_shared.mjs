@@ -94,6 +94,27 @@ export async function generateFixturePortfolio(root) {
   return portfolio;
 }
 
+/**
+ * Clone is provenance-gated: the export guard blocks unless a license ledger
+ * file exists (fail-closed). The real ledger is built by `npm run
+ * provenance:ledger`, which needs a full scan absent on a fresh clone, so seed a
+ * minimal one for the fixture clone. Every clone journey passes --allow-closed,
+ * so a present ledger is sufficient. Never clobbers an operator's real ledger;
+ * returns a cleanup that removes only a file this created.
+ * @returns {Promise<() => Promise<void>>}
+ */
+export async function ensureFixtureLedger() {
+  const ledger = path.join(REPO_ROOT, "registry", "license-ledger.generated.json");
+  let created = false;
+  try {
+    await fs.access(ledger);
+  } catch {
+    await fs.writeFile(ledger, '{"licenses":[]}\n');
+    created = true;
+  }
+  return async () => { if (created) await fs.rm(ledger, { force: true }); };
+}
+
 /** @param {TelemetryInput} input */
 export function emitTelemetry({ journey, success, durationMs, budgetMs, signal, threshold, details = {} }) {
   const event = {

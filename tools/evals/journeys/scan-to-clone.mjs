@@ -16,6 +16,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+  ensureFixtureLedger,
   expectFailure,
   expectSuccess,
   generateFixturePortfolio,
@@ -29,6 +30,8 @@ const BUDGET_MS = 3 * 60 * 1000;
 
 async function runOnce() {
   return withTemp("smarch-scan-clone-", async (root) => {
+    const cleanupLedger = await ensureFixtureLedger();
+    try {
     const portfolio = await generateFixturePortfolio(root);
     const registry = path.join(root, "registry.json");
     const target = path.join(root, "target");
@@ -67,6 +70,9 @@ async function runOnce() {
       checklist_exists: checklistExists,
       failure_branches: ["unknown-brick", "missing-registry"]
     };
+    } finally {
+      await cleanupLedger();
+    }
   });
 }
 

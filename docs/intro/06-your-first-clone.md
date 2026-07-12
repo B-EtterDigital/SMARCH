@@ -59,6 +59,12 @@ node tools/sma-scan.ts \
   --root "$SMARCH_FIXTURE_PORTFOLIO" \
   --out "$SMARCH_FIXTURE_REGISTRY"
 
+# Cloning is provenance-gated: a brick may only be exported when a license ledger
+# vouches for it. Real projects build one with `npm run provenance:ledger`; for
+# this practice run, seed a permissive ledger if you do not already have one.
+LEDGER="$SMARCH_DIR/registry/license-ledger.generated.json"
+[ -f "$LEDGER" ] || printf '{"licenses":[]}\n' > "$LEDGER"
+
 mkdir -p "$SMARCH_CLONE_TARGET"
 node tools/sma-clone.ts \
   --registry "$SMARCH_FIXTURE_REGISTRY" \
