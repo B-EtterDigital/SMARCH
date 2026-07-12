@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   rust-binaries:
-    if: ${{ hashFiles('rust-core/Cargo.toml') != '' }}
     strategy:
       fail-fast: true
       matrix:
