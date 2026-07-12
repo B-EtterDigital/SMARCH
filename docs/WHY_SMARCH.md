@@ -81,6 +81,13 @@ sma list                       # every command
 sma spl doctor                 # reclaim orphaned agent processes on your box
 ```
 
+**Already have a project?** Adopt the engine into it in one command — no vendoring, no drift:
+
+```bash
+cd your-project && npx github:B-EtterDigital/SMARCH adopt --target .
+./sma spl doctor        # the hardened engine, running against your repo
+```
+
 New to any of this? The [intro lane](intro/START_HERE.md) takes you from
 "what even is a module registry" to your first agent swarm in 18 CI-verified
 lessons, no prior experience assumed.
