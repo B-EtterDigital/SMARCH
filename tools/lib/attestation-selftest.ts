@@ -29,6 +29,7 @@ import '../test/dash-api.test.mjs';
 import '../test/graph-scan.test.mjs';
 import '../test/module-work.test.mjs';
 import '../test/parallel-preflight-cli.test.mjs';
+import '../test/quality-ratchet-behavior.test.mjs';
 import '../test/scanner-analysis.test.mjs';
 import '../test/schema-workforce.test.mjs';
 import '../test/spl.test.mjs';

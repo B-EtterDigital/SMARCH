@@ -2,9 +2,6 @@
   "ts_strict_errors": 0,
   "eslint_errors": 0,
   "knip_issues": 0,
-  "dup_pct": 2.3203483139011576,
-  "lib_coverage_min": 55.0,
-  "_notes": {
-    "lib_coverage_min": "Floor set to a value that reproduces across the canonical gate and the fresh-clone quickstart journey context (~55.4). Only ratchet up from a value proven in BOTH contexts."
-  }
+  "dup_pct": 2.284584102765921,
+  "lib_coverage_min": 70.17
 }
