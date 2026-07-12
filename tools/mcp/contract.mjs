@@ -1,4 +1,5 @@
 const DEFAULT_TIMEOUT_MS = 500;
+const TERMINATION_GRACE_MS = 1_000;
 
 /** @typedef {{ type?: string, enum?: unknown[], minLength?: number, maxLength?: number, pattern?: string, minimum?: number, maximum?: number }} InputRule */
 /** @typedef {{ type?: string, properties?: Record<string, InputRule>, required?: string[], additionalProperties?: boolean }} InputSchema */
@@ -187,7 +188,7 @@ function emitFailure(tool, error, durationMs) {
 
 /**
  * @template Result
- * @param {{ name: string, inputSchema: InputSchema, args: unknown, operation: (input: ToolInput) => Promise<Result>, timeoutMs?: number }} options
+ * @param {{ name: string, inputSchema: InputSchema, args: unknown, operation: (input: ToolInput, signal: AbortSignal) => Promise<Result>, timeoutMs?: number, waitForTermination?: boolean }} options
  * @returns {Promise<Result>}
  */
 export async function executeTool({
@@ -196,22 +197,44 @@ export async function executeTool({
   args,
   operation,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  waitForTermination = false,
 }) {
   const started = performance.now();
+  const controller = new AbortController();
+  const timeoutError = new McpToolError(
+    "MCP_TIMEOUT",
+    `The ${name} request exceeded its ${timeoutMs}ms budget`,
+    { timeout_ms: timeoutMs },
+  );
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let timer;
+  /** @type {Promise<Result> | undefined} */
+  let operationPromise;
   try {
     const input = validateInput(name, inputSchema, args);
     const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new McpToolError(
-        "MCP_TIMEOUT",
-        `The ${name} request exceeded its ${timeoutMs}ms budget`,
-        { timeout_ms: timeoutMs },
-      )), timeoutMs);
+      timer = setTimeout(() => {
+        controller.abort(timeoutError);
+        reject(timeoutError);
+      }, timeoutMs);
     });
-    return await Promise.race([operation(input), timeout]);
+    operationPromise = Promise.resolve().then(() => operation(input, controller.signal));
+    const result = await Promise.race([operationPromise, timeout]);
+    if (performance.now() - started >= timeoutMs) {
+      controller.abort(timeoutError);
+      throw timeoutError;
+    }
+    return result;
   } catch (error) {
     const normalized = normalizeError(error);
+    if (normalized.code === "MCP_TIMEOUT" && operationPromise) {
+      const settled = operationPromise.then(() => undefined, () => undefined);
+      if (waitForTermination) await settled;
+      else await Promise.race([
+        settled,
+        new Promise((resolve) => setTimeout(resolve, TERMINATION_GRACE_MS)),
+      ]);
+    }
     emitFailure(name, normalized, Math.round(performance.now() - started));
     throw normalized;
   } finally {

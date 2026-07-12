@@ -5,7 +5,8 @@
     "missing_vision": "user added three pillars: monetization lane (V-16), community layer (V-17), hosted dashboard (V-18)",
     "ballot": "V-04+V-05 both approved; V-06,V-09,V-10,V-11,V-12,V-14 all approved; language strategy = full TypeScript migration (phased, erasable-syntax, zero-build) + Rust smarch-core kernel (M3)",
     "goal_extension": "user /goal 2026-07-10: +500 improvement tasks, new-coder lane, full attribution, open-source love",
-    "future-of-coding": "user goal 2026-07-11: make SMA/SMARCH the future of coding; gen3 version control 10 years ahead"
+    "future-of-coding": "user goal 2026-07-11: make SMA/SMARCH the future of coding; gen3 version control 10 years ahead",
+    "internal-release": "user 2026-07-12: perfect for internal usage AND release; private overlay; lease-bound proc lifecycle Linux-first, cross-platform-ready"
   },
   "pillars": [
     {
@@ -125,6 +126,18 @@
       "status": "approved",
       "origin": "user",
       "note": "Gen3 as version control 10 years ahead: the unit of change is intent+evidence+trust, not bytes \u2014 intent commits, evidence-attached history, agent-native merge, trust-weighted blame (docs/GEN3_VERSION_CONTROL.md)"
+    },
+    {
+      "id": "V-23",
+      "status": "approved",
+      "origin": "user",
+      "note": "Private overlay: internal-only surfaces (@sma-private marker + registry/private-overlay.json) that the release pipeline structurally cannot leak; exclusion beats allowlist; WatchDog perf layer is the reference private consumer"
+    },
+    {
+      "id": "V-24",
+      "status": "approved",
+      "origin": "user",
+      "note": "SPL \u2014 Sweetspot Process Lease (sma spl): every spawned process registers against its lease and lives only while the lease lives; reaper kills only expired-lease processes by pid+start_token, audited; budget-aware dispatch; no stale processes on weak machines; platform seam (Linux now, macOS/Windows additive)."
     }
   ],
   "non_goals": [

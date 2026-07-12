@@ -15,11 +15,11 @@
  * This keeps the evidence but rewrites those lines as valid Gen3 note events.
  */
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { env, exit } from 'node:process';
-import { KINDS, projectRoot } from './lib/context-log.ts';
+import { KINDS, projectRoot, replaceContextLogIfUnchanged, withContextLogLock } from './lib/context-log.ts';
 
 const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
 
@@ -70,42 +70,15 @@ function normalizeProject(projectId: string): NormalizeResult {
 
   for (const name of files) {
     const filePath = resolve(dir, name);
-    const raw = readFileSync(filePath, 'utf8');
-    const hasTrailingNewline = raw.endsWith('\n');
-    const lines = raw.split('\n');
-    const out: string[] = [];
-    let changed = false;
-
-    for (const line of lines) {
-      if (!line.trim()) {
-        if (line || hasTrailingNewline) out.push(line);
-        continue;
-      }
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(line);
-      } catch {
-        malformedLines += 1;
-        out.push(line);
-        continue;
-      }
-
-      const normalized = normalizeLegacyProof(parsed, line, projectId);
-      if (normalized) {
-        out.push(JSON.stringify(normalized));
-        convertedLines += 1;
-        changed = true;
-      } else {
-        out.push(line);
-      }
-    }
-
-    if (!changed) continue;
+    const result = withContextLogLock(filePath, () => {
+      const normalized = normalizeFile(filePath, projectId);
+      if (normalized.changed && !args.dryRun) replaceContextLogIfUnchanged(filePath, normalized.source, normalized.output);
+      return normalized;
+    });
+    malformedLines += result.malformed;
+    convertedLines += result.converted;
+    if (!result.changed) continue;
     changedFiles.push(filePath);
-    if (!args.dryRun) {
-      writeFileSync(filePath, out.join('\n'), 'utf8');
-    }
   }
 
   return {
@@ -117,6 +90,33 @@ function normalizeProject(projectId: string): NormalizeResult {
     converted_lines: convertedLines,
     malformed_lines: malformedLines,
   };
+}
+
+function normalizeFile(filePath: string, projectId: string): { changed: boolean; converted: number; malformed: number; output: string; source: string } {
+  const source = readFileSync(filePath, 'utf8');
+  const trailing = source.endsWith('\n');
+  const out: string[] = [];
+  let changed = false;
+  let converted = 0;
+  let malformed = 0;
+  for (const line of source.split('\n')) {
+    if (!line.trim()) {
+      if (line || trailing) out.push(line);
+      continue;
+    }
+    try {
+      const normalized = normalizeLegacyProof(JSON.parse(line) as unknown, line, projectId);
+      if (normalized) {
+        out.push(JSON.stringify(normalized));
+        converted += 1;
+        changed = true;
+      } else out.push(line);
+    } catch {
+      malformed += 1;
+      out.push(line);
+    }
+  }
+  return { changed, converted, malformed, output: out.join('\n'), source };
 }
 
 // eslint-disable-next-line complexity -- Compatibility normalization is an explicit schema precedence ladder documenting legacy-to-modern mapping.

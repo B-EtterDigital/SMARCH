@@ -83,9 +83,14 @@ else
   STRICT_BLOCKED=yes
 fi
 
+# Every conflict report has an event_id. A resolution must name the exact
+# conflict it clears, so pull that id out of the report you just wrote.
+CONFLICT_ID="$(node -e 'const fs=require("fs");process.stdout.write(JSON.parse(fs.readFileSync(process.argv[1],"utf8")).event.event_id)' "$REPORT_RECORD")"
+
 node "$SMARCH_LESSON_SANDBOX/tools/sma-conflict.ts" resolve \
   --project sma \
   --brick acme-cms.slug-service \
+  --conflict "$CONFLICT_ID" \
   --intent "fixture handoff received" \
   --decision "another-agent finished; lesson-reader may continue" \
   --file "$PRACTICE_FILE" \

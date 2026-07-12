@@ -49,6 +49,9 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async () => getServerCard(),
+    operation: async (_input, signal) => {
+      signal.throwIfAborted();
+      return getServerCard();
+    },
   });
 }

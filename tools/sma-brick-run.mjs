@@ -1,26 +1,20 @@
 #!/usr/bin/env node
 
-import { spawn, spawnSync } from "node:child_process";
 import { isDeepStrictEqual } from "node:util";
 import { access, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { emitFailure, CliError } from "./cli-contract.mjs";
+import { assertStrictSandboxAvailable, executeFixture } from "./lib/capsule-runtime.mjs";
 
 const FIXTURE_TIMEOUT_MS = 30_000;
-const RESULT_MARKER = "__SMA_CAPSULE_RESULT__";
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
-let isolationFallbackWarned = false;
-/** @typedef {{ permissionFlag: string, syncModuleHooks: boolean, netPermission: boolean }} IsolationCapabilities */
-/** @typedef {{ allowNet?: boolean, emit?: boolean, strictSandbox?: boolean, timeoutMs?: number }} RunOptions */
+/** @typedef {{ allowNet?: boolean, emit?: boolean, strictSandbox?: boolean, timeoutMs?: number, unsafeIsolationFallback?: boolean }} RunOptions */
 /** @typedef {{ allowNet?: boolean, allowedPorts: string[], runtimeTemp: string, strictSandbox?: boolean }} FixtureOptions */
 /** @typedef {{ name: string, inputs: unknown, expected_outputs: unknown }} Fixture */
 /** @typedef {{ fixture: string | null, status: "PASS" | "FAIL", expected_outputs?: unknown, actual_outputs?: unknown, error?: unknown, checks?: string[] }} FixtureResult */
 /** @typedef {{ interfaces: { ports: string[] }, security?: { env?: { variables?: Array<string | { name?: string }> } } }} CapsuleManifest */
-/** @type {IsolationCapabilities | undefined} */
-let cachedIsolationCapabilities;
 
 class CapsuleError extends Error {
   /**
@@ -44,6 +38,7 @@ async function main() {
   const results = await runCapsule(options.capsulePath || process.cwd(), {
     allowNet: options.allowNet,
     strictSandbox: options.strictSandbox,
+    unsafeIsolationFallback: options.unsafeIsolationFallback,
     emit: !options.quiet,
   });
   const failed = results.filter((result) => result.status === "FAIL");
@@ -60,7 +55,8 @@ async function main() {
 
 /** @param {string[]} args */
 function parseArgs(args) {
-  const options = { allowNet: false, selftest: false, strictSandbox: false, capsulePath: "", json: false, quiet: false, verbose: false };
+  const options = { allowNet: false, selftest: false, strictSandbox: true, unsafeIsolationFallback: false, capsulePath: "", json: false, quiet: false, verbose: false };
+  let strictSandboxExplicit = false;
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--selftest") {
@@ -69,6 +65,10 @@ function parseArgs(args) {
       options.allowNet = true;
     } else if (arg === "--strict-sandbox") {
       options.strictSandbox = true;
+      strictSandboxExplicit = true;
+    } else if (arg === "--unsafe-isolation-fallback") {
+      options.strictSandbox = false;
+      options.unsafeIsolationFallback = true;
     } else if (arg === "--json") {
       options.json = true;
     } else if (arg === "--quiet") {
@@ -84,16 +84,17 @@ function parseArgs(args) {
       console.log(`Run deterministic capsule fixtures.
 
 Usage:
-  sma brick-run [--strict-sandbox] [--allow-net] [--capsule] <directory> [--json]
+  sma brick-run [--allow-net] [--capsule] <directory> [--json]
+  sma brick-run --unsafe-isolation-fallback [--allow-net] <directory>
   sma brick-run --selftest
 
-Options: --strict-sandbox, --allow-net, --capsule, --json, --quiet, --verbose, --selftest, --help
+Options: --allow-net, --capsule, --json, --quiet, --verbose, --selftest, --help
+Safety: strict isolation is the default. --unsafe-isolation-fallback explicitly permits reduced isolation on unsupported Node runtimes.
 Examples:
   sma brick-run templates/capsule --json
-  sma brick-run --strict-sandbox templates/capsule
+  sma brick-run --unsafe-isolation-fallback templates/capsule
 
-Exit codes: 0 pass; 2 usage; 3 missing input; 4 invalid input/fixture failure; 1 runtime failure.
-Known limitation: default mode may use documented isolation fallbacks; use --strict-sandbox to fail closed.`);
+Exit codes: 0 pass; 2 usage; 3 missing input; 4 invalid input/fixture failure; 1 runtime failure.`);
       process.exit(0);
     } else if (arg.startsWith("--")) {
       throw new CapsuleError("USAGE", `Unknown option: ${arg}`);
@@ -104,46 +105,53 @@ Known limitation: default mode may use documented isolation fallbacks; use --str
     }
   }
   if (options.quiet && options.verbose) throw new CapsuleError("USAGE", "--quiet and --verbose cannot be combined");
+  if (strictSandboxExplicit && options.unsafeIsolationFallback) {
+    throw new CapsuleError("USAGE", "--strict-sandbox and --unsafe-isolation-fallback cannot be combined");
+  }
   return options;
 }
 
 /** @param {string} capsulePath @param {RunOptions} [options] @returns {Promise<FixtureResult[]>} */
 async function runCapsule(capsulePath, options = {}) {
   const root = path.resolve(capsulePath);
-  if (options.strictSandbox === true) assertStrictSandboxAvailable();
+  const strictSandbox = options.unsafeIsolationFallback !== true;
+  if (strictSandbox) assertStrictSandboxAvailable();
   const manifest = /** @type {CapsuleManifest} */ (await readJson(path.join(root, "module.sweetspot.json"), "capsule manifest"));
   const fixtureDocument = await readJson(path.join(root, "fixtures", "run.json"), "capsule fixture file");
   const fixtures = validateFixtures(fixtureDocument);
   await enforceConstraints(root, manifest);
 
-  const runtimeTemp = await mkdtemp(path.join(tmpdir(), "sma-capsule-runtime-"));
+  const runtimeRoot = await mkdtemp(path.join(tmpdir(), "sma-capsule-runtime-"));
   try {
-    const env = childEnvironment(manifest, runtimeTemp);
     /** @type {FixtureResult[]} */
     const results = [];
     for (const fixture of fixtures) {
+      const runtimeTemp = await mkdtemp(path.join(runtimeRoot, "fixture-"));
       /** @type {FixtureResult} */
       let result;
       try {
+        const env = childEnvironment(manifest, runtimeTemp);
         const actual = await executeFixture(root, fixture.inputs, env, options.timeoutMs || FIXTURE_TIMEOUT_MS, {
           allowNet: options.allowNet === true,
           allowedPorts: manifest.interfaces.ports,
           runtimeTemp,
-          strictSandbox: options.strictSandbox === true,
+          strictSandbox,
         });
         const passed = isDeepStrictEqual(actual, fixture.expected_outputs);
         result = passed
           ? { fixture: fixture.name, status: "PASS" }
           : { fixture: fixture.name, status: "FAIL", expected_outputs: fixture.expected_outputs, actual_outputs: actual };
       } catch (error) {
-        result = { fixture: fixture.name, status: "FAIL", error: errorMessage(error) };
+        result = { fixture: fixture.name, status: "FAIL", error: fixtureError(error) };
+      } finally {
+        await rm(runtimeTemp, { recursive: true, force: true });
       }
       results.push(result);
       if (options.emit !== false) printResult(result);
     }
     return results;
   } finally {
-    await rm(runtimeTemp, { recursive: true, force: true });
+    await rm(runtimeRoot, { recursive: true, force: true });
   }
 }
 
@@ -315,239 +323,6 @@ function childEnvironment(manifest, runtimeTemp) {
   return env;
 }
 
-/** @param {string} root @param {unknown} inputs @param {NodeJS.ProcessEnv} env @param {number} timeoutMs @param {FixtureOptions} options @returns {Promise<unknown>} */
-function executeFixture(root, inputs, env, timeoutMs, options) {
-  const isolation = runtimeIsolationPlan({
-    allowNet: options.allowNet === true,
-    root,
-    runtimeTemp: options.runtimeTemp,
-    strictSandbox: options.strictSandbox === true,
-  });
-  const sourceRootUrl = pathToFileURL(`${path.join(root, "src")}${path.sep}`).href;
-  const childProgram = `
-const marker = ${JSON.stringify(RESULT_MARKER)};
-const allowNet = ${JSON.stringify(options.allowNet === true)};
-const allowedPorts = new Set(${JSON.stringify(options.allowedPorts ?? [])});
-const sourceRootUrl = ${JSON.stringify(sourceRootUrl)};
-const useRuntimeHooks = ${JSON.stringify(isolation.useRuntimeHooks)};
-if (useRuntimeHooks) {
-  const { registerHooks } = await import("node:module");
-  const deny = (message) => {
-    throw Object.assign(new Error(message), { code: "ERR_ACCESS_DENIED" });
-  };
-  registerHooks({
-    resolve(specifier, context, nextResolve) {
-      if (/^(?:data|file|https?):/i.test(specifier) || specifier.startsWith("/") || /^[A-Za-z]:/.test(specifier)) {
-        return deny("Capsule import denied by the runtime resolver: " + specifier);
-      }
-      if (specifier.startsWith(".")) {
-        const resolved = nextResolve(specifier, context);
-        if (typeof resolved?.url !== "string" || !resolved.url.startsWith(sourceRootUrl)) {
-          return deny("Capsule relative import escaped src/: " + specifier);
-        }
-        return resolved;
-      }
-      if (!allowedPorts.has(specifier)) {
-        return deny("Capsule import is not a declared port: " + specifier);
-      }
-      return nextResolve(specifier, context);
-    },
-  });
-  const denyBinding = () => deny("process.binding APIs are disabled inside capsule fixtures");
-  for (const property of ["binding", "_linkedBinding"]) {
-    if (property in process) {
-      Object.defineProperty(process, property, { value: denyBinding, configurable: false, enumerable: false, writable: false });
-    }
-  }
-}
-if (!allowNet) {
-  const denyNetwork = () => Promise.reject(Object.assign(new Error("Capsule network access is disabled; rerun with --allow-net to opt in"), { code: "ERR_ACCESS_DENIED" }));
-  Object.defineProperty(globalThis, "fetch", { value: denyNetwork, configurable: false, writable: false });
-}
-const chunks = [];
-process.stdin.setEncoding("utf8");
-for await (const chunk of process.stdin) chunks.push(chunk);
-try {
-  const inputs = JSON.parse(chunks.join(""));
-  const capsule = await import("./src/index.ts");
-  const run = typeof capsule.default === "function" ? capsule.default : capsule.run;
-  if (typeof run !== "function") throw new Error("src/index.ts must default-export a function or export a function named run");
-  const output = await run(inputs);
-  process.stdout.write(marker + JSON.stringify({ ok: true, output }) + "\\n");
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  process.stdout.write(marker + JSON.stringify({ ok: false, error: message }) + "\\n");
-  process.exitCode = 1;
-}`;
-
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [
-      ...isolation.args,
-      "--input-type=module",
-      "--eval",
-      childProgram,
-    ], {
-      cwd: root,
-      env,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      child.kill("SIGKILL");
-      reject(new CapsuleError("TIMEOUT", `Fixture exceeded the ${timeoutMs}ms timeout`));
-    }, timeoutMs);
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (/** @type {string} */ chunk) => { stdout += chunk; });
-    child.stderr.on("data", (/** @type {string} */ chunk) => { stderr += chunk; });
-    child.on("error", (error) => finish(() => reject(new CapsuleError("CHILD_PROCESS", errorMessage(error)))));
-    child.on("close", (code) => finish(() => {
-      const lines = stdout.split(/\r?\n/);
-      let line = "";
-      for (let index = lines.length - 1; index >= 0; index -= 1) {
-        if (lines[index].startsWith(RESULT_MARKER)) {
-          line = lines[index];
-          break;
-        }
-      }
-      if (!line) {
-        reject(new CapsuleError("CHILD_PROTOCOL", `Capsule exited ${code} without a result${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
-        return;
-      }
-      let payload;
-      try {
-        payload = JSON.parse(line.slice(RESULT_MARKER.length));
-      } catch (error) {
-        reject(new CapsuleError("CHILD_PROTOCOL", `Capsule returned invalid result JSON: ${errorMessage(error)}`));
-        return;
-      }
-      if (!payload.ok) reject(new CapsuleError("CAPSULE_RUNTIME", payload.error || `Capsule exited ${code}`));
-      else resolve(payload.output);
-    }));
-    child.stdin.end(JSON.stringify(inputs));
-
-    /**
-* @param {{ (): void; (): void; (): void; }} callback
-*/
-    function finish(callback) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      callback();
-    }
-  });
-}
-
-/** @param {{ root: string, runtimeTemp: string, allowNet: boolean, strictSandbox: boolean }} input */
-function runtimeIsolationPlan({ root, runtimeTemp, allowNet, strictSandbox }) {
-  const capabilities = isolationCapabilities();
-  if (strictSandbox) assertStrictSandboxAvailable(capabilities);
-
-  if (!capabilities.permissionFlag) {
-    warnIsolationFallback("this Node runtime has no compatible permission model; filesystem, child-process, worker, and low-level network enforcement are unavailable");
-    return { args: [], useRuntimeHooks: false };
-  }
-
-  const args = [
-    capabilities.permissionFlag,
-    `--allow-fs-read=${root}`,
-    `--allow-fs-read=${runtimeTemp}`,
-    `--allow-fs-write=${runtimeTemp}`,
-  ];
-  if (allowNet && capabilities.netPermission) args.push("--allow-net");
-  else if (allowNet) warnIsolationFallback("this Node permission model has no compatible --allow-net capability; network behavior follows the runtime's legacy default");
-  else if (!capabilities.netPermission) warnIsolationFallback("this Node permission model cannot deny low-level network APIs; only global fetch is disabled");
-
-  if (!capabilities.syncModuleHooks) {
-    warnIsolationFallback("synchronous node:module resolver hooks are unavailable; computed import enforcement falls back to the permission model and the fast-feedback source scan");
-  }
-
-  return {
-    args,
-    useRuntimeHooks: capabilities.syncModuleHooks,
-  };
-}
-
-/** @returns {IsolationCapabilities} */
-function isolationCapabilities() {
-  if (cachedIsolationCapabilities) return cachedIsolationCapabilities;
-  const permissionFlag = ["--permission", "--experimental-permission"]
-    .find((flag) => probeNode([
-      flag,
-      "--input-type=module",
-      "--eval",
-      "if (!process.permission || process.permission.has('fs.read') || process.permission.has('fs.write') || process.permission.has('child') || process.permission.has('worker')) process.exit(1)",
-    ])) ?? "";
-
-  const syncModuleHooks = Boolean(permissionFlag) && probeNode([
-    permissionFlag,
-    "--input-type=module",
-    "--eval",
-    "const api = await import('node:module'); if (typeof api.registerHooks !== 'function') process.exit(1)",
-  ]);
-  const netPermission = Boolean(permissionFlag)
-    && probeNode([
-      permissionFlag,
-      "--input-type=module",
-      "--eval",
-      "if (!process.permission || process.permission.has('net')) process.exit(1)",
-    ])
-    && probeNode([
-      permissionFlag,
-      "--allow-net",
-      "--input-type=module",
-      "--eval",
-      "if (!process.permission?.has('net')) process.exit(1)",
-    ]);
-
-  cachedIsolationCapabilities = {
-    permissionFlag,
-    syncModuleHooks,
-    netPermission,
-  };
-  return cachedIsolationCapabilities;
-}
-
-/**
-* @param {string[]} args
-*/
-function probeNode(args) {
-  const result = spawnSync(process.execPath, args, {
-    env: {},
-    stdio: "ignore",
-    timeout: 5_000,
-  });
-  return result.status === 0 && !result.error;
-}
-
-/** @param {IsolationCapabilities} [capabilities] */
-function assertStrictSandboxAvailable(capabilities = isolationCapabilities()) {
-  /** @type {string[]} */
-  const missing = [];
-  if (!capabilities.permissionFlag) missing.push("Node permission model (--permission; experimental form accepted)");
-  if (!capabilities.syncModuleHooks) missing.push("synchronous module.registerHooks (Node >=22.15.0 or >=23.5.0)");
-  if (!capabilities.netPermission) missing.push("permission-scoped network control (--allow-net; standard in Node >=25.0.0, compatible backports accepted)");
-  if (missing.length === 0) return;
-  throw new CapsuleError(
-    "STRICT_SANDBOX_UNSUPPORTED",
-    `--strict-sandbox is unavailable on ${process.version}; missing: ${missing.join("; ")}. Upgrade Node or run without strict mode and accept the documented fallback limits.`,
-  );
-}
-
-/**
-* @param {string} message
-*/
-function warnIsolationFallback(message) {
-  if (isolationFallbackWarned) return;
-  isolationFallbackWarned = true;
-  process.stderr.write(`sma brick-run isolation warning: ${message}\n`);
-}
-
 async function runSelftest() {
   const workspace = await mkdtemp(path.join(tmpdir(), "sma-capsule-selftest-"));
   const root = path.join(workspace, "capsule");
@@ -582,13 +357,13 @@ export default function run(inputs: { value: number }) {
 
     let strictRefusal = "";
     try {
-      assertStrictSandboxAvailable({ permissionFlag: "", syncModuleHooks: false, netPermission: false });
+      assertStrictSandboxAvailable({ permissionFlag: "", syncModuleHooks: false, netPermission: false, workerPermission: false });
     } catch (error) {
-      strictRefusal = `${error instanceof CapsuleError ? error.code : ""}: ${errorMessage(error)}`;
+      strictRefusal = `${error && typeof error === "object" && "code" in error ? error.code : ""}: ${errorMessage(error)}`;
     }
     assertSelftest(
       strictRefusal.includes("STRICT_SANDBOX_UNSUPPORTED")
-        && strictRefusal.includes("--strict-sandbox")
+        && strictRefusal.includes("--unsafe-isolation-fallback")
         && strictRefusal.includes(process.version),
       "unsupported strict sandbox did not refuse with an honest versioned message",
     );
@@ -876,6 +651,14 @@ function printResult(result) {
 */
 function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** @param {unknown} error */
+function fixtureError(error) {
+  if (error && typeof error === "object" && "code" in error && typeof error.code === "string") {
+    return { code: error.code, message: errorMessage(error) };
+  }
+  return errorMessage(error);
 }
 
 main().catch((error) => {

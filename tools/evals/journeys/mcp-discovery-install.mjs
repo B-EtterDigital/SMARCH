@@ -11,6 +11,7 @@
  */
 
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
 import { assert, fs, parseJourneyArgs, path, runNode, runSelftest, withTempRoot } from "./_helpers.mjs";
 import { loadToolModules } from "../../mcp/server.mjs";
 import { handler as installRelease } from "../../mcp/tools/release-install.mjs";
@@ -26,10 +27,10 @@ function isRecord(value) {
 }
 
 /** @param {unknown} error */
-function isTraversalRefusal(error) {
+function isUnverifiedPayloadRefusal(error) {
   if (!isRecord(error) || !isRecord(error.details)) return false;
   return error.code === "MCP_RELEASE_INSTALL_REFUSED"
-    && error.details.reason === "artifact-path-traversal";
+    && error.details.reason === "release-content-hash-invalid";
 }
 
 /** @param {string} root @param {string} brick @param {string} version @param {string} artifactPath */
@@ -42,6 +43,44 @@ async function writeRelease(root, brick, version, artifactPath) {
       included_paths: [artifactPath],
       artifacts: [{ path: artifactPath, kind: "file", sha256: "a".repeat(64) }],
     },
+  }, null, 2)}\n`);
+}
+
+/** @param {crypto.BinaryLike} value */
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+/** @param {string} root @param {string} brick @param {string} version @param {string} artifactPath @param {string} payload */
+async function writeVerifiedRelease(root, brick, version, artifactPath, payload) {
+  const manifest = `${JSON.stringify({
+    schema_version: "1.0.0",
+    brick: { id: brick, version },
+    source: { paths: [artifactPath], project: "journey-fixture" },
+    semantics: { purpose: "MCP discovery install journey" },
+  }, null, 2)}\n`;
+  const contentHash = sha256(`${brick}\0${version}\0${payload}`);
+  const descriptor = {
+    schema_version: "1.0.0",
+    artifact_id: brick,
+    version,
+    content_hash: contentHash,
+    manifest: { path: "manifest.json", sha256: sha256(manifest) },
+    artifacts: [{ path: artifactPath, kind: "file", sha256: sha256(payload) }],
+  };
+  const snapshotRoot = path.join(root, "releases", ".artifacts", contentHash);
+  await fs.mkdir(path.join(snapshotRoot, "payload", path.dirname(artifactPath)), { recursive: true });
+  await fs.writeFile(path.join(snapshotRoot, "manifest.json"), manifest);
+  await fs.writeFile(path.join(snapshotRoot, "payload", artifactPath), payload);
+  await fs.writeFile(path.join(snapshotRoot, "snapshot.json"), `${JSON.stringify({
+    ...descriptor,
+    seal: { algorithm: "sha256", value: sha256(JSON.stringify(descriptor)) },
+  }, null, 2)}\n`);
+  const releaseDirectory = path.join(root, "releases", brick);
+  await fs.mkdir(releaseDirectory, { recursive: true });
+  await fs.writeFile(path.join(releaseDirectory, `${version}.json`), `${JSON.stringify({
+    release: { artifact_id: brick, version, status: "published", content_hash: contentHash },
+    content: { included_paths: [artifactPath], artifacts: descriptor.artifacts },
   }, null, 2)}\n`);
 }
 
@@ -96,7 +135,14 @@ export async function runJourney() {
           source_of_truth: "journey-fixture",
         }],
       }, null, 2)}\n`);
-      await writeRelease(root, brick, version, "src/modules/activity-feed/index.mjs");
+      const artifactPath = "src/modules/activity-feed/index.mjs";
+      await writeVerifiedRelease(
+        root,
+        brick,
+        version,
+        artifactPath,
+        await fs.readFile(path.join(portfolio, "acme-desktop", artifactPath), "utf8"),
+      );
       const target = path.join(root, "target-project");
       let installed;
       try {
@@ -104,6 +150,7 @@ export async function runJourney() {
       } catch (error) {
         throw error instanceof Error && error.cause ? error.cause : error;
       }
+      assert(isRecord(installed));
       assert.equal(installed.ok, true);
       assert.equal(installed.write, true);
       assert.equal(await fs.readFile(path.join(target, "src", "modules", "activity-feed", "index.mjs"), "utf8"),
@@ -113,7 +160,7 @@ export async function runJourney() {
       await writeRelease(root, malicious, version, "../outside-target.txt");
       await assert.rejects(
         installRelease({ brick: malicious, version, target, write: true }),
-        isTraversalRefusal,
+        isUnverifiedPayloadRefusal,
       );
       await assert.rejects(fs.readFile(path.join(root, "outside-target.txt")), { code: "ENOENT" });
 

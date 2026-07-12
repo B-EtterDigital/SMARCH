@@ -80,6 +80,47 @@ const EPOCH = '1970-01-01T00:00:00Z'; // deterministic fallback when no timestam
 
 const sha256Hex = (s: unknown): string => createHash('sha256').update(String(s)).digest('hex');
 
+interface AnchorBindingInput {
+  root?: unknown;
+  anchor_digest?: unknown;
+  algo?: unknown;
+  leaf_count?: unknown;
+  ledger_digest?: unknown;
+  audit_digest?: unknown;
+}
+
+/** Bind emitted proofs only to anchor material that commits to the computed root. */
+export function resolveAnchorBinding(
+  anchor: AnchorBindingInput,
+  computedRoot: string,
+  { unanchoredDiagnostic = false }: { unanchoredDiagnostic?: boolean } = {},
+) {
+  if (typeof anchor.root !== 'string' || anchor.root !== computedRoot) {
+    if (unanchoredDiagnostic) {
+      return { anchored: false, anchor_digest: null, reason: 'root-mismatch' as const };
+    }
+    throw new Error(`anchor root mismatch: computed ${computedRoot.slice(0, 12)} but trusted anchor records ${typeof anchor.root === 'string' ? anchor.root.slice(0, 12) : '(missing)'}; re-run tools/sma-anchor.ts`);
+  }
+  const complete = typeof anchor.algo === 'string'
+    && typeof anchor.leaf_count === 'number'
+    && typeof anchor.ledger_digest === 'string'
+    && typeof anchor.anchor_digest === 'string';
+  const expectedDigest = complete
+    ? sha256Hex(`${String(anchor.algo)} ${anchor.root} ${String(anchor.leaf_count)} ${String(anchor.ledger_digest)} ${typeof anchor.audit_digest === 'string' ? anchor.audit_digest : 'none'}`)
+    : null;
+  if (!expectedDigest || expectedDigest !== anchor.anchor_digest) {
+    if (unanchoredDiagnostic) {
+      return { anchored: false, anchor_digest: null, reason: 'anchor-digest-mismatch' as const };
+    }
+    throw new Error('anchor digest mismatch: anchor metadata is incomplete or is not cryptographically bound to the computed root; re-run tools/sma-anchor.ts');
+  }
+  return {
+    anchored: true,
+    anchor_digest: anchor.anchor_digest,
+    reason: null,
+  };
+}
+
 /** SPDXID element ids allow only [A-Za-z0-9.-]; map anything else to '-'. */
 function sanitizeSpdxId(s: unknown): string {
   return String(s || 'unknown').replace(/[^A-Za-z0-9.-]/g, '-');

@@ -18,7 +18,8 @@
  *
  * Path: <project_root>/.smarch/agent-context/<safe-brick-id>.ndjson
  *
- * Append-only. We never rewrite the file. Cheap, durable, diff-friendly.
+ * Normal event writes are append-only. The legacy normalizer uses the shared
+ * per-log lock plus generation-checked atomic replacement.
  */
 
 import {
@@ -27,6 +28,10 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
 } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -38,6 +43,8 @@ export { PROJECT_PATH_OVERRIDES };
 export { PROJECTS_ROOT,   } from './sma-paths.ts';
 import { PROJECTS_ROOT, SMA_ROOT } from './sma-paths.ts';
 const SCHEMA_VERSION = '1.0.0';
+const CONTEXT_LOCK_WAIT_MS = 5000;
+const CONTEXT_LOCK_STALE_MS = 30000;
 
 // Project ids that intentionally live outside PROJECTS_ROOT. The SMA control
 // plane governs other projects, but it must still be able to log its own
@@ -89,6 +96,7 @@ interface ContextEventInput {
   filesTouched?: string[] | null;
   commit?: string | null;
   verification?: { status?: string; [key: string]: unknown } | null;
+  lockHeld?: boolean;
 }
 
 type ContextEvent = Record<string, unknown>;
@@ -212,6 +220,7 @@ export function appendContextEvent({
   filesTouched,
   commit,
   verification,
+  lockHeld = false,
 }: ContextEventInput): ContextEvent {
   validateContextEventInput({ project, brick, kind, intent, actorKind, verification });
 
@@ -244,8 +253,82 @@ export function appendContextEvent({
 
   const path = logPath(project, brick);
   if (!existsSync(dirname(path))) mkdirSync(dirname(path), { recursive: true });
-  appendFileSync(path, JSON.stringify(event) + '\n');
+  const append = (): void => { appendFileSync(path, JSON.stringify(event) + '\n'); };
+  if (lockHeld) append();
+  else withContextLogLock(path, append);
   return event;
+}
+
+export function withContextLogLock<T>(path: string, fn: () => T): T {
+  const lockPath = `${path}.lock`;
+  const ownerPath = resolve(lockPath, 'owner.json');
+  const token = `${String(process.pid)}-${String(Date.now())}-${randomBytes(8).toString('hex')}`;
+  const startedAt = Date.now();
+  if (!existsSync(dirname(path))) mkdirSync(dirname(path), { recursive: true });
+  for (;;) {
+    try {
+      mkdirSync(lockPath);
+      try { writeFileSync(ownerPath, JSON.stringify({ token, pid: process.pid }) + '\n'); }
+      catch (error) { rmSync(lockPath, { recursive: true, force: true }); throw error; }
+      break;
+    } catch (error) {
+      if (fsErrorCode(error) !== 'EEXIST') throw error;
+      if (recoverStaleContextLock(lockPath)) continue;
+      if (Date.now() - startedAt >= CONTEXT_LOCK_WAIT_MS) throw new Error(`timed out waiting for context log lock ${lockPath}`);
+      sleepSync(10);
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    try {
+      const owner = JSON.parse(readFileSync(ownerPath, 'utf8')) as { token?: string };
+      if (owner.token === token) rmSync(lockPath, { recursive: true, force: true });
+    } catch (error) {
+      if (fsErrorCode(error) !== 'ENOENT') throw error;
+    }
+  }
+}
+
+export function replaceContextLogIfUnchanged(path: string, expectedSource: string, contents: string): void {
+  if (readFileSync(path, 'utf8') !== expectedSource) throw new Error(`context log changed during normalization: ${path}`);
+  const temporary = `${path}.tmp.${String(process.pid)}.${randomBytes(6).toString('hex')}`;
+  try {
+    writeFileSync(temporary, contents, 'utf8');
+    if (readFileSync(path, 'utf8') !== expectedSource) throw new Error(`context log changed during normalization: ${path}`);
+    renameSync(temporary, path);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+}
+
+function recoverStaleContextLock(lockPath: string): boolean {
+  let ageMs: number;
+  try { ageMs = Date.now() - statSync(lockPath).mtimeMs; } catch (error) {
+    if (fsErrorCode(error) === 'ENOENT') return true;
+    throw error;
+  }
+  if (ageMs <= CONTEXT_LOCK_STALE_MS) return false;
+  let pid = 0;
+  try { pid = (JSON.parse(readFileSync(resolve(lockPath, 'owner.json'), 'utf8')) as { pid?: number }).pid ?? 0; } catch { /* malformed stale owner */ }
+  if (pid > 0) {
+    try { process.kill(pid, 0); return false; } catch (error) { if (fsErrorCode(error) === 'EPERM') return false; }
+  }
+  const stalePath = `${lockPath}.stale.${String(process.pid)}.${randomBytes(4).toString('hex')}`;
+  try { renameSync(lockPath, stalePath); } catch (error) {
+    if (fsErrorCode(error) === 'ENOENT') return true;
+    return false;
+  }
+  rmSync(stalePath, { recursive: true, force: true });
+  return true;
+}
+
+function fsErrorCode(error: unknown): string | undefined {
+  return error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+}
+
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function newEventId(): string {

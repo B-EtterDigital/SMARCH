@@ -53,6 +53,6 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async () => summarizeRegistryDoctor(await loadRegistryContext()),
+    operation: async (_input, signal) => summarizeRegistryDoctor(await loadRegistryContext(signal)),
   });
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * WHAT: Emits a self-contained verification bundle for one or all registered bricks.
- * WHY: A third party should verify a brick without receiving the repository's internal ledgers.
+ * WHY: A third party should verify a brick against separately trusted anchor material without receiving internal ledgers.
  * HOW: Joins fingerprint, license, provenance, and anchor records into standard documents and an inclusion proof.
  * INPUTS: A brick selector plus generated ledger and anchor files already present in the repository.
  * OUTPUTS: Per-brick attestation directories containing provenance, bill-of-materials, and proof documents.
@@ -20,7 +20,7 @@
  *                        anchored root (same leaf ordering as sma-anchor.ts).
  *
  * The four generated ledgers are the inputs; the emitted bundle is fully
- * self-contained. Verify a bundle later with:  node tools/sma-attest-verify.ts
+ * portable. Verify authenticity later with the bundle plus a separately trusted root or anchor.
  *
  * Usage:
  *   node tools/sma-attest.ts --brick <brick_id>
@@ -34,7 +34,7 @@ import { dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { leafHash, buildMerkle, inclusionProof, verifyBrickInclusion } from './lib/merkle.ts';
-import { intotoStatement, spdxDocument, cyclonedxDocument } from './lib/attestation.ts';
+import { intotoStatement, spdxDocument, cyclonedxDocument, resolveAnchorBinding } from './lib/attestation.ts';
 
 const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PROV_LEDGER = resolve(SMA_ROOT, 'registry/provenance-ledger.generated.json');
@@ -48,6 +48,7 @@ interface CliArgs {
   brick?: string;
   json?: boolean;
   timestamp?: string;
+  unanchoredDiagnostic?: boolean;
 }
 interface Seal { head?: string; [key: string]: unknown }
 interface ProvenanceRow {
@@ -74,7 +75,14 @@ interface FingerprintRow {
   byte_count?: number | null;
 }
 interface Ledger<T> { provenance?: T[]; licenses?: T[]; fingerprints?: T[] }
-interface Anchor { root?: string | null; anchor_digest?: string | null }
+interface Anchor {
+  root?: string | null;
+  anchor_digest?: string | null;
+  algo?: string | null;
+  leaf_count?: number | null;
+  ledger_digest?: string | null;
+  audit_digest?: string | null;
+}
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -105,8 +113,9 @@ function main() {
   const { root, layers } = buildMerkle(leaves);
   const rowIndex = new Map(rows.map((r, i) => [r.brick_id, i]));
 
-  if (anchor.root && anchor.root !== root && !args.json) {
-    console.error(`warning: computed root ${short(root)} != anchor.root ${short(anchor.root)} — anchor may be stale (re-run tools/sma-anchor.ts)`);
+  const anchorBinding = resolveAnchorBinding(anchor, root, { unanchoredDiagnostic: args.unanchoredDiagnostic });
+  if (!anchorBinding.anchored && !args.json) {
+    console.error(`warning: computed root ${short(root)} != anchor.root ${short(anchor.root)} — emitting an explicitly unanchored diagnostic bundle`);
   }
 
   const timestamp = args.timestamp ?? new Date().toISOString();
@@ -163,7 +172,8 @@ function main() {
       content_hash: brick.content_hash,
       proof,
       root,
-      anchor_digest: anchor.anchor_digest ?? null,
+      anchored: anchorBinding.anchored,
+      anchor_digest: anchorBinding.anchor_digest,
     });
 
     summary.push({
@@ -179,7 +189,8 @@ function main() {
     console.log(JSON.stringify({
       generated_at: timestamp,
       root,
-      anchor_digest: anchor.anchor_digest ?? null,
+      anchored: anchorBinding.anchored,
+      anchor_digest: anchorBinding.anchor_digest,
       count: summary.length,
       attestations: summary,
     }, null, 2));
@@ -190,8 +201,8 @@ function main() {
       console.log(`  ${s.brick_id}`);
       console.log(`    -> ${s.dir}/ (${s.files.join(', ')})`);
     }
-    console.log('\nVerify a bundle stand-alone (no ledgers needed) with:');
-    console.log(`  node tools/sma-attest-verify.ts --dir ${summary[0]?.dir || 'releases/attestations/<brick_id>'}`);
+    console.log('\nVerify a bundle (no ledgers needed; trust material must arrive separately) with:');
+    console.log(`  node tools/sma-attest-verify.ts --dir ${summary[0]?.dir || 'releases/attestations/<brick_id>'} --trusted-anchor registry/anchor.generated.json`);
   }
 }
 
@@ -234,7 +245,7 @@ function parseArgs(list: string[]): CliArgs {
     const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase());
     const next = list.at(i + 1);
     if (next === undefined || next.startsWith('--')) {
-      if (key === 'all' || key === 'json') out[key] = true;
+      if (key === 'all' || key === 'json' || key === 'unanchoredDiagnostic') out[key] = true;
       continue;
     }
     if (key === 'brick' || key === 'timestamp') out[key] = next;

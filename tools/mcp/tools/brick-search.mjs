@@ -54,6 +54,6 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async (input) => searchRegistryBricks(input, await loadRegistryContext()),
+    operation: async (input, signal) => searchRegistryBricks(input, await loadRegistryContext(signal)),
   });
 }

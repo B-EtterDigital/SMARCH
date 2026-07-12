@@ -399,7 +399,10 @@ async function collectManifestBrick(
   try {
     const manifest = await readManifest(manifestPath);
     const validation = validateManifest(manifestPath, manifest);
-    if (validation.errors.length > 0) validationFailures.push({ manifest_path: manifestPath, brick_id: validation.brick_id, errors: validation.errors });
+    if (validation.errors.length > 0) {
+      validationFailures.push({ manifest_path: manifestPath, brick_id: validation.brick_id, errors: validation.errors });
+      return;
+    }
     const brick = compactBrick(projectRoot.root, manifestPath, manifest, validation, projectRoot.id);
     bricks.push(brick);
     projectBricks.push(brick);
@@ -448,7 +451,8 @@ async function main() {
   const { bricks, failures, validationFailures, unmanifested, projects, projectRefactorReports, projectScannerReports } =
     await scanProjects(projectRoots, compactCardIndex);
 
-  const errorCount = bricks.reduce((sum, brick) => sum + brick.health.error_count, 0);
+  const errorCount = bricks.reduce((sum, brick) => sum + brick.health.error_count, 0)
+    + validationFailures.reduce((sum, failure) => sum + failure.errors.length, 0);
   const warningCount = bricks.reduce((sum, brick) => sum + brick.health.warning_count, 0);
   const groupedCandidates = candidateGroups(unmanifested);
   const refactorReport = buildRefactorReport(projectRefactorReports);

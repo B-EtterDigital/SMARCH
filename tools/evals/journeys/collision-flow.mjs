@@ -53,7 +53,8 @@ export async function runJourney() {
       "--resolution-plan", "wait for handoff",
       "--file", fixtureFile,
     ], env);
-    assert.equal(JSON.parse(reported.stdout).event.kind, "conflict_detected");
+    const reportedEvent = JSON.parse(reported.stdout).event;
+    assert.equal(reportedEvent.kind, "conflict_detected");
 
     const open = invoke(["check", ...common, "--strict"], env, 3);
     const openReport = JSON.parse(open.stdout);
@@ -62,13 +63,15 @@ export async function runJourney() {
 
     invoke([
       "resolve", "--project", "sma", "--brick", "acme-cms.other-brick",
+      "--conflict", reportedEvent.event_id,
       "--intent", "unrelated handoff", "--decision", "unrelated brick finished", "--json",
-    ], env);
+    ], env, 1);
     const stillOpen = invoke(["check", ...common, "--strict"], env, 3);
     assert.equal(JSON.parse(stillOpen.stdout).open_conflicts, 1);
 
     const resolved = invoke([
       "resolve", ...common,
+      "--conflict", reportedEvent.event_id,
       "--intent", "fixture handoff received",
       "--decision", "journey-agent-a finished; journey-agent-b may continue",
       "--file", fixtureFile,

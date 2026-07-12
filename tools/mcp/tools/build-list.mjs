@@ -48,6 +48,6 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async (input) => listRegistryBuilds(input, await loadRegistryContext()),
+    operation: async (input, signal) => listRegistryBuilds(input, await loadRegistryContext(signal)),
   });
 }

@@ -10,20 +10,23 @@
  */
 
 import { SMA_ROOT } from "./lib/sma-paths.ts";
+import crypto from 'node:crypto';
 import {
+  copyFileSync,
   readFileSync,
   existsSync,
+  lstatSync,
   mkdtempSync,
   mkdirSync,
   realpathSync,
   readdirSync,
+  renameSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
-import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path';
 import { argv, exit } from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -60,7 +63,17 @@ interface ReleaseMetadata {
 interface ReleaseDocument {
   release?: ReleaseMetadata;
   contracts?: { runtimes?: string[] };
-  content?: { artifacts?: { path?: unknown }[] };
+  content?: { artifacts?: { path?: unknown; kind?: unknown; sha256?: unknown }[] };
+}
+
+interface ReleaseSnapshot {
+  schema_version?: string;
+  artifact_id?: string;
+  version?: string;
+  content_hash?: string;
+  manifest?: { path?: unknown; sha256?: unknown };
+  artifacts?: { path?: unknown; kind?: unknown; sha256?: unknown }[];
+  seal?: { algorithm?: unknown; value?: unknown };
 }
 
 interface CloneAction {
@@ -71,11 +84,13 @@ interface CloneAction {
 interface ClonePlan {
   actions: CloneAction[];
   control_plane?: Record<string, string>;
+  plan_hash?: string;
 }
 
 interface CloneOutput {
   plan?: ClonePlan;
   output?: string;
+  applied_plan_hash?: string;
 }
 
 interface CloneExecution {
@@ -285,16 +300,15 @@ export function installRelease(options: InstallOptions = {}) {
   if (!existsSync(path)) throw new Error(`release not found: ${brick}@${version}`);
   const release = JSON.parse(readFileSync(path, 'utf8')) as ReleaseDocument;
   assertInstallableRelease(release, options, brick, version);
+  assertReleaseIdentity(release, brick, version);
+  const releaseSnapshot = verifiedReleaseSnapshot(root, release, brick, version);
   const targetRoot = canonicalTargetRoot(target);
-  validateReleaseArtifacts(release, targetRoot);
-
-  // sma-clone remains the source of truth for placement, lock writes, and
-  // integration_recipe stamping. Both the CLI and MCP now reach it through
-  // this single validated store API.
   const cloneArgs = [
     resolve(root, 'tools/sma-clone.ts'),
     '--brick',
     brick,
+    '--release-snapshot',
+    releaseSnapshot,
     '--target',
     targetRoot,
   ];
@@ -302,15 +316,10 @@ export function installRelease(options: InstallOptions = {}) {
   const cloneRunner = options.runClone ?? runClone;
 
   options.logger?.log?.(`install ${brick}@${version} → ${target}${options.write ? ' (writing)' : ' (dry-run)'}`);
-  const previewPlan = previewClonePlan(options, cloneRunner, cloneArgs, targetRoot);
-  const res = cloneRunner(options.write ? [...cloneArgs, '--write'] : cloneArgs, options.stdio);
-
-  // The preview and write are separate clone processes. Re-resolve the exact
-  // previewed destinations after the write so a directory swapped to an
-  // escaping symlink in that interval cannot produce a successful install.
-  if (options.write) validateCloneWritePlan(targetRoot, previewPlan);
-
-  const clone = parseCloneOutput(res.stdout, false);
+  const res = cloneRunner(options.write ? [...cloneArgs, '--write'] : cloneArgs, 'pipe');
+  const clone = parseCloneOutput(res.stdout);
+  validateCloneResult(clone, Boolean(options.write), targetRoot);
+  if (options.stdio === 'inherit' && typeof res.stdout === 'string') process.stdout.write(res.stdout);
   return {
     ok: true,
     brick,
@@ -320,6 +329,17 @@ export function installRelease(options: InstallOptions = {}) {
     force: options.force,
     clone,
   };
+}
+
+function assertReleaseIdentity(release: ReleaseDocument, brick: string, version: string): void {
+  if (release.release?.artifact_id !== brick || release.release.version !== version) {
+    throw new StoreInstallRefusedError('release-identity-mismatch', {
+      requested_artifact_id: brick,
+      requested_version: version,
+      release_artifact_id: release.release?.artifact_id ?? null,
+      release_version: release.release?.version ?? null,
+    });
+  }
 }
 
 function installRequest(options: InstallOptions): { root: string; brick: string; version: string; target: string } {
@@ -339,18 +359,109 @@ function assertInstallableRelease(release: ReleaseDocument, options: InstallOpti
   options.logger?.warn?.(`warn: installing YANKED release ${brick}@${version}`);
 }
 
-function validateReleaseArtifacts(release: ReleaseDocument, targetRoot: string): void {
-  for (const [index, artifact] of (release.content?.artifacts ?? []).entries()) {
-    validateArtifactDestination(targetRoot, artifact.path, index);
-  }
+function hashBytes(value: crypto.BinaryLike): string {
+  return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-function previewClonePlan(options: InstallOptions, cloneRunner: CloneRunner, cloneArgs: string[], targetRoot: string): ClonePlan | null {
-  if (!options.write) return null;
-  const preview = cloneRunner(cloneArgs, 'pipe');
-  const previewPlan = parseCloneOutput(preview.stdout)?.plan ?? null;
-  validateCloneWritePlan(targetRoot, previewPlan);
-  return previewPlan;
+function normalizedArtifactPath(value: unknown, label: string): string {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) throw new StoreInstallRefusedError('artifact-path-missing', { artifact_path: value ?? null, path_label: label });
+  if (isAbsolute(raw) || win32.isAbsolute(raw)) throw new StoreInstallRefusedError('artifact-path-absolute', { artifact_path: raw, path_label: label });
+  const segments = raw.replace(/\\/g, '/').split('/');
+  if (segments.includes('..')) throw new StoreInstallRefusedError('artifact-path-traversal', { artifact_path: raw, path_label: label });
+  const normalized = segments.filter((segment) => segment && segment !== '.').join('/');
+  if (!normalized) throw new StoreInstallRefusedError('artifact-path-missing', { artifact_path: raw, path_label: label });
+  return normalized;
+}
+
+function pathDigestSync(artifactPath: string): string {
+  const stat = lstatSync(artifactPath);
+  if (stat.isSymbolicLink()) throw new StoreInstallRefusedError('immutable-artifact-symlink', { artifact_path: artifactPath });
+  if (stat.isFile()) return hashBytes(readFileSync(artifactPath));
+  if (!stat.isDirectory()) throw new StoreInstallRefusedError('immutable-artifact-type', { artifact_path: artifactPath });
+  const files: { path: string; sha256: string }[] = [];
+  const walk = (root: string, current: string): void => {
+    const entries = readdirSync(current, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      const absolute = join(current, entry.name);
+      if (entry.isSymbolicLink()) throw new StoreInstallRefusedError('immutable-artifact-symlink', { artifact_path: absolute });
+      if (entry.isDirectory()) walk(root, absolute);
+      else if (entry.isFile()) files.push({ path: relative(root, absolute).split(sep).join('/'), sha256: hashBytes(readFileSync(absolute)) });
+      else throw new StoreInstallRefusedError('immutable-artifact-type', { artifact_path: absolute });
+    }
+  };
+  walk(artifactPath, artifactPath);
+  return hashBytes(JSON.stringify(files));
+}
+
+// eslint-disable-next-line complexity -- Immutable snapshot verification is one fail-closed checklist; splitting it would weaken the identity-to-payload audit trail.
+function verifiedReleaseSnapshot(root: string, release: ReleaseDocument, brick: string, version: string): string {
+  const contentHash = release.release?.content_hash;
+  if (typeof contentHash !== 'string' || !/^[a-f0-9]{64}$/i.test(contentHash)) {
+    throw new StoreInstallRefusedError('release-content-hash-invalid', { brick, version, content_hash: contentHash ?? null });
+  }
+  const artifactStore = resolve(root, 'releases', '.artifacts');
+  const snapshotPath = resolve(artifactStore, contentHash, 'snapshot.json');
+  if (!isContainedPath(artifactStore, snapshotPath) || !existsSync(snapshotPath)) {
+    throw new StoreInstallRefusedError('immutable-artifact-missing', { brick, version, content_hash: contentHash, snapshot_path: snapshotPath });
+  }
+  if (realpathSync(snapshotPath) !== snapshotPath) {
+    throw new StoreInstallRefusedError('immutable-artifact-symlink', { snapshot_path: snapshotPath });
+  }
+  const snapshot = JSON.parse(readFileSync(snapshotPath, 'utf8')) as ReleaseSnapshot;
+  if (snapshot.artifact_id !== brick || snapshot.version !== version || snapshot.content_hash !== contentHash) {
+    throw new StoreInstallRefusedError('immutable-artifact-identity-mismatch', {
+      brick,
+      version,
+      content_hash: contentHash,
+      snapshot_artifact_id: snapshot.artifact_id ?? null,
+      snapshot_version: snapshot.version ?? null,
+      snapshot_content_hash: snapshot.content_hash ?? null,
+    });
+  }
+  const sealInput = { ...snapshot };
+  delete sealInput.seal;
+  if (snapshot.seal?.algorithm !== 'sha256' || snapshot.seal.value !== hashBytes(JSON.stringify(sealInput))) {
+    throw new StoreInstallRefusedError('immutable-artifact-seal-mismatch', { snapshot_path: snapshotPath });
+  }
+  const snapshotRoot = dirname(snapshotPath);
+  const manifestRelative = normalizedArtifactPath(snapshot.manifest?.path, 'snapshot.manifest.path');
+  const manifestPath = resolve(snapshotRoot, manifestRelative);
+  if (!isContainedPath(snapshotRoot, manifestPath) || !existsSync(manifestPath) || pathDigestSync(manifestPath) !== snapshot.manifest?.sha256) {
+    throw new StoreInstallRefusedError('immutable-manifest-hash-mismatch', { manifest_path: manifestRelative });
+  }
+  const releaseArtifacts = new Map((release.content?.artifacts ?? []).map((artifact, index) => [
+    normalizedArtifactPath(artifact.path, `release.content.artifacts[${String(index)}].path`),
+    artifact,
+  ]));
+  const snapshotArtifacts = snapshot.artifacts ?? [];
+  if (snapshotArtifacts.length !== releaseArtifacts.size) throw new StoreInstallRefusedError('immutable-artifact-set-mismatch');
+  for (const [index, artifact] of snapshotArtifacts.entries()) {
+    const relativePath = normalizedArtifactPath(artifact.path, `snapshot.artifacts[${String(index)}].path`);
+    const releaseArtifact = releaseArtifacts.get(relativePath);
+    if (!releaseArtifact || artifact.sha256 !== releaseArtifact.sha256 || artifact.kind !== releaseArtifact.kind) {
+      throw new StoreInstallRefusedError('immutable-artifact-metadata-mismatch', { artifact_path: relativePath });
+    }
+    const payloadPath = resolve(snapshotRoot, 'payload', relativePath);
+    if (!isContainedPath(resolve(snapshotRoot, 'payload'), payloadPath) || !existsSync(payloadPath) || pathDigestSync(payloadPath) !== artifact.sha256) {
+      throw new StoreInstallRefusedError('immutable-artifact-hash-mismatch', { artifact_path: relativePath });
+    }
+  }
+  return snapshotPath;
+}
+
+function validateCloneResult(clone: CloneOutput | null, write: boolean, targetRoot: string): void {
+  if (!clone?.plan) throw new StoreInstallRefusedError('write-plan-invalid');
+  validateCloneWritePlan(targetRoot, clone.plan);
+  if (typeof clone.plan.plan_hash !== 'string' || !/^[a-f0-9]{64}$/i.test(clone.plan.plan_hash)) {
+    throw new StoreInstallRefusedError('write-plan-hash-invalid');
+  }
+  if (write && clone.applied_plan_hash !== clone.plan.plan_hash) {
+    throw new StoreInstallRefusedError('write-plan-hash-mismatch', {
+      plan_hash: clone.plan.plan_hash,
+      applied_plan_hash: clone.applied_plan_hash ?? null,
+    });
+  }
 }
 
 function canonicalTargetRoot(target: string): string {
@@ -441,35 +552,17 @@ function validateTargetRootIdentity(targetRoot: string): void {
 }
 
 function runSelftest(): void {
-  const root = mkdtempSync(resolve(tmpdir(), 'sma-store-race-'));
+  const root = mkdtempSync(resolve(tmpdir(), 'sma-store-immutable-'));
   try {
-    const brick = 'race-fixture';
+    const brick = 'immutable-fixture';
     const version = '1.0.0';
     const releaseDir = resolve(root, 'releases', brick);
     const target = resolve(root, 'target');
-    const safeParent = resolve(target, 'safe');
-    const outside = resolve(root, 'outside');
     mkdirSync(releaseDir, { recursive: true });
-    mkdirSync(safeParent, { recursive: true });
-    mkdirSync(outside, { recursive: true });
     writeFileSync(resolve(releaseDir, `${version}.json`), JSON.stringify({
-      release: { artifact_id: brick, version, status: 'published' },
-      content: { artifacts: [{ path: 'safe/payload.txt' }] },
+      release: { artifact_id: brick, version, status: 'published', content_hash: 'a'.repeat(64) },
+      content: { artifacts: [{ path: 'safe/payload.txt', kind: 'file', sha256: 'b'.repeat(64) }] },
     }));
-
-    const plan: ClonePlan = {
-      actions: [{ kind: 'copy_file', dst: resolve(safeParent, 'payload.txt') }],
-      control_plane: {},
-    };
-    let cloneCalls = 0;
-    const runCloneFixture: CloneRunner = (cloneArgs: string[]) => {
-      cloneCalls += 1;
-      if (cloneArgs.includes('--write')) {
-        rmSync(safeParent, { recursive: true, force: true });
-        symlinkSync(outside, safeParent, 'dir');
-      }
-      return { status: 0, stdout: JSON.stringify({ plan }), stderr: '' };
-    };
 
     assert.throws(
       () => installRelease({
@@ -478,14 +571,13 @@ function runSelftest(): void {
         version,
         target,
         write: true,
-        runClone: runCloneFixture,
+        runClone: () => ({ status: 0, stdout: '{}' }),
         logger: null,
       }),
       (error) => error instanceof StoreInstallRefusedError
-        && error.details.reason === 'write-symlink-outside-target',
+        && error.details.reason === 'immutable-artifact-missing',
     );
-    assert.equal(cloneCalls, 2);
-    process.stdout.write('sma-store install-race selftest: PASS\n');
+    process.stdout.write('sma-store immutable-install selftest: PASS\n');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -529,48 +621,6 @@ function validateWriteDestination(targetRoot: string, destination: string, label
   }
 }
 
-function validateArtifactDestination(targetRoot: string, artifactPath: unknown, index: number): void {
-  const value = typeof artifactPath === 'string' ? artifactPath.trim() : '';
-  const details = { artifact_index: index, artifact_path: artifactPath ?? null, target_root: targetRoot };
-  if (!value) throw new StoreInstallRefusedError('artifact-path-missing', details);
-  if (isAbsolute(value)) throw new StoreInstallRefusedError('artifact-path-absolute', details);
-
-  const segments = value.split(/[\\/]+/);
-  if (segments.includes('..')) throw new StoreInstallRefusedError('artifact-path-traversal', details);
-
-  const lexicalDestination = resolve(targetRoot, value);
-  if (!isContainedPath(targetRoot, lexicalDestination)) {
-    throw new StoreInstallRefusedError('artifact-path-outside-target', {
-      ...details,
-      resolved_path: lexicalDestination,
-    });
-  }
-
-  let canonicalCursor = targetRoot;
-  for (const segment of segments.filter((part) => part && part !== '.')) {
-    const next = resolve(canonicalCursor, segment);
-    if (!existsSync(next)) {
-      canonicalCursor = next;
-      continue;
-    }
-    try {
-      canonicalCursor = realpathSync(next);
-    } catch (error) {
-      throw new StoreInstallRefusedError('artifact-path-unresolvable', {
-        ...details,
-        resolved_path: next,
-        cause: error instanceof Error ? error.message : String(error),
-      });
-    }
-    if (!isContainedPath(targetRoot, canonicalCursor)) {
-      throw new StoreInstallRefusedError('artifact-symlink-outside-target', {
-        ...details,
-        resolved_path: canonicalCursor,
-      });
-    }
-  }
-}
-
 function isContainedPath(root: string, candidate: string): boolean {
   const rel = relative(root, candidate);
   return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel));
@@ -581,17 +631,97 @@ function isContainedPath(root: string, candidate: string): boolean {
 function runCreateRelease() {
   const manifest = requiredArg('manifest', '--manifest');
   const version = requiredArg('version', '--version');
+  const manifestPath = resolve(manifest);
+  const manifestDocument = JSON.parse(readFileSync(manifestPath, 'utf8')) as { brick?: { id?: string }; build?: { id?: string } };
+  const artifactId = manifestDocument.brick?.id ?? manifestDocument.build?.id;
+  if (!artifactId) throw new Error('manifest must declare brick.id or build.id');
   const releaseArgs: string[] = [
     RELEASE_TOOL,
     '--manifest',
-    resolve(manifest),
+    manifestPath,
     '--version',
     version,
   ];
   if (args.status) releaseArgs.push('--status', args.status);
   if (args.searchRoot) releaseArgs.push('--search-root', args.searchRoot);
-  const res = spawnSync('node', releaseArgs, { stdio: 'inherit' });
+  const res = spawnSync('node', releaseArgs, { stdio: 'inherit', cwd: SMA_ROOT });
   if (res.status !== 0) throw new Error(`sma-release exited with status ${String(res.status)}`);
+  materializeReleaseSnapshot(releasePath(artifactId, version), manifestPath, typeof args.searchRoot === 'string' ? resolve(args.searchRoot) : null);
+}
+
+function safeSnapshotSource(relativePath: string, roots: string[]): string {
+  for (const root of roots) {
+    const canonicalRoot = realpathSync(root);
+    const candidate = resolve(canonicalRoot, relativePath);
+    if (!isContainedPath(canonicalRoot, candidate) || !existsSync(candidate)) continue;
+    const canonicalCandidate = realpathSync(candidate);
+    if (isContainedPath(canonicalRoot, canonicalCandidate) && canonicalCandidate === candidate) return candidate;
+  }
+  throw new StoreInstallRefusedError('immutable-artifact-source-missing', { artifact_path: relativePath });
+}
+
+function copySnapshotPath(source: string, destination: string): void {
+  const stat = lstatSync(source);
+  if (stat.isSymbolicLink()) throw new StoreInstallRefusedError('immutable-artifact-symlink', { artifact_path: source });
+  if (stat.isFile()) {
+    mkdirSync(dirname(destination), { recursive: true });
+    copyFileSync(source, destination);
+    return;
+  }
+  if (!stat.isDirectory()) throw new StoreInstallRefusedError('immutable-artifact-type', { artifact_path: source });
+  mkdirSync(destination, { recursive: true });
+  for (const entry of readdirSync(source, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    if (entry.isSymbolicLink()) throw new StoreInstallRefusedError('immutable-artifact-symlink', { artifact_path: join(source, entry.name) });
+    copySnapshotPath(join(source, entry.name), join(destination, entry.name));
+  }
+}
+
+function materializeReleaseSnapshot(releaseDocumentPath: string, manifestPath: string, searchRoot: string | null): void {
+  const release = JSON.parse(readFileSync(releaseDocumentPath, 'utf8')) as ReleaseDocument;
+  const brick = release.release?.artifact_id;
+  const version = release.release?.version;
+  const contentHash = release.release?.content_hash;
+  if (!brick || !version || !contentHash || !/^[a-f0-9]{64}$/i.test(contentHash)) {
+    throw new StoreInstallRefusedError('release-identity-mismatch', { release_path: releaseDocumentPath });
+  }
+  const artifactStore = resolve(SMA_ROOT, 'releases', '.artifacts');
+  const destination = resolve(artifactStore, contentHash);
+  mkdirSync(artifactStore, { recursive: true });
+  if (existsSync(destination)) {
+    verifiedReleaseSnapshot(SMA_ROOT, release, brick, version);
+    return;
+  }
+  const transaction = mkdtempSync(resolve(artifactStore, '.snapshot-txn-'));
+  try {
+    const roots = [...new Set([searchRoot, dirname(manifestPath), SMA_ROOT].filter((value): value is string => typeof value === 'string' && existsSync(value)))];
+    const artifacts = (release.content?.artifacts ?? []).map((artifact, index) => ({
+      path: normalizedArtifactPath(artifact.path, `release.content.artifacts[${String(index)}].path`),
+      kind: artifact.kind,
+      sha256: artifact.sha256,
+    }));
+    for (const artifact of artifacts) {
+      const source = safeSnapshotSource(artifact.path, roots);
+      if (pathDigestSync(source) !== artifact.sha256) throw new StoreInstallRefusedError('immutable-artifact-source-hash-mismatch', { artifact_path: artifact.path });
+      copySnapshotPath(source, resolve(transaction, 'payload', artifact.path));
+    }
+    const manifestContent = readFileSync(manifestPath);
+    copyFileSync(manifestPath, resolve(transaction, 'manifest.json'));
+    const descriptor: ReleaseSnapshot = {
+      schema_version: '1.0.0',
+      artifact_id: brick,
+      version,
+      content_hash: contentHash,
+      manifest: { path: 'manifest.json', sha256: hashBytes(manifestContent) },
+      artifacts,
+    };
+    descriptor.seal = { algorithm: 'sha256', value: hashBytes(JSON.stringify(descriptor)) };
+    writeFileSync(resolve(transaction, 'snapshot.json'), `${JSON.stringify(descriptor, null, 2)}\n`);
+    renameSync(transaction, destination);
+    verifiedReleaseSnapshot(SMA_ROOT, release, brick, version);
+  } catch (error: unknown) {
+    rmSync(transaction, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 // ── list-bricks ──────────────────────────────────────────────────────────────

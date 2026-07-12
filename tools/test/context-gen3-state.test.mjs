@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { appendFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -8,6 +9,7 @@ import { pathToFileURL } from "node:url";
 
 import {
   PROJECT_ABSOLUTE_OVERRIDES,
+  PROJECTS_ROOT,
   appendContextEvent,
   listBricksWithContext,
   logPath,
@@ -58,7 +60,7 @@ function runIsolatedGen3(root, expression, extraEnv = {}) {
   return JSON.parse(stdout.trim());
 }
 
-test("context events reject every invalid public input before writing", () => {
+test("context events reject every invalid public input before writing", async () => {
   const valid = { project: "fixture", brick: "brick", kind: "note", intent: "valid intent" };
   /** @type {Array<[Parameters<typeof appendContextEvent>[0], RegExp]>} */
   const cases = [
@@ -72,7 +74,13 @@ test("context events reject every invalid public input before writing", () => {
   ];
   for (const [input, expected] of cases) assert.throws(() => appendContextEvent(input), expected);
   assert.throws(() => projectRoot(""), /missing project id/);
-  assert.throws(() => projectRoot("definitely-not-a-real-project-7f4d"), /project not found/);
+  const createdProjectsRoot = !existsSync(PROJECTS_ROOT);
+  if (createdProjectsRoot) await mkdir(PROJECTS_ROOT, { recursive: true });
+  try {
+    assert.throws(() => projectRoot("definitely-not-a-real-project-7f4d"), /project not found/);
+  } finally {
+    if (createdProjectsRoot) await rm(PROJECTS_ROOT, { recursive: true, force: true });
+  }
 });
 
 test("session and actor resolution honor explicit, configured, and terminal fallbacks", () => {
@@ -159,9 +167,11 @@ test("gen3 project summaries count conflicts and merge resolutions while tolerat
     await mkdir(contextDir, { recursive: true });
     await mkdir(proposalsDir, { recursive: true });
     await writeFile(path.join(contextDir, "a.ndjson"), [
-      { timestamp: "2026-01-01T00:00:00Z", kind: "conflict_detected", intent: "first conflict" },
-      { timestamp: "2026-01-01T00:01:00Z", kind: "conflict_resolved", intent: "resolved" },
-      { timestamp: "2026-01-01T00:02:00Z", kind: "conflict_detected", intent: "still open" },
+      { event_id: "ctx-conflict-1", timestamp: "2026-01-01T00:00:00Z", kind: "conflict_detected", intent: "first conflict" },
+      { event_id: "ctx-conflict-2", timestamp: "2026-01-01T00:01:00Z", kind: "conflict_detected", intent: "second conflict" },
+      { event_id: "ctx-resolution-2", timestamp: "2026-01-01T00:02:00Z", kind: "conflict_resolved", intent: "resolved second", decision_rationale: "conflict_event_id=ctx-conflict-2" },
+      { event_id: "ctx-resolution-duplicate", timestamp: "2026-01-01T00:03:00Z", kind: "conflict_resolved", intent: "duplicate resolution", decision_rationale: "conflict_event_id=ctx-conflict-2" },
+      { event_id: "ctx-resolution-orphan", timestamp: "2026-01-01T00:04:00Z", kind: "conflict_resolved", intent: "orphan resolution", decision_rationale: "conflict_event_id=ctx-conflict-missing" },
     ].map((value) => JSON.stringify(value)).join("\n") + "\nmalformed\n");
     await writeFile(path.join(contextDir, "empty.ndjson"), "\n");
     await writeFile(path.join(proposalsDir, "open.json"), JSON.stringify({ proposal_id: "open", brick_id: "a", generated_at: "2026-01-02T00:00:00Z", chains: [{}, {}], recommendation: { preferred_chain: "chain-b" } }));
@@ -179,20 +189,30 @@ test("gen3 project summaries count conflicts and merge resolutions while tolerat
       console.error = originalError;
     }
     assert.equal(coverage.bricks_with_context, 1);
-    assert.equal(coverage.total_events, 4);
-    assert.deepEqual([coverage.conflict_detected, coverage.conflict_resolved, coverage.open_conflicts], [2, 1, 1]);
-    assert.equal(coverage.bricks[0].last_intent, "still open");
+    assert.equal(coverage.total_events, 6);
+    assert.deepEqual([coverage.conflict_detected, coverage.conflict_resolved, coverage.open_conflicts], [2, 3, 1]);
+    assert.equal(coverage.malformed_conflict_resolutions, 2);
+    assert.equal(coverage.bricks[0].malformed_conflict_resolutions, 2);
+    assert.equal(coverage.bricks[0].last_intent, "orphan resolution");
     assert.equal(project.merge_proposals.open_count, 1);
     assert.equal(project.merge_proposals.resolved_count, 1);
     assert.equal(project.merge_proposals.proposals[0].chain_count, 2);
-    const global = runIsolatedGen3(root, `mod.collectGlobalGen3({ projects: [
-      { id: "fixture", absoluteRoot: ${JSON.stringify(root)} },
-      { id: "empty", absoluteRoot: ${JSON.stringify(path.join(root, "empty-project"))} },
-      { id: "skipped", absoluteRoot: "" }
-    ] })`);
+    const global = runIsolatedGen3(root, `(async () => {
+      const originalError = console.error;
+      console.error = () => {};
+      try {
+        return mod.collectGlobalGen3({ projects: [
+          { id: "fixture", absoluteRoot: ${JSON.stringify(root)} },
+          { id: "empty", absoluteRoot: ${JSON.stringify(path.join(root, "empty-project"))} },
+          { id: "skipped", absoluteRoot: "" }
+        ] });
+      } finally {
+        console.error = originalError;
+      }
+    })()`);
     assert.equal(global.context_coverage.projects_with_logs, 1);
     assert.equal(global.context_coverage.total_bricks_with_context, 1);
-    assert.deepEqual(global.conflicts, { detected_count: 2, resolved_count: 1, open_count: 1 });
+    assert.deepEqual(global.conflicts, { detected_count: 2, resolved_count: 3, open_count: 1, malformed_resolution_count: 2 });
     assert.deepEqual(global.merge_proposals, { open_count: 1, resolved_count: 1 });
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -246,6 +266,7 @@ test("gen3 empty and unreadable context inputs fail soft", async () => {
     assert.deepEqual(readProjectContextCoverage(root), {
       bricks_with_context: 0, total_events: 0, last_event_at: null,
       conflict_detected: 0, conflict_resolved: 0, open_conflicts: 0, bricks: [],
+      malformed_conflict_resolutions: 0,
     });
     const contextDir = path.join(root, ".smarch", "agent-context");
     await mkdir(path.join(contextDir, "unreadable.ndjson"), { recursive: true });

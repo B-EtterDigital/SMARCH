@@ -33,6 +33,7 @@
  *                  [acquire flags]
  *
  *   renew          --lease <lease_id> [--ttl <seconds>] [--auto-context]
+ *                  [--agent <id>] [--session <id>]
  *
  *   release        --lease <lease_id> [--reason "..."] [--auto-context]
  *
@@ -48,7 +49,7 @@
  *                  [--ttl <seconds>] [--auto-context] [--project <id>] [--brick <id>]
  *                  [--renew-every <seconds>] -- <command...>
  *                  → acquires lease, spawns command, releases on exit (success or fail).
- *                    SIGINT/SIGTERM are caught so the lease is released before re-raise.
+ *                    SIGINT/SIGTERM are forwarded; ownership is released only after child exit.
  *                    With --renew-every, a heartbeat thread keeps the lease alive.
  *
  * Agent fallback: --agent defaults to env.SMA_AGENT or env.USER if not provided.
@@ -222,7 +223,8 @@ function usage() {
                                [--rationale "..."] [--linked-backlog <id>]... [--auto-context]
   sma-lease.ts force-acquire  --resource-kind <kind> --resource <id> --intent "..." --reason "..."
                                [acquire flags]
-  sma-lease.ts renew          --lease <lease_id> [--ttl <seconds>] [--auto-context]
+  sma-lease.ts renew          --lease <lease_id> [--agent <id>] [--session <id>]
+                               [--ttl <seconds>] [--auto-context]
   sma-lease.ts release        --lease <lease_id> [--reason "..."] [--auto-context]
   sma-lease.ts list           [--resource-kind <kind>] [--resource <id>] [--agent <id>]
                                [--include-expired] [--json]
@@ -271,7 +273,7 @@ function saveRegistry(reg: LeaseRegistry): void {
   renameSync(tmp, REGISTRY_PATH);
 }
 
-function mutateRegistry<T>(mutator: (registry: LeaseRegistry) => T): T {
+function mutateRegistry<T>(mutator: (registry: LeaseRegistry) => T, maxWaitMs = LOCK_MAX_WAIT_MS): T {
   return withRegistryLock(() => {
     const reg = loadRegistry();
     if (env.SMA_LEASE_TEST_MUTATION_DELAY_MS) {
@@ -280,11 +282,11 @@ function mutateRegistry<T>(mutator: (registry: LeaseRegistry) => T): T {
     const result = mutator(reg);
     saveRegistry(reg);
     return result;
-  });
+  }, maxWaitMs);
 }
 
-function withRegistryLock<T>(fn: () => T): T {
-  const token = acquireRegistryLock();
+function withRegistryLock<T>(fn: () => T, maxWaitMs = LOCK_MAX_WAIT_MS): T {
+  const token = acquireRegistryLock(maxWaitMs);
   try {
     return fn();
   } finally {
@@ -292,7 +294,7 @@ function withRegistryLock<T>(fn: () => T): T {
   }
 }
 
-function acquireRegistryLock(): string {
+function acquireRegistryLock(maxWaitMs = LOCK_MAX_WAIT_MS): string {
   const dir = dirname(LOCK_SENTINEL);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const token = `${String(process.pid)}-${String(Date.now())}-${randomBytes(8).toString('hex')}`;
@@ -310,7 +312,7 @@ function acquireRegistryLock(): string {
       if (errorCode(error) !== 'EEXIST') throw error;
       if (recoverStaleRegistryLock()) continue;
       const elapsedMs = Number(hrtime.bigint() - startNs) / 1e6;
-      if (elapsedMs > LOCK_MAX_WAIT_MS) {
+      if (elapsedMs > maxWaitMs) {
         throw new Error(`timed out waiting for registry lock ${LOCK_SENTINEL}`);
       }
       sleepSync(10 + Math.floor(Math.random() * 11));
@@ -478,13 +480,14 @@ function buildLease(displaced: Lease | null | undefined, agent: string, ttl: num
 function runRenew() {
   requireArg('lease', '--lease');
   const ttl = parseTtl(args.ttl);
-  const result = doRenew(args.lease, ttl);
+  const owner = resolveAgent(resolveSessionId(args.session));
+  const result = doRenew(args.lease, ttl, owner);
   if (args.json) console.log(JSON.stringify(result, null, 2));
   else console.log(`renewed ${result.lease_id} → expires ${result.expires_at}`);
   maybeStampContext('lease_renewed', result, `renewed lease ${result.lease_id}`);
 }
 
-function doRenew(leaseId: string, ttl: number): Lease {
+function doRenew(leaseId: string, ttl: number, owner: string | null, maxWaitMs = LOCK_MAX_WAIT_MS): Lease {
   return mutateRegistry((reg) => {
     pruneExpired(reg);
     const lease = reg.leases.find((l) => l.lease_id === leaseId);
@@ -493,11 +496,18 @@ function doRenew(leaseId: string, ttl: number): Lease {
       err.code = 12;
       throw err;
     }
+    if (!owner || lease.agent_id !== owner) {
+      const err = (new Error(
+        `lease owner mismatch: ${leaseId} is held by ${lease.agent_id}; renew requested by ${owner || 'unknown'}`,
+      )) as Error & { code?: number };
+      err.code = 13;
+      throw err;
+    }
     lease.expires_at = new Date(Date.now() + ttl * 1000).toISOString();
     lease.renewed_at = nowIso();
     lease.renewals = (lease.renewals ?? 0) + 1;
     return lease;
-  });
+  }, maxWaitMs);
 }
 
 function runRelease() {
@@ -602,31 +612,26 @@ async function runWrapped() {
   if (!runChildArgs?.length) {
     throw new Error('run: missing child command after `--`');
   }
+  const renewEveryMs = args.renewEvery ? Number(args.renewEvery) * 1000 : null;
+  if (renewEveryMs !== null && (!Number.isFinite(renewEveryMs) || renewEveryMs < 100)) {
+    throw new Error(`bad --renew-every: ${args.renewEvery}`);
+  }
 
   const lease = doAcquire({ force: false });
   console.log(`[sma-lease] acquired ${lease.resource_kind}:${lease.resource_id} (${lease.lease_id}, ttl until ${lease.expires_at})`);
   maybeStampContext('lease_acquired', lease, lease.intent);
 
-  let renewInterval = null;
-  if (args.renewEvery) {
-    const everyMs = Number(args.renewEvery) * 1000;
-    if (Number.isFinite(everyMs) && everyMs >= 5000) {
-      renewInterval = setInterval(() => {
-        try {
-          const renewed = doRenew(lease.lease_id, parseTtl(args.ttl));
-          console.error(`[sma-lease] renewed ${lease.lease_id} → ${renewed.expires_at}`);
-        } catch (e) {
-          console.error(`[sma-lease] renew failed: ${errorMessage(e)}`);
-        }
-      }, everyMs);
-    }
-  }
-
   let releasedAlready = false;
+  let renewTimer: NodeJS.Timeout | null = null;
+  let escalationTimer: NodeJS.Timeout | null = null;
+  let terminationStarted = false;
+  let forcedExitCode: number | null = null;
+  let leaseExpiresAt = Date.parse(lease.expires_at);
   const releaseSafely = (label: string): void => {
     if (releasedAlready) return;
     releasedAlready = true;
-    if (renewInterval) clearInterval(renewInterval);
+    if (renewTimer) clearTimeout(renewTimer);
+    if (escalationTimer) clearTimeout(escalationTimer);
     try {
       doRelease(lease.lease_id, lease.agent_id);
       console.log(`[sma-lease] released ${lease.lease_id} (${label})`);
@@ -648,10 +653,56 @@ async function runWrapped() {
     },
   });
 
+  const killGraceMs = positiveNumber(env.SMA_LEASE_CHILD_KILL_GRACE_MS, 1000);
+  const terminateChild = (label: string, signal: NodeJS.Signals, exitCode: number): void => {
+    if (terminationStarted) return;
+    terminationStarted = true;
+    forcedExitCode = exitCode;
+    console.error(`[sma-lease] ${label}; forwarding ${signal} while retaining lease until child exit`);
+    try { child.kill(signal); } catch { /* child close/error owns release */ }
+    escalationTimer = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) {
+        console.error(`[sma-lease] child did not exit within ${String(killGraceMs)}ms; escalating to SIGKILL`);
+        try { child.kill('SIGKILL'); } catch { /* child close/error owns release */ }
+      }
+    }, killGraceMs);
+  };
+
+  if (args.renewEvery) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guarded by args.renewEvery above
+    const everyMs = renewEveryMs!;
+    const ttlMs = parseTtl(args.ttl) * 1000;
+    const safetyMs = Math.min(ttlMs * 0.75, killGraceMs + 250);
+    const scheduleRenewal = (delayMs: number): void => {
+      renewTimer = setTimeout(() => {
+        const renewalDeadline = leaseExpiresAt - safetyMs;
+        const remainingMs = renewalDeadline - Date.now();
+        if (remainingMs <= 0) {
+          terminateChild('renewal deadline reached before ownership was re-established', 'SIGTERM', 1);
+          return;
+        }
+        try {
+          const renewed = doRenew(lease.lease_id, parseTtl(args.ttl), lease.agent_id, remainingMs);
+          leaseExpiresAt = Date.parse(renewed.expires_at);
+          console.error(`[sma-lease] renewed ${lease.lease_id} → ${renewed.expires_at}`);
+          scheduleRenewal(everyMs);
+        } catch (error) {
+          console.error(`[sma-lease] renew failed: ${errorMessage(error)}`);
+          if (errorCode(error) === 12 || errorCode(error) === 13) {
+            terminateChild('lease ownership lost', 'SIGTERM', 1);
+            return;
+          }
+          const retryBudgetMs = leaseExpiresAt - safetyMs - Date.now();
+          if (retryBudgetMs <= 0) terminateChild('renewal retry budget exhausted', 'SIGTERM', 1);
+          else scheduleRenewal(Math.min(100, retryBudgetMs));
+        }
+      }, Math.max(0, delayMs));
+    };
+    scheduleRenewal(Math.min(everyMs, Math.max(0, leaseExpiresAt - safetyMs - Date.now())));
+  }
+
   const onSig = (sig: NodeJS.Signals): void => {
-    console.error(`[sma-lease] received ${sig}, releasing lease then forwarding`);
-    releaseSafely(`signal:${sig}`);
-    try { child.kill(sig); } catch { /* ignore */ }
+    terminateChild(`received ${sig}`, sig, sig === 'SIGINT' ? 130 : 143);
   };
   process.on('SIGINT', () => { onSig('SIGINT'); });
   process.on('SIGTERM', () => { onSig('SIGTERM'); });
@@ -660,11 +711,11 @@ async function runWrapped() {
     child.on('close', (code, signal) => {
       if (signal) {
         releaseSafely(`child-signal:${signal}`);
-        res(128 + 1); // generic non-zero on signal
+        res(forcedExitCode ?? 129);
         return;
       }
       releaseSafely(`exit:${String(code)}`);
-      res(code ?? 0);
+      res(forcedExitCode ?? code ?? 0);
     });
     child.on('error', (e) => {
       console.error(`[sma-lease] spawn error: ${e.message}`);

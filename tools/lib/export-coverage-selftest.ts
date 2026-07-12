@@ -48,3 +48,8 @@ const guardSrc = readFileSync(resolve(SMA_ROOT, 'tools/lib/export-guard.ts'), 'u
 assert.ok(/openness:\s*'closed'/.test(guardSrc), 'export guard must fail-safe unresolved bricks to closed');
 
 console.log(`export-coverage selftest: ${String(n)} export tools guarded + fail-safe verified`);
+
+// Clone and store are export surfaces too; run their defensive path, immutable
+// release, no-follow, lock, and rollback regressions inside the enforced
+// selftest lane so their runtime libraries remain covered by the strict gate.
+await import('../test/sma-defensive-review-reg.test.mjs');

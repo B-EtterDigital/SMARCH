@@ -56,27 +56,32 @@ test("Merkle verification rejects altered sibling hashes, sides, order, and iden
   assert.notEqual(leafHash("node", "payload"), _sha256("node\0node\0payload"));
 });
 
-test("source fingerprints expose truncation, ignore media, and hash binary changes", async () => {
+test("source fingerprints fail closed on truncation and hash every in-scope regular file", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "smarch-seal-fingerprint-"));
   try {
     await writeFile(path.join(root, "a.ts"), "export const a = 1;\r\n");
     await writeFile(path.join(root, "b.bin"), Buffer.from([0, 1, 2]));
-    await writeFile(path.join(root, "ignored.png"), "not source");
+    await writeFile(path.join(root, "image.png"), Buffer.from([137, 80, 78, 71]));
+    await writeFile(path.join(root, "graphic.svg"), "<svg><script>alert(1)</script></svg>");
     await mkdir(path.join(root, "nested"));
     await writeFile(path.join(root, "nested", "c.ts"), "export const c = 3;\n");
     await mkdir(path.join(root, "node_modules"));
     await writeFile(path.join(root, "node_modules", "hidden.js"), "ignored");
     const first = fingerprintSource(root, { includeFiles: true, maxFiles: 1 });
-    assert.equal(first.resolved, true);
+    assert.equal(first.resolved, false);
+    assert.equal(first.content_hash, null);
     assert.equal(first.file_count, 1);
     assert.equal(first.truncated, true);
     assert.ok(first.files);
     assert.deepEqual(first.files.map((entry) => entry.path), ["a.ts"]);
-    const complete = fingerprintSource(root, { includeFiles: true });
+    const complete = fingerprintSource(root, { includeFiles: true, excludedPaths: ["node_modules"] });
     assert.ok(complete.files);
-    assert.deepEqual(complete.files.map((entry) => entry.path), ["a.ts", "b.bin", "nested/c.ts"]);
+    assert.deepEqual(complete.files.map((entry) => entry.path), ["a.ts", "b.bin", "graphic.svg", "image.png", "nested/c.ts"]);
+    const svgHash = complete.content_hash;
+    await writeFile(path.join(root, "graphic.svg"), "<svg><script>fetch('/secrets')</script></svg>");
+    assert.notEqual(fingerprintSource(root, { excludedPaths: ["node_modules"] }).content_hash, svgHash);
     await writeFile(path.join(root, "b.bin"), Buffer.from([0, 1, 3]));
-    assert.notEqual(fingerprintSource(root).content_hash, complete.content_hash);
+    assert.notEqual(fingerprintSource(root, { excludedPaths: ["node_modules"] }).content_hash, complete.content_hash);
     const single = fingerprintSource(path.join(root, "a.ts"), { includeFiles: true });
     assert.equal(single.file_count, 1);
     assert.deepEqual(single.files?.map((entry) => entry.path), ["a.ts"]);
@@ -88,7 +93,7 @@ test("source fingerprints expose truncation, ignore media, and hash binary chang
   }
 });
 
-test("source fingerprinting skips unreadable subtrees and files with a warning", async () => {
+test("source fingerprinting fails closed with explicit unreadable paths", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "smarch-seal-unreadable-"));
   const deniedDir = path.join(root, "denied");
   const deniedFile = path.join(root, "denied-file.ts");
@@ -103,7 +108,10 @@ test("source fingerprinting skips unreadable subtrees and files with a warning",
     await chmod(deniedFile, 0o000);
     console.error = (message) => errors.push(String(message));
     const result = fingerprintSource(root, { includeFiles: true });
-    assert.equal(result.resolved, true);
+    assert.equal(result.resolved, false);
+    assert.equal(result.content_hash, null);
+    assert.ok(Array.isArray(result.failed_paths) && result.failed_paths.length > 0);
+    assert.ok(result.failed_paths.some((failedPath) => failedPath === "denied" || failedPath === "denied-file.ts"));
     assert.ok(errors.some((message) => /provenance-seal\.(walk|fingerprint-file)/.test(message)));
   } finally {
     console.error = originalError;
@@ -134,6 +142,13 @@ test("seal verification reports anchor, history, and length tampering independen
   assert.deepEqual(lengthTamper.reasons, ["chain length changed (99 -> 2)"]);
   const headTamper = verifySeal({ ...seal, head: "forged" }, { brick_id: "brick", content_hash: "content", events });
   assert.match(headTamper.reasons[0], /chain head mismatch/);
+});
+
+test("unresolved source fingerprints cannot be sealed", () => {
+  assert.throws(
+    () => computeSeal({ brick_id: "brick", content_hash: null, events: [] }),
+    /resolved content fingerprint/i,
+  );
 });
 
 test("seal signatures reject wrong heads, wrong keys, and malformed material", () => {

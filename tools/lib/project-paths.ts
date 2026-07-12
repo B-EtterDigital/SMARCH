@@ -43,7 +43,13 @@ function buildCache(): Map<string, string> {
       dirCache.set(ent.toLowerCase(), ent);
     }
   } catch (error) {
-    console.error(JSON.stringify({ area: 'project-paths.directory-cache', severity: 'warning', hint: 'Check the portfolio projects root and its permissions.', error: error instanceof Error ? error.message : String(error) }));
+    const errorCode = error && typeof error === 'object' && 'code' in error
+      ? (error as { code?: unknown }).code
+      : undefined;
+    const code = typeof errorCode === 'string' ? errorCode : '';
+    if (code !== 'ENOENT') {
+      console.error(JSON.stringify({ area: 'project-paths.directory-cache', severity: 'warning', hint: 'Check the portfolio projects root and its permissions.', error: error instanceof Error ? error.message : String(error), ...(code ? { code } : {}) }));
+    }
   }
   return dirCache;
 }

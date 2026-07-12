@@ -39,10 +39,12 @@ interface LeaseRegistry { generated_at?: string; leases?: RawLease[] }
 interface ContextBrick {
   brick_id: string; event_count: number; last_event_at: string | null; last_intent: string | null;
   last_kind: string | null; conflict_detected: number; conflict_resolved: number; open_conflicts: number;
+  malformed_conflict_resolutions: number;
 }
 interface ContextCoverage {
   bricks_with_context: number; total_events: number; last_event_at: string | null;
   conflict_detected: number; conflict_resolved: number; open_conflicts: number; bricks: ContextBrick[];
+  malformed_conflict_resolutions: number;
 }
 interface MergeProposal {
   proposal_id?: string; brick_id?: string; generated_at?: string; resolved_at: string | null;
@@ -136,6 +138,7 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
       conflict_detected: 0,
       conflict_resolved: 0,
       open_conflicts: 0,
+      malformed_conflict_resolutions: 0,
       bricks: [],
     };
   }
@@ -145,6 +148,7 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
   let totalConflictDetected = 0;
   let totalConflictResolved = 0;
   let totalOpenConflicts = 0;
+  let totalMalformedConflictResolutions = 0;
   const bricks: ContextBrick[] = [];
   for (const f of files) {
     const path = resolve(dir, f);
@@ -160,10 +164,12 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
     let lastKind: string | null = null;
     let conflictDetected = 0;
     let conflictResolved = 0;
-    let openConflicts = 0;
+    const openConflicts = new Set<string>();
+    const resolvedConflicts = new Set<string>();
+    let malformedConflictResolutions = 0;
     for (const line of lines) {
       try {
-        const evt = JSON.parse(line) as { timestamp?: string; intent?: string; kind?: string };
+        const evt = JSON.parse(line) as { event_id?: string; timestamp?: string; intent?: string; kind?: string; decision_rationale?: string };
         const ts = evt.timestamp ?? null;
         if (ts && (!brickLastTs || ts > brickLastTs)) {
           brickLastTs = ts;
@@ -172,10 +178,17 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
         }
         if (evt.kind === 'conflict_detected') {
           conflictDetected += 1;
-          openConflicts += 1;
+          if (evt.event_id) openConflicts.add(evt.event_id);
         } else if (evt.kind === 'conflict_resolved') {
           conflictResolved += 1;
-          if (openConflicts > 0) openConflicts -= 1;
+          const conflictId = conflictResolutionTarget(evt.decision_rationale);
+          if (!conflictId || !openConflicts.has(conflictId) || resolvedConflicts.has(conflictId)) {
+            malformedConflictResolutions += 1;
+            console.error(JSON.stringify({ area: 'gen3-state.conflict-resolution', severity: 'warning', hint: 'Reference one open conflict_event_id exactly once.', event_id: evt.event_id ?? null, conflict_event_id: conflictId }));
+          } else {
+            openConflicts.delete(conflictId);
+            resolvedConflicts.add(conflictId);
+          }
         }
       } catch (error) {
         console.error(JSON.stringify({ area: 'gen3-state.context-parse', severity: 'warning', hint: 'Repair the malformed context NDJSON line.', error: error instanceof Error ? error.message : String(error) }));
@@ -184,7 +197,8 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
     totalEvents += lines.length;
     totalConflictDetected += conflictDetected;
     totalConflictResolved += conflictResolved;
-    totalOpenConflicts += openConflicts;
+    totalOpenConflicts += openConflicts.size;
+    totalMalformedConflictResolutions += malformedConflictResolutions;
     if (brickLastTs && (!lastEventAt || brickLastTs > lastEventAt)) lastEventAt = brickLastTs;
     bricks.push({
       brick_id: f.replace(/\.ndjson$/, ''),
@@ -194,7 +208,8 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
       last_kind: lastKind,
       conflict_detected: conflictDetected,
       conflict_resolved: conflictResolved,
-      open_conflicts: openConflicts,
+      open_conflicts: openConflicts.size,
+      malformed_conflict_resolutions: malformedConflictResolutions,
     });
   }
   bricks.sort((a, b) => (b.last_event_at ?? '').localeCompare(a.last_event_at ?? ''));
@@ -205,6 +220,7 @@ export function readProjectContextCoverage(projectRoot: string): ContextCoverage
     conflict_detected: totalConflictDetected,
     conflict_resolved: totalConflictResolved,
     open_conflicts: totalOpenConflicts,
+    malformed_conflict_resolutions: totalMalformedConflictResolutions,
     bricks,
   };
 }
@@ -259,6 +275,7 @@ export function collectGlobalGen3({ projects = [] }: { projects?: { id: string; 
   const byProject: Record<string, {
     bricks_with_context: number; total_context_events: number; last_event_at: string | null;
     conflict_detected: number; conflict_resolved: number; open_conflicts: number;
+    malformed_conflict_resolutions: number;
     open_merge_proposals: number; resolved_merge_proposals: number;
   }> = {};
   let totalBricksWithContext = 0;
@@ -268,6 +285,7 @@ export function collectGlobalGen3({ projects = [] }: { projects?: { id: string; 
   let totalConflictDetected = 0;
   let totalConflictResolved = 0;
   let totalOpenConflicts = 0;
+  let totalMalformedConflictResolutions = 0;
   for (const proj of projects) {
     if (!proj.absoluteRoot) continue;
     const ctx = readProjectContextCoverage(proj.absoluteRoot);
@@ -280,6 +298,7 @@ export function collectGlobalGen3({ projects = [] }: { projects?: { id: string; 
       conflict_detected: ctx.conflict_detected,
       conflict_resolved: ctx.conflict_resolved,
       open_conflicts: ctx.open_conflicts,
+      malformed_conflict_resolutions: ctx.malformed_conflict_resolutions,
       open_merge_proposals: mp.open_count,
       resolved_merge_proposals: mp.resolved_count,
     };
@@ -290,6 +309,7 @@ export function collectGlobalGen3({ projects = [] }: { projects?: { id: string; 
     totalConflictDetected += ctx.conflict_detected;
     totalConflictResolved += ctx.conflict_resolved;
     totalOpenConflicts += ctx.open_conflicts;
+    totalMalformedConflictResolutions += ctx.malformed_conflict_resolutions;
   }
   return {
     leases: {
@@ -316,12 +336,17 @@ export function collectGlobalGen3({ projects = [] }: { projects?: { id: string; 
       detected_count: totalConflictDetected,
       resolved_count: totalConflictResolved,
       open_count: totalOpenConflicts,
+      malformed_resolution_count: totalMalformedConflictResolutions,
     },
     merge_proposals: {
       open_count: totalOpenProposals,
       resolved_count: totalResolvedProposals,
     },
   };
+}
+
+function conflictResolutionTarget(rationale: string | undefined): string | null {
+  return rationale?.match(/(?:^|\|\s*)conflict_event_id=([^\s|]+)/)?.[1] ?? null;
 }
 
 /**

@@ -27,6 +27,34 @@ test("license classification resolves expressions and unknown inputs fail closed
   assert.equal(meetVisibility([]), "private");
 });
 
+test("license classification rejects identifier suffix attacks", () => {
+  for (const token of ["GPL-3.0-only-FAKE", "BSD-NOT-A-LICENSE", "MPL-2.0-NOTREAL"]) {
+    const classified = classifyLicense(token);
+    assert.equal(classified.class, "unknown", token);
+    assert.equal(classified.openness, "closed", token);
+  }
+});
+
+test("SPDX expression parsing preserves precedence and coherent axes", () => {
+  const optionalGpl = classifyLicense("GPL-3.0-only OR MIT");
+  assert.deepEqual(
+    (({ class: cls, openness, copyleft }) => ({ class: cls, openness, copyleft }))(optionalGpl),
+    { class: "permissive", openness: "open", copyleft: 0 },
+  );
+  const combinedGpl = classifyLicense("MIT AND GPL-3.0-only");
+  assert.deepEqual(
+    (({ class: cls, openness, copyleft }) => ({ class: cls, openness, copyleft }))(combinedGpl),
+    { class: "strong-copyleft", openness: "open", copyleft: 2 },
+  );
+  const nested = classifyLicense("(GPL-3.0-only OR MIT) AND MPL-2.0");
+  assert.deepEqual(
+    (({ class: cls, openness, copyleft }) => ({ class: cls, openness, copyleft }))(nested),
+    { class: "weak-copyleft", openness: "open", copyleft: 1 },
+  );
+  assert.equal(classifyLicense("GPL-3.0-only WITH Classpath-exception-2.0").class, "strong-copyleft");
+  assert.equal(classifyLicense("GPL-3.0-only WITH Made-Up-Exception").class, "unknown");
+});
+
 test("mixed license sets preserve the strongest obligations and surface hard incompatibility", () => {
   const combined = combineLicenses([
     { brick_id: "permissive", spdx: "MIT" },

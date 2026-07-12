@@ -32,7 +32,7 @@ import '../test/parallel-preflight-cli.test.mjs';
 import '../test/scanner-analysis.test.mjs';
 import '../test/schema-workforce.test.mjs';
 
-import { intotoStatement, spdxDocument, cyclonedxDocument } from './attestation.ts';
+import { intotoStatement, spdxDocument, cyclonedxDocument, resolveAnchorBinding } from './attestation.ts';
 import { leafHash, buildMerkle, inclusionProof } from './merkle.ts';
 import { verifyBundle } from '../sma-attest-verify.ts';
 
@@ -124,6 +124,31 @@ const leaves = rows.map((r) => leafHash(r.brick_id, r.head));
 const { root, layers } = buildMerkle(leaves);
 const idx = rows.findIndex((r) => r.brick_id === brick.brick_id);
 const proof = inclusionProof(layers, idx);
+const anchorAlgo = 'merkle-sha256-domainsep-v1';
+const anchorLedgerDigest = h('anchor-ledger');
+const anchorDigest = h(`${anchorAlgo} ${root} ${String(rows.length)} ${anchorLedgerDigest} none`);
+const anchorRecord = {
+  algo: anchorAlgo, root, leaf_count: rows.length, ledger_digest: anchorLedgerDigest,
+  audit_digest: null, anchor_digest: anchorDigest,
+};
+
+assert.throws(
+  () => resolveAnchorBinding({ root: h('stale-root'), anchor_digest: h('stale-anchor') }, root),
+  /root mismatch/i,
+);
+n += 1;
+assert.deepEqual(
+  resolveAnchorBinding({ root: h('stale-root'), anchor_digest: h('stale-anchor') }, root, { unanchoredDiagnostic: true }),
+  { anchored: false, anchor_digest: null, reason: 'root-mismatch' },
+);
+n += 1;
+assert.equal(resolveAnchorBinding(anchorRecord, root).anchor_digest, anchorDigest);
+n += 1;
+assert.throws(
+  () => resolveAnchorBinding({ ...anchorRecord, anchor_digest: h('stale-anchor') }, root),
+  /anchor digest mismatch/i,
+);
+n += 1;
 
 const dir = mkdtempSync(resolve(tmpdir(), 'sma-attest-'));
 try {
@@ -131,11 +156,19 @@ try {
   writeJson(dir, 'sbom.spdx.json', spdx);
   writeJson(dir, 'sbom.cdx.json', cdx);
   writeJson(dir, 'inclusion-proof.json', {
-    brick_id: brick.brick_id, seal_head: brick.seal.head, content_hash: contentHash, proof, root, anchor_digest: h('anchor-digest'),
+    brick_id: brick.brick_id, seal_head: brick.seal.head, content_hash: contentHash, proof, root, anchor_digest: anchorDigest,
   });
 
-  const res = verifyBundle(dir);
+  const structuralOnly = verifyBundle(dir);
+  ok(!structuralOnly.ok, 'structurally consistent bundle without trust material must FAIL authenticity');
+  eq(structuralOnly.structural_ok, true, 'structural consistency is reported separately');
+  eq(structuralOnly.authentic, false, 'missing external trust is reported separately');
+  const res = verifyBundle(dir, { trustedRoot: root });
   ok(res.ok, `round-trip verify PASS (failing: ${res.checks.filter((c) => !c.ok).map((c) => c.name).join(', ')})`);
+  const anchored = verifyBundle(dir, { trustedAnchor: anchorRecord });
+  ok(anchored.ok, 'matching trusted anchor root and digest must authenticate the bundle');
+  const wrongAnchor = verifyBundle(dir, { trustedAnchor: { ...anchorRecord, anchor_digest: h('wrong-anchor') } });
+  ok(!wrongAnchor.ok && wrongAnchor.structural_ok && !wrongAnchor.authentic, 'trusted anchor digest mismatch must fail authenticity only');
   eq(res.brick_id, brick.brick_id, 'verify reports brick_id');
   ok(res.checks.length >= 7, 'verify runs the full check set');
 } finally {
@@ -150,9 +183,9 @@ try {
   writeJson(badDir, 'sbom.spdx.json', tamperedSpdx);
   writeJson(badDir, 'sbom.cdx.json', cdx);
   writeJson(badDir, 'inclusion-proof.json', {
-    brick_id: brick.brick_id, seal_head: brick.seal.head, content_hash: contentHash, proof, root, anchor_digest: h('anchor-digest'),
+    brick_id: brick.brick_id, seal_head: brick.seal.head, content_hash: contentHash, proof, root, anchor_digest: anchorDigest,
   });
-  const bad = verifyBundle(badDir);
+  const bad = verifyBundle(badDir, { trustedRoot: root });
   ok(!bad.ok, 'tampered content hash must FAIL verification');
 } finally {
   rmSync(badDir, { recursive: true, force: true });
@@ -165,9 +198,9 @@ try {
   writeJson(forgeDir, 'sbom.spdx.json', spdx);
   writeJson(forgeDir, 'sbom.cdx.json', cdx);
   writeJson(forgeDir, 'inclusion-proof.json', {
-    brick_id: brick.brick_id, seal_head: 'FORGED-head', content_hash: contentHash, proof, root, anchor_digest: h('anchor-digest'),
+    brick_id: brick.brick_id, seal_head: 'FORGED-head', content_hash: contentHash, proof, root, anchor_digest: anchorDigest,
   });
-  const forged = verifyBundle(forgeDir);
+  const forged = verifyBundle(forgeDir, { trustedRoot: root });
   ok(!forged.ok, 'forged seal head must FAIL Merkle inclusion');
 } finally {
   rmSync(forgeDir, { recursive: true, force: true });

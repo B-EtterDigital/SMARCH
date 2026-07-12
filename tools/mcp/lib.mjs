@@ -59,7 +59,9 @@ function firstExisting(root, candidates) {
   return path.resolve(root, candidates[0]);
 }
 
-export async function loadRegistryContext() {
+/** @param {AbortSignal} [signal] */
+export async function loadRegistryContext(signal) {
+  signal?.throwIfAborted();
   const root = currentRoot();
   const statePath = firstExisting(root, STATE_CANDIDATES);
   const registryPath = firstExisting(root, REGISTRY_CANDIDATES);
@@ -78,6 +80,7 @@ export async function loadRegistryContext() {
     })));
     state = loaded.state;
     registry = loaded.registry;
+    signal?.throwIfAborted();
   } else {
     const loaded = await Promise.all([
       maybeReadJson(statePath),
@@ -85,6 +88,7 @@ export async function loadRegistryContext() {
     ]);
     state = /** @type {State | null} */ (loaded[0]);
     registry = /** @type {Registry | null} */ (loaded[1]);
+    signal?.throwIfAborted();
   }
 
   if (!registry) {
@@ -97,6 +101,7 @@ export async function loadRegistryContext() {
 
   /** @type {BuildIndex | null} */
   const buildIndex = await maybeReadJson(buildIndexPath);
+  signal?.throwIfAborted();
   return /** @type {RegistryContext} */ ({
     root,
     state: state || {},

@@ -23,6 +23,7 @@ import {
   readContextLog,
   logPath,
   listBricksWithContext,
+  withContextLogLock,
 } from './lib/context-log.ts';
 import { discoverPortfolioProjects } from './lib/portfolio-projects.ts';
 
@@ -50,6 +51,7 @@ interface ConflictArgs extends Record<string, string | boolean | string[] | unde
   session?: string;
   task?: string;
   decision?: string;
+  conflict?: string;
   warnMinutes?: string;
   criticalMinutes?: string;
   limit?: string;
@@ -135,7 +137,7 @@ function usage() {
   sma-conflict.ts summary [--project <id>|--all] [--json] [--limit 20]
                            [--warn-minutes 15] [--critical-minutes 60]
 
-  sma-conflict.ts resolve --project <id> --brick <id> --intent "..."
+  sma-conflict.ts resolve --project <id> --brick <id> --conflict <event_id> --intent "..."
                            [--decision "..."] [--file <path>]... [--json]
 
 Conflict reports are appended as agent-context events. Use this whenever an
@@ -195,19 +197,27 @@ function runReport() {
 function runResolve() {
   const project = requireArg('project', '--project');
   const brick = requireArg('brick', '--brick');
+  const conflictId = requireArg('conflict', '--conflict');
   const intent = requireArg('intent', '--intent');
-  const event = appendContextEvent({
-    project,
-    brick,
-    kind: 'conflict_resolved',
-    intent,
-    actorKind: args.actorKind || 'agent',
-    actorId: args.actor || env.SMA_AGENT || env.USER || 'unknown',
-    model: args.model,
-    sessionId: args.session,
-    taskId: args.task,
-    decisionRationale: args.decision,
-    filesTouched: args.file,
+  const event = withContextLogLock(logPath(project, brick), () => {
+    const open = collectOpenConflicts(project, brick);
+    if (!open.some((candidate) => candidate.event_id === conflictId)) {
+      throw new Error(`conflict event is not an open conflict for ${project}/${brick}: ${conflictId}`);
+    }
+    return appendContextEvent({
+      project,
+      brick,
+      kind: 'conflict_resolved',
+      intent,
+      actorKind: args.actorKind || 'agent',
+      actorId: args.actor || env.SMA_AGENT || env.USER || 'unknown',
+      model: args.model,
+      sessionId: args.session,
+      taskId: args.task,
+      decisionRationale: [`conflict_event_id=${conflictId}`, args.decision].filter(Boolean).join(' | '),
+      filesTouched: args.file,
+      lockHeld: true,
+    });
   });
 
   if (args.json) console.log(JSON.stringify(event, null, 2));
@@ -350,18 +360,19 @@ function targetBricks(project: string, brick: string | null | undefined = null):
 }
 
 function openConflicts(events: readonly ConflictEvent[]): ConflictEvent[] {
-  let openCount = 0;
-  const out: ConflictEvent[] = [];
+  const open = new Map<string, ConflictEvent>();
   for (const event of events) {
-    if (event.kind === 'conflict_detected') {
-      openCount += 1;
-      out.push(event);
-    } else if (event.kind === 'conflict_resolved' && openCount > 0) {
-      openCount -= 1;
+    if (event.kind === 'conflict_detected' && event.event_id) open.set(event.event_id, event);
+    else if (event.kind === 'conflict_resolved') {
+      const conflictId = resolvedConflictId(event);
+      if (conflictId) open.delete(conflictId);
     }
   }
-  if (openCount <= 0) return [];
-  return out.slice(-openCount);
+  return [...open.values()];
+}
+
+function resolvedConflictId(event: ConflictEvent): string | null {
+  return event.decision_rationale?.match(/(?:^|\|\s*)conflict_event_id=([^\s|]+)/)?.[1] ?? null;
 }
 
 async function summaryProjects(): Promise<ProjectSummaryRef[]> {
@@ -429,7 +440,7 @@ function decorateConflict(event: ConflictEvent, { now, warnMinutes, criticalMinu
     intent: event.intent || '',
     decision_rationale: event.decision_rationale || '',
     files_touched: event.files_touched || [],
-    resolve_command: `npm run conflict -- resolve --project ${shellArg(event.project)} --brick ${shellArg(event.brick_id)} --intent ${shellArg('resolved documented collision')} --decision ${shellArg('controller resolved, split, or reassigned the overlap')}`,
+    resolve_command: `npm run conflict -- resolve --project ${shellArg(event.project)} --brick ${shellArg(event.brick_id)} --conflict ${shellArg(event.event_id)} --intent ${shellArg('resolved documented collision')} --decision ${shellArg('controller resolved, split, or reassigned the overlap')}`,
     check_command: `npm run conflict:check -- --project ${shellArg(event.project)} --brick ${shellArg(event.brick_id)} --strict`,
   };
 }

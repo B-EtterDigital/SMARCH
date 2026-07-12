@@ -76,31 +76,36 @@ type LicenseCombination = ReturnType<typeof combineLicenses>;
 //   2 = strong copyleft (GPL)
 //   3 = network copyleft (AGPL)
 // ---------------------------------------------------------------------------
-const LICENSE_TABLE = [
-  // proprietary / no-license — poisons openness to `closed`
-  { match: /^(proprietary|unlicensed|closed|all-?rights-?reserved|none)$/i, class: 'proprietary', openness: 'closed', copyleft: 0, attribution: true },
-  // source-available (viewable, restricted redistribution)
-  { match: /^(busl|bsl)(-1\.1)?$/i, class: 'source-available', openness: 'source-available', copyleft: 0, attribution: true },
-  { match: /^elastic(-2\.0)?$/i, class: 'source-available', openness: 'source-available', copyleft: 0, attribution: true },
-  { match: /^sspl(-1\.0)?$/i, class: 'source-available', openness: 'source-available', copyleft: 3, attribution: true },
-  { match: /^(polyform|prosperity|commons-?clause)/i, class: 'source-available', openness: 'source-available', copyleft: 0, attribution: true },
-  // public domain / no attribution needed
-  { match: /^(cc0(-1\.0)?|unlicense|0bsd|wtfpl)$/i, class: 'public-domain', openness: 'open', copyleft: 0, attribution: false },
-  // permissive
-  { match: /^mit(-0)?$/i, class: 'permissive', openness: 'open', copyleft: 0, attribution: true },
-  { match: /^(apache(-2\.0)?|apache2)$/i, class: 'permissive', openness: 'open', copyleft: 0, attribution: true },
-  { match: /^(bsd|bsd-2-clause|bsd-3-clause|bsd-4-clause|isc|zlib|python-2\.0|psf|ncsa)/i, class: 'permissive', openness: 'open', copyleft: 0, attribution: true },
-  { match: /^(ms-pl|artistic(-2\.0)?|ofl(-1\.1)?|boost|bsl-1\.0|upl(-1\.0)?)/i, class: 'permissive', openness: 'open', copyleft: 0, attribution: true },
-  { match: /^cc-by(-4\.0|-3\.0)?$/i, class: 'permissive', openness: 'open', copyleft: 0, attribution: true },
-  // weak / file-level copyleft
-  { match: /^(mpl(-2\.0)?|epl(-1\.0|-2\.0)?|cddl(-1\.0|-1\.1)?|ms-rl)/i, class: 'weak-copyleft', openness: 'open', copyleft: 1, attribution: true },
-  { match: /^lgpl(-2\.1|-3\.0)?/i, class: 'weak-copyleft', openness: 'open', copyleft: 1, attribution: true },
-  { match: /^cc-by-sa(-4\.0|-3\.0)?$/i, class: 'weak-copyleft', openness: 'open', copyleft: 1, attribution: true },
-  // strong copyleft
-  { match: /^(gpl(-2\.0|-3\.0)?|eupl(-1\.1|-1\.2)?)/i, class: 'strong-copyleft', openness: 'open', copyleft: 2, attribution: true },
-  // network copyleft
-  { match: /^agpl(-3\.0)?/i, class: 'network-copyleft', openness: 'open', copyleft: 3, attribution: true },
-];
+type LicenseFacts = Omit<LicenseClassification, 'spdx' | 'reason' | 'expression'>;
+type LicenseAst =
+  | { kind: 'license'; id: string }
+  | { kind: 'with'; license: { kind: 'license'; id: string }; exception: string }
+  | { kind: 'and' | 'or'; left: LicenseAst; right: LicenseAst };
+
+const LICENSE_IDS = new Map<string, LicenseFacts>();
+const register = (ids: readonly string[], facts: LicenseFacts): void => {
+  for (const id of ids) LICENSE_IDS.set(id.toLowerCase(), facts);
+};
+
+register(['Proprietary', 'Unlicensed', 'Closed', 'All-Rights-Reserved', 'AllRightsReserved', 'None'], { class: 'proprietary', openness: 'closed', copyleft: 0, attribution: true });
+register(['BUSL-1.1', 'BUSL', 'BSL-1.1'], { class: 'source-available', openness: 'source-available', copyleft: 0, attribution: true });
+register(['Elastic-2.0', 'Elastic'], { class: 'source-available', openness: 'source-available', copyleft: 0, attribution: true });
+register(['SSPL-1.0', 'SSPL'], { class: 'source-available', openness: 'source-available', copyleft: 3, attribution: true });
+register(['PolyForm', 'Prosperity', 'Commons-Clause', 'CommonsClause'], { class: 'source-available', openness: 'source-available', copyleft: 0, attribution: true });
+register(['CC0-1.0', 'CC0', 'Unlicense', '0BSD', 'WTFPL'], { class: 'public-domain', openness: 'open', copyleft: 0, attribution: false });
+register(['MIT', 'MIT-0', 'Apache-2.0', 'Apache', 'Apache2', 'BSD', 'BSD-2-Clause', 'BSD-3-Clause', 'BSD-4-Clause', 'ISC', 'Zlib', 'Python-2.0', 'PSF', 'PSF-2.0', 'NCSA', 'MS-PL', 'Artistic-2.0', 'Artistic', 'OFL-1.1', 'OFL', 'Boost', 'BSL-1.0', 'UPL-1.0', 'UPL', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY'], { class: 'permissive', openness: 'open', copyleft: 0, attribution: true });
+register(['MPL-2.0', 'MPL', 'EPL-1.0', 'EPL-2.0', 'EPL', 'CDDL-1.0', 'CDDL-1.1', 'CDDL', 'MS-RL', 'LGPL-2.1', 'LGPL-2.1-only', 'LGPL-2.1-or-later', 'LGPL-3.0', 'LGPL-3.0-only', 'LGPL-3.0-or-later', 'LGPL', 'CC-BY-SA-3.0', 'CC-BY-SA-4.0', 'CC-BY-SA'], { class: 'weak-copyleft', openness: 'open', copyleft: 1, attribution: true });
+register(['GPL-2.0', 'GPL-2.0-only', 'GPL-2.0-or-later', 'GPL-3.0', 'GPL-3.0-only', 'GPL-3.0-or-later', 'GPL', 'EUPL-1.1', 'EUPL-1.2', 'EUPL'], { class: 'strong-copyleft', openness: 'open', copyleft: 2, attribution: true });
+register(['AGPL-3.0', 'AGPL-3.0-only', 'AGPL-3.0-or-later', 'AGPL'], { class: 'network-copyleft', openness: 'open', copyleft: 3, attribution: true });
+
+const SPDX_EXCEPTIONS = new Set([
+  '389-exception', 'Autoconf-exception-2.0', 'Autoconf-exception-3.0',
+  'Bison-exception-2.2', 'Bootloader-exception', 'Classpath-exception-2.0',
+  'CLISP-exception-2.0', 'DigiRule-FOSS-exception', 'FLTK-exception',
+  'Font-exception-2.0', 'GCC-exception-2.0', 'GCC-exception-3.1',
+  'LLVM-exception', 'Linux-syscall-note', 'OpenJDK-assembly-exception-1.0',
+  'Qt-GPL-exception-1.0', 'Qt-LGPL-exception-1.1', 'WxWindows-exception-3.1',
+].map((id) => id.toLowerCase()));
 
 const UNKNOWN_LICENSE: Omit<LicenseClassification, 'spdx'> = { class: 'unknown', openness: 'closed', copyleft: 0, attribution: true };
 
@@ -120,6 +125,123 @@ function normalizeSpdx(raw: unknown): string | null {
   return s || null;
 }
 
+function tokenizeExpression(raw: string): string[] | null {
+  const tokens: string[] = [];
+  const pattern = /\s*(\(|\)|AND\b|OR\b|WITH\b|[A-Za-z0-9][A-Za-z0-9.+-]*)/giy;
+  let offset = 0;
+  while (offset < raw.length) {
+    pattern.lastIndex = offset;
+    const match = pattern.exec(raw);
+    if (match?.index !== offset) return null;
+    tokens.push(match[1]);
+    offset = pattern.lastIndex;
+  }
+  return tokens;
+}
+
+function parseSpdxExpression(raw: string): LicenseAst | null {
+  const tokens = tokenizeExpression(raw);
+  if (!tokens?.length) return null;
+  let index = 0;
+  const peek = (): string | undefined => tokens[index];
+  const take = (): string | undefined => tokens[index++];
+  const parsePrimary = (): LicenseAst | null => {
+    if (peek() === '(') {
+      take();
+      const nested = parseOr();
+      if (!nested || take() !== ')') return null;
+      return nested;
+    }
+    const id = take();
+    if (!id || /^(AND|OR|WITH|\(|\))$/i.test(id)) return null;
+    return { kind: 'license', id };
+  };
+  const parseWith = (): LicenseAst | null => {
+    const base = parsePrimary();
+    if (!base) return null;
+    if (!/^WITH$/i.test(peek() ?? '')) return base;
+    take();
+    const exception = take();
+    if (base.kind !== 'license' || !exception || /^(AND|OR|WITH|\(|\))$/i.test(exception)) return null;
+    return { kind: 'with', license: base, exception };
+  };
+  const parseAnd = (): LicenseAst | null => {
+    let left = parseWith();
+    if (!left) return null;
+    while (/^AND$/i.test(peek() ?? '')) {
+      take();
+      const right = parseWith();
+      if (!right) return null;
+      left = { kind: 'and', left, right };
+    }
+    return left;
+  };
+  const parseOr = (): LicenseAst | null => {
+    let left = parseAnd();
+    if (!left) return null;
+    while (/^OR$/i.test(peek() ?? '')) {
+      take();
+      const right = parseAnd();
+      if (!right) return null;
+      left = { kind: 'or', left, right };
+    }
+    return left;
+  };
+  const ast = parseOr();
+  return ast && index === tokens.length ? ast : null;
+}
+
+function expressionText(ast: LicenseAst): string {
+  if (ast.kind === 'license') return ast.id;
+  if (ast.kind === 'with') return `${ast.license.id} WITH ${ast.exception}`;
+  return `(${expressionText(ast.left)} ${ast.kind.toUpperCase()} ${expressionText(ast.right)})`;
+}
+
+function classifyId(id: string): LicenseClassification {
+  const facts = LICENSE_IDS.get(id.toLowerCase());
+  return facts
+    ? { spdx: id, ...facts }
+    : { spdx: id, ...UNKNOWN_LICENSE, reason: 'unrecognized license token' };
+}
+
+function combinedClass(openness: Openness, copyleft: number, operands: readonly LicenseClassification[]): string {
+  if (openness === 'closed') return operands.some((part) => part.class === 'proprietary') ? 'proprietary' : 'unknown';
+  if (openness === 'source-available') return 'source-available';
+  if (copyleft >= 3) return 'network-copyleft';
+  if (copyleft === 2) return 'strong-copyleft';
+  if (copyleft === 1) return 'weak-copyleft';
+  return operands.every((part) => part.class === 'public-domain') ? 'public-domain' : 'permissive';
+}
+
+function classifyAst(ast: LicenseAst): LicenseClassification {
+  if (ast.kind === 'license') return classifyId(ast.id);
+  if (ast.kind === 'with') {
+    if (!SPDX_EXCEPTIONS.has(ast.exception.toLowerCase())) {
+      return { spdx: expressionText(ast), ...UNKNOWN_LICENSE, reason: 'unrecognized SPDX exception' };
+    }
+    return { ...classifyId(ast.license.id), spdx: expressionText(ast) };
+  }
+  const parts = [classifyAst(ast.left), classifyAst(ast.right)];
+  if (ast.kind === 'or') {
+    const selected = [...parts].sort((a, b) =>
+      opennessRank(b.openness) - opennessRank(a.openness)
+      || a.copyleft - b.copyleft
+      || Number(a.attribution) - Number(b.attribution)
+      || a.class.localeCompare(b.class))[0];
+    return { ...selected, spdx: expressionText(ast), expression: 'OR' };
+  }
+  const openness = meetOpenness(parts.map((part) => part.openness));
+  const copyleft = Math.max(...parts.map((part) => part.copyleft));
+  return {
+    spdx: expressionText(ast),
+    class: combinedClass(openness, copyleft, parts),
+    openness,
+    copyleft,
+    attribution: parts.some((part) => part.attribution),
+    expression: 'AND',
+  };
+}
+
 /**
  * Classify a license string, including SPDX expressions.
  *   "A OR B"  -> the licensee may choose, so the MOST OPEN operand wins.
@@ -132,43 +254,17 @@ export function classifyLicense(raw: unknown): LicenseClassification {
   if (!raw || typeof raw !== 'string' || !raw.trim()) {
     return { spdx: null, ...UNKNOWN_LICENSE, reason: 'no license declared' };
   }
-  const expr = raw.trim().replace(/^\(+|\)+$/g, '').trim();
-
-  // SPDX expression: OR / AND (single level; nested parens are treated as text)
-  if (/\s+OR\s+/i.test(expr) || /\s+AND\s+/i.test(expr)) {
-    const isOr = /\s+OR\s+/i.test(expr);
-    const parts = expr.split(isOr ? /\s+OR\s+/i : /\s+AND\s+/i).map((part: string) => classifyLicense(part));
-    // OR => choose the most open (max openness rank, min copyleft).
-    // AND => the most restrictive (min openness rank, max copyleft).
-    const pick = isOr
-      ? parts.reduce((a, b) => (opennessRank(b.openness) > opennessRank(a.openness) ? b : a))
-      : parts.reduce((a, b) => (opennessRank(b.openness) < opennessRank(a.openness) ? b : a));
-    return {
-      spdx: expr.replace(/\s+/g, ' '),
-      class: pick.class,
-      openness: pick.openness,
-      copyleft: isOr ? Math.min(...parts.map((p) => p.copyleft)) : Math.max(...parts.map((p) => p.copyleft)),
-      attribution: parts.some((p) => p.attribution),
-      expression: isOr ? 'OR' : 'AND',
-    };
+  const expr = raw.trim();
+  const hasExpressionSyntax = /[()]|\b(?:AND|OR|WITH)\b/i.test(expr);
+  if (hasExpressionSyntax) {
+    const ast = parseSpdxExpression(expr);
+    return ast
+      ? classifyAst(ast)
+      : { spdx: expr, ...UNKNOWN_LICENSE, reason: 'invalid SPDX expression' };
   }
-
-  // strip a WITH exception; classify the base license
-  const base = expr.split(/\s+WITH\s+/i)[0] ?? '';
-  const spdx = normalizeSpdx(base);
+  const spdx = normalizeSpdx(expr);
   if (!spdx) return { spdx: null, ...UNKNOWN_LICENSE, reason: 'no license declared' };
-  for (const row of LICENSE_TABLE) {
-    if (row.match.test(spdx)) {
-      return {
-        spdx,
-        class: row.class,
-        openness: row.openness as Openness,
-        copyleft: row.copyleft,
-        attribution: row.attribution,
-      };
-    }
-  }
-  return { spdx, ...UNKNOWN_LICENSE, reason: 'unrecognized license token' };
+  return classifyId(spdx);
 }
 
 // --- lattice primitives -----------------------------------------------------

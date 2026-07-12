@@ -26,10 +26,14 @@ test("lease renew extends ownership and release rejects the wrong actor", async 
   const registry = path.join(root, "leases.json");
   try {
     const acquired = jsonResult(leaseCommand(registry, ["acquire", "--resource-kind", "brick", "--resource", "trust", "--agent", "owner", "--intent", "test renew", "--ttl", "30", "--json"]));
-    const renewed = jsonResult(leaseCommand(registry, ["renew", "--lease", acquired.lease_id, "--ttl", "120", "--json"]));
+    const renewed = jsonResult(leaseCommand(registry, ["renew", "--lease", acquired.lease_id, "--agent", "owner", "--ttl", "120", "--json"]));
     assert.equal(renewed.renewals, 1);
     assert.ok(Date.parse(renewed.expires_at) > Date.parse(acquired.expires_at));
     assert.ok(renewed.renewed_at);
+
+    const wrongOwnerRenew = leaseCommand(registry, ["renew", "--lease", acquired.lease_id, "--agent", "intruder", "--ttl", "120", "--json"]);
+    assert.equal(wrongOwnerRenew.status, 13);
+    assert.match(wrongOwnerRenew.stderr, /lease owner mismatch/);
 
     const wrongOwner = leaseCommand(registry, ["release", "--lease", acquired.lease_id, "--agent", "intruder"]);
     assert.equal(wrongOwner.status, 13);

@@ -126,6 +126,6 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async (input) => explainWhyBlocked(input, await loadRegistryContext()),
+    operation: async (input, signal) => explainWhyBlocked(input, await loadRegistryContext(signal)),
   });
 }

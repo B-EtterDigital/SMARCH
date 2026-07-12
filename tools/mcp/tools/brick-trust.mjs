@@ -56,6 +56,6 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async (input) => explainBrickTrust(input, await loadRegistryContext()),
+    operation: async (input, signal) => explainBrickTrust(input, await loadRegistryContext(signal)),
   });
 }

@@ -29,12 +29,19 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { assertExportAllowed, ExportBlockedError } from "./lib/export-guard.ts";
 import { verifyCommercialEntitlement } from "./lib/commercial-entitlement.ts";
+import {
+  normalizedRelativePath,
+  resolveContainedDestination,
+  resolveContainedSource,
+  SecureCloneTransaction,
+} from "./lib/secure-clone-transaction.ts";
+import { loadReleaseSnapshot } from "./lib/release-snapshot.ts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const projectsRoot = path.resolve(repoRoot, "..", "Projects");
 const ignoredCopyDirs = new Set(["node_modules", "dist", "build", ".next", ".turbo"]);
 
-interface CloneOptions { registry: string; brick: string; build: string; buildManifest: string; target: string; search: string; docDir: string; write: boolean; list: boolean; force: boolean; allowClosed: boolean; entitlement: string; licensee: string; entitlementTrustedKeys: string; registryOrigin: string }
+interface CloneOptions { registry: string; releaseSnapshot: string; brick: string; build: string; buildManifest: string; target: string; search: string; docDir: string; write: boolean; list: boolean; force: boolean; allowClosed: boolean; entitlement: string; licensee: string; entitlementTrustedKeys: string; registryOrigin: string }
 interface EnvItem { name?: string; scope?: string; example?: string; required_in?: unknown[]; required?: boolean; optional?: boolean; optional_in?: unknown[]; forbidden_in?: string[] }
 interface EnvContract extends Record<string, unknown> { variables?: (string | EnvItem)[]; required?: (string | EnvItem)[]; optional?: (string | EnvItem)[] }
 interface RlsContract extends Record<string, unknown> { tables?: unknown[]; negative_tests?: (string | { table?: string })[] }
@@ -69,10 +76,12 @@ interface PlacementsDocument extends MutableRecord { schema_version?: string; ma
 interface ResolvedBrick {
   ref: BrickReference; import_id: string; brick: RegistryBrick; manifest: CloneManifest; sem: BrickSemantics; sourceProjectRoot: string; version: string; cloneReadiness: unknown; cloneSteps: string[]; installSteps: string[]; integrationRecipe: string[]; adaptationPoints: string[]; knownTraps: string[]; publicApi: string[]; testCommands: string[]; risks: string[]; tags: string[]; envContract: EnvContract; rlsContract: RlsContract; envBindings: string[]; rlsTables: string[]; envBindingRecords: EnvBindingRecord[]; adapterPointRecords: AdapterPointRecord[]; exportedSymbols: { name: string; kind: string }[];
 }
+let activeTransaction: SecureCloneTransaction | null = null;
 
 function parseArgs(argv: string[]): CloneOptions {
   const o: CloneOptions = {
     registry: path.resolve(repoRoot, "scans/all-projects/latest.registry.json"),
+    releaseSnapshot: "",
     brick: "",
     build: "",
     buildManifest: "",
@@ -91,6 +100,7 @@ function parseArgs(argv: string[]): CloneOptions {
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]; const n = argv[i + 1];
     if (a === "--registry" && n) { o.registry = path.resolve(n); i += 1; }
+    else if (a === "--release-snapshot" && n) { o.releaseSnapshot = path.resolve(n); i += 1; }
     else if (a === "--brick" && n) { o.brick = n; i += 1; }
     else if (a === "--build" && n) { o.build = n; i += 1; }
     else if (a === "--build-manifest" && n) { o.buildManifest = path.resolve(n); i += 1; }
@@ -197,34 +207,14 @@ async function prepareBuildLock(
   return buildLock as PreparedBuildLock;
 }
 
-async function copyDir(src: string, dst: string): Promise<void> {
-  const entries = await fs.readdir(src, { withFileTypes: true });
-  await fs.mkdir(dst, { recursive: true });
-  for (const e of entries) {
-    const s = path.join(src, e.name);
-    const d = path.join(dst, e.name);
-    if (e.isDirectory()) {
-      if (ignoredCopyDirs.has(e.name)) continue;
-      await copyDir(s, d);
-    } else if (e.isFile()) {
-      await fs.copyFile(s, d);
-    }
-  }
-}
-
-async function copyFile(src: string, dst: string): Promise<void> {
-  await fs.mkdir(path.dirname(dst), { recursive: true });
-  await fs.copyFile(src, dst);
-}
-
 async function pathExists(p: string): Promise<boolean> { try { await fs.access(p); return true; } catch { return false; } }
 
 function normalizeRelativePath(p: unknown): string {
-  return String(p || "").split(path.sep).join("/").replace(/^\.\//, "");
+  return normalizedRelativePath(p, "manifest path");
 }
 
 function relFrom(root: string, absolutePath: string): string {
-  return normalizeRelativePath(path.relative(root, absolutePath));
+  return path.relative(root, absolutePath).split(path.sep).join("/");
 }
 
 function toStringArray(value: unknown): string[] {
@@ -255,10 +245,6 @@ function sha256(value: crypto.BinaryLike): string {
 
 async function sha256File(p: string): Promise<string> {
   return sha256(await fs.readFile(p));
-}
-
-async function sha256PathIfExists(p: string): Promise<string | null> {
-  return (await pathExists(p)) ? sha256File(p) : null;
 }
 
 async function sha256JsonFile(p: string): Promise<string> {
@@ -304,7 +290,7 @@ function slugify(s: unknown): string {
 
 async function inferSourceProjectRoot(manifestPath: string, sourcePaths: readonly unknown[], fallbackProjectId: string): Promise<string> {
   const manifestDir = path.dirname(manifestPath);
-  const normalizedSources = uniqStrings(sourcePaths).map((sourcePath) => normalizeRelativePath(sourcePath)).sort((a, b) => b.length - a.length);
+  const normalizedSources = uniqStrings(sourcePaths).map((sourcePath) => normalizedRelativePath(sourcePath, "source_paths entry")).sort((a, b) => b.length - a.length);
   let current = manifestDir;
 
   while (true) {
@@ -352,14 +338,18 @@ async function listProjectSearchRoots(): Promise<string[]> {
 }
 
 async function resolveSourcePath(relativePath: string, preferredRoots: string[] = []): Promise<{ root: string; absolutePath: string } | null> {
-  const normalized = normalizeRelativePath(relativePath);
+  const normalized = normalizedRelativePath(relativePath, "source path");
   const roots = [...new Set([
     ...preferredRoots.filter(Boolean).map((root) => path.resolve(root)),
     ...(await listProjectSearchRoots())
   ])];
   for (const root of roots) {
-    const absolutePath = path.resolve(root, normalized);
-    if (await pathExists(absolutePath)) return { root, absolutePath };
+    try {
+      const absolutePath = await resolveContainedSource(root, normalized, "source path");
+      return { root: await fs.realpath(root), absolutePath };
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
   }
   return null;
 }
@@ -673,13 +663,13 @@ function mapCloneOwnershipMode(ownership: unknown): string {
 }
 
 function resolveTargetPathFromFileMap(fileMapEntries: FileMapEntry[], sourcePath: string): { target_path: string; ownership: unknown; notes: string } {
-  const normalizedSourcePath = normalizeRelativePath(sourcePath);
+  const normalizedSourcePath = normalizedRelativePath(sourcePath, "source path");
   const normalizedEntries = Array.isArray(fileMapEntries)
     ? fileMapEntries
       .filter((entry): entry is FileMapEntry & { source_path: string; target_path: string } => typeof entry.source_path === 'string' && typeof entry.target_path === 'string')
       .map((entry) => ({
-        source_path: normalizeRelativePath(entry.source_path),
-        target_path: normalizeRelativePath(entry.target_path),
+        source_path: normalizedRelativePath(entry.source_path, "clone.file_map source_path"),
+        target_path: normalizedRelativePath(entry.target_path, "clone.file_map target_path"),
         ownership: entry.ownership,
         notes: typeof entry.notes === 'string' ? entry.notes : ""
       }))
@@ -692,7 +682,7 @@ function resolveTargetPathFromFileMap(fileMapEntries: FileMapEntry[], sourcePath
     if (normalizedSourcePath.startsWith(`${entry.source_path}/`)) {
       const suffix = normalizedSourcePath.slice(entry.source_path.length + 1);
       return {
-        target_path: normalizeRelativePath(path.posix.join(entry.target_path, suffix)),
+        target_path: normalizedRelativePath(path.posix.join(entry.target_path, suffix), "clone.file_map target_path"),
         ownership: entry.ownership,
         notes: entry.notes
       };
@@ -757,7 +747,9 @@ function isCopyAction(action: CloneAction): action is CloneAction & { src: strin
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const registry = await readJson<CloneRegistry>(opts.registry);
+  normalizedRelativePath(opts.docDir, "--doc-dir");
+  const releaseSnapshot = opts.releaseSnapshot ? await loadReleaseSnapshot(opts.releaseSnapshot, opts.brick) : null;
+  const registry = releaseSnapshot?.registry ?? await readJson<CloneRegistry>(opts.registry);
 
   if (opts.search) {
     const hits = await searchBricks(registry, opts.search);
@@ -790,6 +782,7 @@ async function main() {
     console.error("error: choose either --brick or --build/--build-manifest, not both");
     process.exit(2);
   }
+  if (releaseSnapshot && (opts.build || opts.buildManifest)) throw new Error("--release-snapshot supports brick installs only");
 
   if (opts.build || opts.buildManifest) {
     const buildManifestPath = await resolveBuildManifestPath(opts, registry);
@@ -805,7 +798,7 @@ async function main() {
       process.exit(2);
     }
 
-    const registrySha = await sha256JsonFile(opts.registry);
+    const registrySha = releaseSnapshot ? await sha256JsonFile(opts.releaseSnapshot) : await sha256JsonFile(opts.registry);
     const now = new Date().toISOString();
     const slug = slugify(buildId);
     const buildImportId = createImportId(buildId, now);
@@ -980,12 +973,12 @@ async function main() {
           env_binding_records: owner?.envBindingRecords || buildEnvBindingRecordsList,
           adapter_point_records: owner?.adapterPointRecords || buildAdapterPointRecordsList
       };
-      const dst = path.resolve(opts.target, targetMapping.target_path);
+      const dst = resolveContainedDestination(opts.target, targetMapping.target_path, "clone target path");
       if (!resolvedSource) {
         plan.actions.push({
           ...actionBase,
           kind: "skip_missing",
-          src: path.resolve(actionBase.source_base_root, relativePath),
+          src: resolveContainedDestination(actionBase.source_base_root, relativePath, "missing source path"),
           dst,
           reason: "source path does not exist in any resolved project root"
         });
@@ -1011,7 +1004,7 @@ async function main() {
     }
 
     for (const supportingArtifact of uniqStrings(buildManifest.source?.supporting_artifacts || [])) {
-      const normalized = normalizeRelativePath(supportingArtifact);
+      const normalized = normalizedRelativePath(supportingArtifact, "supporting artifact path");
       const sourceCandidates = [
         path.resolve(repoRoot, normalized),
         path.resolve(path.dirname(buildManifestPath), normalized)
@@ -1019,7 +1012,7 @@ async function main() {
       const existingSource = await Promise.all(sourceCandidates.map(async (candidate) => (await pathExists(candidate)) ? candidate : null));
       const matchedSource = existingSource.find((candidate): candidate is string => typeof candidate === 'string');
       if (!matchedSource) continue;
-      const dst = path.resolve(opts.target, opts.docDir, "builds", slug, path.basename(normalized));
+      const dst = resolveContainedDestination(opts.target, path.posix.join(normalizeRelativePath(opts.docDir), "builds", slug, path.basename(normalized)), "supporting artifact target");
       if (await pathExists(dst) && !opts.force) {
         plan.actions.push({
           kind: "skip_exists",
@@ -1082,23 +1075,26 @@ async function main() {
         reason: action.reason || null
       }))
     }));
+    plan.plan_hash = planHash;
 
     if (opts.write) {
       guardCloneWrite(opts, resolvedBricks.map((entry) => entry.brick.id), resolvedBricks[0]?.brick?.project || null);
+      const transaction = await SecureCloneTransaction.create(opts.target, planHash);
+      activeTransaction = transaction;
       const placementEntries: (PathEntry & { action: CloneAction })[] = [];
       for (const action of plan.actions) {
         if (!isCopyAction(action)) continue;
         if (action.kind === "copy_dir") {
           const entries = await collectPathEntries(action.src, action.dst, action.source_base_root ?? repoRoot, opts.target, "source_file");
-          await copyDir(action.src, action.dst);
+          await transaction.stageDirectory(action.src, action.dst);
           placementEntries.push(...entries.map((entry) => ({ ...entry, action })));
         } else if (action.kind === "copy_file") {
           const entries = await collectPathEntries(action.src, action.dst, action.source_base_root ?? repoRoot, opts.target, "source_file");
-          await copyFile(action.src, action.dst);
+          await transaction.stageFile(action.src, action.dst);
           placementEntries.push(...entries.map((entry) => ({ ...entry, action })));
         } else if (action.kind === "copy_doc") {
           const entries = await collectPathEntries(action.src, action.dst, action.source_base_root || repoRoot, opts.target, "portable_doc");
-          await copyFile(action.src, action.dst);
+          await transaction.stageFile(action.src, action.dst);
           placementEntries.push(...entries.map((entry) => ({ ...entry, action })));
         }
       }
@@ -1112,7 +1108,7 @@ async function main() {
           source_path: entry.source_path,
           target_path: entry.target_path,
           source_hash: await sha256File(entry.src),
-          target_hash: await sha256PathIfExists(entry.dst),
+          target_hash: await sha256File(entry.src),
           exported_symbols: entry.action.exported_symbols || [],
           alias_rewrites: [],
           env_bindings: entry.action.env_binding_records || [],
@@ -1163,8 +1159,7 @@ async function main() {
           required: entry.ref.required
         }))
       });
-      await fs.mkdir(path.dirname(legacyImportsPath), { recursive: true });
-      await fs.writeFile(legacyImportsPath, JSON.stringify(legacyImports, null, 2));
+      await transaction.stageText(legacyImportsPath, JSON.stringify(legacyImports, null, 2));
       plan.imports_record = legacyImportsPath;
 
       const smarchImports = (await maybeReadJson<ImportsDocument>(smarchImportsPath)) || { version: 1, schema: "smarch.imports.v0", imports: [] };
@@ -1286,8 +1281,7 @@ async function main() {
           }
         });
       }
-      await fs.mkdir(path.dirname(smarchImportsPath), { recursive: true });
-      await fs.writeFile(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
+      await transaction.stageText(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
 
       const buildLock = await prepareBuildLock(buildLockPath, opts, now, registrySha, {
         minimumVerificationStatus: mapBuildVerificationStatus(buildMeta, buildManifest.verification),
@@ -1343,7 +1337,7 @@ async function main() {
           relation: !entry.ref.required ? "optional" : "depends_on"
         });
       }
-      await fs.writeFile(buildLockPath, JSON.stringify(buildLock, null, 2));
+      await transaction.stageText(buildLockPath, JSON.stringify(buildLock, null, 2));
 
       const placements = (await maybeReadJson<PlacementsDocument>(placementsPath)) || {};
       placements.schema_version = "1.0.0";
@@ -1387,7 +1381,7 @@ async function main() {
         });
       }
       placements.placements.push(...placementRecords);
-      await fs.writeFile(placementsPath, JSON.stringify(placements, null, 2));
+      await transaction.stageText(placementsPath, JSON.stringify(placements, null, 2));
 
       const updateJournalRecord = {
         schema: "smarch.update-journal-event.v0",
@@ -1414,7 +1408,7 @@ async function main() {
         legacy_imports_record: relFrom(opts.target, legacyImportsPath),
         resolved_brick_import_ids: resolvedBricks.map((entry) => entry.import_id)
       };
-      await fs.appendFile(updateJournalPath, `${JSON.stringify(updateJournalRecord)}\n`);
+      await transaction.stageAppend(updateJournalPath, `${JSON.stringify(updateJournalRecord)}\n`);
       for (const entry of resolvedBricks) {
         const importStatus = deriveImportStatusForImport(plan.actions, placementCountsByImportId.get(entry.import_id) || 0, entry.import_id);
         const brickJournalRecord = {
@@ -1441,7 +1435,7 @@ async function main() {
           checklist_path: checklistRelPath,
           parent_build_import_id: buildImportId
         };
-        await fs.appendFile(updateJournalPath, `${JSON.stringify(brickJournalRecord)}\n`);
+        await transaction.stageAppend(updateJournalPath, `${JSON.stringify(brickJournalRecord)}\n`);
       }
       plan.smarch = {
         import_id: buildImportId,
@@ -1494,14 +1488,17 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
 - [ ] Re-run the target project's scanner to register the imported build footprint.
 `;
     if (opts.write) {
-      await fs.mkdir(path.dirname(checklistPath), { recursive: true });
-      await fs.writeFile(checklistPath, checklistBody);
+      if (!activeTransaction) throw new Error("clone transaction was not initialized");
+      await activeTransaction.stageText(checklistPath, checklistBody);
+      await activeTransaction.commit(planHash);
+      activeTransaction = null;
       plan.checklist = checklistPath;
     }
 
     console.log(JSON.stringify({
       dry_run: !opts.write,
       plan,
+      ...(opts.write ? { applied_plan_hash: planHash } : {}),
       next_step: opts.write
         ? `Open ${checklistPath} to finish integration.`
         : "Rerun with --write to perform the copy."
@@ -1516,8 +1513,8 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
   verifyCommercialEntitlement({ manifest, brickId: brick.id, licensee: opts.licensee, entitlementFile: opts.entitlement, trustedKeysFile: opts.entitlementTrustedKeys });
   const sem = manifest.semantics || {};
   const artifactVersion = semverOrFallback(firstDefined(brick.version, manifest.brick?.version, manifest.build?.version), "0.0.0");
-  const sourceProjectRoot = await inferSourceProjectRoot(brick.manifest_path, brick.source_paths || [], brick.project || "");
-  const registrySha = await sha256JsonFile(opts.registry);
+  const sourceProjectRoot = releaseSnapshot?.sourceRoot ?? await inferSourceProjectRoot(brick.manifest_path, brick.source_paths || [], brick.project || "");
+  const registrySha = releaseSnapshot ? await sha256JsonFile(opts.releaseSnapshot) : await sha256JsonFile(opts.registry);
   const now = new Date().toISOString();
   const slug = slugify(brick.id);
   const importId = createImportId(brick.id, now);
@@ -1541,9 +1538,19 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
 
   const plan: ClonePlan = { brick: brick.id, name: brick.name, from_project: brick.project, status: brick.status, actions: [] };
 
-  for (const rel of brick.source_paths || []) {
-    const src = path.resolve(sourceProjectRoot, rel);
-    const dst = path.resolve(opts.target, rel);
+  for (const declaredPath of brick.source_paths || []) {
+    const rel = normalizedRelativePath(declaredPath, "source_paths entry");
+    let src: string;
+    try {
+      src = await resolveContainedSource(sourceProjectRoot, rel, "source_paths entry");
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        plan.actions.push({ kind: "skip_missing", src: resolveContainedDestination(sourceProjectRoot, rel, "missing source path"), reason: "source path does not exist in source project" });
+        continue;
+      }
+      throw error;
+    }
+    const dst = resolveContainedDestination(opts.target, rel, "source_paths target");
     if (!(await pathExists(src))) { plan.actions.push({ kind: "skip_missing", src, reason: "source path does not exist in source project" }); continue; }
     const stat = await fs.stat(src);
     if (await pathExists(dst) && !opts.force) {
@@ -1556,12 +1563,12 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
   // Portable doc: prefer <wiki>/<slug>.portable.md if it exists
   const portable = path.resolve(repoRoot, "wiki/bricks-detailed", brick.project || "_unknown", `${slug}.portable.md`);
   const wikiPage = sem.wiki_page
-    ? path.resolve(repoRoot, sem.wiki_page)
+    ? resolveContainedDestination(repoRoot, normalizedRelativePath(sem.wiki_page, "semantics.wiki_page"), "semantics.wiki_page")
     : null;
   if (await pathExists(portable)) {
-    plan.actions.push({ kind: "copy_doc", src: portable, dst: path.resolve(opts.target, opts.docDir, `${slug}.md`) });
+    plan.actions.push({ kind: "copy_doc", src: portable, dst: resolveContainedDestination(opts.target, path.posix.join(normalizeRelativePath(opts.docDir), `${slug}.md`), "portable doc target") });
   } else if (wikiPage && await pathExists(wikiPage)) {
-    plan.actions.push({ kind: "copy_doc", src: wikiPage, dst: path.resolve(opts.target, opts.docDir, `${slug}.md`) });
+    plan.actions.push({ kind: "copy_doc", src: await resolveContainedSource(repoRoot, normalizedRelativePath(sem.wiki_page, "semantics.wiki_page"), "semantics.wiki_page"), dst: resolveContainedDestination(opts.target, path.posix.join(normalizeRelativePath(opts.docDir), `${slug}.md`), "portable doc target") });
   }
 
   // Provenance records
@@ -1594,23 +1601,26 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
       reason: action.reason || null
     }))
   }));
+  plan.plan_hash = planHash;
 
   if (opts.write) {
-    guardCloneWrite(opts, [brick.id], brick.project || null);
+    if (!releaseSnapshot) guardCloneWrite(opts, [brick.id], brick.project || null);
+    const transaction = await SecureCloneTransaction.create(opts.target, planHash);
+    activeTransaction = transaction;
     const placementEntries: PathEntry[] = [];
     for (const a of plan.actions) {
       if (!isCopyAction(a)) continue;
       if (a.kind === "copy_dir") {
         const entries = await collectPathEntries(a.src, a.dst, sourceProjectRoot, opts.target, "source_file");
-        await copyDir(a.src, a.dst);
+        await transaction.stageDirectory(a.src, a.dst);
         placementEntries.push(...entries);
       } else if (a.kind === "copy_file") {
         const entries = await collectPathEntries(a.src, a.dst, sourceProjectRoot, opts.target, "source_file");
-        await copyFile(a.src, a.dst);
+        await transaction.stageFile(a.src, a.dst);
         placementEntries.push(...entries);
       } else if (a.kind === "copy_doc") {
         const entries = await collectPathEntries(a.src, a.dst, repoRoot, opts.target, "portable_doc");
-        await copyFile(a.src, a.dst);
+        await transaction.stageFile(a.src, a.dst);
         placementEntries.push(...entries);
       }
     }
@@ -1623,7 +1633,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
         source_path: entry.source_path,
         target_path: entry.target_path,
         source_hash: await sha256File(entry.src),
-        target_hash: await sha256PathIfExists(entry.dst),
+        target_hash: await sha256File(entry.src),
         exported_symbols: exportedSymbols,
         alias_rewrites: [],
         env_bindings: envBindingRecords,
@@ -1659,8 +1669,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
       integration_recipe: sem.integration_recipe || null,
       risks: sem.risks || []
     });
-    await fs.mkdir(path.dirname(legacyImportsPath), { recursive: true });
-    await fs.writeFile(legacyImportsPath, JSON.stringify(legacyImports, null, 2));
+    await transaction.stageText(legacyImportsPath, JSON.stringify(legacyImports, null, 2));
     plan.imports_record = legacyImportsPath;
 
     // New SMARCH control-plane artifacts
@@ -1719,8 +1728,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
         risk: firstDefined(brick.risk, null)
       }
     });
-    await fs.mkdir(path.dirname(smarchImportsPath), { recursive: true });
-    await fs.writeFile(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
+    await transaction.stageText(smarchImportsPath, JSON.stringify(smarchImports, null, 2));
 
     const buildLock = await prepareBuildLock(buildLockPath, opts, now, registrySha, {
       minimumVerificationStatus: mapBrickStatusToVerificationStatus(brick.status),
@@ -1749,7 +1757,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
       release_version: artifactVersion,
       release_hash: planHash
     });
-    await fs.writeFile(buildLockPath, JSON.stringify(buildLock, null, 2));
+    await transaction.stageText(buildLockPath, JSON.stringify(buildLock, null, 2));
 
     const placements = (await maybeReadJson<PlacementsDocument>(placementsPath)) || {};
     placements.schema_version = "1.0.0";
@@ -1780,7 +1788,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
       portable_doc_paths: portableDocPaths
     });
     placements.placements.push(...placementRecords);
-    await fs.writeFile(placementsPath, JSON.stringify(placements, null, 2));
+    await transaction.stageText(placementsPath, JSON.stringify(placements, null, 2));
 
     const updateJournalRecord = {
       schema: "smarch.update-journal-event.v0",
@@ -1806,7 +1814,7 @@ ${plan.actions.filter((action) => action.kind.startsWith("copy")).map((action) =
       checklist_path: checklistRelPath,
       legacy_imports_record: relFrom(opts.target, legacyImportsPath)
     };
-    await fs.appendFile(updateJournalPath, `${JSON.stringify(updateJournalRecord)}\n`);
+    await transaction.stageAppend(updateJournalPath, `${JSON.stringify(updateJournalRecord)}\n`);
     plan.smarch = {
       import_id: importId,
       status: importStatus,
@@ -1857,18 +1865,25 @@ ${plan.actions.filter((a) => a.kind.startsWith("copy")).map((a) => `- ${a.dst}`)
 - [ ] Run the brick's tests locally in the target.
 `;
   if (opts.write) {
-    await fs.mkdir(path.dirname(checklistPath), { recursive: true });
-    await fs.writeFile(checklistPath, checklistBody);
+    if (!activeTransaction) throw new Error("clone transaction was not initialized");
+    await activeTransaction.stageText(checklistPath, checklistBody);
+    await activeTransaction.commit(planHash);
+    activeTransaction = null;
     plan.checklist = checklistPath;
   }
 
   console.log(JSON.stringify({
     dry_run: !opts.write,
     plan,
+    ...(opts.write ? { applied_plan_hash: planHash } : {}),
     next_step: opts.write
       ? `Open ${checklistPath} to finish integration.`
       : "Rerun with --write to perform the copy."
   }, null, 2));
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch(async (err: unknown) => {
+  await activeTransaction?.abort();
+  console.error(err instanceof Error ? err.stack : err);
+  process.exit(1);
+});

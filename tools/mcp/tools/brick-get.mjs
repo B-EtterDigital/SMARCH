@@ -50,6 +50,6 @@ export async function handler(args = {}) {
     inputSchema,
     args,
     timeoutMs,
-    operation: async (input) => getRegistryBrick(input, await loadRegistryContext()),
+    operation: async (input, signal) => getRegistryBrick(input, await loadRegistryContext(signal)),
   });
 }

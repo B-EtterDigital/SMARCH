@@ -2,20 +2,20 @@
 /* Defensive external-input guards and JavaScript coercion semantics are intentional in this behavior-preserving strict-type pass. */
 /* eslint @typescript-eslint/no-unnecessary-boolean-literal-compare: "off", @typescript-eslint/no-unnecessary-condition: "off", @typescript-eslint/no-useless-default-assignment: "off", @typescript-eslint/prefer-nullish-coalescing: "off", @typescript-eslint/array-type: "off", max-lines-per-function: "off", complexity: "off", @typescript-eslint/prefer-optional-chain: "off", @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-type-conversion: "off", @typescript-eslint/restrict-template-expressions: "off", @typescript-eslint/use-unknown-in-catch-callback-variable: "off" */
 /**
- * WHAT: Verifies one exported brick attestation bundle without reading repository ledgers.
- * WHY: Portable evidence is useful only if an independent recipient can detect mismatched content or proofs.
- * HOW: Parses the bundle documents, cross-checks identities and hashes, and verifies Merkle inclusion.
- * INPUTS: A bundle directory containing the emitted provenance, bill-of-materials, and proof files.
+ * WHAT: Verifies one exported brick attestation bundle against separately trusted anchor material.
+ * WHY: Portable evidence is useful only if consistency is distinguished from externally rooted authenticity.
+ * HOW: Cross-checks documents and Merkle inclusion, then binds the proof root to a pinned root or anchor.
+ * INPUTS: A bundle directory plus a trusted root digest or trusted anchor document.
  * OUTPUTS: Per-check pass or fail lines, or a structured verification result and process status.
  * CALLERS: Recipients, release gates, and provenance self-tests run this stand-alone verifier.
  * @example bundle="$(find releases/attestations -mindepth 1 -maxdepth 1 -type d | sort | head -1)"; node tools/sma-attest-verify.ts --dir "$bundle"
  */
 /**
- * SMA attest-verify — STAND-ALONE attestation bundle verifier.
+ * SMA attest-verify — portable attestation bundle verifier.
  *
- * Proves a third party can verify a single brick with ONLY the bundle plus
- * tools/lib/merkle.ts — the full provenance/license/fingerprint ledgers are
- * never read. Given a bundle directory it checks:
+ * Proves a third party can verify a single brick with the bundle, merkle.ts,
+ * and separately obtained trust material — the full provenance/license/
+ * fingerprint ledgers are never read. Given those inputs it checks:
  *
  *   (a) sbom.spdx.json, sbom.cdx.json, intoto.json are well-formed JSON with the
  *       required fields for their format (SPDX 2.3 / CycloneDX 1.5 / in-toto v1).
@@ -25,11 +25,12 @@
  *       inclusion proof reproduces the committed root
  *       (verifyBrickInclusion(brick_id, seal_head, proof, root)).
  *
- * Each check prints PASS/FAIL; the process exits non-zero if any check fails.
+ * Structural checks alone never produce a trust verdict. Each check prints
+ * PASS/FAIL; the process exits non-zero if consistency or authenticity fails.
  *
  * Usage:
- *   node tools/sma-attest-verify.ts --dir releases/attestations/<brick_id>
- *   node tools/sma-attest-verify.ts --dir <bundle> --json
+ *   node tools/sma-attest-verify.ts --dir releases/attestations/<brick_id> --trusted-root <sha256>
+ *   node tools/sma-attest-verify.ts --dir <bundle> --trusted-anchor registry/anchor.generated.json --json
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -37,6 +38,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { verifyBrickInclusion } from './lib/merkle.ts';
+import { resolveAnchorBinding } from './lib/attestation.ts';
 
 const STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
 const PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
@@ -71,14 +73,20 @@ type InclusionProofDocument = JsonObject & {
   content_hash?: unknown;
   proof?: { hash: string; side: 'left' | 'right' }[];
   root?: unknown;
+  anchor_digest?: unknown;
 };
 interface BundleCheck { name: string; ok: boolean; detail: string }
+interface TrustedAnchorDocument {
+  root?: unknown; anchor_digest?: unknown; algo?: unknown;
+  leaf_count?: unknown; ledger_digest?: unknown; audit_digest?: unknown;
+}
+interface TrustOptions { trustedRoot?: string; trustedAnchor?: TrustedAnchorDocument }
 
 /**
  * Verify a bundle directory. Returns { ok, dir, brick_id, checks:[{name,ok,detail}] }.
- * Reads only the four bundle files; imports only merkle.ts.
+ * Reads only the four bundle files plus caller-supplied trust material and shared attestation/Merkle primitives.
  */
-export function verifyBundle(dir: string) {
+export function verifyBundle(dir: string, trust: TrustOptions = {}) {
   const checks: BundleCheck[] = [];
   const add = (name: string, ok: unknown, detail = '') => checks.push({ name, ok: !!ok, detail });
 
@@ -157,8 +165,41 @@ export function verifyBundle(dir: string) {
   }
   add('Merkle inclusion proof reproduces committed root', inclusionOk, proofOk ? `root ${short(proof.root)}…` : '');
 
-  const ok = checks.length > 0 && checks.every((c) => c.ok);
-  return { ok, dir, brick_id: proofOk ? proof.brick_id : null, checks };
+  const structural_ok = checks.length > 0 && checks.every((c) => c.ok);
+
+  // Structural consistency is attacker-producible. Authenticity requires a
+  // root or anchor record obtained through an independently trusted channel.
+  const trustChecks: BundleCheck[] = [];
+  const addTrust = (name: string, ok: unknown, detail = ''): void => {
+    const check = { name, ok: !!ok, detail };
+    trustChecks.push(check);
+    checks.push(check);
+  };
+  const hasTrustedRoot = typeof trust.trustedRoot === 'string' && trust.trustedRoot.length > 0;
+  const hasTrustedAnchor = isObj(trust.trustedAnchor);
+  if (!hasTrustedRoot && !hasTrustedAnchor) {
+    addTrust('external trust material supplied', false, 'provide --trusted-root or --trusted-anchor');
+  }
+  if (hasTrustedRoot) {
+    const trustedRootValid = /^[0-9a-f]{64}$/i.test(trust.trustedRoot ?? '');
+    addTrust('proof root matches trusted root', trustedRootValid && proofOk && proof.root === trust.trustedRoot,
+      trustedRootValid ? `trusted root ${short(trust.trustedRoot)}…` : 'trusted root is not a sha256 digest');
+  }
+  if (hasTrustedAnchor) {
+    const anchorRoot = trust.trustedAnchor?.root;
+    const anchorDigest = trust.trustedAnchor?.anchor_digest;
+    const anchorBinding = proofOk && typeof proof.root === 'string'
+      ? resolveAnchorBinding(trust.trustedAnchor ?? {}, proof.root, { unanchoredDiagnostic: true })
+      : { anchored: false, anchor_digest: null, reason: 'root-mismatch' };
+    addTrust('trusted anchor metadata cryptographically binds proof root', anchorBinding.anchored,
+      anchorBinding.anchored ? `anchor root ${short(anchorRoot)}…` : String(anchorBinding.reason));
+    addTrust('proof anchor_digest matches trusted anchor', typeof anchorDigest === 'string'
+      && proofOk && typeof proof.anchor_digest === 'string' && proof.anchor_digest === anchorDigest,
+    `anchor digest ${short(anchorDigest)}…`);
+  }
+  const authentic = trustChecks.length > 0 && trustChecks.every((check) => check.ok);
+  const ok = structural_ok && authentic;
+  return { ok, structural_ok, authentic, dir, brick_id: proofOk ? proof.brick_id : null, checks };
 }
 
 // --- extraction helpers ----------------------------------------------------
@@ -203,11 +244,17 @@ function short(s: unknown): string {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.dir || args.dir === true) {
-    console.error('usage: sma-attest-verify --dir <bundle-dir> [--json]');
+    console.error('usage: sma-attest-verify --dir <bundle-dir> (--trusted-root <sha256> | --trusted-anchor <file>) [--json]');
     process.exit(2);
   }
   const dir = resolve(process.cwd(), String(args.dir));
-  const res = verifyBundle(dir);
+  const trustedAnchor = typeof args.trustedAnchor === 'string'
+    ? readTrustedAnchor(resolve(process.cwd(), args.trustedAnchor))
+    : undefined;
+  const res = verifyBundle(dir, {
+    trustedRoot: typeof args.trustedRoot === 'string' ? args.trustedRoot : undefined,
+    trustedAnchor,
+  });
 
   if (args.json) {
     console.log(JSON.stringify(res, null, 2));
@@ -216,9 +263,17 @@ function main() {
     for (const c of res.checks) {
       console.log(`  [${c.ok ? 'PASS' : 'FAIL'}] ${c.name}${c.detail ? `  (${c.detail})` : ''}`);
     }
-    console.log(`\n${res.ok ? 'PASS — bundle verified with just merkle.ts' : 'FAIL — bundle did not verify'}: ${dir}`);
+    console.log(`\nstructural consistency: ${res.structural_ok ? 'PASS' : 'FAIL'}`);
+    console.log(`authenticity: ${res.authentic ? 'PASS' : 'FAIL'}`);
+    console.log(`${res.ok ? 'PASS — bundle is structurally valid and externally trusted' : 'FAIL — bundle trust verdict failed'}: ${dir}`);
   }
   process.exit(res.ok ? 0 : 1);
+}
+
+function readTrustedAnchor(path: string): TrustedAnchorDocument {
+  const parsed = JSON.parse(readFileSync(path, 'utf8')) as unknown;
+  if (!isObj(parsed)) throw new Error(`trusted anchor must be a JSON object: ${path}`);
+  return parsed;
 }
 
 function parseArgs(list: string[]): CliArgs {

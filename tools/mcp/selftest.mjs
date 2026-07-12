@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -145,6 +146,46 @@ async function writeReleaseFixture(root, brick, version, artifactPath) {
   );
 }
 
+/** @param {crypto.BinaryLike} value */
+function sha256(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+/** @param {string} root @param {string} brick @param {string} version @param {string} artifactPath */
+async function writeVerifiedReleaseFixture(root, brick, version, artifactPath) {
+  const payload = "installed\n";
+  const manifest = `${JSON.stringify({
+    schema_version: "1.0.0",
+    brick: { id: brick, version },
+    source: { paths: [artifactPath], project: "mcp-selftest" },
+    semantics: { purpose: "verified release install fixture" },
+  }, null, 2)}\n`;
+  const contentHash = sha256(`${brick}\0${version}\0${payload}`);
+  const descriptor = {
+    schema_version: "1.0.0",
+    artifact_id: brick,
+    version,
+    content_hash: contentHash,
+    manifest: { path: "manifest.json", sha256: sha256(manifest) },
+    artifacts: [{ path: artifactPath, kind: "file", sha256: sha256(payload) }],
+  };
+  const snapshotRoot = path.join(root, "releases", ".artifacts", contentHash);
+  await mkdir(path.join(snapshotRoot, "payload", path.dirname(artifactPath)), { recursive: true });
+  await writeFile(path.join(snapshotRoot, "manifest.json"), manifest);
+  await writeFile(path.join(snapshotRoot, "payload", artifactPath), payload);
+  await writeFile(path.join(snapshotRoot, "snapshot.json"), `${JSON.stringify({
+    ...descriptor,
+    seal: { algorithm: "sha256", value: sha256(JSON.stringify(descriptor)) },
+  }, null, 2)}\n`);
+
+  const releaseDirectory = path.join(root, "releases", brick);
+  await mkdir(releaseDirectory, { recursive: true });
+  await writeFile(path.join(releaseDirectory, `${version}.json`), `${JSON.stringify({
+    release: { artifact_id: brick, version, status: "published", content_hash: contentHash },
+    content: { included_paths: [artifactPath], artifacts: descriptor.artifacts },
+  }, null, 2)}\n`);
+}
+
 /** @param {string} root */
 async function writeCloneFixture(root) {
   const toolsDirectory = path.join(root, "tools");
@@ -173,7 +214,9 @@ console.log(JSON.stringify({
   plan: {
     actions: [{ kind: "copy_file", dst: destination }],
     control_plane: {},
+    plan_hash: "${"c".repeat(64)}",
   },
+  ...(write ? { applied_plan_hash: "${"c".repeat(64)}" } : {}),
 }));
 `,
   );
@@ -183,16 +226,14 @@ console.log(JSON.stringify({
  * @param {ToolModule} install
  * @param {JsonObject} input
  * @param {string} reason
- * @param {string} artifactPath
  */
-async function assertInstallRefused(install, input, reason, artifactPath) {
+async function assertInstallRefused(install, input, reason) {
   await assert.rejects(
     install.handler(input),
     (error) => {
       const structured = /** @type {{ code?: string, details?: Record<string, unknown> }} */ (error);
       assert.equal(structured?.code, "MCP_RELEASE_INSTALL_REFUSED");
       assert.equal(structured?.details?.reason, reason);
-      assert.equal(structured?.details?.artifact_path, artifactPath);
       return true;
     },
   );
@@ -591,7 +632,7 @@ async function run() {
         version: attack.version,
         target,
         write: false,
-      }, attack.reason, attack.artifactPath);
+      }, "release-content-hash-invalid");
     }
 
     const computedAttack = {
@@ -605,20 +646,12 @@ async function run() {
       computedAttack.version,
       computedAttack.artifactPath,
     );
-    await assert.rejects(
-      install.handler({
-        brick: computedAttack.brick,
-        version: computedAttack.version,
-        target,
-        write: true,
-      }),
-      (error) => {
-        const structured = /** @type {{ code?: string, details?: Record<string, unknown> }} */ (error);
-        assert.equal(structured?.code, "MCP_RELEASE_INSTALL_REFUSED");
-        assert.equal(structured?.details?.reason, "write-path-outside-target");
-        return true;
-      },
-    );
+    await assertInstallRefused(install, {
+      brick: computedAttack.brick,
+      version: computedAttack.version,
+      target,
+      write: true,
+    }, "release-content-hash-invalid");
     await assert.rejects(
       readFile(path.join(outside, "computed-escape.txt"), "utf8"),
       { code: "ENOENT" },
@@ -627,7 +660,7 @@ async function run() {
     const freshBrick = "fresh-target";
     const freshVersion = "1.0.0";
     const freshTarget = path.join(root, "fresh-target-project");
-    await writeReleaseFixture(root, freshBrick, freshVersion, "installed.txt");
+    await writeVerifiedReleaseFixture(root, freshBrick, freshVersion, "installed.txt");
     await assertP95UnderBudget("release-install dry run", () => install.handler({
       brick: freshBrick,
       version: freshVersion,
