@@ -28,7 +28,8 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - run: cargo build --manifest-path rust-core/Cargo.toml --release --target ${{ matrix.target }}
-      - run: cp target/${{ matrix.target }}/release/smarch-core ${{ matrix.artifact }}
+      # cargo puts the build under the manifest's dir (rust-core/target), not repo-root target.
+      - run: cp rust-core/target/${{ matrix.target }}/release/smarch-core ${{ matrix.artifact }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
@@ -43,9 +44,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm install
+      - run: npm ci
       - name: Verify release-blocking skill eval matrix
-        run: node tools/evals/scenario-runner.mjs --matrix --backend codex
+        # The stub backend runs each scenario's gates and file-shape scoring
+        # deterministically — the correct CI gate. The codex backend runs live
+        # workforce evals and is for local/manual runs where codex is available.
+        run: node tools/evals/scenario-runner.mjs --matrix --backend stub
       - name: Pack Claude plugin
         working-directory: .claude-plugin
         run: npm pack
