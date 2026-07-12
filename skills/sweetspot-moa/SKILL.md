@@ -208,6 +208,13 @@ codex exec -s read-only -m gpt-5.6-sol \
   --output-schema review.schema.json "$(cat review-packet.json)"
 ```
 
+- **Never orphan an executor.** Wrap every dispatched `codex exec` in SPL so a
+  killed or crashed orchestrator can never leave codex trees behind:
+  `sma spl-exec --lease auto --label "<task-id>" -- codex exec …`. The child
+  registers against a lease and auto-unregisters on exit; if the wrapper dies
+  uncleanly, `sma spl reap` reclaims it. Before a fan-out, size the wave with
+  `sma spl doctor` (recommended_agents) — the workforce cap must respect it.
+
 - Model id rule: some codex auth modes (e.g. ChatGPT-subscription) expose
   base model ids only — fused ids like `gpt-5.6-sol-xhigh` are rejected
   (400). Always split model (`-m gpt-5.6-sol`) and effort

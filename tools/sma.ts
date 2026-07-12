@@ -60,6 +60,7 @@ const COMMANDS: Record<string, CommandEntry | undefined> = {
   // multi-agent layer
   lease:           { script: 'sma-lease.ts',          desc: 'Soft locks on bricks/regen targets' },
   spl:             { script: 'sma-spl.ts',            desc: 'Lease-bound process lifecycle and machine health' },
+  'spl-exec':      { script: 'sma-spl-exec.ts',       desc: 'Run any command under a process lease (never orphans)' },
   context:         { script: 'sma-context.ts',        desc: 'Append-only agent-context log' },
   conflict:        { script: 'sma-conflict.ts',       desc: 'Report and resolve Gen3 agent collisions' },
   'context-check': { script: 'sma-context-check.ts',  desc: 'CI gate: modified manifests have context' },
