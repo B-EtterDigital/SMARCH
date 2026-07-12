@@ -38,15 +38,22 @@ cd "$SMARCH_DIR"
 
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
 
-node tools/sma-graphify.ts refresh \
-  --project-root "$PRACTICE_PROJECT" \
-  --no-cluster \
-  --timeout-seconds 120
+# The graph is built and queried by the graphify CLI (a separate install). If it
+# is not on your PATH yet, the lesson tells you rather than failing — install it
+# to run the live query below.
+if command -v graphify >/dev/null 2>&1; then
+  node tools/sma-graphify.ts refresh \
+    --project-root "$PRACTICE_PROJECT" \
+    --no-cluster \
+    --timeout-seconds 120
 
-node tools/sma-graphify.ts query \
-  --project-root "$PRACTICE_PROJECT" \
-  --budget 900 \
-  -- "Where is Activity Feed implemented?"
+  node tools/sma-graphify.ts query \
+    --project-root "$PRACTICE_PROJECT" \
+    --budget 900 \
+    -- "Where is Activity Feed implemented?"
+else
+  echo "graphify CLI not installed — install it to build and query the graph live; the two commands above are exactly what you would run."
+fi
 ```
 
 Expected output includes:
