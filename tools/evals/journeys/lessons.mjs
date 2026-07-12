@@ -165,7 +165,7 @@ const LESSON_CONTRACTS = new Map([
       "SMARCH_FIXTURE_PORTFOLIO",
       "tools/evals/fixtures/portfolio",
       "~/.claude/skills/f5-ultravisionplan/scripts/uvp.py",
-      "git archive HEAD .UltraVision"
+      "examples/ultravision-lesson/.UltraVision"
     ]
   }],
   ["18-your-first-agent-swarm.md", {
@@ -342,7 +342,10 @@ function executeBlock({ block, filename, index, total, lessonTemp, env }) {
         ...env,
         SMARCH_LESSON_TMP: lessonTemp,
         SMARCH_FIXTURE_PORTFOLIO: path.join(lessonTemp, "portfolio"),
-        SMARCH_CLONE_TARGET: path.join(lessonTemp, "first-clone")
+        SMARCH_CLONE_TARGET: path.join(lessonTemp, "first-clone"),
+        // The capsule lesson runs brick-run; strict isolation needs Node >=25,
+        // so a beginner on Node 24 LTS accepts reduced isolation to learn.
+        SMA_CAPSULE_ISOLATION_FALLBACK: "1"
       },
       encoding: "utf8",
       timeout: BLOCK_TIMEOUT_MS,

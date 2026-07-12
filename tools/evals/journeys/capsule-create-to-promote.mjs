@@ -25,8 +25,8 @@ function firstJsonLine(output) {
   return JSON.parse(output.trim().split(/\r?\n/)[0]);
 }
 
-/** @param {string} capsule @param {string} candidatePath */
-async function promote(capsule, candidatePath) {
+/** @param {string} capsule @param {string} candidatePath @param {NodeJS.ProcessEnv} [env] */
+async function promote(capsule, candidatePath, env) {
   const manifestPath = path.join(capsule, "module.sweetspot.json");
   await fs.writeFile(candidatePath, `${JSON.stringify({
     bricks: [{
@@ -38,8 +38,11 @@ async function promote(capsule, candidatePath) {
       source_paths: [capsule],
     }],
   })}\n`);
+  // Promotion re-runs the capsule fixture to prove it; it must inherit the same
+  // isolation opt-in so it validates on the Node 24 LTS floor, not just Node 25.
   return runNode(path.join(TOOLS, "sma-promote.ts"), ["--candidates", candidatePath], {
     cwd: REPO_ROOT,
+    env,
     label: "sma-promote",
   });
 }
@@ -48,7 +51,10 @@ export async function runJourney() {
   return withTempRoot("smarch-capsule-journey-", async (root) => {
     const capsule = path.join(root, "promoted-capsule");
     const unready = path.join(root, "unready-capsule");
-    const env = { ...process.env, CI: "1", NO_COLOR: "1" };
+    // Strict capsule isolation needs Node >=25; on the declared engine floor
+    // (Node 24 LTS) accept reduced isolation via the operator opt-in. The env
+    // reaches every child — including brick-inspect, which spawns brick-run.
+    const env = { ...process.env, CI: "1", NO_COLOR: "1", SMA_CAPSULE_ISOLATION_FALLBACK: "1" };
 
     const created = runNode(path.join(TOOLS, "sma-brick-new.mjs"), [
       "--id", "journey.promoted-capsule", "--directory", capsule, "--json",
@@ -80,14 +86,14 @@ export async function runJourney() {
     };
     await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     await fs.writeFile(path.join(capsule, "promotion.test.ts"), "export {};\n");
-    const promoted = await promote(capsule, path.join(root, "ready-candidates.json"));
+    const promoted = await promote(capsule, path.join(root, "ready-candidates.json"), env);
     assert.equal(JSON.parse(promoted.stdout).results.canonical, 1);
     assert.equal(JSON.parse(await fs.readFile(manifestPath, "utf8")).brick.status, "canonical");
 
     runNode(path.join(TOOLS, "sma-brick-new.mjs"), [
       "--id", "journey.unready-capsule", "--directory", unready, "--json",
     ], { cwd: REPO_ROOT, env, label: "unready brick-new" });
-    const blocked = await promote(unready, path.join(root, "unready-candidates.json"));
+    const blocked = await promote(unready, path.join(root, "unready-candidates.json"), env);
     const blockedReport = JSON.parse(blocked.stdout);
     assert.equal(blockedReport.results.project_bound, 1);
     assert.equal(blockedReport.reasons["missing-semantics"], 1);

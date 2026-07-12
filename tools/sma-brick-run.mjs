@@ -55,7 +55,13 @@ async function main() {
 
 /** @param {string[]} args */
 function parseArgs(args) {
-  const options = { allowNet: false, selftest: false, strictSandbox: true, unsafeIsolationFallback: false, capsulePath: "", json: false, quiet: false, verbose: false };
+  // Strict isolation is the default, but it needs Node >=25 (permission-scoped
+  // --allow-net). On the LTS floor (Node 24), a deliberate operator opt-in lets
+  // capsules run with reduced isolation without threading a flag through every
+  // caller (brick-inspect spawns brick-run; the intro lane runs it in lessons).
+  // Setting the env var IS the explicit acceptance; --strict-sandbox overrides it.
+  const envFallback = /^(1|true|yes|on)$/i.test(process.env.SMA_CAPSULE_ISOLATION_FALLBACK ?? "");
+  const options = { allowNet: false, selftest: false, strictSandbox: !envFallback, unsafeIsolationFallback: envFallback, capsulePath: "", json: false, quiet: false, verbose: false };
   let strictSandboxExplicit = false;
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -65,6 +71,7 @@ function parseArgs(args) {
       options.allowNet = true;
     } else if (arg === "--strict-sandbox") {
       options.strictSandbox = true;
+      options.unsafeIsolationFallback = false;
       strictSandboxExplicit = true;
     } else if (arg === "--unsafe-isolation-fallback") {
       options.strictSandbox = false;
@@ -89,7 +96,7 @@ Usage:
   sma brick-run --selftest
 
 Options: --allow-net, --capsule, --json, --quiet, --verbose, --selftest, --help
-Safety: strict isolation is the default. --unsafe-isolation-fallback explicitly permits reduced isolation on unsupported Node runtimes.
+Safety: strict isolation is the default (needs Node >=25). --unsafe-isolation-fallback explicitly permits reduced isolation on unsupported Node runtimes; the env var SMA_CAPSULE_ISOLATION_FALLBACK=1 is the same opt-in for every caller (e.g. brick-inspect, the intro lane). --strict-sandbox overrides both and hard-fails when strict isolation is unavailable.
 Examples:
   sma brick-run templates/capsule --json
   sma brick-run --unsafe-isolation-fallback templates/capsule
