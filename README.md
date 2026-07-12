@@ -69,6 +69,33 @@ proof. Merge conflicts get the same treatment: `sma merge propose
 model — intent, claim, proof, trust, collision as the unit of change — is in
 [docs/GEN3_VERSION_CONTROL.md](docs/GEN3_VERSION_CONTROL.md).
 
+## No stale processes (SPL — Sweetspot Process Lease)
+
+Codex, Claude, and every agent runtime spawn deep process trees and orphan
+them on restart. SPL gives every process a lease: it lives only while its
+lease lives.
+
+```bash
+sma spl doctor                 # machine health + reclaimable orphans (Linux/macOS/Windows)
+sma spl list                   # ACTIVE (lease live) · EXPIRED (lease dead) · ORPHAN? (unclaimed)
+sma spl reap --adopt-orphans   # dry-run; add --kill to reclaim, every action audited
+sma spl-exec --lease auto -- codex exec …   # wrap any command so it can never orphan
+```
+
+Identity is `pid + start_token` (reuse-safe), rechecked immediately before any
+signal; reaps are audited to the context log, never a blind `pkill`. Ships
+Linux-first with macOS and Windows adapters. See
+[docs/SPL_SWEETSPOT_PROCESS_LEASE.md](docs/SPL_SWEETSPOT_PROCESS_LEASE.md).
+
+## Internal and public, cleanly separated
+
+Add internal-only functionality without ever risking a leak: mark a file
+`@sma-private` or list it in `registry/private-overlay.json`. The public sync
+excludes those surfaces before copying (exclusion beats allowlist), and the
+overlay-aware leak gate rejects any that are force-planted in a release tree —
+so forgetting is impossible, not merely discouraged. See
+[docs/SYNC_RUNBOOK.md](docs/SYNC_RUNBOOK.md).
+
 ## Held to its own dogma
 
 This repo enforces on itself what it preaches — with budgets that can only
