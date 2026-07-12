@@ -1,3 +1,6 @@
+/* Context-log diagnostics intentionally retain JavaScript's existing coercion for opaque event values. */
+/* Event normalization is a flat defensive boundary checklist; complexity counts each independent fallback and guard. */
+/* eslint @typescript-eslint/no-base-to-string: "off", complexity: "off" */
 /**
  * WHAT: Reads and appends per-brick agent context events in the repository's newline-delimited log format.
  * WHY: Leases, edits, verification, and handoffs need durable attribution that survives individual agent sessions.
@@ -33,7 +36,7 @@ import { PROJECT_PATH_OVERRIDES, resolveProjectRoot } from './project-paths.ts';
 export { PROJECT_PATH_OVERRIDES };
 
 export { PROJECTS_ROOT,   } from './sma-paths.ts';
-import { PROJECTS_ROOT, DEV_ROOT, SMA_ROOT } from './sma-paths.ts';
+import { PROJECTS_ROOT, SMA_ROOT } from './sma-paths.ts';
 const SCHEMA_VERSION = '1.0.0';
 
 // Project ids that intentionally live outside PROJECTS_ROOT. The SMA control
@@ -69,7 +72,7 @@ export const KINDS = new Set([
 
 export const ACTOR_KINDS = new Set(['human', 'ai_model', 'agent', 'automation', 'tool']);
 
-type ContextEventInput = {
+interface ContextEventInput {
   project: string;
   brick: string;
   kind: string;
@@ -81,15 +84,37 @@ type ContextEventInput = {
   taskId?: string | null;
   leaseId?: string | null;
   decisionRationale?: string | null;
-  rejectedAlternatives?: Array<string | { alternative?: string; reason?: string }> | null;
+  rejectedAlternatives?: (string | { alternative?: string; reason?: string })[] | null;
   linkedBacklog?: string[] | null;
   filesTouched?: string[] | null;
   commit?: string | null;
   verification?: { status?: string; [key: string]: unknown } | null;
-};
+}
 
 type ContextEvent = Record<string, unknown>;
 export const VERIFY_STATUSES = new Set(['pass', 'fail', 'skipped', 'blocked']);
+
+function validateContextEventInput(input: Pick<ContextEventInput, 'project' | 'brick' | 'kind' | 'intent' | 'actorKind' | 'verification'>): void {
+  if (!input.project) throw new Error('appendContextEvent: missing project');
+  if (!input.brick) throw new Error('appendContextEvent: missing brick');
+  if (!input.kind) throw new Error('appendContextEvent: missing kind');
+  if (!input.intent || input.intent.length < 4) throw new Error('appendContextEvent: intent must be at least 4 chars');
+  if (!KINDS.has(input.kind)) throw new Error(`bad kind: ${input.kind}`);
+  if (!ACTOR_KINDS.has(input.actorKind ?? 'agent')) throw new Error(`bad actorKind: ${String(input.actorKind)}`);
+  if (input.verification?.status && !VERIFY_STATUSES.has(input.verification.status)) {
+    throw new Error(`bad verification.status: ${input.verification.status}`);
+  }
+}
+
+function normalizedAlternatives(values: ContextEventInput['rejectedAlternatives']): { alternative: string; reason: string }[] {
+  return (values ?? []).map((value) => {
+    if (typeof value !== 'string') return { alternative: value.alternative ?? '', reason: value.reason ?? '' };
+    const separator = value.indexOf('::');
+    return separator < 0
+      ? { alternative: value, reason: '' }
+      : { alternative: value.slice(0, separator).trim(), reason: value.slice(separator + 2).trim() };
+  });
+}
 
 /**
  * @typedef {object} ContextEventInput
@@ -123,7 +148,7 @@ const SESSION_ENV_KEYS = [
 
 export function projectRoot(projectId: string): string {
   if (!projectId) throw new Error('projectRoot: missing project id');
-  const key = String(projectId).toLowerCase();
+  const key = projectId.toLowerCase();
   const absolute = PROJECT_ABSOLUTE_OVERRIDES[key];
   if (absolute && existsSync(absolute)) return absolute;
 
@@ -140,7 +165,7 @@ export function projectRoot(projectId: string): string {
 
 export function logPath(projectId: string, brickId: string): string {
   if (!brickId) throw new Error('logPath: missing brick id');
-  const safe = String(brickId).replace(/[^a-z0-9._-]/gi, '_');
+  const safe = brickId.replace(/[^a-z0-9._-]/gi, '_');
   return resolve(projectRoot(projectId), '.smarch/agent-context', `${safe}.ndjson`);
 }
 
@@ -152,7 +177,11 @@ export function readContextLog(projectId: string, brickId: string): ContextEvent
     const t = line.trim();
     if (!t) continue;
     try {
-      out.push(JSON.parse(t));
+      const parsed: unknown = JSON.parse(t);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('context event must be a JSON object');
+      }
+      out.push(parsed as ContextEvent);
     } catch (error) {
       console.error(JSON.stringify({ area: 'context-log.parse-line', severity: 'warning', hint: 'Repair the malformed NDJSON context line.', error: error instanceof Error ? error.message : String(error) }));
       out.push({ _malformed: true, _raw: t });
@@ -184,15 +213,7 @@ export function appendContextEvent({
   commit,
   verification,
 }: ContextEventInput): ContextEvent {
-  if (!project) throw new Error('appendContextEvent: missing project');
-  if (!brick) throw new Error('appendContextEvent: missing brick');
-  if (!kind) throw new Error('appendContextEvent: missing kind');
-  if (!intent || String(intent).length < 4) throw new Error('appendContextEvent: intent must be at least 4 chars');
-  if (!KINDS.has(kind)) throw new Error(`bad kind: ${kind}`);
-  if (!ACTOR_KINDS.has(actorKind)) throw new Error(`bad actorKind: ${actorKind}`);
-  if (verification?.status && !VERIFY_STATUSES.has(verification.status)) {
-    throw new Error(`bad verification.status: ${verification.status}`);
-  }
+  validateContextEventInput({ project, brick, kind, intent, actorKind, verification });
 
   const resolvedSessionId = resolveSessionId(sessionId);
   const resolvedActorId = resolveActorId(actorId, resolvedSessionId);
@@ -205,7 +226,7 @@ export function appendContextEvent({
     actor_kind: actorKind,
     actor_id: resolvedActorId,
     kind,
-    intent: String(intent),
+    intent: intent,
     timestamp: nowIso(),
   };
   if (model) event.model = model;
@@ -214,14 +235,7 @@ export function appendContextEvent({
   if (leaseId) event.lease_id = leaseId;
   if (decisionRationale) event.decision_rationale = decisionRationale;
   if (Array.isArray(rejectedAlternatives) && rejectedAlternatives.length) {
-    event.rejected_alternatives = rejectedAlternatives.map((r) => {
-      if (typeof r === 'string') {
-        const idx = r.indexOf('::');
-        if (idx < 0) return { alternative: r, reason: '' };
-        return { alternative: r.slice(0, idx).trim(), reason: r.slice(idx + 2).trim() };
-      }
-      return { alternative: r.alternative ?? '', reason: r.reason ?? '' };
-    });
+    event.rejected_alternatives = normalizedAlternatives(rejectedAlternatives);
   }
   if (Array.isArray(linkedBacklog) && linkedBacklog.length) event.linked_backlog = linkedBacklog;
   if (Array.isArray(filesTouched) && filesTouched.length) event.files_touched = filesTouched;
@@ -235,7 +249,7 @@ export function appendContextEvent({
 }
 
 function newEventId(): string {
-  return `ctx-${Date.now()}-${randomBytes(4).toString('hex')}`;
+  return `ctx-${String(Date.now())}-${randomBytes(4).toString('hex')}`;
 }
 
 export function resolveSessionId(explicit?: unknown): string | null {

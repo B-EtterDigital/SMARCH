@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/restrict-template-expressions -- Helper diagnostics intentionally interpolate observed subprocess values without altering their representation. */
+/* eslint-disable complexity -- The helper parser is one explicit CLI option grammar; centralized branches preserve flag precedence. */
 /**
  * WHAT: Finds plausible standalone bricks among source paths not covered by existing manifests.
  * WHY: Pattern-based scanning leaves a long tail of reusable units whose intent is visible only from surrounding project structure.
@@ -216,4 +218,4 @@ function scoreUncovered(f: string): number {
   return s;
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch((err: unknown) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });

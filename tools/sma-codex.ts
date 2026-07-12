@@ -16,6 +16,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { codex } from "./lib/codex-runner.ts";
 
+type JsonValue = { [key: string]: JsonValue } | JsonValue[] | string | number | boolean | null;
+type CliResult =
+  | { ok: true; data?: JsonValue; text?: string }
+  | { ok: false; error?: string };
+
 function parseArgs(argv: string[]) {
   const opts = { prompt: "", promptFile: "", schema: "", stdin: false, model: "gpt-5.4", noCache: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -32,7 +37,7 @@ function parseArgs(argv: string[]) {
 
 async function readStdin(): Promise<string> {
   let s = "";
-  for await (const chunk of process.stdin) s += chunk;
+  for await (const chunk of process.stdin) s += String(chunk);
   return s;
 }
 
@@ -43,13 +48,14 @@ async function main() {
   if (o.stdin || (!prompt && !process.stdin.isTTY)) prompt = await readStdin();
   if (!prompt) { console.error("error: provide --prompt, --prompt-file, or pipe to stdin"); process.exit(2); }
 
-  let schema = null;
-  if (o.schema) schema = JSON.parse(await fs.readFile(o.schema, "utf8"));
+  let schema: JsonValue | undefined;
+  if (o.schema) schema = JSON.parse(await fs.readFile(o.schema, "utf8")) as JsonValue;
 
-  const r = await codex({ prompt, schema, model: o.model, noCache: o.noCache });
+  const result: unknown = await codex({ prompt, schema, model: o.model, noCache: o.noCache });
+  const r = result as CliResult;
   if (r.ok && r.data !== undefined) console.log(JSON.stringify(r.data, null, 2));
   else if (r.ok && r.text !== undefined) console.log(r.text);
   else { console.error(JSON.stringify(r, null, 2)); process.exit(1); }
 }
 
-main();
+await main();

@@ -681,7 +681,8 @@ function spawnTimeoutMs(options: GraphifyRuntimeOptions = {}): number | undefine
 }
 
 function spawnResult(result: ReturnType<typeof spawnSync>, options: GraphifyRuntimeOptions = {}): SpawnOutcome {
-  const timedOut = (result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT";
+  const errorCode = result.error && 'code' in result.error ? result.error.code : undefined;
+  const timedOut = errorCode === "ETIMEDOUT";
   const message = timedOut
     ? `timed out after ${options.timeoutSeconds}s`
     : result.error?.message || "";

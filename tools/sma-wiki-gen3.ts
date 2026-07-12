@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- CLI argv and persisted registry payloads can be absent or malformed at runtime despite their optimistic static declarations. */
 /**
  * WHAT: Builds opt-in release-diff and source-tree pages for the Gen3 wiki.
  * WHY: Maintainers need visual release history without changing the main wiki generator.

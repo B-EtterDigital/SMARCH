@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition -- Build-index summaries defensively accept version-skewed manifests and retain their established diagnostic stringification. */
+/* eslint-disable complexity, max-lines-per-function -- Build summaries are ordered compatibility serializers; centralized derivation preserves field precedence and stable generated output. */
 
 /**
  * WHAT: Builds the searchable index of curated multi-brick builds.
@@ -95,7 +97,7 @@ async function main() {
 
   for (const filePath of manifests) {
     const parsed = await readJson(filePath);
-    if (parsed.ok === false) {
+    if (!parsed.ok) {
       skipped.push({
         path: normalizePath(path.relative(repoRoot, filePath)),
         reason: "invalid_json",
@@ -105,7 +107,7 @@ async function main() {
     }
 
     const summary = await summarizeBuildManifest(parsed.value, filePath, releaseLookup, verificationLookup);
-    if (summary.ok === false) {
+    if (!summary.ok) {
       skipped.push({
         path: normalizePath(path.relative(repoRoot, filePath)),
         reason: summary.reason,

@@ -53,8 +53,8 @@ export const ToastCenter = memo(function ToastCenter({ toasts, onDismiss, dismis
 
   useEffect(() => {
     if (paused || visible.length === 0) return;
-    const timers = visible.map((toast) => window.setTimeout(() => dismiss(toast.id), dismissAfterMs));
-    return () => timers.forEach((timer) => clearTimeout(timer));
+    const timers = visible.map((toast) => window.setTimeout(() => { dismiss(toast.id); }, dismissAfterMs));
+    return () => { timers.forEach((timer) => { clearTimeout(timer); }); };
   }, [dismiss, dismissAfterMs, paused, visible]);
 
   if (visible.length === 0) return null;
@@ -64,10 +64,10 @@ export const ToastCenter = memo(function ToastCenter({ toasts, onDismiss, dismis
       aria-label={STRINGS.toast.centerLabel}
       aria-live="polite"
       aria-atomic="false"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusIn={() => setPaused(true)}
-      onFocusOut={() => setPaused(false)}
+      onMouseEnter={() => { setPaused(true); }}
+      onMouseLeave={() => { setPaused(false); }}
+      onFocusIn={() => { setPaused(true); }}
+      onFocusOut={() => { setPaused(false); }}
     >
       {visible.map((toast) => {
         const verdict = toast.verdict ?? "pass";
@@ -75,7 +75,7 @@ export const ToastCenter = memo(function ToastCenter({ toasts, onDismiss, dismis
           <div class={`toast-line toast-line--${verdict}`} role="status" key={toast.id}>
             <VerdictStamp verdict={verdict} />
             <p>{toast.message}</p>
-            <button type="button" aria-label={STRINGS.toast.dismiss} onClick={() => dismiss(toast.id)}>×</button>
+            <button type="button" aria-label={STRINGS.toast.dismiss} onClick={() => { dismiss(toast.id); }}>×</button>
           </div>
         );
       })}

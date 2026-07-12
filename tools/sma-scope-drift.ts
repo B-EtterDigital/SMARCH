@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Curated-build state crosses a runtime JSON boundary, so defensive guards remain required. */
+/* Drift analysis is a flat evidence checklist; complexity counts independent declaration comparisons as nested flow. */
+/* eslint @typescript-eslint/no-unnecessary-condition: "off", complexity: "off" */
 /**
  * What: Compares a curated build's declared surface with what its source currently realizes.
  * Why: Promotion must stop when promised paths, commands, or product surfaces no longer exist.
@@ -119,10 +122,8 @@ interface DriftSummary { blocking?: number; declared: number; extra: number; mis
 interface DriftReport { build_id?: string; checks: Record<string, DriftCheck>; manifest: string; project?: string; projectRoot: string | null; reason?: string; status: string; summary: DriftSummary }
 interface CombinedReport { manifests: number; reports: DriftReport[]; status: string; total_blocking: number; total_extra: number; total_missing: number; total_warning: number }
 
-async function driftOne(manifestPath: string, opts: DriftOptions): Promise<DriftReport> {
-  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ManifestInput;
-  const projectRoot =  resolveProjectRoot(manifest, opts.projectsRoot);
-  const checks: Record<string, DriftCheck> = {
+function emptyDriftChecks(): Record<string, DriftCheck> {
+  return {
     source_paths: { declared: [], realized: [], missing: [] },
     brick_refs: { declared: [], realized: [], missing: [] },
     entrypoints: { declared: [], realized: [], missing: [] },
@@ -130,6 +131,80 @@ async function driftOne(manifestPath: string, opts: DriftOptions): Promise<Drift
     ui_surfaces: { declared: [], realized: [], missing: [], note: "string-grep heuristic" },
     commands: { declared: [], realized: [], missing: [], note: "supabase-functions inferred" },
   };
+}
+
+function checkSourcePaths(manifest: ManifestInput, projectRoot: string, checks: Record<string, DriftCheck>): void {
+  for (const sourcePath of manifest.source?.paths ?? []) {
+    checks.source_paths.declared.push(sourcePath);
+    checks.source_paths[existsSync(path.join(projectRoot, sourcePath)) ? "realized" : "missing"].push(sourcePath);
+  }
+}
+
+function checkBrickRefs(manifest: ManifestInput, projectRoot: string, checks: Record<string, DriftCheck>): void {
+  for (const reference of manifest.composition?.brick_refs ?? []) {
+    const key = reference.brick_id ?? reference.path;
+    checks.brick_refs.declared.push(key);
+    if (reference.path && existsSync(path.join(projectRoot, reference.path))) checks.brick_refs.realized.push(key);
+    else checks.brick_refs.missing.push({ brick_id: key, path: reference.path });
+  }
+}
+
+function routeExists(route: string, projectRoot: string): boolean | null {
+  const match = /\/functions\/v1\/([a-z0-9-]+)/.exec(route);
+  return match ? existsSync(path.join(projectRoot, "supabase/functions", match[1])) : null;
+}
+
+function checkRoutes(manifest: ManifestInput, projectRoot: string, checks: Record<string, DriftCheck>): void {
+  const routes: [string, string[]][] = [
+    ["entrypoints", manifest.interfaces?.entrypoints ?? []],
+    ["api_endpoints", manifest.interfaces?.api_endpoints ?? []],
+  ];
+  for (const [bucket, values] of routes) {
+    for (const route of values) {
+      checks[bucket].declared.push(route);
+      checks[bucket][routeExists(route, projectRoot) === false ? "missing" : "realized"].push(route);
+    }
+  }
+}
+
+async function checkUiSurfaces(manifest: ManifestInput, projectRoot: string, checks: Record<string, DriftCheck>): Promise<void> {
+  const sourceText = await readSourceCorpus(projectRoot, manifest.source?.paths ?? []);
+  for (const surface of manifest.interfaces?.ui_surfaces ?? []) {
+    checks.ui_surfaces.declared.push(surface);
+    const realized = surfaceTokens(surface).some((token) => sourceText.includes(token));
+    checks.ui_surfaces[realized ? "realized" : "missing"].push(surface);
+  }
+}
+
+function checkCommands(manifest: ManifestInput, projectRoot: string, checks: Record<string, DriftCheck>): void {
+  for (const command of manifest.interfaces?.commands ?? []) {
+    checks.commands.declared.push(command);
+    const match = /supabase\s+functions\s+serve\s+([a-z0-9-]+)/.exec(command);
+    const realized = !match || existsSync(path.join(projectRoot, "supabase/functions", match[1]));
+    checks.commands[realized ? "realized" : "missing"].push(command);
+  }
+}
+
+function summarizeDriftChecks(checks: Record<string, DriftCheck>) {
+  const declared = sum(checks, "declared");
+  const realized = sum(checks, "realized");
+  const missing = sum(checks, "missing");
+  let blocking = 0;
+  let warning = 0;
+  for (const [bucket, check] of Object.entries(checks)) {
+    const count = check.missing.length;
+    if (!count) continue;
+    if (BUCKET_SEVERITY[bucket as keyof typeof BUCKET_SEVERITY] === "warn") warning += count;
+    else blocking += count;
+    check.severity = BUCKET_SEVERITY[bucket as keyof typeof BUCKET_SEVERITY] ?? "block";
+  }
+  return { status: blocking > 0 ? "drift" : warning > 0 ? "warn" : "pass", summary: { declared, realized, missing, blocking, warning, extra: 0 } };
+}
+
+async function driftOne(manifestPath: string, opts: DriftOptions): Promise<DriftReport> {
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ManifestInput;
+  const projectRoot =  resolveProjectRoot(manifest, opts.projectsRoot);
+  const checks = emptyDriftChecks();
 
   if (!projectRoot) {
     return {
@@ -144,76 +219,12 @@ async function driftOne(manifestPath: string, opts: DriftOptions): Promise<Drift
     };
   }
 
-  // source.paths[]
-  for (const p of manifest.source?.paths ?? []) {
-    checks.source_paths.declared.push(p);
-    if (existsSync(path.join(projectRoot, p))) checks.source_paths.realized.push(p);
-    else checks.source_paths.missing.push(p);
-  }
-
-  // composition.brick_refs[]
-  for (const ref of manifest.composition?.brick_refs ?? []) {
-    const key = ref.brick_id ?? ref.path;
-    checks.brick_refs.declared.push(key);
-    const p = ref.path;
-    if (p && existsSync(path.join(projectRoot, p))) checks.brick_refs.realized.push(key);
-    else checks.brick_refs.missing.push({ brick_id: key, path: p });
-  }
-
-  // interfaces.entrypoints + api_endpoints — for "POST /functions/v1/X" patterns
-  // we check supabase/functions/X exists; for "GET /api/Y" patterns we just record.
-  const verifyRoute = (route: string) => {
-    const m = /\/functions\/v1\/([a-z0-9-]+)/.exec(route);
-    if (!m) return null;
-    return existsSync(path.join(projectRoot, "supabase/functions", m[1]));
-  };
-  for (const e of manifest.interfaces?.entrypoints ?? []) {
-    checks.entrypoints.declared.push(e);
-    const v = verifyRoute(e);
-    if (v === null) checks.entrypoints.realized.push(e); // not a supabase route — can't verify, don't flag
-    else if (v) checks.entrypoints.realized.push(e);
-    else checks.entrypoints.missing.push(e);
-  }
-  for (const e of manifest.interfaces?.api_endpoints ?? []) {
-    checks.api_endpoints.declared.push(e);
-    const v = verifyRoute(e);
-    if (v === null) checks.api_endpoints.realized.push(e);
-    else if (v) checks.api_endpoints.realized.push(e);
-    else checks.api_endpoints.missing.push(e);
-  }
-
-  // ui_surfaces[] — heuristic: surface names should appear as a string token
-  // somewhere in the declared source paths. Best-effort.
-  const sourceText = await readSourceCorpus(projectRoot, manifest.source?.paths ?? []);
-  for (const surface of manifest.interfaces?.ui_surfaces ?? []) {
-    checks.ui_surfaces.declared.push(surface);
-    const tokens = surfaceTokens(surface);
-    const hit = tokens.some((t) => sourceText.includes(t));
-    if (hit) checks.ui_surfaces.realized.push(surface);
-    else checks.ui_surfaces.missing.push(surface);
-  }
-
-  // commands[] — supabase functions serve X → check supabase/functions/X
-  for (const c of manifest.interfaces?.commands ?? []) {
-    checks.commands.declared.push(c);
-    const m = /supabase\s+functions\s+serve\s+([a-z0-9-]+)/.exec(c);
-    if (!m) { checks.commands.realized.push(c); continue; }
-    if (existsSync(path.join(projectRoot, "supabase/functions", m[1]))) checks.commands.realized.push(c);
-    else checks.commands.missing.push(c);
-  }
-
-  const declared = sum(checks, "declared");
-  const realized = sum(checks, "realized");
-  const missing = sum(checks, "missing");
-  let blocking = 0, warning = 0;
-  for (const [bucket, c] of Object.entries(checks)) {
-    const n = (c.missing || []).length;
-    if (n === 0) continue;
-    if (BUCKET_SEVERITY[bucket as keyof typeof BUCKET_SEVERITY] === "warn") warning += n;
-    else blocking += n;
-    c.severity = BUCKET_SEVERITY[bucket as keyof typeof BUCKET_SEVERITY] ?? "block";
-  }
-  const status = blocking > 0 ? "drift" : warning > 0 ? "warn" : "pass";
+  checkSourcePaths(manifest, projectRoot, checks);
+  checkBrickRefs(manifest, projectRoot, checks);
+  checkRoutes(manifest, projectRoot, checks);
+  await checkUiSurfaces(manifest, projectRoot, checks);
+  checkCommands(manifest, projectRoot, checks);
+  const { status, summary } = summarizeDriftChecks(checks);
 
   return {
     manifest: path.relative(repoRoot, manifestPath),
@@ -222,7 +233,7 @@ async function driftOne(manifestPath: string, opts: DriftOptions): Promise<Drift
     projectRoot: path.relative(os.homedir(), projectRoot),
     status,
     checks,
-    summary: { declared, realized, missing, blocking, warning, extra: 0 },
+    summary,
   };
 }
 

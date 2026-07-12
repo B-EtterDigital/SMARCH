@@ -1,5 +1,5 @@
 // Dashboard transport types are derived from the repository schema-types output.
-export type Lease = {
+export interface Lease {
   lease_id: string;
   resource_kind: string;
   resource_id: string;
@@ -9,16 +9,16 @@ export type Lease = {
   intent: string;
   project?: string;
   renewals?: number;
-};
+}
 
-export type LeasesResponse = {
+export interface LeasesResponse {
   schema_version: "1.0.0";
   generated_at: string;
   leases: Lease[];
   stats: { active: number; expiring_soon: number };
-};
+}
 
-export type Conflict = {
+export interface Conflict {
   event_id: string;
   timestamp: string;
   project: string;
@@ -26,50 +26,50 @@ export type Conflict = {
   agents: string[];
   intent: string;
   status: "open" | "resolved";
-};
+}
 
-export type ConflictsResponse = {
+export interface ConflictsResponse {
   generated_at: string;
   conflicts: Conflict[];
   stats: { open: number; matching: number; returned: number; truncated: boolean };
-};
+}
 
-export type RegistryBrick = {
+export interface RegistryBrick {
   id: string;
   project: string;
   status: string;
   score: number;
   health_status: string;
-};
+}
 
-export type RegistryResponse = {
+export interface RegistryResponse {
   generated_at: string;
   summary: { bricks: number; canonical: number; projects: number };
-  projects: Array<{ id: string; brick_count: number; average_score: number }>;
+  projects: { id: string; brick_count: number; average_score: number }[];
   bricks: RegistryBrick[];
-};
+}
 
-export type ModuleGraph = {
+export interface ModuleGraph {
   id: string;
   nodes: number;
   links: number;
   updated_at: string | null;
-};
+}
 
-export type GraphResponse = {
+export interface GraphResponse {
   generated_at: string;
   stats: { modules: number; nodes: number; links: number };
   modules: ModuleGraph[];
-};
+}
 
-export type DashboardSnapshot = {
+export interface DashboardSnapshot {
   leases: LeasesResponse;
   conflicts: ConflictsResponse;
   registry: RegistryResponse;
   graph: GraphResponse;
-};
+}
 
-export type DashboardEvent = {
+export interface DashboardEvent {
   type: "ready" | "leases" | "conflicts" | "registry" | "graph";
   changed_at: string;
-};
+}

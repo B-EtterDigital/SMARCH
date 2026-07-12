@@ -32,23 +32,23 @@
  * `ctx` provides repo helpers: { repoRoot, fileExists, readFile, grep, hasScript }.
  */
 
-type ComplianceHit = { file: string; line: string };
-type ComplianceContext = {
+interface ComplianceHit { file: string; line: string }
+interface ComplianceContext {
   fileExists(path: string): boolean;
   readFile(path: string): string;
   grep(paths: string[], pattern: RegExp): ComplianceHit[];
   hasScript?(name: string): boolean;
-};
+}
 type ComplianceStatus = 'covered' | 'partial' | 'missing';
-type ComplianceResult = { status: ComplianceStatus; evidence?: string; note?: string };
-type ComplianceControl = {
+interface ComplianceResult { status: ComplianceStatus; evidence?: string; note?: string }
+interface ComplianceControl {
   id: string;
   regulation: string[];
   title: string;
   severity: 'blocker' | 'required' | 'advisory';
   remediation: string;
   detect(ctx: ComplianceContext): ComplianceResult;
-};
+}
 
 export const COMPLIANCE_CONTROLS: ComplianceControl[] = [
   // ── Data-subject rights (GDPR Ch.III + Swiss nFADP) ──────────────────────
@@ -133,7 +133,7 @@ export const COMPLIANCE_CONTROLS: ComplianceControl[] = [
       const fake = ctx.grep(['src/renderer'], /moderators will review|report received/i)
         .filter((h) => !/invoke|functions\.invoke|fetch\(|reportProfile|profileReportService/i.test(h.line));
       if (fn && fake.length === 0) return { status: 'covered', evidence: 'report fn + no fake report toasts' };
-      if (fn) return { status: 'partial', note: `report fn exists but ${fake.length} toast-only "report" affordance(s) found` };
+      if (fn) return { status: 'partial', note: `report fn exists but ${String(fake.length)} toast-only "report" affordance(s) found` };
       return { status: 'missing' };
     },
   },
@@ -146,7 +146,7 @@ export const COMPLIANCE_CONTROLS: ComplianceControl[] = [
     detect: (ctx) => {
       const policy = ctx.fileExists('supabase/functions/_shared/safetyPolicy.ts');
       const hasCsam = policy && /["']csam["']/.test(ctx.readFile('supabase/functions/_shared/safetyPolicy.ts'));
-      const hasChild = policy && /child_safety/.test(ctx.readFile('supabase/functions/_shared/safetyPolicy.ts'));
+      const hasChild = policy && ctx.readFile('supabase/functions/_shared/safetyPolicy.ts').includes('child_safety');
       if (policy && hasCsam && hasChild) return { status: 'covered' };
       if (policy) return { status: 'partial', note: 'policy exists but missing csam/child_safety' };
       return { status: 'missing' };
@@ -232,7 +232,7 @@ export const COMPLIANCE_CONTROLS: ComplianceControl[] = [
     detect: (ctx) => {
       const leak = ctx.grep(['src'], /SUPABASE_SERVICE_ROLE_KEY|service_role.*key|serviceRoleKey\s*[:=]/i)
         .filter((h) => !/test|mock|\.d\.ts/i.test(h.file));
-      return leak.length === 0 ? { status: 'covered' } : { status: 'missing', note: `${leak.length} service-role reference(s) in client code` };
+      return leak.length === 0 ? { status: 'covered' } : { status: 'missing', note: `${String(leak.length)} service-role reference(s) in client code` };
     },
   },
   {

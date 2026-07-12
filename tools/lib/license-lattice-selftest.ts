@@ -120,4 +120,4 @@ ok('BLOCK: commercial brick requires terms URI', () => {
   assert.ok(res.violations.some((v) => v.code === 'COMMERCIAL_TERMS_MISSING'));
 });
 
-console.log(`license-lattice selftest: ${n} groups passed`);
+console.log(`license-lattice selftest: ${String(n)} groups passed`);

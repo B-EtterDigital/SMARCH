@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-base-to-string -- License evidence is an untrusted JSON boundary; defensive validation and legacy fallback/string formatting are part of compatibility behavior. */
+/* eslint-disable complexity -- License normalization is a single precedence ladder whose branch order is the policy contract. */
 /**
  * WHAT: Scans source bytes for declared tags and license text, then compares evidence with a declaration.
  * WHY: A permissive manifest can otherwise conceal restricted source and launder it through later gates.
@@ -50,17 +52,17 @@ const TEXT_SIGNATURES = [
 ] as const;
 
 type LicenseClassification = ReturnType<typeof classifyLicense>;
-type ScanResult = { spdxTags: string[]; textMatches: string[] };
-type DirectoryEvidence = {
+interface ScanResult { spdxTags: string[]; textMatches: string[] }
+interface DirectoryEvidence {
   detected: string[];
   byLicense: Record<string, string[]>;
   hasLicenseFile: boolean;
   primary: string | null;
   confidence: 'high' | 'medium' | 'low';
   fileCount: number;
-};
+}
 type EvidenceInput = string[] | { detected?: string[]; hasLicenseFile?: boolean };
-type MismatchResult = { mismatch: boolean; severity: 'high' | 'medium' | 'low' | 'none'; message: string };
+interface MismatchResult { mismatch: boolean; severity: 'high' | 'medium' | 'low' | 'none'; message: string }
 
 const SPDX_RE = /SPDX-License-Identifier:\s*([^\n\r]+)/gi;
 

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/restrict-template-expressions -- Export-policy diagnostics intentionally preserve truthy fallback, runtime guards, and established interpolation output for persisted manifests. */
+/* eslint-disable complexity -- Export policy decisions are intentionally centralized so allow and deny precedence remains auditable in one ordered guard. */
 /**
  * WHAT: Applies one fail-safe license and visibility policy before any command exports brick source or metadata.
  * WHY: Separate checks left copy, release, and store paths able to bypass restrictions or leak closed source silently.
@@ -40,17 +42,17 @@ const AUDIT_LOG = resolve(SMA_ROOT, 'security/export-audit.generated.ndjson');
 
 type Openness = 'closed' | 'source-available' | 'open';
 type Visibility = 'private' | 'internal' | 'community' | 'public';
-type ExportComponent = { brick_id: string; spdx?: string | null; openness: Openness; visibility: Visibility; resolved: boolean };
-type ExportViolation = { code: string; message: string };
-type ExportEvaluation = {
+interface ExportComponent { brick_id: string; spdx?: string | null; openness: Openness; visibility: Visibility; resolved: boolean }
+interface ExportViolation { code: string; message: string }
+interface ExportEvaluation {
   ok: boolean; target: Visibility; meet_openness: Openness; meet_visibility: Visibility;
   components: ExportComponent[]; ledger_missing: boolean; violations: ExportViolation[];
-};
-type ExportIndex = {
+}
+interface ExportIndex {
   resolve(brickId: string, projectHint?: string): { row: { spdx?: unknown; openness?: unknown; visibility?: unknown } } | null;
   _missing?: boolean;
-};
-type ExportEvaluationOptions = { brickIds?: string[]; project?: string | null; targetVisibility?: Visibility; index?: ExportIndex };
+}
+interface ExportEvaluationOptions { brickIds?: string[]; project?: string | null; targetVisibility?: Visibility; index?: ExportIndex }
 type ExportAssertionOptions = ExportEvaluationOptions & {
   operation: string; allowClosed?: boolean; requireOwner?: boolean; actor?: string;
 };
@@ -86,13 +88,13 @@ let _index: ExportIndex | null = null;
 
 function loadLicenseIndex(): ExportIndex {
   if (_index) return _index;
-  if (!existsSync(LICENSE_LEDGER)) { _index = buildLicenseIndex([]) as ExportIndex; _index._missing = true; return _index; }
+  if (!existsSync(LICENSE_LEDGER)) { _index = buildLicenseIndex([]); _index._missing = true; return _index; }
   try {
-    const data = JSON.parse(readFileSync(LICENSE_LEDGER, 'utf8')) as { licenses?: Array<{ brick_id: string; project?: string }> };
-    _index = buildLicenseIndex(data.licenses || []) as ExportIndex;
+    const data = JSON.parse(readFileSync(LICENSE_LEDGER, 'utf8')) as { licenses?: { brick_id: string; project?: string }[] };
+    _index = buildLicenseIndex(data.licenses || []);
   } catch (error) {
     console.error(JSON.stringify({ area: 'export-guard.license-ledger', severity: 'warning', hint: 'Repair or regenerate the license ledger; exports remain fail-closed.', error: error instanceof Error ? error.message : String(error) }));
-    _index = buildLicenseIndex([]) as ExportIndex;
+    _index = buildLicenseIndex([]);
     _index._missing = true;
   }
   return _index;

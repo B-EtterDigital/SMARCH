@@ -29,7 +29,7 @@ import { PROJECTS_ROOT } from './sma-paths.ts';
 // Inverted from registry/portfolio.config.json::overrides.
 export const PROJECT_PATH_OVERRIDES = Object.fromEntries(
   Object.entries(loadPortfolioConfig().overrides).map(([relativePath, entry]) => [
-    entry?.id ?? relativePath,
+    entry.id ?? relativePath,
     relativePath,
   ]),
 );
@@ -73,12 +73,4 @@ export function resolveProjectRoot(projectId: string | null | undefined): string
     if (existsSync(cand)) return cand;
   }
   return null;
-}
-
-/**
- * For ids known via the override map, returns the relative path under
- * PROJECTS_ROOT. Useful for log lines and debug output.
- */
-function projectRelativeRoot(projectId: string): string {
-  return PROJECT_PATH_OVERRIDES[projectId] ?? projectId;
 }

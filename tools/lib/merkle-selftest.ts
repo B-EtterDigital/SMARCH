@@ -19,19 +19,19 @@ import { leafHash, buildMerkle, inclusionProof, verifyProof, verifyBrickInclusio
 
 let n = 0;
 
-const mk = (count: number): string[] => Array.from({ length: count }, (_, i) => leafHash(`brick-${i}`, `head-${i}`));
+const mk = (count: number): string[] => Array.from({ length: count }, (_, i) => leafHash(`brick-${String(i)}`, `head-${String(i)}`));
 
 // determinism
 for (const count of [1, 2, 3, 5, 8, 17, 100]) {
   const leaves = mk(count);
   const a = buildMerkle(leaves);
   const b = buildMerkle(leaves);
-  assert.equal(a.root, b.root, `root deterministic for ${count}`);
+  assert.equal(a.root, b.root, `root deterministic for ${String(count)}`);
 
   // every leaf has a valid inclusion proof
   for (let i = 0; i < count; i += 1) {
     const proof = inclusionProof(a.layers, i);
-    assert.equal(verifyProof(leaves[i], proof, a.root), true, `proof verifies for leaf ${i}/${count}`);
+    assert.equal(verifyProof(leaves[i], proof, a.root), true, `proof verifies for leaf ${String(i)}/${String(count)}`);
   }
   n += 1;
 }
@@ -78,4 +78,4 @@ for (const count of [1, 2, 3, 5, 8, 17, 100]) {
   n += 1;
 }
 
-console.log(`merkle selftest: ${n} groups passed`);
+console.log(`merkle selftest: ${String(n)} groups passed`);

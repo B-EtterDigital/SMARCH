@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Spawn output crosses a runtime process boundary, so its defensive fallback remains required. */
+/* CLI dispatch and smoke assertions are flat checklists; complexity counts each independent option and proof guard. */
+/* eslint @typescript-eslint/no-unnecessary-condition: "off", complexity: "off" */
 /**
  * WHAT: Exercises the complete cross-project clone, import verification, dependency indexing, and propagation path for a build.
  * WHY: A build is not reusable merely because its files copy; the downstream control-plane records must also remain coherent.
@@ -165,6 +168,92 @@ function defaultSandbox(slug: string): string {
   return path.join(PROJECTS_ROOT, `_sma-smoke-${slug}-${ts}`);
 }
 
+type SmokeLog = (message: string) => void;
+type SmokeFail = (step: string, message: string, extra?: Record<string, unknown>) => void;
+
+function runCloneStep(opts: CloneOptions, manifestPath: string, sandbox: string, report: CloneReport, log: SmokeLog, fail: SmokeFail): void {
+  rmrf(sandbox);
+  fs.mkdirSync(sandbox, { recursive: true });
+  log("step 1/5 sma-clone --write");
+  const cloneArgs = ["tools/sma-clone.ts", "--build-manifest", manifestPath, "--target", sandbox, "--write"];
+  if (opts.registry) cloneArgs.push("--registry", opts.registry);
+  const result = run("node", cloneArgs, { cwd: repoRoot });
+  const placementsPath = path.join(sandbox, ".smarch/placements.json");
+  let placementCount = 0;
+  if (exists(placementsPath)) {
+    const placements = tryParseJson(fs.readFileSync(placementsPath, "utf8")) as { placements?: unknown[] } | null;
+    placementCount = Array.isArray(placements?.placements) ? placements.placements.length : 0;
+  }
+  report.steps.clone = { ok: result.code === 0, exit: result.code, placements_written: placementCount };
+  if (result.code !== 0) fail("clone", `sma-clone exit ${String(result.code)}`, { stderr: result.stderr.slice(-600) });
+}
+
+function runImportVerifyStep(sandbox: string, report: CloneReport, log: SmokeLog, fail: SmokeFail): void {
+  log("step 2/5 sma-import-verify");
+  const result = run("node", ["tools/sma-import-verify.ts", "--target", sandbox, "--compact"], { cwd: repoRoot });
+  const document = tryParseJson(result.stdout) as ImportVerifyDocument | null;
+  const status = document?.status ?? "unknown";
+  const placements = (document?.checks ?? []).find((check) => check.code === "placements.summary") ?? {};
+  const buildLock = (document?.checks ?? []).find((check) => check.code === "build_lock.resolution") ?? {};
+  report.steps.import_verify = {
+    ok: status === "pass", exit: result.code, status, pass: document?.counts?.pass ?? 0,
+    fail: document?.counts?.fail ?? 0, warn: document?.counts?.warn ?? 0,
+    missing_targets: placements.missing_targets ?? null, hash_mismatches: placements.hash_mismatches ?? null,
+    release_exact_matches: buildLock.release_exact_matches ?? null,
+  };
+  if (status !== "pass") fail("import_verify", `import-verify status=${status} (fail=${String(document?.counts?.fail ?? "?")})`);
+}
+
+function runDependentsIndexStep(report: CloneReport, log: SmokeLog, fail: SmokeFail): void {
+  log("step 3/5 sma-dependents-index --write");
+  const result = run("node", ["tools/sma-dependents-index.ts", "--write", "--json"], { cwd: repoRoot });
+  const document = (tryParseJson(result.stdout) ?? tryParseJson(result.stdout.split("\n").pop() ?? '')) as DependentsDocument | null;
+  report.steps.dependents_index = {
+    ok: result.code === 0, exit: result.code, sources: document?.summary?.source_bricks ?? null,
+    links: document?.summary?.links ?? null, projects: document?.summary?.projects ?? null,
+  };
+  if (result.code !== 0) fail("dependents_index", `dependents-index exit ${String(result.code)}`);
+}
+
+function verifyDependentRegistration(sandbox: string, requiredBricks: string[], report: CloneReport, log: SmokeLog, fail: SmokeFail): string {
+  log("step 4/5 verify sandbox registered as dependent");
+  const depIndexPath = path.join(repoRoot, "registry/dependents.generated.json");
+  const depIndex: DependentIndex = exists(depIndexPath) ? readJson(depIndexPath) as DependentIndex : { dependents: {} };
+  const sandboxAbs = path.resolve(sandbox);
+  const registeredFor: string[] = [];
+  const missingFor: string[] = [];
+  for (const id of requiredBricks) {
+    const list = Array.isArray(depIndex.dependents?.[id]) ? depIndex.dependents[id] : [];
+    const hit = list.some((dependent) => path.resolve((dependent.target_root ?? dependent.project_root) ?? "") === sandboxAbs);
+    (hit ? registeredFor : missingFor).push(id);
+  }
+  report.steps.dependent_registration = {
+    ok: missingFor.length === 0 && requiredBricks.length > 0, registered: registeredFor.length,
+    missing: missingFor.length, required: requiredBricks.length, missing_brick_ids: missingFor,
+  };
+  if (missingFor.length) fail("dependent_registration", `sandbox missing as dependent for ${String(missingFor.length)}/${String(requiredBricks.length)} required bricks`, { missing: missingFor });
+  return sandboxAbs;
+}
+
+function runPropagationStep(requiredBricks: string[], sandboxAbs: string, report: CloneReport, log: SmokeLog, fail: SmokeFail): void {
+  log("step 5/5 sma-propagate dry-run for each required brick");
+  const plans: { brick_id: string; exit: number; planned_for_sandbox: boolean; target_count: number }[] = [];
+  let plannedCount = 0;
+  for (const id of requiredBricks) {
+    const result = run("node", ["tools/sma-propagate.ts", "--source-brick", id, "--json"], { cwd: repoRoot });
+    const document = tryParseJson(result.stdout);
+    const reports = (Array.isArray(document) ? document : document ? [document] : []) as PropagationReport[];
+    const propagation = (reports.find((entry) => entry.source_brick_id === id) ?? reports[0]) ?? {};
+    const targets = (propagation.fan_out ?? propagation.targets) ?? [];
+    const planned = targets.some((target) => path.resolve(target.target_root ?? "") === sandboxAbs && /plan|dry-run|written/.test((target.action ?? target.status) ?? ""));
+    if (planned) plannedCount += 1;
+    plans.push({ brick_id: id, exit: result.code, planned_for_sandbox: planned, target_count: targets.length });
+  }
+  const failedCount = requiredBricks.length - plannedCount;
+  report.steps.propagation = { ok: failedCount === 0 && plannedCount > 0, planned: plannedCount, failed: failedCount, per_brick: plans };
+  if (failedCount > 0 || plannedCount === 0) fail("propagation", `propagation planned for ${String(plannedCount)}/${String(requiredBricks.length)} required bricks`);
+}
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const startedAt = new Date().toISOString();
@@ -206,122 +295,11 @@ function main() {
     report.failures.push({ step, message, ...extra });
   };
 
-  // --- 2. Clone -----------------------------------------------------------
-  rmrf(sandbox);
-  fs.mkdirSync(sandbox, { recursive: true });
-  log("step 1/5 sma-clone --write");
-  const cloneArgs = ["tools/sma-clone.ts", "--build-manifest", manifestPath, "--target", sandbox, "--write"];
-  if (opts.registry) cloneArgs.push("--registry", opts.registry);
-  const cloneRes = run("node", cloneArgs, { cwd: repoRoot });
-  const cloneOk = cloneRes.code === 0;
-  const placementsPath = path.join(sandbox, ".smarch/placements.json");
-  let placementCount = 0;
-  if (exists(placementsPath)) {
-    const pl = tryParseJson(fs.readFileSync(placementsPath, "utf8")) as { placements?: unknown[] } | null;
-    placementCount = Array.isArray(pl?.placements) ? pl.placements.length : 0;
-  }
-  report.steps.clone = {
-    ok: cloneOk,
-    exit: cloneRes.code,
-    placements_written: placementCount
-  };
-  if (!cloneOk) {
-    fail("clone", `sma-clone exit ${String(cloneRes.code)}`, { stderr: cloneRes.stderr.slice(-600) });
-  }
-
-  // --- 3. Import-verify ---------------------------------------------------
-  log("step 2/5 sma-import-verify");
-  const verifyRes = run("node", ["tools/sma-import-verify.ts", "--target", sandbox, "--compact"], { cwd: repoRoot });
-  const verifyDoc = tryParseJson(verifyRes.stdout) as ImportVerifyDocument | null;
-  const verifyStatus = verifyDoc?.status ?? "unknown";
-  const placementsHealth = (verifyDoc?.checks ?? []).find((check) => check.code === "placements.summary") ?? {};
-  const buildLockHealth = (verifyDoc?.checks ?? []).find((check) => check.code === "build_lock.resolution") ?? {};
-  report.steps.import_verify = {
-    ok: verifyStatus === "pass",
-    exit: verifyRes.code,
-    status: verifyStatus,
-    pass: verifyDoc?.counts?.pass ?? 0,
-    fail: verifyDoc?.counts?.fail ?? 0,
-    warn: verifyDoc?.counts?.warn ?? 0,
-    missing_targets: placementsHealth.missing_targets ?? null,
-    hash_mismatches: placementsHealth.hash_mismatches ?? null,
-    release_exact_matches: buildLockHealth.release_exact_matches ?? null
-  };
-  if (verifyStatus !== "pass") {
-    fail("import_verify", `import-verify status=${verifyStatus} (fail=${String(verifyDoc?.counts?.fail ?? "?")})`);
-  }
-
-  // --- 4. Rebuild dependents index ----------------------------------------
-  log("step 3/5 sma-dependents-index --write");
-  const depRes = run("node", ["tools/sma-dependents-index.ts", "--write", "--json"], { cwd: repoRoot });
-  const depDoc = (tryParseJson(depRes.stdout) ?? tryParseJson(depRes.stdout.split("\n").pop() ?? '')) as DependentsDocument | null;
-  report.steps.dependents_index = {
-    ok: depRes.code === 0,
-    exit: depRes.code,
-    sources: depDoc?.summary?.source_bricks ?? null,
-    links: depDoc?.summary?.links ?? null,
-    projects: depDoc?.summary?.projects ?? null
-  };
-  if (depRes.code !== 0) fail("dependents_index", `dependents-index exit ${String(depRes.code)}`);
-
-  // --- 5. Confirm sandbox is registered as dependent ----------------------
-  log("step 4/5 verify sandbox registered as dependent");
-  const depIndexPath = path.join(repoRoot, "registry/dependents.generated.json");
-  const depIndex: DependentIndex = exists(depIndexPath) ? readJson(depIndexPath) as DependentIndex : { dependents: {} };
-  const dependentsByBrick = depIndex.dependents ?? {};
-  const sandboxAbs = path.resolve(sandbox);
-  const registeredFor: string[] = [];
-  const missingFor: string[] = [];
-  for (const id of requiredBricks) {
-    const list = Array.isArray(dependentsByBrick[id]) ? dependentsByBrick[id] : [];
-    const hit = list.some((d) => {
-      const root = (d.target_root ?? d.project_root) ?? "";
-      return path.resolve(root) === sandboxAbs;
-    });
-    if (hit) registeredFor.push(id);
-    else missingFor.push(id);
-  }
-  report.steps.dependent_registration = {
-    ok: missingFor.length === 0 && requiredBricks.length > 0,
-    registered: registeredFor.length,
-    missing: missingFor.length,
-    required: requiredBricks.length,
-    missing_brick_ids: missingFor
-  };
-  if (missingFor.length > 0) {
-    fail("dependent_registration", `sandbox missing as dependent for ${String(missingFor.length)}/${String(requiredBricks.length)} required bricks`, { missing: missingFor });
-  }
-
-  // --- 6. Plan-dry-run propagation ---------------------------------------
-  log("step 5/5 sma-propagate dry-run for each required brick");
-  const propPlans: { brick_id: string; exit: number; planned_for_sandbox: boolean; target_count: number }[] = [];
-  let propPlanned = 0;
-  let propFailed = 0;
-  for (const id of requiredBricks) {
-    const r = run("node", ["tools/sma-propagate.ts", "--source-brick", id, "--json"], { cwd: repoRoot });
-    const doc = tryParseJson(r.stdout);
-    // sma-propagate emits an array of per-source-brick reports; pick the one for this brick.
-    const reports = (Array.isArray(doc) ? doc : doc ? [doc] : []) as PropagationReport[];
-    const report = (reports.find((d) => d.source_brick_id === id) ?? reports[0]) ?? {};
-    const targets = (report.fan_out ?? report.targets) ?? [];
-    const planned = targets.some((t) => {
-      const root = t.target_root ?? "";
-      const status = (t.action ?? t.status) ?? "";
-      return path.resolve(root) === sandboxAbs && /plan|dry-run|written/.test(status);
-    });
-    if (planned) propPlanned += 1;
-    else propFailed += 1;
-    propPlans.push({ brick_id: id, exit: r.code, planned_for_sandbox: planned, target_count: targets.length });
-  }
-  report.steps.propagation = {
-    ok: propFailed === 0 && propPlanned > 0,
-    planned: propPlanned,
-    failed: propFailed,
-    per_brick: propPlans
-  };
-  if (propFailed > 0 || propPlanned === 0) {
-    fail("propagation", `propagation planned for ${String(propPlanned)}/${String(requiredBricks.length)} required bricks`);
-  }
+  runCloneStep(opts, manifestPath, sandbox, report, log, fail);
+  runImportVerifyStep(sandbox, report, log, fail);
+  runDependentsIndexStep(report, log, fail);
+  const sandboxAbs = verifyDependentRegistration(sandbox, requiredBricks, report, log, fail);
+  runPropagationStep(requiredBricks, sandboxAbs, report, log, fail);
 
   // --- Verdict ------------------------------------------------------------
   report.overall = report.failures.length === 0 ? "pass" : "fail";

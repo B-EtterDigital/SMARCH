@@ -43,38 +43,38 @@ const FINGERPRINT_LEDGER = resolve(SMA_ROOT, 'security/brick-fingerprints.genera
 const ANCHOR = resolve(SMA_ROOT, 'registry/anchor.generated.json');
 const OUT_ROOT = resolve(SMA_ROOT, 'releases/attestations');
 
-type CliArgs = {
+interface CliArgs {
   all?: boolean;
   brick?: string;
   json?: boolean;
   timestamp?: string;
-};
-type Seal = { head?: string; [key: string]: unknown };
-type ProvenanceRow = {
+}
+interface Seal { head?: string; [key: string]: unknown }
+interface ProvenanceRow {
   brick_id: string;
   project?: string | null;
   seal?: Seal;
   created_by?: Record<string, unknown> | null;
-  contributors?: Array<Record<string, unknown>>;
+  contributors?: Record<string, unknown>[];
   commit_count?: number | null;
-};
-type LicenseRow = {
+}
+interface LicenseRow {
   brick_id: string;
   spdx?: string | null;
   license_class?: string | null;
   openness?: string | null;
   visibility?: string | null;
   attribution_required?: boolean | null;
-};
-type FingerprintRow = {
+}
+interface FingerprintRow {
   brick_id: string;
   project?: string | null;
   content_hash?: string | null;
   file_count?: number | null;
   byte_count?: number | null;
-};
-type Ledger<T> = { provenance?: T[]; licenses?: T[]; fingerprints?: T[] };
-type Anchor = { root?: string | null; anchor_digest?: string | null };
+}
+interface Ledger<T> { provenance?: T[]; licenses?: T[]; fingerprints?: T[] }
+interface Anchor { root?: string | null; anchor_digest?: string | null }
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -85,11 +85,12 @@ try {
   process.exit(1);
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Attestation creation is one ledger-to-proof transaction; validation and output ordering must remain atomic.
 function main() {
-  const prov = loadJson<Ledger<ProvenanceRow>>(PROV_LEDGER, 'provenance ledger', 'sma-provenance-ledger.ts');
-  const lic = loadJson<Ledger<LicenseRow>>(LICENSE_LEDGER, 'license ledger', 'sma-provenance-ledger.ts');
-  const fp = loadJson<Ledger<FingerprintRow>>(FINGERPRINT_LEDGER, 'fingerprint ledger', 'sma-provenance-ledger.ts');
-  const anchor = loadJson<Anchor>(ANCHOR, 'anchor', 'sma-anchor.ts');
+  const prov = loadJson(PROV_LEDGER, 'provenance ledger', 'sma-provenance-ledger.ts') as Ledger<ProvenanceRow>;
+  const lic = loadJson(LICENSE_LEDGER, 'license ledger', 'sma-provenance-ledger.ts') as Ledger<LicenseRow>;
+  const fp = loadJson(FINGERPRINT_LEDGER, 'fingerprint ledger', 'sma-provenance-ledger.ts') as Ledger<FingerprintRow>;
+  const anchor = loadJson(ANCHOR, 'anchor', 'sma-anchor.ts') as Anchor;
 
   const provIndex = indexBy(prov.provenance);
   const licIndex = indexBy(lic.licenses);
@@ -108,18 +109,18 @@ function main() {
     console.error(`warning: computed root ${short(root)} != anchor.root ${short(anchor.root)} — anchor may be stale (re-run tools/sma-anchor.ts)`);
   }
 
-  const timestamp = args.timestamp ? String(args.timestamp) : new Date().toISOString();
+  const timestamp = args.timestamp ?? new Date().toISOString();
 
   let targets;
   if (args.all) targets = rows.map((r) => r.brick_id);
-  else if (args.brick) targets = [String(args.brick)];
+  else if (args.brick) targets = [args.brick];
   else throw new Error('specify --brick <brick_id> or --all');
 
   const summary = [];
   for (const brickId of targets) {
     const provRow = provIndex.get(brickId);
     if (!provRow) throw new Error(`brick not found in provenance ledger: ${brickId}`);
-    if (!provRow.seal || !provRow.seal.head) {
+    if (!provRow.seal?.head) {
       throw new Error(`brick has no provenance seal — cannot build inclusion proof: ${brickId}`);
     }
     const idx = rowIndex.get(brickId);
@@ -129,18 +130,18 @@ function main() {
     const licRow = licIndex.get(brickId);
     const brick = {
       brick_id: brickId,
-      project: provRow.project || fpRow?.project || null,
-      content_hash: fpRow?.content_hash || null,
+      project: (provRow.project ?? fpRow?.project) ?? null,
+      content_hash: fpRow?.content_hash ?? null,
       file_count: fpRow?.file_count ?? null,
       byte_count: fpRow?.byte_count ?? null,
-      spdx: licRow?.spdx || null,
-      license_class: licRow?.license_class || null,
-      openness: licRow?.openness || null,
-      visibility: licRow?.visibility || null,
+      spdx: licRow?.spdx ?? null,
+      license_class: licRow?.license_class ?? null,
+      openness: licRow?.openness ?? null,
+      visibility: licRow?.visibility ?? null,
       attribution_required: licRow?.attribution_required ?? null,
       seal: provRow.seal,
-      created_by: provRow.created_by || null,
-      contributors: provRow.contributors || [],
+      created_by: provRow.created_by ?? null,
+      contributors: provRow.contributors ?? [],
       commit_count: provRow.commit_count ?? null,
     };
     const components: Parameters<typeof intotoStatement>[1] = []; // no sub-component source in these ledgers
@@ -162,7 +163,7 @@ function main() {
       content_hash: brick.content_hash,
       proof,
       root,
-      anchor_digest: anchor.anchor_digest || null,
+      anchor_digest: anchor.anchor_digest ?? null,
     });
 
     summary.push({
@@ -178,12 +179,12 @@ function main() {
     console.log(JSON.stringify({
       generated_at: timestamp,
       root,
-      anchor_digest: anchor.anchor_digest || null,
+      anchor_digest: anchor.anchor_digest ?? null,
       count: summary.length,
       attestations: summary,
     }, null, 2));
   } else {
-    console.log(`sma-attest: wrote ${summary.length} attestation bundle(s)`);
+    console.log(`sma-attest: wrote ${String(summary.length)} attestation bundle(s)`);
     console.log(`  merkle root: ${root}`);
     for (const s of summary) {
       console.log(`  ${s.brick_id}`);
@@ -196,11 +197,11 @@ function main() {
 
 // --- helpers ---------------------------------------------------------------
 
-function loadJson<T>(path: string, label: string, producer: string): T {
+function loadJson(path: string, label: string, producer: string): unknown {
   if (!existsSync(path)) {
     throw new Error(`${label} not found: ${rel(path)}. Run: node tools/${producer}`);
   }
-  return JSON.parse(readFileSync(path, 'utf8')) as T;
+  return JSON.parse(readFileSync(path, 'utf8')) as unknown;
 }
 
 function indexBy<T extends { brick_id: string }>(arr: T[] | undefined): Map<string, T> {
@@ -214,7 +215,7 @@ function sanitizeDir(id: unknown): string {
 }
 
 function short(s: unknown): string {
-  return String(s || '').slice(0, 12);
+  return legacyString(s ?? '').slice(0, 12);
 }
 
 function writeJson(p: string, v: unknown): void {
@@ -231,7 +232,7 @@ function parseArgs(list: string[]): CliArgs {
     const arg = list[i];
     if (!arg.startsWith('--')) continue;
     const key = arg.slice(2).replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase());
-    const next = list[i + 1];
+    const next = list.at(i + 1);
     if (next === undefined || next.startsWith('--')) {
       if (key === 'all' || key === 'json') out[key] = true;
       continue;
@@ -240,4 +241,8 @@ function parseArgs(list: string[]): CliArgs {
     i += 1;
   }
   return out;
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

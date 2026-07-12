@@ -85,7 +85,7 @@ async function main() {
 
   for (const brick of bricks) {
     const slug = slugify(brick.id);
-    const manifest = await readManifest(brick);
+    const manifest = await readManifest({ manifest_path: brick.manifest_path });
     attachFeatureCluster(brick, manifest);
     await fs.writeFile(path.join(options.out, "bricks", `${slug}.md`), brickMarkdown(brick, manifest));
   }
@@ -131,12 +131,17 @@ function wikiRegistryValue(value: unknown): WikiRegistry {
   const projectValues: unknown[] = record.projects;
   const unmanifestedValues: unknown[] = Array.isArray(record.unmanifested_bricks) ? record.unmanifested_bricks : [];
   const candidateValues: unknown[] = Array.isArray(record.candidate_groups) ? record.candidate_groups : [];
-  return { ...record, bricks: brickValues.filter(isRecord) as WikiBrick[], projects: projectValues.filter(isRecord) as WikiProject[],
+  return { ...record, bricks: brickValues.filter(isWikiBrick), projects: projectValues.filter(isRecord) as WikiProject[],
     unmanifested_bricks: unmanifestedValues.filter(isUnmanifestedBrick), candidate_groups: candidateValues.filter(isCandidateGroup) } as WikiRegistry;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isWikiBrick(value: unknown): value is WikiBrick {
+  return isRecord(value) && typeof value.id === "string" && typeof value.name === "string"
+    && typeof value.kind === "string" && typeof value.project === "string" && typeof value.status === "string";
 }
 
 function isUnmanifestedBrick(value: unknown): value is UnmanifestedBrick {

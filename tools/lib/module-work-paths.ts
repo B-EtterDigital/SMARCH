@@ -9,10 +9,10 @@
  */
 /** Path-overlap helpers for sma-module-work-packets.mjs. */
 
-export type ModulePathSpec = {
+export interface ModulePathSpec {
   paths?: string[];
   excludePaths?: string[];
-};
+}
 
 export type SharedHotPath = ModulePathSpec & {
   id: string;
@@ -21,20 +21,20 @@ export type SharedHotPath = ModulePathSpec & {
   requiredGates?: string[];
 };
 
-export type PathOverlapPair = { left: string; right: string };
+export interface PathOverlapPair { left: string; right: string }
 
 export function modulePathSamples(module: ModulePathSpec): string[] {
-  return (module.paths || []).slice(0, 12);
+  return (module.paths ?? []).slice(0, 12);
 }
 
 export function overlappingSharedHotPaths(sharedHotPaths: SharedHotPath[], module: ModulePathSpec) {
   return sharedHotPaths
-    .filter((hot) => overlappingPathPairsWithExcludes(module.paths || [], hot.paths || [], module.excludePaths || [], []).length > 0)
+    .filter((hot) => overlappingPathPairsWithExcludes(module.paths ?? [], hot.paths ?? [], module.excludePaths ?? [], []).length > 0)
     .map((hot) => ({
       id: hot.id,
-      label: hot.label || hot.id,
-      risk: hot.risk || 'unknown',
-      required_gates: hot.requiredGates || [],
+      label: hot.label ?? hot.id,
+      risk: hot.risk ?? 'unknown',
+      required_gates: hot.requiredGates ?? [],
     }));
 }
 
@@ -43,20 +43,12 @@ export function modulesOverlap(left: ModulePathSpec | null | undefined, right: M
   return overlappingModulePathPairs(left, right).length > 0;
 }
 
-function pathsOverlap(leftPaths: string[], rightPaths: string[]): boolean {
-  return overlappingPathPairs(leftPaths, rightPaths).length > 0;
-}
-
-function overlappingPathPairs(leftPaths: string[], rightPaths: string[]): PathOverlapPair[] {
-  return overlappingPathPairsWithExcludes(leftPaths, rightPaths, [], []);
-}
-
 export function overlappingModulePathPairs(leftModule: ModulePathSpec | null | undefined, rightModule: ModulePathSpec | null | undefined): PathOverlapPair[] {
   return overlappingPathPairsWithExcludes(
-    leftModule?.paths || [],
-    rightModule?.paths || [],
-    leftModule?.excludePaths || [],
-    rightModule?.excludePaths || [],
+    leftModule?.paths ?? [],
+    rightModule?.paths ?? [],
+    leftModule?.excludePaths ?? [],
+    rightModule?.excludePaths ?? [],
   );
 }
 
@@ -74,14 +66,14 @@ function overlappingPathPairsWithExcludes(leftPaths: string[], rightPaths: strin
 }
 
 function patternCoveredByAnyExclude(pattern: string, excludePaths: string[]): boolean {
-  return (excludePaths || []).some((exclude) => pathPatternCovers(exclude, pattern));
+  return (excludePaths).some((exclude) => pathPatternCovers(exclude, pattern));
 }
 
 export function pathPatternCovers(coverPattern: string, targetPattern: string): boolean {
   const coverBase = globBase(coverPattern);
   const targetBase = globBase(targetPattern);
   if (!coverBase || !targetBase) return false;
-  const coverHasWildcard = /[*{[]/.test(String(coverPattern || ''));
+  const coverHasWildcard = /[*{[]/.test((coverPattern || ''));
   const baseCovers = coverBase === targetBase
     || targetBase.startsWith(`${coverBase}/`)
     || (coverHasWildcard && targetBase.startsWith(coverBase));
@@ -109,7 +101,7 @@ function pathPatternOverlap(left: string, right: string): boolean {
 }
 
 function globBase(pattern: string): string {
-  let value = String(pattern || '').replace(/\\/g, '/').trim();
+  let value = (pattern || '').replace(/\\/g, '/').trim();
   if (!value) return '';
   const wildcard = value.search(/[*{[]/);
   if (wildcard >= 0) value = value.slice(0, wildcard);
@@ -122,7 +114,7 @@ function globBase(pattern: string): string {
 }
 
 function literalFileTokens(pattern: string): string[] {
-  const file = String(pattern || '').replace(/\\/g, '/').split('/').pop() || '';
+  const file = (pattern || '').replace(/\\/g, '/').split('/').pop() ?? '';
   return file
     .replace(/\*\*/g, '*')
     .split(/[*{}[\]().,_\-\s]+/)

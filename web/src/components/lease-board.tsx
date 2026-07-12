@@ -3,12 +3,12 @@ import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
 import { LeaseRow, type LeaseRowValue } from "./lease-row";
 
-export type LeaseBoardProps = {
+export interface LeaseBoardProps {
   leases?: LeaseRowValue[];
   status?: "loading" | "ready" | "error";
   error?: unknown;
   onRetry?: () => void;
-};
+}
 
 /**
  * Accessible active-lease departures board with one shared client-side TTL
@@ -19,8 +19,8 @@ export function LeaseBoard({ leases = [], status = "ready", error, onRetry }: Le
 
   useEffect(() => {
     if (status !== "ready" || leases.length === 0) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => { setNow(Date.now()); }, 1_000);
+    return () => { clearInterval(timer); };
   }, [status, leases.length]);
 
   useEffect(() => {

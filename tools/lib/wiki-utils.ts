@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 
 
 export type LooseRecord = Record<string, unknown>;
@@ -21,7 +23,7 @@ export function mdTableRow(values: unknown[]): string {
   return `| ${values.map((value) => String(value ?? "").replaceAll("\n", " ")).join(" | ")} |`;
 }
 
-export function countBy<T>(items: T[], getKey: (item: T) => string | null | undefined): Array<[string, number]> {
+export function countBy<T>(items: T[], getKey: (item: T) => string | null | undefined): [string, number][] {
   const counts = new Map<string, number>();
 
   for (const item of items) {

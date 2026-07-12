@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Publish inputs cross runtime JSON boundaries; defensive guards and existing diagnostic coercion remain required. */
+/* Publish analysis is a declarative fail-closed policy checklist; complexity counts independent findings as nested flow. */
+/* eslint @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-condition: "off", complexity: "off" */
 /**
  * What: Prepares a reviewable community-export bundle from one artifact manifest.
  * Why: Sharing source without policy, license, and leak checks can expose private material.
@@ -453,77 +456,29 @@ function collectMatches(text: string, regex: RegExp) {
   return output;
 }
 
-function scanSecrets({ text, scope, location }: ScanMeta, findings: Finding[], seen: Set<string>): void {
-  const rules = [
-    {
-      rule_id: "secret-private-key",
-      category: "secret",
-      severity: "blocker",
-      regex: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
-      summary: "Private key material detected."
-    },
-    {
-      rule_id: "secret-openai-key",
-      category: "secret",
-      severity: "blocker",
-      regex: /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g,
-      summary: "Secret-like OpenAI key detected."
-    },
-    {
-      rule_id: "secret-stripe-live",
-      category: "secret",
-      severity: "blocker",
-      regex: /\b(?:sk|rk)_live_[A-Za-z0-9]{16,}\b/g,
-      summary: "Live Stripe credential detected."
-    },
-    {
-      rule_id: "secret-github-token",
-      category: "secret",
-      severity: "blocker",
-      regex: /\bgh[pousr]_[A-Za-z0-9]{20,}\b/g,
-      summary: "GitHub token detected."
-    },
-    {
-      rule_id: "secret-aws-key",
-      category: "secret",
-      severity: "blocker",
-      regex: /\bAKIA[0-9A-Z]{16}\b/g,
-      summary: "AWS access key id detected."
-    },
-    {
-      rule_id: "secret-google-key",
-      category: "secret",
-      severity: "blocker",
-      regex: /\bAIza[0-9A-Za-z\-_]{20,}\b/g,
-      summary: "Google API key detected."
-    },
-    {
-      rule_id: "secret-bearer-token",
-      category: "secret",
-      severity: "blocker",
-      regex: /Bearer\s+[A-Za-z0-9._-]{20,}/gi,
-      summary: "Bearer token detected."
-    },
-    {
-      rule_id: "secret-assignment",
-      category: "secret",
-      severity: "blocker",
-      regex: /(?:api[_-]?key|access[_-]?token|secret|client[_-]?secret|service[_-]?role[_-]?key)\s*[:=]\s*["'`]?([A-Za-z0-9_./+=:-]{16,})/gi,
-      summary: "Secret-like assignment detected."
-    }
-  ];
+const SECRET_SCAN_RULES = [
+  ["secret-private-key", /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, "Private key material detected."],
+  ["secret-openai-key", /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g, "Secret-like OpenAI key detected."],
+  ["secret-stripe-live", /\b(?:sk|rk)_live_[A-Za-z0-9]{16,}\b/g, "Live Stripe credential detected."],
+  ["secret-github-token", /\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, "GitHub token detected."],
+  ["secret-aws-key", /\bAKIA[0-9A-Z]{16}\b/g, "AWS access key id detected."],
+  ["secret-google-key", /\bAIza[0-9A-Za-z\-_]{20,}\b/g, "Google API key detected."],
+  ["secret-bearer-token", /Bearer\s+[A-Za-z0-9._-]{20,}/gi, "Bearer token detected."],
+  ["secret-assignment", /(?:api[_-]?key|access[_-]?token|secret|client[_-]?secret|service[_-]?role[_-]?key)\s*[:=]\s*["'`]?([A-Za-z0-9_./+=:-]{16,})/gi, "Secret-like assignment detected."],
+] as const;
 
-  for (const rule of rules) {
-    for (const match of collectMatches(text, rule.regex)) {
+function scanSecrets({ text, scope, location }: ScanMeta, findings: Finding[], seen: Set<string>): void {
+  for (const [ruleId, regex, summary] of SECRET_SCAN_RULES) {
+    for (const match of collectMatches(text, regex)) {
       const candidate = (match[0] || "");
       if (looksLikePlaceholder(candidate)) continue;
       addFinding(findings, seen, {
-        severity: rule.severity,
-        rule_id: rule.rule_id,
-        category: rule.category,
+        severity: "blocker",
+        rule_id: ruleId,
+        category: "secret",
         scope,
         location,
-        summary: rule.summary,
+        summary,
         evidence: candidate,
         recommendation: "Remove live credentials from publishable material and replace them with placeholders or documented env contracts."
       });
@@ -668,6 +623,26 @@ function loadLicenseLedgerSync() {
   return _licenseLedgerCache;
 }
 
+function latticeComponents(ids: string[], projectHint: string | null, ledger: LicenseIndex): Parameters<typeof checkComposition>[1] {
+  return ids.map((id) => {
+    const row = ledger.resolve(id, projectHint ?? undefined)?.row;
+    if (!row) return { brick_id: id, spdx: null, openness: "closed", visibility: "private" };
+    return {
+      brick_id: id,
+      spdx: typeof row.spdx === 'string' ? row.spdx : null,
+      openness: row.openness === 'open' || row.openness === 'closed' || row.openness === 'source-available' ? row.openness : 'closed',
+      visibility: row.visibility === 'public' || row.visibility === 'community' || row.visibility === 'internal' || row.visibility === 'private' ? row.visibility : 'private',
+    };
+  });
+}
+
+function addLatticeBlocker(findings: Finding[], seen: Set<string>, ruleId: string, summary: string, evidence: string, recommendation: string): void {
+  addFinding(findings, seen, {
+    severity: "blocker", rule_id: ruleId, category: "policy", scope: "manifest", location: "manifest",
+    summary, evidence, recommendation,
+  });
+}
+
 // License-lattice guard: a publish bundle is a COMMUNITY artifact. It must not
 // be emitted if the build's component bricks do not permit community release.
 // "You cannot publish as open what was built from something closed."
@@ -678,49 +653,23 @@ function analyzeCompositionLattice(manifest: PublishManifest, findings: Finding[
     ...(manifest.source?.derived_from_bricks ?? []).map((entry) => entry.brick_id)
   ]);
   if (!ids.length) {
-    // A build that declares no component bricks cannot prove its openness —
-    // emptying composition must not become a way to launder a closed build.
-    addFinding(findings, seen, {
-      severity: "blocker",
-      rule_id: "license-lattice-empty-composition",
-      category: "policy",
-      scope: "manifest",
-      location: "manifest",
-      summary: "Build declares no component bricks, so its openness cannot be verified.",
-      evidence: "composition.brick_refs / derived_from_bricks are empty",
-      recommendation: "Declare the build's component bricks so the license lattice can verify it may be published."
-    });
+    addLatticeBlocker(findings, seen, "license-lattice-empty-composition",
+      "Build declares no component bricks, so its openness cannot be verified.",
+      "composition.brick_refs / derived_from_bricks are empty",
+      "Declare the build's component bricks so the license lattice can verify it may be published.");
     return;
   }
 
   const ledger = loadLicenseLedgerSync();
   if (!ledger) {
-    addFinding(findings, seen, {
-      severity: "blocker",
-      rule_id: "license-ledger-missing",
-      category: "policy",
-      scope: "manifest",
-      location: "manifest",
-      summary: "License ledger not generated; cannot prove this build's bricks permit community release.",
-      evidence: "registry/license-ledger.generated.json missing",
-      recommendation: "Run: node tools/sma-provenance-ledger.ts, then re-run publish."
-    });
+    addLatticeBlocker(findings, seen, "license-ledger-missing",
+      "License ledger not generated; cannot prove this build's bricks permit community release.",
+      "registry/license-ledger.generated.json missing", "Run: node tools/sma-provenance-ledger.ts, then re-run publish.");
     return;
   }
 
   const projectHint = manifest.source?.project ?? null;
-  const components: Parameters<typeof checkComposition>[1] = ids.map((id) => {
-    const row = ledger.resolve(id, projectHint ?? undefined)?.row;
-    // fail-safe: an unknown component is treated as closed/private.
-    return row
-      ? {
-          brick_id: id,
-          spdx: typeof row.spdx === 'string' ? row.spdx : null,
-          openness: row.openness === 'open' || row.openness === 'closed' || row.openness === 'source-available' ? row.openness : 'closed',
-          visibility: row.visibility === 'public' || row.visibility === 'community' || row.visibility === 'internal' || row.visibility === 'private' ? row.visibility : 'private',
-        }
-      : { brick_id: id, spdx: null, openness: "closed", visibility: "private" };
-  });
+  const components = latticeComponents(ids, projectHint, ledger);
 
   const publishing = manifest.publishing ?? {};
   const hasAttribution = /attribution|contributor|credits|authors|notice/.test(
@@ -738,92 +687,49 @@ function analyzeCompositionLattice(manifest: PublishManifest, findings: Finding[
 
   for (const violation of check.violations) {
     if (violation.severity !== "block") continue;
-    addFinding(findings, seen, {
-      severity: "blocker",
-      rule_id: `license-lattice-${violation.code.toLowerCase().replace(/_/g, "-")}`,
-      category: "policy",
-      scope: "manifest",
-      location: "manifest",
-      summary: violation.message,
-      evidence: `effective openness=${check.effective.openness}, visibility=${check.effective.visibility}`,
-      recommendation: "A build cannot be published more open than the meet of its component bricks. Open/relicense the restricted bricks, or keep this build private."
-    });
+    addLatticeBlocker(findings, seen, `license-lattice-${violation.code.toLowerCase().replace(/_/g, "-")}`,
+      violation.message, `effective openness=${check.effective.openness}, visibility=${check.effective.visibility}`,
+      "A build cannot be published more open than the meet of its component bricks. Open/relicense the restricted bricks, or keep this build private.");
   }
 }
 
+function analyzeBuildPolicy(manifest: PublishManifest, findings: Finding[], seen: Set<string>): void {
+  const publishing = manifest.publishing ?? {};
+  if (!publishing.publishable) addFinding(findings, seen, {
+    severity: "blocker", rule_id: "publish-policy-disabled", category: "policy", scope: "manifest", location: "manifest",
+    summary: "Manifest explicitly marks this build as not publishable.", evidence: "publishing.publishable = false",
+    recommendation: "Change the publishing policy only after the artifact is intentionally prepared for community release.",
+  });
+  if (["private", "internal"].includes((publishing.visibility ?? "").toLowerCase())) addFinding(findings, seen, {
+    severity: "warning", rule_id: "publish-visibility-private", category: "policy", scope: "manifest", location: "manifest",
+    summary: `Publishing visibility is ${String(publishing.visibility)}.`, evidence: `publishing.visibility = ${String(publishing.visibility)}`,
+    recommendation: "Treat this export as metadata-only until visibility is intentionally opened for community use.",
+  });
+  analyzeCompositionLattice(manifest, findings, seen);
+}
+
+function analyzeBrickPolicy(manifest: PublishManifest, findings: Finding[], seen: Set<string>): void {
+  const brickStatus = (manifest.brick?.status ?? "").toLowerCase();
+  if (["project_bound", "manual_only"].includes(brickStatus)) addFinding(findings, seen, {
+    severity: "warning", rule_id: "brick-status-project-bound", category: "policy", scope: "manifest", location: "manifest",
+    summary: `Brick status is ${brickStatus}, so reuse proof is still weak.`, evidence: `brick.status = ${brickStatus}`,
+    recommendation: "Review clone safety, contracts, and ownership before publishing a community-facing bundle.",
+  });
+  const brickId = manifest.brick?.id;
+  if (!brickId) return;
+  const evaluation = evaluateExport({ brickIds: [brickId], project: manifest.source?.project ?? null, targetVisibility: "community" });
+  if (evaluation.ledger_missing) addLatticeBlocker(findings, seen, "license-ledger-missing",
+    "License ledger not generated; cannot prove this brick may be published to community.",
+    "registry/license-ledger.generated.json missing", "Run: node tools/sma-provenance-ledger.ts, then re-run publish.");
+  for (const violation of evaluation.violations) addLatticeBlocker(findings, seen,
+    `license-lattice-${violation.code.toLowerCase().replace(/_/g, "-")}`, violation.message,
+    `openness=${evaluation.meet_openness}, visibility=${evaluation.meet_visibility}`,
+    "A closed/private brick cannot be published to community. Open or relicense it, or keep it private.");
+}
+
 function analyzePolicy(manifest: PublishManifest, artifactType: ArtifactType, findings: Finding[], seen: Set<string>): void {
-  if (artifactType === "build") {
-    const publishing = manifest.publishing ?? {};
-    if (!publishing.publishable) {
-      addFinding(findings, seen, {
-        severity: "blocker",
-        rule_id: "publish-policy-disabled",
-        category: "policy",
-        scope: "manifest",
-        location: "manifest",
-        summary: "Manifest explicitly marks this build as not publishable.",
-        evidence: "publishing.publishable = false",
-        recommendation: "Change the publishing policy only after the artifact is intentionally prepared for community release."
-      });
-    }
-    if (["private", "internal"].includes((publishing.visibility ?? "").toLowerCase())) {
-      addFinding(findings, seen, {
-        severity: "warning",
-        rule_id: "publish-visibility-private",
-        category: "policy",
-        scope: "manifest",
-        location: "manifest",
-        summary: `Publishing visibility is ${String(publishing.visibility)}.`,
-        evidence: `publishing.visibility = ${String(publishing.visibility)}`,
-        recommendation: "Treat this export as metadata-only until visibility is intentionally opened for community use."
-      });
-    }
-    analyzeCompositionLattice(manifest, findings, seen);
-  } else {
-    const brickStatus = (manifest.brick?.status ?? "").toLowerCase();
-    if (["project_bound", "manual_only"].includes(brickStatus)) {
-      addFinding(findings, seen, {
-        severity: "warning",
-        rule_id: "brick-status-project-bound",
-        category: "policy",
-        scope: "manifest",
-        location: "manifest",
-        summary: `Brick status is ${brickStatus}, so reuse proof is still weak.`,
-        evidence: `brick.status = ${brickStatus}`,
-        recommendation: "Review clone safety, contracts, and ownership before publishing a community-facing bundle."
-      });
-    }
-    // A publish bundle is a COMMUNITY artifact — a single closed brick must not
-    // be published to community either. Check the brick's own openness.
-    const brickId = manifest.brick?.id;
-    if (brickId) {
-      const evalr = evaluateExport({ brickIds: [brickId], project: manifest.source?.project ?? null, targetVisibility: "community" });
-      if (evalr.ledger_missing) {
-        addFinding(findings, seen, {
-          severity: "blocker",
-          rule_id: "license-ledger-missing",
-          category: "policy",
-          scope: "manifest",
-          location: "manifest",
-          summary: "License ledger not generated; cannot prove this brick may be published to community.",
-          evidence: "registry/license-ledger.generated.json missing",
-          recommendation: "Run: node tools/sma-provenance-ledger.ts, then re-run publish."
-        });
-      }
-      for (const violation of evalr.violations) {
-        addFinding(findings, seen, {
-          severity: "blocker",
-          rule_id: `license-lattice-${violation.code.toLowerCase().replace(/_/g, "-")}`,
-          category: "policy",
-          scope: "manifest",
-          location: "manifest",
-          summary: violation.message,
-          evidence: `openness=${evalr.meet_openness}, visibility=${evalr.meet_visibility}`,
-          recommendation: "A closed/private brick cannot be published to community. Open or relicense it, or keep it private."
-        });
-      }
-    }
-  }
+  if (artifactType === "build") analyzeBuildPolicy(manifest, findings, seen);
+  else analyzeBrickPolicy(manifest, findings, seen);
 
   const risk = String(firstDefined(manifest.classification?.risk, "")).toLowerCase();
   if (["high", "critical"].includes(risk)) {
@@ -1116,178 +1022,137 @@ function buildScannedFileSummary(scanResults: ScannedFile[]) {
   }));
 }
 
-async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode, outDirOverride }: { manifestPath: string; searchRoots: string[]; cwd: string; strictMode: boolean; outDirOverride?: string }) {
-  const manifest = await readJsonFile(manifestPath);
+interface PublishIdentity {
+  artifactType: ArtifactType;
+  communityArtifactId: string;
+  originalArtifactId: string;
+  safeDisplayName: string;
+  version: string;
+}
+
+function publishIdentity(manifest: PublishManifest, manifestPath: string): PublishIdentity {
   const artifactType = classifyArtifactType(manifest);
   const originalArtifactId = inferOriginalArtifactId(manifest, artifactType);
-  const version = inferVersion(manifest, artifactType);
   const originalDisplayName = inferDisplayName(manifest, artifactType);
   const safeDisplayName = shouldKeepFriendlyName(originalDisplayName)
     ? originalDisplayName
     : `${artifactType === "build" ? "Community Build" : "Community Brick"} ${sha256Text(originalArtifactId).slice(0, 6)}`;
-  const communityArtifactId = inferCommunityArtifactId({ artifactType, manifest, originalArtifactId, manifestPath });
+  return {
+    artifactType, originalArtifactId, safeDisplayName,
+    version: inferVersion(manifest, artifactType),
+    communityArtifactId: inferCommunityArtifactId({ artifactType, manifest, originalArtifactId, manifestPath }),
+  };
+}
 
-  const declaredSourcePaths = uniqStrings(manifest.source?.paths ?? []);
-  if (declaredSourcePaths.length === 0) fail("manifest.source.paths must contain at least one path");
-
-  const declaredDocPaths = artifactType === "build"
+async function resolvePublishRoots(manifest: PublishManifest, artifactType: ArtifactType, searchRoots: string[]) {
+  const sourcePaths = uniqStrings(manifest.source?.paths ?? []);
+  if (!sourcePaths.length) fail("manifest.source.paths must contain at least one path");
+  const docPaths = artifactType === "build"
     ? uniqStrings([...(manifest.clone?.target_docs ?? []), ...(manifest.source?.supporting_artifacts ?? [])])
     : uniqStrings(manifest.source?.supporting_artifacts ?? []);
-
-  const resolvedRoots: ResolvedRoot[] = [];
+  const resolved: ResolvedRoot[] = [];
   const unresolved: Omit<ResolvedRoot, 'absolutePath'>[] = [];
-
-  const sourceEntries = declaredSourcePaths.map((declaredPath) => ({ declaredPath, scope: "source", kind: "source_root" }));
-  const docEntries = declaredDocPaths.map((declaredPath) => ({ declaredPath, scope: "doc", kind: "doc_root" }));
-
-  for (const entry of [...sourceEntries, ...docEntries]) {
-    const resolvedPath = await resolveDeclaredPath(entry.declaredPath, searchRoots);
-    if (!resolvedPath) {
-      unresolved.push(entry);
-      continue;
-    }
-    resolvedRoots.push({
-      ...entry,
-      absolutePath: resolvedPath
-    });
+  const entries = [
+    ...sourcePaths.map((declaredPath) => ({ declaredPath, scope: "source", kind: "source_root" })),
+    ...docPaths.map((declaredPath) => ({ declaredPath, scope: "doc", kind: "doc_root" })),
+  ];
+  for (const entry of entries) {
+    const absolutePath = await resolveDeclaredPath(entry.declaredPath, searchRoots);
+    if (absolutePath) resolved.push({ ...entry, absolutePath });
+    else unresolved.push(entry);
   }
+  return { resolved, unresolved };
+}
 
-  const findings: Finding[] = [];
-  const seenFindings = new Set<string>();
-  analyzePolicy(manifest, artifactType, findings, seenFindings);
+function appendUnresolvedRootFindings(unresolved: Omit<ResolvedRoot, 'absolutePath'>[], findings: Finding[], seen: Set<string>): void {
+  for (const entry of unresolved) addFinding(findings, seen, {
+    severity: entry.scope === "source" ? "warning" : "info", rule_id: "missing-declared-path",
+    category: "resolution", scope: "manifest", location: "manifest",
+    summary: `Declared ${entry.scope} path could not be resolved.`, evidence: entry.declaredPath,
+    recommendation: "Either add --search-root for local analysis or remove stale publish docs/source references before export.",
+  });
+}
 
-  for (const entry of unresolved) {
-    addFinding(findings, seenFindings, {
-      severity: entry.scope === "source" ? "warning" : "info",
-      rule_id: "missing-declared-path",
-      category: "resolution",
-      scope: "manifest",
-      location: "manifest",
-      summary: `Declared ${entry.scope} path could not be resolved.`,
-      evidence: entry.declaredPath,
-      recommendation: "Either add --search-root for local analysis or remove stale publish docs/source references before export."
-    });
-  }
-
-  const rootAliasInfo = buildRootAliasMaps(resolvedRoots);
-  const componentAliasById = buildComponentAliasMap(manifest, artifactType);
-  const scanResults: ScannedFile[] = [];
-
+async function scanPublishInputs(manifestPath: string, roots: ResolvedRoot[], findings: Finding[], seen: Set<string>): Promise<ScannedFile[]> {
   const manifestText = await fs.readFile(manifestPath, "utf8");
-  scanTextBlob(
-    {
-      text: manifestText,
-      scope: "manifest",
-      location: "manifest/module.sweetspot.json",
-      originalPath: path.basename(manifestPath),
-      fileKind: "manifest"
-    },
-    findings,
-    seenFindings
-  );
-
-  for (let rootIndex = 0; rootIndex < resolvedRoots.length; rootIndex += 1) {
-    const root = resolvedRoots[rootIndex];
-    const rootFiles = await fileInventoryForResolvedRoot(root.absolutePath, root.scope, rootIndex + 1);
-
-    for (const fileEntry of rootFiles) {
-      const buffer = await fs.readFile(fileEntry.absolutePath);
-      const scan = await loadTextForScan(fileEntry.absolutePath);
+  scanTextBlob({
+    text: manifestText, scope: "manifest", location: "manifest/module.sweetspot.json",
+    originalPath: path.basename(manifestPath), fileKind: "manifest",
+  }, findings, seen);
+  const results: ScannedFile[] = [];
+  for (let rootIndex = 0; rootIndex < roots.length; rootIndex += 1) {
+    const root = roots[rootIndex];
+    const files = await fileInventoryForResolvedRoot(root.absolutePath, root.scope, rootIndex + 1);
+    for (const file of files) {
+      const buffer = await fs.readFile(file.absolutePath);
+      const scan = await loadTextForScan(file.absolutePath);
       const beforeCount = findings.length;
-      if (!scan.binary && (TEXT_FILE_RE.test(fileEntry.absolutePath) || ["doc", "source", "migration", "config", "test"].includes(fileEntry.file_kind))) {
-        scanTextBlob(
-          {
-            text: scan.text,
-            scope: root.scope,
-            location: fileEntry.alias,
-            originalPath: fileEntry.relative_to_root,
-            fileKind: fileEntry.file_kind
-          },
-          findings,
-          seenFindings
-        );
+      if (!scan.binary && (TEXT_FILE_RE.test(file.absolutePath) || ["doc", "source", "migration", "config", "test"].includes(file.file_kind))) {
+        scanTextBlob({ text: scan.text, scope: root.scope, location: file.alias, originalPath: file.relative_to_root, fileKind: file.file_kind }, findings, seen);
       }
-      scanResults.push({
-        alias: fileEntry.alias,
-        scope: fileEntry.scope,
-        file_kind: fileEntry.file_kind,
-        size: fileEntry.size,
-        sha256: sha256Buffer(buffer),
-        text_scanned: !scan.binary,
-        truncated: scan.truncated,
-        finding_count: findings.length - beforeCount
+      results.push({
+        alias: file.alias, scope: file.scope, file_kind: file.file_kind, size: file.size,
+        sha256: sha256Buffer(buffer), text_scanned: !scan.binary, truncated: scan.truncated,
+        finding_count: findings.length - beforeCount,
       });
     }
   }
+  return results;
+}
 
-  const decision = summarizeFindings(findings, strictMode);
-  const { manifest: redactedManifest, redactions } = buildRedactedManifest({
-    manifest,
-    artifactType,
-    communityArtifactId,
-    safeDisplayName,
-    rootAliasInfo,
-    componentAliasById
-  });
-
-  const communitySlug = slugify(firstDefined(
-    artifactType === "build" ? redactedManifest.build?.slug : redactedManifest.brick?.name,
-    safeDisplayName,
-    communityArtifactId
-  ), artifactType);
-  const communityShortHash = sha256Text(communityArtifactId).slice(0, 8);
-  const bundleDir = path.resolve(outDirOverride ?? path.join(cwd, DEFAULT_OUTPUT_ROOT, artifactType, `${communitySlug}-${communityShortHash}`));
-
+function buildPublishDocuments({ identity, manifest, manifestPath, cwd, decision, findings, rootAliasInfo, scanResults, redactions }: {
+  identity: PublishIdentity; manifest: PublishManifest; manifestPath: string; cwd: string;
+  decision: ReturnType<typeof summarizeFindings>; findings: Finding[]; rootAliasInfo: RootAliasInfo;
+  scanResults: ScannedFile[]; redactions: Redaction[];
+}) {
   const report = {
-    schema_version: SCHEMA_VERSION,
-    generated_at: new Date().toISOString(),
-    export_mode: "metadata_only",
-    artifact: {
-      type: artifactType,
-      community_id: communityArtifactId,
-      version,
-      name: safeDisplayName
-    },
+    schema_version: SCHEMA_VERSION, generated_at: new Date().toISOString(), export_mode: "metadata_only",
+    artifact: { type: identity.artifactType, community_id: identity.communityArtifactId, version: identity.version, name: identity.safeDisplayName },
     source_artifact: {
-      original_id: originalArtifactId,
-      original_name: inferDisplayName(manifest, artifactType),
-      manifest_path: toPosix(path.relative(cwd, manifestPath))
+      original_id: identity.originalArtifactId, original_name: inferDisplayName(manifest, identity.artifactType),
+      manifest_path: toPosix(path.relative(cwd, manifestPath)),
     },
-    decision,
-    findings,
-    root_aliases: rootAliasInfo.rootEntries,
-    scanned_files: buildScannedFileSummary(scanResults),
-    redaction_summary: {
-      count: redactions.length,
-      sample: redactions.slice(0, 40)
-    },
+    decision, findings, root_aliases: rootAliasInfo.rootEntries, scanned_files: buildScannedFileSummary(scanResults),
+    redaction_summary: { count: redactions.length, sample: redactions.slice(0, 40) },
     limitations: [
       "This tool does not prove the artifact is legally or commercially safe to publish.",
       "Heuristics are pragmatic and can miss subtle leaks or over-flag generic language.",
-      "Raw source code is intentionally not copied into the export bundle."
-    ]
+      "Raw source code is intentionally not copied into the export bundle.",
+    ],
   };
-
   const bundle = {
-    schema_version: SCHEMA_VERSION,
-    generated_at: report.generated_at,
-    export_kind: "smarch_publish_bundle",
-    export_mode: "metadata_only",
-    artifact: report.artifact,
-    source_artifact: report.source_artifact,
-    decision,
-    files: {
-      redacted_manifest: "manifest.community.json",
-      report: "publish-report.json"
-    }
+    schema_version: SCHEMA_VERSION, generated_at: report.generated_at, export_kind: "smarch_publish_bundle", export_mode: "metadata_only",
+    artifact: report.artifact, source_artifact: report.source_artifact, decision,
+    files: { redacted_manifest: "manifest.community.json", report: "publish-report.json" },
   };
+  return { report, bundle };
+}
 
-  return {
-    bundleDir,
-    bundle,
-    report,
-    redactedManifest
-  };
+async function preparePublishBundle({ manifestPath, searchRoots, cwd, strictMode, outDirOverride }: { manifestPath: string; searchRoots: string[]; cwd: string; strictMode: boolean; outDirOverride?: string }) {
+  const manifest = await readJsonFile(manifestPath);
+  const identity = publishIdentity(manifest, manifestPath);
+  const { resolved: resolvedRoots, unresolved } = await resolvePublishRoots(manifest, identity.artifactType, searchRoots);
+  const findings: Finding[] = [];
+  const seenFindings = new Set<string>();
+  analyzePolicy(manifest, identity.artifactType, findings, seenFindings);
+  appendUnresolvedRootFindings(unresolved, findings, seenFindings);
+  const rootAliasInfo = buildRootAliasMaps(resolvedRoots);
+  const componentAliasById = buildComponentAliasMap(manifest, identity.artifactType);
+  const scanResults = await scanPublishInputs(manifestPath, resolvedRoots, findings, seenFindings);
+  const decision = summarizeFindings(findings, strictMode);
+  const { manifest: redactedManifest, redactions } = buildRedactedManifest({
+    manifest, artifactType: identity.artifactType, communityArtifactId: identity.communityArtifactId,
+    safeDisplayName: identity.safeDisplayName, rootAliasInfo, componentAliasById,
+  });
+  const communitySlug = slugify(firstDefined(
+    identity.artifactType === "build" ? redactedManifest.build?.slug : redactedManifest.brick?.name,
+    identity.safeDisplayName, identity.communityArtifactId), identity.artifactType);
+  const bundleDir = path.resolve(outDirOverride ?? path.join(cwd, DEFAULT_OUTPUT_ROOT, identity.artifactType,
+    `${communitySlug}-${sha256Text(identity.communityArtifactId).slice(0, 8)}`));
+  const { report, bundle } = buildPublishDocuments({
+    identity, manifest, manifestPath, cwd, decision, findings, rootAliasInfo, scanResults, redactions,
+  });
+  return { bundleDir, bundle, report, redactedManifest };
 }
 
 async function writeBundle(bundleDir: string, { bundle, report, redactedManifest }: { bundle: Record<string, unknown>; report: Record<string, unknown> & { decision?: { status?: string } }; redactedManifest: PublishManifest }): Promise<void> {

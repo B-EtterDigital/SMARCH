@@ -1,18 +1,20 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions -- Provenance counters intentionally retain their current primitive display formatting. */
+/* eslint-disable max-lines-per-function -- The component owns one small loading-to-result state machine; keeping it together prevents duplicated transition logic. */
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
 
-export type ProvenanceSeal = {
+export interface ProvenanceSeal {
   hash: string;
   attestation: unknown;
-};
+}
 
-export type ProvenanceRibbonProps = {
+export interface ProvenanceRibbonProps {
   seals?: ProvenanceSeal[];
   status?: "loading" | "ready" | "error";
   error?: unknown;
   onRetry?: () => void;
-};
+}
 
 export function hashPrefix(hash: string): string {
   return hash.replace(/^sha(?:256|512):/i, "").slice(0, 6).toLowerCase();
@@ -59,9 +61,9 @@ export function ProvenanceRibbon({ seals = [], status = "ready", error, onRetry 
         return (
           <div
             class="provenance-ribbon__item"
-            onMouseEnter={() => setOpen(index)}
-            onMouseLeave={() => setOpen(null)}
-            onFocusIn={() => setOpen(index)}
+            onMouseEnter={() => { setOpen(index); }}
+            onMouseLeave={() => { setOpen(null); }}
+            onFocusIn={() => { setOpen(index); }}
             onFocusOut={(event) => {
               if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(null);
             }}
@@ -73,7 +75,7 @@ export function ProvenanceRibbon({ seals = [], status = "ready", error, onRetry 
               aria-label={`${STRINGS.provenance.sealLabel} ${hashPrefix(seal.hash)}`}
               aria-expanded={expanded}
               aria-controls={popoverId}
-              onClick={() => setOpen(expanded ? null : index)}
+              onClick={() => { setOpen(expanded ? null : index); }}
             >
               {hashPrefix(seal.hash)}
             </button>

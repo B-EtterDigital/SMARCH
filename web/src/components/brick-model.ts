@@ -1,13 +1,13 @@
 export type BrickTrust = "candidate" | "verified" | "canonical";
 type GateVerdict = "pass" | "fail" | "waived";
 
-export type BrickGate = {
+export interface BrickGate {
   id: string;
   label: string;
   verdict: GateVerdict;
-};
+}
 
-export type BrickRecord = {
+export interface BrickRecord {
   id: string;
   project: string;
   status: string;
@@ -17,7 +17,7 @@ export type BrickRecord = {
   owner_trail?: string[];
   gates?: BrickGate[];
   clone_command?: string;
-};
+}
 
 export function brickTrust(status: string): BrickTrust {
   if (status === "canonical" || status === "verified") return status;

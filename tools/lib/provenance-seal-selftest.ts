@@ -60,13 +60,13 @@ try {
   const forged = [{ ...events[1], actor_id: 'attacker@evil.com' }];
   const v = verifySeal(seal, { brick_id: 'brick-1', content_hash: fp1.content_hash, events: forged });
   assert.equal(v.ok, false, 'edited history must break the seal');
-  assert.ok(v.reasons.some((r) => /head mismatch/.test(r)));
+  assert.ok(v.reasons.some((r) => r.includes('head mismatch')));
   n += 1;
 
   // source drift breaks the anchor
   const drifted = verifySeal(seal, { brick_id: 'brick-1', content_hash: fpChanged.content_hash, events });
   assert.equal(drifted.ok, false, 'source drift must break the anchor');
-  assert.ok(drifted.reasons.some((r) => /anchor mismatch/.test(r)));
+  assert.ok(drifted.reasons.some((r) => r.includes('anchor mismatch')));
   n += 1;
 
   // --- ed25519 signing detects the recompute forger ---
@@ -90,7 +90,7 @@ try {
   );
   n += 1;
 
-  console.log(`provenance-seal selftest: ${n} assertions passed`);
+  console.log(`provenance-seal selftest: ${String(n)} assertions passed`);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

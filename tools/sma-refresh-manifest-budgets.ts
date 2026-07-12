@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable complexity, max-lines-per-function -- Budget refresh is one manifest migration transaction; keeping validation and writes together prevents partial updates. */
 /**
  * What: Recalculates source-size budgets recorded in selected manifests.
  * Why: Stale budgets hide source growth and make size gates disagree with the current project.
@@ -401,9 +402,9 @@ function maybeRewriteProjectIdentity(manifest: ManifestDocument, projectId: stri
 }
 
 function ensureQualityBlocks(manifest: ManifestDocument): asserts manifest is ManifestWithQuality {
-  manifest.quality ||= {};
-  manifest.quality.line_count ||= {};
-  manifest.quality.code_budget ||= {};
+  manifest.quality ??= {};
+  manifest.quality.line_count ??= {};
+  manifest.quality.code_budget ??= {};
 }
 
 async function computeBudget(projectRoot: string, manifest: ManifestDocument): Promise<SourceBudget | null> {

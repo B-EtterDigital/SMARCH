@@ -17,7 +17,7 @@ function Fixture() {
   const [theme, setTheme] = useState<AppShellTheme>("dark");
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
   return (
-    <AppShell activeRoute="bricks" theme={theme} onToggleTheme={() => setTheme((value) => value === "dark" ? "light" : "dark")} onNavigate={() => undefined}>
+    <AppShell activeRoute="bricks" theme={theme} onToggleTheme={() => { setTheme((value) => value === "dark" ? "light" : "dark"); }} onNavigate={() => undefined}>
       <section class="frame" aria-label={STRINGS.brickWall.label}><BrickWall bricks={BRICKS} /></section>
     </AppShell>
   );

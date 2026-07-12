@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
 /**
  * WHAT: Finds near-duplicate brick source across projects.
  * WHY: Exact hashes miss copied code after small edits, renames, or reformatting.
@@ -85,6 +86,7 @@ const MIN_TOKENS = Number(args.minTokens) || 400;     // ignore tiny/boilerplate
 
 try { main(); } catch (err: unknown) { console.error(`sma-similarity-scan: ${err instanceof Error ? err.message : String(err)}`); process.exit(1); }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function main() {
   if (!existsSync(REGISTRY)) throw new Error(`registry not found: ${REGISTRY}`);
   const registry = JSON.parse(readFileSync(REGISTRY, 'utf8')) as RegistryData;

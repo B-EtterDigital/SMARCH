@@ -23,8 +23,8 @@
 
 import { createHash } from 'node:crypto';
 
-type MerkleProofStep = { hash: string; side: 'left' | 'right' };
-type MerkleTree = { root: string; layers: string[][] };
+interface MerkleProofStep { hash: string; side: 'left' | 'right' }
+interface MerkleTree { root: string; layers: string[][] }
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
 
@@ -37,15 +37,19 @@ function nodeHash(a: string, b: string): string {
   return sha256(`node\0${a}\0${b}`);
 }
 
+function lastLayer(layers: readonly string[][]): string[] {
+  return layers[layers.length - 1];
+}
+
 /**
  * Build a Merkle tree from ordered leaf hashes.
  * Returns { root, layers } where layers[0] === leaves and the last layer is [root].
  */
 export function buildMerkle(leaves: readonly string[]): MerkleTree {
-  if (!leaves || !leaves.length) return { root: sha256('empty\0'), layers: [[]] };
+  if (!leaves.length) return { root: sha256('empty\0'), layers: [[]] };
   const layers = [leaves.slice()];
-  while ((layers.at(-1)?.length ?? 0) > 1) {
-    const prev = layers.at(-1) ?? [];
+  while (lastLayer(layers).length > 1) {
+    const prev = lastLayer(layers);
     const next: string[] = [];
     for (let i = 0; i < prev.length; i += 2) {
       const a = prev[i];
@@ -66,7 +70,6 @@ export function inclusionProof(layers: readonly (readonly string[])[], index: nu
   let idx = index;
   for (let l = 0; l < layers.length - 1; l += 1) {
     const layer = layers[l];
-    if (!layer) continue;
     const isRight = idx % 2 === 1;
     const sibIdx = isRight ? idx - 1 : (idx + 1 < layer.length ? idx + 1 : idx);
     const sibling = layer[sibIdx];

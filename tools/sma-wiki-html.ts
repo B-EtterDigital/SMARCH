@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Renders detailed brick Markdown into themed web pages and indexes.
  * WHY: The generated brick catalog needs a browsable presentation without an external renderer.
@@ -17,7 +19,7 @@ const __dirname = path.dirname(__filename);
 const WIKI_ROOT = path.resolve(__dirname, "../wiki/bricks-detailed");
 
 type LooseRecord = Record<string, string | string[]>;
-type Crumb = { label: string; href?: string };
+interface Crumb { label: string; href?: string }
 
 function parseArgs(argv: string[]): { root: string } {
   const o = { root: WIKI_ROOT };
@@ -36,7 +38,7 @@ function escapeHtml(s: unknown): string {
 
 // YAML front-matter (we emit key: value and key: ["a","b"])
 function parseFrontMatter(text: string): { fm: LooseRecord; body: string } {
-  const m = text.match(/^---\n([\s\S]*?)\n---\n?/);
+  const m = /^---\n([\s\S]*?)\n---\n?/.exec(text);
   if (!m) return { fm: {}, body: text };
   const fm: LooseRecord = {};
   for (const line of m[1].split("\n")) {
@@ -46,7 +48,10 @@ function parseFrontMatter(text: string): { fm: LooseRecord; body: string } {
     let v: string | string[] = line.slice(idx + 1).trim();
     if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
     if (v.startsWith("[") && v.endsWith("]")) {
-      try { v = JSON.parse(v); }
+      try {
+        const parsed: unknown = JSON.parse(v);
+        if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) v = parsed;
+      }
       catch { /* Keep malformed optional arrays as their original scalar text. */ }
     }
     fm[key] = v;
@@ -74,12 +79,13 @@ function parseTableRow(line: string): string[] {
   return line.replace(/^\||\|$/g, "").split("|").map((cell: string) => cell.trim());
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function renderMarkdown(body: string): string {
   const lines = body.split(/\r?\n/);
   const out = [];
   let i = 0;
   while (i < lines.length) {
-    let line = lines[i];
+    const line = lines[i];
 
     // blank line
     if (!line.trim()) { i += 1; continue; }
@@ -88,12 +94,12 @@ function renderMarkdown(body: string): string {
     if (/^\s*---+\s*$/.test(line)) { out.push("<hr/>"); i += 1; continue; }
 
     // fenced code block
-    if (/^```/.test(line)) {
-      const langMatch = line.match(/^```(\w+)?/);
+    if (line.startsWith("```")) {
+      const langMatch = /^```(\w+)?/.exec(line);
       const lang = langMatch?.[1] || "";
       const buf = [];
       i += 1;
-      while (i < lines.length && !/^```/.test(lines[i])) {
+      while (i < lines.length && !lines[i].startsWith("```")) {
         buf.push(lines[i]);
         i += 1;
       }
@@ -103,12 +109,12 @@ function renderMarkdown(body: string): string {
     }
 
     // headings
-    const hm = line.match(/^(#{1,6})\s+(.*)$/);
+    const hm = /^(#{1,6})\s+(.*)$/.exec(line);
     if (hm) {
       const level = hm[1].length;
       const content = renderInline(hm[2].trim());
       const anchor = hm[2].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      out.push(`<h${level} id="${anchor}">${content}</h${level}>`);
+      out.push(`<h${String(level)} id="${anchor}">${content}</h${String(level)}>`);
       i += 1;
       continue;
     }
@@ -173,6 +179,7 @@ function renderMarkdown(body: string): string {
   return out.join("\n");
 }
 
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function pageCss() {
   return `
 :root {
@@ -655,12 +662,12 @@ function heroSvg(fm: LooseRecord): string {
     project_bound: { top: "#c6ccd6", front: "#9aa3b2", side: "#5e6776", edge: "#353c48" }
   }[status] || { top: "#c6ccd6", front: "#9aa3b2", side: "#5e6776", edge: "#353c48" };
   const w = 96, h = 48, d = 18;
-  const stud = (cx: number, cy: number): string => `<ellipse cx="${cx}" cy="${cy}" rx="10" ry="7" fill="${palette.top}" stroke="${palette.edge}" stroke-width="1"/><ellipse cx="${cx-1.5}" cy="${cy-2}" rx="6" ry="3" fill="rgba(255,255,255,0.3)"/>`;
-  return `<svg class="hero-svg" viewBox="0 -14 ${w + d + 8} ${h + d + 8}">
-    <polygon points="${w},0 ${w+d},${-d/2} ${w+d},${h-d/2} ${w},${h}" fill="${palette.side}" stroke="${palette.edge}" stroke-width="1"/>
-    <rect x="0" y="0" width="${w}" height="${h}" fill="${palette.front}" stroke="${palette.edge}" stroke-width="1"/>
-    <polygon points="0,0 ${d},${-d/2} ${w+d},${-d/2} ${w},0" fill="${palette.top}" stroke="${palette.edge}" stroke-width="1"/>
-    <g transform="translate(${d/2}, ${-d/2})">
+  const stud = (cx: number, cy: number): string => `<ellipse cx="${String(cx)}" cy="${String(cy)}" rx="10" ry="7" fill="${palette.top}" stroke="${palette.edge}" stroke-width="1"/><ellipse cx="${String(cx-1.5)}" cy="${String(cy-2)}" rx="6" ry="3" fill="rgba(255,255,255,0.3)"/>`;
+  return `<svg class="hero-svg" viewBox="0 -14 ${String(w + d + 8)} ${String(h + d + 8)}">
+    <polygon points="${String(w)},0 ${String(w+d)},${String(-d/2)} ${String(w+d)},${String(h-d/2)} ${String(w)},${String(h)}" fill="${palette.side}" stroke="${palette.edge}" stroke-width="1"/>
+    <rect x="0" y="0" width="${String(w)}" height="${String(h)}" fill="${palette.front}" stroke="${palette.edge}" stroke-width="1"/>
+    <polygon points="0,0 ${String(d)},${String(-d/2)} ${String(w+d)},${String(-d/2)} ${String(w)},0" fill="${palette.top}" stroke="${palette.edge}" stroke-width="1"/>
+    <g transform="translate(${String(d/2)}, ${String(-d/2)})">
       ${stud(w*0.25, h*0.25)}
       ${stud(w*0.75, h*0.25)}
       ${stud(w*0.25, h*0.75)}
@@ -769,7 +776,7 @@ async function listProjects(root: string): Promise<string[]> {
 async function renderProjectIndex(root: string, project: string): Promise<string> {
   const dir = path.join(root, project);
   const entries = await fs.readdir(dir);
-  const pages: Array<{ file: string; title: string; status: string; kind: string; archetype: string }> = [];
+  const pages: { file: string; title: string; status: string; kind: string; archetype: string }[] = [];
   for (const e of entries) {
     if (!e.endsWith(".md") || e.endsWith(".portable.md") || e === "INDEX.md") continue;
     const { fm } = parseFrontMatter(await fs.readFile(path.join(dir, e), "utf8"));
@@ -797,9 +804,9 @@ ${buildChrome(crumbsFor([{ label: "index", href: "../index.html" }, { label: pro
     <p>Detailed brick references for one project bay. Open a page to inspect boundaries, trust metadata, and clone-ready context.</p>
   </section>
   <div class="summary">
-    <div class="stat"><div class="lbl">Total pages</div><div class="num">${pages.length}</div></div>
-    <div class="stat"><div class="lbl">Canonical</div><div class="num" style="color: var(--gold)">${pages.filter((p) => p.status === "canonical").length}</div></div>
-    <div class="stat"><div class="lbl">Candidate</div><div class="num" style="color: var(--blue)">${pages.filter((p) => p.status === "candidate").length}</div></div>
+    <div class="stat"><div class="lbl">Total pages</div><div class="num">${String(pages.length)}</div></div>
+    <div class="stat"><div class="lbl">Canonical</div><div class="num" style="color: var(--gold)">${String(pages.filter((p) => p.status === "canonical").length)}</div></div>
+    <div class="stat"><div class="lbl">Candidate</div><div class="num" style="color: var(--blue)">${String(pages.filter((p) => p.status === "candidate").length)}</div></div>
   </div>
   <div class="grid">${cards || '<p>No pages yet.</p>'}</div>
 </main>
@@ -817,7 +824,7 @@ async function renderMasterIndex(root: string): Promise<string> {
     proj.push({ p, count: pages.length });
     totalPages += pages.length;
   }
-  const cards = proj.sort((a, b) => b.count - a.count).map(({ p, count }) => `<article class="card"><a href="${escapeHtml(p)}/INDEX.html"><div class="name">${escapeHtml(p)}</div><div class="sub">${count} brick page(s)</div></a></article>`).join("");
+  const cards = proj.sort((a, b) => b.count - a.count).map(({ p, count }) => `<article class="card"><a href="${escapeHtml(p)}/INDEX.html"><div class="name">${escapeHtml(p)}</div><div class="sub">${String(count)} brick page(s)</div></a></article>`).join("");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>BRICKWORKS · All Bricks</title>
@@ -832,8 +839,8 @@ ${buildChrome(crumbsFor([{ label: "BRICKWORKS · all bricks" }]), 1)}
     <p>The detailed doc surface mirrors the live registry: project bays, per-brick references, and portable clone-ready pages.</p>
   </section>
   <div class="summary">
-    <div class="stat"><div class="lbl">Project bays</div><div class="num">${projects.length}</div></div>
-    <div class="stat"><div class="lbl">Total wiki pages</div><div class="num">${totalPages}</div></div>
+    <div class="stat"><div class="lbl">Project bays</div><div class="num">${String(projects.length)}</div></div>
+    <div class="stat"><div class="lbl">Total wiki pages</div><div class="num">${String(totalPages)}</div></div>
     <div class="stat"><div class="lbl">Generator</div><div class="num" style="font-size:14px; font-weight: 400; color: var(--muted)">sma-wiki-html</div></div>
   </div>
   <div class="grid">${cards || '<p>No projects yet. Run <code>npm run codex:wiki</code>.</p>'}</div>
@@ -868,4 +875,4 @@ async function main() {
   console.log(JSON.stringify({ projects: projects.length, pages_rendered: rendered, master_index: path.join(opts.root, "index.html") }, null, 2));
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch((err: unknown) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });

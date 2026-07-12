@@ -28,22 +28,22 @@ const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OWNERS = resolve(SMA_ROOT, 'registry/owners.json');
 const IDENTITY_MAP = resolve(SMA_ROOT, 'registry/identity-map.json');
 
-type OwnerRule = {
+interface OwnerRule {
   brick_id?: string;
   brick_prefix?: string;
   project?: string;
   owner?: string | null;
   team?: string | null;
-};
+}
 
-type OwnersConfig = {
+interface OwnersConfig {
   rules: OwnerRule[];
   default_owner: string | null;
   default_team?: string | null;
-};
+}
 
-type IdentityEntry = { canonical: string; aliases?: string[] };
-type IdentityConfig = { identities: IdentityEntry[] };
+interface IdentityEntry { canonical: string; aliases?: string[] }
+interface IdentityConfig { identities: IdentityEntry[] }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -83,19 +83,20 @@ function loadOwners(): OwnersConfig {
  * an exact brick_id beats a brick_id prefix beats a project match beats default.
  * Returns { owner, team, source } or { owner: null, ... }.
  */
+// eslint-disable-next-line complexity -- Ownership matching is one ordered precedence policy; keeping the ladder together makes collision decisions auditable.
 export function ownerFor(brickId: string | null | undefined, project: string | null | undefined, owners: OwnersConfig = loadOwners()) {
-  const rules = owners.rules || [];
+  const rules = owners.rules;
   let best: OwnerRule | null = null;
   let bestScore = -1;
   for (const rule of rules) {
     let score = -1;
     if (rule.brick_id && rule.brick_id === brickId) score = 3;
-    else if (rule.brick_prefix && String(brickId || '').startsWith(rule.brick_prefix)) score = 2;
+    else if (rule.brick_prefix && (brickId ?? '').startsWith(rule.brick_prefix)) score = 2;
     else if (rule.project && rule.project === project) score = 1;
     if (score > bestScore) { bestScore = score; best = rule; }
   }
-  if (best) return { owner: best.owner || null, team: best.team || null, source: bestScore === 3 ? 'brick' : bestScore === 2 ? 'brick_prefix' : 'project' };
-  return { owner: owners.default_owner || null, team: owners.default_team || null, source: 'default' };
+  if (best) return { owner: best.owner ?? null, team: best.team ?? null, source: bestScore === 3 ? 'brick' : bestScore === 2 ? 'brick_prefix' : 'project' };
+  return { owner: owners.default_owner ?? null, team: owners.default_team ?? null, source: 'default' };
 }
 
 // --- identity aliasing ------------------------------------------------------
@@ -115,20 +116,20 @@ function identityIndex(): Map<string, string> {
     const { canonical } = entry;
     if (!canonical) continue;
     index.set(normalize(canonical), canonical);
-    for (const alias of entry.aliases || []) index.set(normalize(alias), canonical);
+    for (const alias of entry.aliases ?? []) index.set(normalize(alias), canonical);
   }
   _identityIndex = index;
   return _identityIndex;
 }
 
 function normalize(id: unknown): string {
-  return String(id || '').trim().toLowerCase();
+  return legacyString(id ?? '').trim().toLowerCase();
 }
 
 /** Map any actor id/email/name to its canonical identity (or itself if unknown). */
 export function canonicalIdentity<T>(id: T): string | T | null {
   if (id == null) return null;
-  return identityIndex().get(normalize(id)) || id;
+  return identityIndex().get(normalize(id)) ?? id;
 }
 
 /** True if two actor ids resolve to the same person. */
@@ -139,3 +140,7 @@ export function sameIdentity(a: unknown, b: unknown): boolean {
 
 // test seam
 function _reset() { _owners = undefined; _identityIndex = undefined; }
+
+function legacyString(value: unknown): string {
+  return String(value);
+}

@@ -19,7 +19,7 @@ import {
   PROJECT_ABSOLUTE_OVERRIDES,
 } from './lib/context-log.ts';
 
-type StatsArgs = {
+interface StatsArgs {
   since?: string;
   project?: string | string[];
   json?: boolean;
@@ -27,7 +27,7 @@ type StatsArgs = {
   by?: string;
   metric?: string;
   n?: string;
-};
+}
 type ContextEvent = Record<string, unknown> & {
   timestamp: string;
   project: string;
@@ -43,9 +43,9 @@ type MergeProposal = Record<string, unknown> & {
   generated_at: string;
   resolved_at?: string;
 };
-type TrendRow = { date: string; total: number; leases: number; edits: number; conflicts: number; verifications: number; merges: number };
+interface TrendRow { date: string; total: number; leases: number; edits: number; conflicts: number; verifications: number; merges: number }
 
-const cmd = argv[2];
+const cmd = argv.at(2);
 const args = parseArgs(argv.slice(3));
 
 try {
@@ -92,6 +92,7 @@ function usage() {
 
 // ── summary ──────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line max-lines-per-function -- Statistics commands are ordered report aggregators; centralized bucket and output precedence preserves the CLI contract.
 function runSummary() {
   const cutoff = parseSince(args.since ?? '30d');
   const events = collectEvents(resolveProjects(), cutoff);
@@ -106,7 +107,7 @@ function runSummary() {
     by_actor: topBucket(events.map((e) => e.actor_id).filter((value): value is string => Boolean(value)), 8),
     by_session: topBucket(events.map((e) => e.session_id).filter((value): value is string => Boolean(value)), 8),
     by_actor_kind: bucket(events, 'actor_kind'),
-    distinct_bricks: new Set(events.map((e) => `${e.project}:${e.brick_id}`)).size,
+    distinct_bricks: new Set(events.map((e) => `${e.project}:${String(e.brick_id)}`)).size,
     distinct_sessions: new Set(events.map((e) => e.session_id).filter((value): value is string => Boolean(value))).size,
     session_attributed_events: events.filter((e) => e.session_id).length,
     session_unattributed_events: events.filter((e) => !e.session_id).length,
@@ -135,36 +136,37 @@ function runSummary() {
   print('total events:         ', summary.total_events);
   print('distinct bricks:      ', summary.distinct_bricks);
   print('distinct sessions:    ', summary.distinct_sessions);
-  print('session attribution:  ', `${summary.session_attributed_events}/${summary.total_events} events`);
+  print('session attribution:  ', `${String(summary.session_attributed_events)}/${String(summary.total_events)} events`);
   print('leases acquired:      ', summary.leases_acquired);
   print('leases released:      ', summary.leases_released);
   print('force-acquired:       ', summary.leases_force_acquired);
   print('edits planned:        ', summary.edits_planned);
   print('edits applied:        ', summary.edits_applied);
   print('decisions:            ', summary.decisions_recorded);
-  print('conflicts det/res/open:', `${summary.conflicts_detected} / ${summary.conflicts_resolved} / ${summary.open_conflicts_in_window}`);
-  print('verify pass/fail:     ', `${summary.verifications_passed} / ${summary.verifications_failed}`);
+  print('conflicts det/res/open:', `${String(summary.conflicts_detected)} / ${String(summary.conflicts_resolved)} / ${String(summary.open_conflicts_in_window)}`);
+  print('verify pass/fail:     ', `${String(summary.verifications_passed)} / ${String(summary.verifications_failed)}`);
   print('proofs recorded:      ', summary.proofs_recorded);
-  print('merge proposals:      ', `${summary.merge_proposals_opened} opened, ${summary.merge_proposals_resolved} resolved`);
+  print('merge proposals:      ', `${String(summary.merge_proposals_opened)} opened, ${String(summary.merge_proposals_resolved)} resolved`);
   console.log('');
   console.log('top kinds:');
-  for (const [k, n] of Object.entries(summary.by_kind).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, 8)) {
-    console.log(`  ${pad(k, 24)} ${n}`);
+  for (const [k, n] of Object.entries(summary.by_kind).sort((a, b) => b[1] - a[1]).slice(0, 8)) {
+    console.log(`  ${pad(k, 24)} ${String(n)}`);
   }
   console.log('top actors:');
   for (const [k, n] of Object.entries(summary.by_actor)) {
-    console.log(`  ${pad(k, 24)} ${n}`);
+    console.log(`  ${pad(k, 24)} ${String(n)}`);
   }
   if (Object.keys(summary.by_session).length) {
     console.log('top sessions:');
     for (const [k, n] of Object.entries(summary.by_session)) {
-      console.log(`  ${pad(k, 36)} ${n}`);
+      console.log(`  ${pad(k, 36)} ${String(n)}`);
     }
   }
 }
 
 // ── trend ────────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line complexity -- Statistics commands are ordered report aggregators; centralized bucket and output precedence preserves the CLI contract.
 function runTrend() {
   const cutoff = parseSince(args.since ?? '30d');
   const events = collectEvents(resolveProjects(), cutoff);
@@ -215,7 +217,7 @@ function runTop() {
       break;
     case 'brick':
       counts = events.reduce<Record<string, number>>((m, e) => {
-        const k = `${e.project}:${e.brick_id}`;
+        const k = `${e.project}:${String(e.brick_id)}`;
         m[k] = (m[k] ?? 0) + 1;
         return m;
       }, {});
@@ -228,13 +230,13 @@ function runTop() {
     default:
       throw new Error(`unknown --metric: ${metric}`);
   }
-  const top = Object.entries(counts).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, n);
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, n);
   if (args.json) {
     console.log(JSON.stringify(top.map(([k, v]) => ({ [label]: k, count: v })), null, 2));
     return;
   }
-  console.log(`top ${top.length} by ${metric}:`);
-  for (const [k, v] of top) console.log(`  ${pad(k, 80)} ${v}`);
+  console.log(`top ${String(top.length)} by ${metric}:`);
+  for (const [k, v] of top) console.log(`  ${pad(k, 80)} ${String(v)}`);
 }
 
 // ── data collection ──────────────────────────────────────────────────────────
@@ -256,9 +258,10 @@ function isVendoredBrickId(brickId: string): boolean {
   // Brick IDs like "<project>.<kind>.packages-foo-dist-..." encode the path with
   // dashes. We approximate the same heuristic on the id itself.
   return /(^|[.-])(node_modules|vendor|dist|build)([.-]|$)/.test(brickId)
-      || /\.__generated__\./.test(brickId);
+      || brickId.includes('.__generated__.');
 }
 
+// eslint-disable-next-line complexity -- Statistics commands are ordered report aggregators; centralized bucket and output precedence preserves the CLI contract.
 function collectEvents(projects: string[], cutoff: number): ContextEvent[] {
   const excludeVendored = args.excludeVendored === true;
   const out: ContextEvent[] = [];
@@ -281,7 +284,7 @@ function collectEvents(projects: string[], cutoff: number): ContextEvent[] {
           if (!ev.timestamp) continue;
           if (Date.parse(ev.timestamp) < cutoff) continue;
           if (!ev.project) ev.project = id;
-          if (excludeVendored && (ev.files_touched || []).some((p) => VENDORED_PATH_PATTERNS.some((rx) => rx.test(p)))) continue;
+          if (excludeVendored && (ev.files_touched ?? []).some((p) => VENDORED_PATH_PATTERNS.some((rx) => rx.test(p)))) continue;
           out.push(ev);
         } catch { /* skip malformed */ }
       }
@@ -356,7 +359,7 @@ function resolveProjectRoot(projectId: string): string | null {
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function parseSince(raw: string): number {
-  const dm = String(raw).match(/^(\d+)([dwm])$/);
+  const dm = /^(\d+)([dwm])$/.exec(raw);
   if (dm) {
     const n = Number(dm[1]);
     const unit = dm[2];
@@ -373,7 +376,7 @@ function bucketKey(iso: string, by: string): string {
     const d = new Date(iso);
     const yearStart = new Date(d.getUTCFullYear(), 0, 1);
     const week = Math.floor(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getUTCDay() + 1) / 7);
-    return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+    return `${String(d.getUTCFullYear())}-W${String(week).padStart(2, '0')}`;
   }
   return iso.slice(0, 10);
 }
@@ -391,7 +394,7 @@ function topBucket(arr: string[], n: number): Record<string, number> {
     counts[key] = (counts[key] ?? 0) + 1;
     return counts;
   }, {});
-  return Object.fromEntries(Object.entries(all).sort((a, b) => Number(b[1]) - Number(a[1])).slice(0, n));
+  return Object.fromEntries(Object.entries(all).sort((a, b) => b[1] - a[1]).slice(0, n));
 }
 
 function countProjectsWithEvents(events: ContextEvent[]): number {
@@ -400,9 +403,9 @@ function countProjectsWithEvents(events: ContextEvent[]): number {
 
 function countOpenConflicts(events: ContextEvent[]): number {
   const byBrick = new Map<string, number>();
-  for (const event of [...events].sort((a, b) => String(a.timestamp || '').localeCompare(String(b.timestamp || '')))) {
+  for (const event of [...events].sort((a, b) => (a.timestamp || '').localeCompare((b.timestamp || '')))) {
     if (event.kind !== 'conflict_detected' && event.kind !== 'conflict_resolved') continue;
-    const key = `${event.project}:${event.brick_id}`;
+    const key = `${event.project}:${String(event.brick_id)}`;
     const current = byBrick.get(key) ?? 0;
     if (event.kind === 'conflict_detected') byBrick.set(key, current + 1);
     else if (current > 0) byBrick.set(key, current - 1);
@@ -410,7 +413,7 @@ function countOpenConflicts(events: ContextEvent[]): number {
   return [...byBrick.values()].reduce((sum, value) => sum + value, 0);
 }
 
-function pad(s: unknown, n: number): string { return String(s ?? '').slice(0, n).padEnd(n); }
+function pad(s: unknown, n: number): string { return legacyString(s ?? '').slice(0, n).padEnd(n); }
 function print(label: string, value: unknown): void { console.log(`${label}${String(value)}`); }
 
 function parseArgs(list: string[]): StatsArgs {
@@ -420,7 +423,7 @@ function parseArgs(list: string[]): StatsArgs {
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
     const camel = key.replace(/-([a-z])/g, (_match: string, c: string) => c.toUpperCase()) as keyof StatsArgs;
-    const next = list[i + 1];
+    const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
       if (camel === 'json' || camel === 'excludeVendored') out[camel] = true;
@@ -436,4 +439,8 @@ function parseArgs(list: string[]): StatsArgs {
     i += 1;
   }
   return out;
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

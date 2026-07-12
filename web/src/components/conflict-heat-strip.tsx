@@ -3,17 +3,17 @@ import type { Conflict } from "../schema-types";
 import { STRINGS } from "../strings";
 import { EmptyState, type SurfaceState } from "./empty-states";
 
-type HeatStripDay = { date: string; count: number; today: boolean };
-export type HeatStripRow = { module: string; days: HeatStripDay[]; total: number };
+interface HeatStripDay { date: string; count: number; today: boolean }
+export interface HeatStripRow { module: string; days: HeatStripDay[]; total: number }
 
-export type ConflictHeatStripProps = {
+export interface ConflictHeatStripProps {
   conflicts: Conflict[];
   selectedModule?: string | null;
   state?: "populated" | SurfaceState;
   onSelectModule: (module: string | null) => void;
   now?: Date;
   error?: unknown;
-};
+}
 
 function dateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -53,11 +53,11 @@ export function ConflictHeatStrip({ conflicts, selectedModule = null, state = "p
       {rows.map((row) => {
         const selected = selectedModule === row.module;
         return (
-          <button class="heat-strip__row" type="button" aria-pressed={selected} onClick={() => onSelectModule(selected ? null : row.module)} key={row.module}>
+          <button class="heat-strip__row" type="button" aria-pressed={selected} onClick={() => { onSelectModule(selected ? null : row.module); }} key={row.module}>
             <span class="heat-strip__module">{row.module}</span>
             <span class="heat-strip__bars" aria-hidden="true">{row.days.map((day) => {
               const heat = day.count / max;
-              return <span class={day.today ? "heat-strip__bar heat-strip__bar--today" : "heat-strip__bar"} style={{ "--heat-height": `${Math.max(2, 4 + heat * 18)}px`, "--heat-percent": `${Math.round((0.12 + heat * 0.88) * 100)}%` }} key={day.date} />;
+              return <span class={day.today ? "heat-strip__bar heat-strip__bar--today" : "heat-strip__bar"} style={{ "--heat-height": `${String(Math.max(2, 4 + heat * 18))}px`, "--heat-percent": `${String(Math.round((0.12 + heat * 0.88) * 100))}%` }} key={day.date} />;
             })}</span>
             <span class="sr-only">{STRINGS.heatStrip.summary(row.module, row.total)}</span>
             <span class="heat-strip__total" aria-hidden="true">{row.total}</span>

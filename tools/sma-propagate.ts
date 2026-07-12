@@ -30,8 +30,8 @@
  *   node tools/sma-propagate.ts --source-brick <id> [--release <path>] [--apply]
  *   node tools/sma-propagate.ts --since <git-sha> --source-project acme-desktop
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, readdirSync } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { argv, exit } from 'node:process';
 import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
@@ -39,12 +39,12 @@ import { PROJECTS_ROOT, SMA_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 const DEPENDENTS_INDEX = join(SMA_ROOT, 'registry/dependents.generated.json');
 
-type CliArgs = { help: boolean; sourceBrick?: string; since?: string; sourceProject?: string; release?: string; apply: boolean; applyPr: boolean; json: boolean };
-type SourceMeta = { source_project?: string; source_path?: string; latest_version?: string };
-type DependentLink = { target_project: string; target_root: string; target_path: string; evidence_kind: string };
-type DependentsIndex = { sources: Record<string, SourceMeta>; dependents: Record<string, DependentLink[]> };
-type FanOutItem = { target_project: string; target_root: string; target_path: string; evidence_kind: string; action: string; plan_path: string | null; stub_path: string | null; notes: string[] };
-type PropagationReport = { schema_version: string; generated_at: string; source_brick_id: string; source_meta?: SourceMeta; release_artifact?: string; dependent_count: number; fan_out: FanOutItem[] };
+interface CliArgs { help: boolean; sourceBrick?: string; since?: string; sourceProject?: string; release?: string; apply: boolean; applyPr: boolean; json: boolean }
+interface SourceMeta { source_project?: string; source_path?: string; latest_version?: string }
+interface DependentLink { target_project: string; target_root: string; target_path: string; evidence_kind: string }
+interface DependentsIndex { sources: Record<string, SourceMeta>; dependents: Record<string, DependentLink[]> }
+interface FanOutItem { target_project: string; target_root: string; target_path: string; evidence_kind: string; action: string; plan_path: string | null; stub_path: string | null; notes: string[] }
+interface PropagationReport { schema_version: string; generated_at: string; source_brick_id: string; source_meta?: SourceMeta; release_artifact?: string; dependent_count: number; fan_out: FanOutItem[] }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -155,7 +155,7 @@ for (const brickId of targetBricks) {
         planArgs.push('--out', planOut);
         const r = spawnSync('node', planArgs, { encoding: 'utf8' });
         if (r.status === 0) item.plan_path = planOut;
-        else item.notes.push(`update-plan exited ${r.status}: ${(r.stderr || '').slice(0, 200)}`);
+        else item.notes.push(`update-plan exited ${String(r.status)}: ${(r.stderr || '').slice(0, 200)}`);
       } else {
         planArgs.push('--stdout', '--dry-run');
         item.notes.push(`would run: ${planArgs.join(' ')}`);
@@ -180,8 +180,8 @@ for (const brickId of targetBricks) {
         schema_version: '1.0.0',
         notification_kind: 'incoming-update',
         source_brick_id: brickId,
-        source_project: sourceMeta?.source_project,
-        source_latest_version: sourceMeta?.latest_version,
+        source_project: sourceMeta.source_project,
+        source_latest_version: sourceMeta.latest_version,
         release_artifact: args.release ?? null,
         suggested_action: l.evidence_kind === 'import-lock'
           ? 'run sma-update-plan and review the plan'
@@ -206,7 +206,7 @@ for (const brickId of targetBricks) {
     writeFileSync(reportPath, JSON.stringify(report, null, 2));
     console.log(`[${brickId}] wrote fan-out report: ${reportPath}`);
   } else {
-    console.log(`[${brickId}] dry-run — ${report.dependent_count} dependent(s)`);
+    console.log(`[${brickId}] dry-run — ${String(report.dependent_count)} dependent(s)`);
     for (const fo of report.fan_out) {
       console.log(`  - ${fo.target_project}  [${fo.evidence_kind}]  → ${fo.action}`);
     }
@@ -223,7 +223,7 @@ function enumerateBricksSince(since: string | undefined, sourceProject: string |
   }
   const projectDir = join(PROJECTS_ROOT, sourceProject);
   try {
-    const out = execSync(`git -C "${projectDir}" diff --name-only ${since}..HEAD`, { encoding: 'utf8' });
+    const out = execSync(`git -C "${projectDir}" diff --name-only ${String(since)}..HEAD`, { encoding: 'utf8' });
     const changedFiles = out.split('\n').filter(Boolean);
     const bricks = new Set<string>();
     for (const id of Object.keys(index.sources)) {

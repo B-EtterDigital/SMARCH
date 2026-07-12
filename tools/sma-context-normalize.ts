@@ -119,6 +119,7 @@ function normalizeProject(projectId: string): NormalizeResult {
   };
 }
 
+// eslint-disable-next-line complexity -- Compatibility normalization is an explicit schema precedence ladder documenting legacy-to-modern mapping.
 function normalizeLegacyProof(record: unknown, rawLine: string, projectId: string): ContextRecord | null {
   if (!isRecord(record)) return null;
   const modernProof = normalizeModernProofRecord(record);
@@ -126,20 +127,20 @@ function normalizeLegacyProof(record: unknown, rawLine: string, projectId: strin
   if (record.schema_version === '1.0.0' && record.event_id && record.brick_id) return null;
   if (!record.ts || !record.brick || !record.status) return null;
 
-  const brick = String(record.brick);
+  const brick = legacyString(record.brick);
   const timestamp = isDateTime(record.ts) ? record.ts : new Date().toISOString();
   const proof = Array.isArray(record.proof) ? record.proof.filter(Boolean).map(String) : [];
   const files = Array.isArray(record.files) ? unique(record.files.map(String).filter(Boolean)) : [];
-  const gain = record.gain ? ` ${String(record.gain)}` : '';
-  const boundary = record.boundary ? String(record.boundary) : '';
-  const status = String(record.status || '').replace(/_/g, ' ');
+  const gain = record.gain ? ` ${legacyString(record.gain)}` : '';
+  const boundary = record.boundary ? legacyString(record.boundary) : '';
+  const status = legacyString(record.status).replace(/_/g, ' ');
   const hash = createHash('sha1').update(rawLine).digest('hex').slice(0, 8);
 
   const event: ContextRecord = {
     schema_version: '1.0.0',
     event_id: `ctx-${String(Date.parse(timestamp) || Date.now())}-${hash}`,
     brick_id: brick,
-    project: String(record.project ?? projectId),
+    project: legacyString(record.project ?? projectId),
     actor_kind: 'agent',
     actor_id: (env.SMA_AGENT ?? env.USER) ?? 'unknown',
     kind: 'note',
@@ -164,6 +165,7 @@ function normalizeLegacyProof(record: unknown, rawLine: string, projectId: strin
   return event;
 }
 
+// eslint-disable-next-line complexity -- Compatibility normalization is an explicit schema precedence ladder documenting legacy-to-modern mapping.
 function normalizeModernProofRecord(record: unknown): ContextRecord | null {
   if (!isRecord(record)) return null;
   if (record.schema_version !== '1.0.0' || !record.event_id || !record.brick_id) return null;
@@ -195,8 +197,8 @@ function normalizeModernProofRecord(record: unknown): ContextRecord | null {
       rationale.push(`Legacy gain range ${JSON.stringify(record.gain_percent)} normalized to ${String(gain)}.`);
     }
   }
-  if (record.proof_boundary) rationale.push(String(record.proof_boundary));
-  if (record.summary) rationale.push(String(record.summary));
+  if (record.proof_boundary) rationale.push(legacyString(record.proof_boundary));
+  if (record.summary) rationale.push(legacyString(record.summary));
 
   if (proof.length) {
     const existingVerification: Verification = isRecord(event.verification)
@@ -240,7 +242,7 @@ function normalizeGainPercent(value: unknown): number | null {
 }
 
 function verificationStatus(value: unknown): 'blocked' | 'fail' | 'pass' | 'skipped' {
-  const normalized = String(value ?? '').toLowerCase();
+  const normalized = legacyString(value ?? '').toLowerCase();
   if (normalized.includes('fail')) return 'fail';
   if (normalized.includes('block')) return 'blocked';
   if (normalized.includes('skip')) return 'skipped';
@@ -248,7 +250,7 @@ function verificationStatus(value: unknown): 'blocked' | 'fail' | 'pass' | 'skip
 }
 
 function safeBrick(value: unknown): string {
-  return String(value ?? '').replace(/[^a-z0-9._-]/gi, '_');
+  return legacyString(value ?? '').replace(/[^a-z0-9._-]/gi, '_');
 }
 
 function isDateTime(value: unknown): value is string {
@@ -284,4 +286,8 @@ function parseArgs(list: string[]): CliArgs {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

@@ -14,8 +14,8 @@ import path from 'node:path';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonRecord | JsonValue[];
-type JsonRecord = { [key: string]: JsonValue | undefined };
-type WriteResult = { written: boolean; path: string };
+interface JsonRecord { [key: string]: JsonValue | undefined }
+interface WriteResult { written: boolean; path: string }
 type Normalizer<T> = (item: T) => unknown;
 
 export async function writeJsonIfMeaningfulChanged<T>(filePath: string, value: T, {
@@ -26,7 +26,7 @@ export async function writeJsonIfMeaningfulChanged<T>(filePath: string, value: T
   if (existsSync(filePath)) {
     try {
       const previousText = readFileSync(filePath, 'utf8');
-      const previous = JSON.parse(previousText);
+      const previous = JSON.parse(previousText) as T;
       if (comparableJson(normalize(previous)) === nextComparable) {
         return { written: false, path: filePath };
       }
@@ -72,9 +72,7 @@ export function normalizeSmaStateSnapshot(snapshot: JsonRecord): JsonRecord {
 
 export function normalizeRegistrySnapshot(snapshot: JsonRecord): JsonRecord {
   const clone = jsonClone(snapshot);
-  if (clone && typeof clone === 'object') {
-    clone.generated_at = '<generated_at>';
-  }
+  clone.generated_at = '<generated_at>';
   return clone;
 }
 
@@ -94,5 +92,5 @@ function comparableJson(value: unknown): string | undefined {
 }
 
 function jsonClone<T>(value: T): T {
-  return value === undefined ? value : JSON.parse(JSON.stringify(value));
+  return value === undefined ? value : JSON.parse(JSON.stringify(value)) as T;
 }

@@ -1,3 +1,5 @@
+/* Provider and graph diagnostics intentionally preserve JavaScript's existing coercion for opaque values. */
+/* eslint @typescript-eslint/no-base-to-string: "off" */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -11,30 +13,31 @@ const DEFAULT_TOP_K = 50;
 
 type GraphNode = Record<string, unknown>;
 type Graph = Record<string, unknown> & { nodes?: GraphNode[]; elements?: { nodes?: GraphNode[] } };
-type Embedder = { backend: string; model: string; embed(texts: string[]): Promise<number[][]> };
-type TensorLike = { tolist?: () => unknown; data?: Iterable<unknown> | ArrayLike<unknown> };
-type TransformerModule = {
+interface Embedder { backend: string; model: string; embed(texts: string[]): Promise<number[][]> }
+interface TensorLike { tolist?: () => unknown; data?: Iterable<unknown> | ArrayLike<unknown> }
+interface TransformerModule {
   pipeline?: (task: string, model: string) => Promise<(text: string, options: { pooling: string; normalize: boolean }) => Promise<unknown>>;
   default?: TransformerModule;
-};
-type EmbedderOptions = {
+}
+type TransformerPipeline = NonNullable<TransformerModule["pipeline"]>;
+interface EmbedderOptions {
   embedder?: Embedder;
   backend?: string;
   fetchImpl?: typeof globalThis.fetch;
   timeoutMs?: number;
   importTransformers?: () => Promise<TransformerModule>;
-};
-type IndexPaths = { root: string; vectorsPath: string; idsPath: string; metaPath: string };
-type EmbeddingMeta = { graphContentHash: string; dims: number; backend: string; [key: string]: unknown };
-type EmbeddingIndex = { meta: EmbeddingMeta; ids: string[]; buffer: Buffer };
-type LexicalHit = { id: string; label: string; lexicalScore: number; index: number };
-type SemanticHit = { id: string; semanticScore: number };
-type RankedHit = { id: string; label: string; lexicalScore: number; semanticScore: number; score: number };
-type SemanticQueryResult = { usedSemantic: boolean; hits: Array<LexicalHit | RankedHit>; expandedQuestion: string; reason?: string };
+}
+interface IndexPaths { root: string; vectorsPath: string; idsPath: string; metaPath: string }
+interface EmbeddingMeta { graphContentHash: string; dims: number; backend: string; [key: string]: unknown }
+interface EmbeddingIndex { meta: EmbeddingMeta; ids: string[]; buffer: Buffer }
+interface LexicalHit { id: string; label: string; lexicalScore: number; index: number }
+interface SemanticHit { id: string; semanticScore: number }
+interface RankedHit { id: string; label: string; lexicalScore: number; semanticScore: number; score: number }
+interface SemanticQueryResult { usedSemantic: boolean; hits: (LexicalHit | RankedHit)[]; expandedQuestion: string; reason?: string }
 type AssertResult = (condition: unknown, message: string) => void;
 
 function graphNodes(graph: Graph): GraphNode[] {
-  const nodes = graph?.nodes ?? graph?.elements?.nodes;
+  const nodes = graph.nodes ?? graph.elements?.nodes;
   return Array.isArray(nodes) ? nodes : [];
 }
 
@@ -48,6 +51,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function parseGraphJson(text: string): Graph {
+  const parsed: unknown = JSON.parse(text);
+  return isRecord(parsed) ? parsed : {};
+}
+
+function embeddingMeta(value: unknown): EmbeddingMeta | null {
+  if (!isRecord(value)
+    || typeof value.graphContentHash !== "string"
+    || typeof value.dims !== "number"
+    || typeof value.backend !== "string") return null;
+  return value as EmbeddingMeta;
+}
+
 export function graphNodeContentHash(graph: Graph): string {
   const canonicalNodes = graphNodes(graph)
     .map((node) => JSON.stringify(canonicalize(node)))
@@ -56,22 +72,22 @@ export function graphNodeContentHash(graph: Graph): string {
 }
 
 function nodeId(node: GraphNode): string {
-  return String(node?.id ?? "").trim();
+  return String(node.id ?? "").trim();
 }
 
 function nodeLabel(node: GraphNode): string {
-  return String(node?.label ?? node?.name ?? nodeId(node)).trim();
+  return String(node.label ?? node.name ?? nodeId(node)).trim();
 }
 
 function sourceSnippet(node: GraphNode): string {
   const candidate = [
-    node?.source_snippet,
-    node?.snippet,
-    node?.code,
-    node?.source,
-    node?.description,
-    node?.text,
-    node?.content,
+    node.source_snippet,
+    node.snippet,
+    node.code,
+    node.source,
+    node.description,
+    node.text,
+    node.content,
   ].find((value) => typeof value === "string" && value.trim());
   return String(candidate ?? "").replace(/\s+/g, " ").trim().slice(0, 256);
 }
@@ -93,7 +109,7 @@ function normalizeVector(values: Iterable<unknown> | ArrayLike<unknown> | null |
 
 function normalizeBatch(vectors: unknown, expectedCount: number): number[][] {
   if (!Array.isArray(vectors) || vectors.length !== expectedCount) {
-    throw new Error(`local embedder returned ${Array.isArray(vectors) ? vectors.length : 0} vectors for ${expectedCount} inputs`);
+    throw new Error(`local embedder returned ${String(Array.isArray(vectors) ? vectors.length : 0)} vectors for ${String(expectedCount)} inputs`);
   }
   const normalized = vectors.map(normalizeVector);
   const dims = normalized[0]?.length ?? 0;
@@ -105,7 +121,7 @@ function normalizeBatch(vectors: unknown, expectedCount: number): number[][] {
 
 async function ollamaEmbedding(prompt: string, fetchImpl: typeof globalThis.fetch, timeoutMs: number): Promise<number[]> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => { controller.abort(); }, timeoutMs);
   try {
     const response = await fetchImpl(OLLAMA_URL, {
       method: "POST",
@@ -113,10 +129,12 @@ async function ollamaEmbedding(prompt: string, fetchImpl: typeof globalThis.fetc
       body: JSON.stringify({ model: OLLAMA_MODEL, prompt }),
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`ollama embeddings returned HTTP ${response.status}`);
-    const body = await response.json();
-    if (!Array.isArray(body?.embedding)) throw new Error("ollama embeddings response has no vector");
-    return body.embedding;
+    if (!response.ok) throw new Error(`ollama embeddings returned HTTP ${String(response.status)}`);
+    const body: unknown = await response.json();
+    if (!isRecord(body) || !Array.isArray(body.embedding)) {
+      throw new Error("ollama embeddings response has no vector");
+    }
+    return normalizeVector(body.embedding);
   } finally {
     clearTimeout(timer);
   }
@@ -149,10 +167,16 @@ function tensorVector(output: unknown): number[] {
 
 async function createTransformersEmbedder(importTransformers?: () => Promise<TransformerModule>): Promise<Embedder> {
   const packageName = "@xenova/transformers";
-  const loadTransformers = importTransformers ?? (() => import(packageName));
-  const transformers = await loadTransformers();
-  const createPipeline = transformers?.pipeline ?? transformers?.default?.pipeline;
-  if (typeof createPipeline !== "function") throw new Error("@xenova/transformers has no pipeline export");
+  const loadTransformers: () => Promise<unknown> = importTransformers ?? (() => import(packageName));
+  const transformers: unknown = await loadTransformers();
+  const directPipeline = isRecord(transformers) ? transformers.pipeline : null;
+  const defaultExport = isRecord(transformers) && isRecord(transformers.default)
+    ? transformers.default
+    : null;
+  const fallbackPipeline = defaultExport?.pipeline;
+  const candidate = typeof directPipeline === "function" ? directPipeline : fallbackPipeline;
+  if (typeof candidate !== "function") throw new Error("@xenova/transformers has no pipeline export");
+  const createPipeline = candidate as TransformerPipeline;
   const extractor = await createPipeline("feature-extraction", TRANSFORMERS_MODEL);
   return {
     backend: "transformers",
@@ -212,9 +236,9 @@ function vectorBuffer(vectors: number[][], dims: number): Buffer {
   return buffer;
 }
 
-export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onWarning = console.warn, ...embedderOptions }: { graphPath: string; embedder?: Embedder; onWarning?: (warning: string) => void } & EmbedderOptions) {
+export async function buildEmbeddingIndex({ graphPath, embedder, onWarning = console.warn, ...embedderOptions }: { graphPath: string; embedder?: Embedder; onWarning?: (warning: string) => void } & EmbedderOptions) {
   const absoluteGraphPath = path.resolve(graphPath);
-  const graph = JSON.parse(readFileSync(absoluteGraphPath, "utf8"));
+  const graph = parseGraphJson(readFileSync(absoluteGraphPath, "utf8"));
   const nodes = graphNodes(graph).filter((node) => nodeId(node));
   const localEmbedder = await resolveLocalEmbedder({ embedder, ...embedderOptions });
   if (!localEmbedder) {
@@ -248,21 +272,23 @@ export async function buildEmbeddingIndex({ graphPath, embedder = undefined, onW
 function readEmbeddingIndex(graphPath: string, graph: Graph): EmbeddingIndex | null {
   const paths = indexPaths(graphPath);
   if (![paths.vectorsPath, paths.idsPath, paths.metaPath].every(existsSync)) return null;
-  const meta = JSON.parse(readFileSync(paths.metaPath, "utf8"));
+  const parsedMeta: unknown = JSON.parse(readFileSync(paths.metaPath, "utf8"));
+  const meta = embeddingMeta(parsedMeta);
+  if (!meta) return null;
   if (meta.graphContentHash !== graphNodeContentHash(graph)) return null;
   const ids = readFileSync(paths.idsPath, "utf8").split(/\r?\n/).filter(Boolean).map((line) => {
-    const value = JSON.parse(line);
-    return String(value?.id ?? value);
+    const value: unknown = JSON.parse(line);
+    return String(isRecord(value) ? value.id ?? value : value);
   });
   const buffer = readFileSync(paths.vectorsPath);
-  const dims = Number(meta.dims);
+  const dims = meta.dims;
   if (!Number.isInteger(dims) || dims <= 0 || buffer.length !== ids.length * dims * 4) return null;
   return { meta, ids, buffer };
 }
 
 function cosineRows(index: EmbeddingIndex, queryVector: number[], topK: number, allowedNodeIds: Set<string> | null = null): SemanticHit[] {
   const dims = index.meta.dims;
-  if (queryVector.length !== dims) throw new Error(`embedding dimensions changed: index=${dims}, query=${queryVector.length}`);
+  if (queryVector.length !== dims) throw new Error(`embedding dimensions changed: index=${String(dims)}, query=${String(queryVector.length)}`);
   const scored: SemanticHit[] = [];
   for (let row = 0; row < index.ids.length; row += 1) {
     if (allowedNodeIds && !allowedNodeIds.has(index.ids[row])) continue;
@@ -282,7 +308,7 @@ export function substringIdfHits(graph: Graph, question: string): LexicalHit[] {
   const nodes = graphNodes(graph).filter((node) => nodeId(node));
   const terms = [...new Set(searchTokens(question))];
   if (!terms.length) return [];
-  const documents = nodes.map((node) => `${nodeLabel(node)} ${nodeId(node)} ${node?.source_file ?? ""}`.toLowerCase());
+  const documents = nodes.map((node) => `${nodeLabel(node)} ${nodeId(node)} ${String(node.source_file ?? "")}`.toLowerCase());
   const idf = new Map(terms.map((term) => {
     const matches = documents.reduce((count, document) => count + Number(document.includes(term)), 0);
     return [term, Math.log((nodes.length + 1) / (matches + 1)) + 1];
@@ -290,7 +316,7 @@ export function substringIdfHits(graph: Graph, question: string): LexicalHit[] {
   return nodes.map((node, index) => {
     const label = nodeLabel(node).toLowerCase();
     const id = nodeId(node).toLowerCase();
-    const source = String(node?.source_file ?? "").toLowerCase();
+    const source = String(node.source_file ?? "").toLowerCase();
     let lexicalScore = 0;
     for (const term of terms) {
       const weight = idf.get(term) ?? 1;
@@ -313,17 +339,17 @@ function reciprocalRankMerge(nodesById: Map<string, { id: string; label: string 
     prior.score += 1 / (60 + rank + 1);
     merged.set(hit.id, prior);
   };
-  lexical.forEach((hit, rank) => add(hit, rank, "lexicalScore"));
-  semantic.forEach((hit, rank) => add(hit, rank, "semanticScore"));
+  lexical.forEach((hit, rank) => { add(hit, rank, "lexicalScore"); });
+  semantic.forEach((hit, rank) => { add(hit, rank, "semanticScore"); });
   return [...merged.values()].sort((left, right) => right.score - left.score
     || right.semanticScore - left.semanticScore
     || right.lexicalScore - left.lexicalScore
     || left.id.localeCompare(right.id)).slice(0, limit);
 }
 
-export async function semanticRerankQuery({ graphPath, question, embedder = undefined, topK = DEFAULT_TOP_K, allowedNodeIds = undefined, onWarning = console.warn, ...embedderOptions }: { graphPath: string; question: string; embedder?: Embedder; topK?: number; allowedNodeIds?: Iterable<string>; onWarning?: (warning: string) => void } & EmbedderOptions): Promise<SemanticQueryResult> {
+export async function semanticRerankQuery({ graphPath, question, embedder, topK = DEFAULT_TOP_K, allowedNodeIds, onWarning = console.warn, ...embedderOptions }: { graphPath: string; question: string; embedder?: Embedder; topK?: number; allowedNodeIds?: Iterable<string>; onWarning?: (warning: string) => void } & EmbedderOptions): Promise<SemanticQueryResult> {
   const absoluteGraphPath = path.resolve(graphPath);
-  const graph = JSON.parse(readFileSync(absoluteGraphPath, "utf8"));
+  const graph = parseGraphJson(readFileSync(absoluteGraphPath, "utf8"));
   const allowed = allowedNodeIds ? new Set([...allowedNodeIds].map(String)) : null;
   const lexicalHits = substringIdfHits(graph, question).filter((hit) => !allowed || allowed.has(hit.id));
   const index = readEmbeddingIndex(absoluteGraphPath, graph);
@@ -362,9 +388,9 @@ export function createDeterministicHashEmbedder({ dims = 32, aliases = {} }: { d
   return {
     backend: "stub",
     model: "deterministic-hash-v1",
-    async embed(texts: string[]) {
-      return texts.map((text) => {
-        const vector = Array(dims).fill(0);
+    embed(texts: string[]) {
+      const vectors = texts.map((text) => {
+        const vector = Array.from({ length: dims }, () => 0);
         for (const rawToken of searchTokens(text)) {
           const token = aliases[rawToken] ?? rawToken;
           if (!token) continue;
@@ -373,6 +399,7 @@ export function createDeterministicHashEmbedder({ dims = 32, aliases = {} }: { d
         }
         return normalizeVector(vector);
       });
+      return Promise.resolve(vectors);
     },
   };
 }
@@ -392,20 +419,21 @@ export async function selftestEmbeddingContentAddress({ fixtureRoot, assert: ass
   const built = await buildEmbeddingIndex({ graphPath, embedder });
   assertResult(built.built && "count" in built && built.count === 2, "stub embedding index should build without a model");
   assertResult("graphContentHash" in built && /^[a-f0-9]{64}$/.test(built.graphContentHash), "embedding metadata must use a SHA-256 graph content hash");
-  assertResult(substringIdfHits(JSON.parse(readFileSync(graphPath, "utf8")), "auth login flow").length === 0, "synonym fixture must miss substring ranking");
+  assertResult(substringIdfHits(parseGraphJson(readFileSync(graphPath, "utf8")), "auth login flow").length === 0, "synonym fixture must miss substring ranking");
   const semantic = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });
   assertResult(semantic.usedSemantic && semantic.hits[0]?.id === "session-signin", "semantic rerank should find the synonym node");
   assertResult(semantic.expandedQuestion.includes("session-signin"), "semantic seed should feed the existing traversal query");
 
   const originalMtime = statSync(graphPath).mtime;
-  const graph = JSON.parse(readFileSync(graphPath, "utf8"));
-  writeFileSync(graphPath, `${JSON.stringify({ ...graph, nodes: [...graph.nodes].reverse() })}\n`);
+  const graph = parseGraphJson(readFileSync(graphPath, "utf8"));
+  writeFileSync(graphPath, `${JSON.stringify({ ...graph, nodes: [...graphNodes(graph)].reverse() })}\n`);
   utimesSync(graphPath, originalMtime, originalMtime);
   const reordered = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });
   assertResult(reordered.usedSemantic, "canonical graph hashing must ignore node order changes");
 
-  const changed = JSON.parse(readFileSync(graphPath, "utf8"));
-  changed.nodes[0].source_snippet = "Graph content changed without changing its filesystem timestamp.";
+  const changed = parseGraphJson(readFileSync(graphPath, "utf8"));
+  const [firstChangedNode] = graphNodes(changed);
+  firstChangedNode.source_snippet = "Graph content changed without changing its filesystem timestamp.";
   writeFileSync(graphPath, `${JSON.stringify(changed)}\n`);
   utimesSync(graphPath, originalMtime, originalMtime);
   const stale = await semanticRerankQuery({ graphPath, question: "auth login flow", embedder });

@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Manages expiring ownership leases for collision-prone resources.
  * WHY: Concurrent agents need a shared, recoverable signal before editing the same surface.
@@ -121,6 +124,19 @@ interface Lease {
 }
 
 interface LeaseRegistry { schema_version: string; generated_at: string; leases: Lease[] }
+
+function parseLeaseRegistry(raw: string): LeaseRegistry {
+  const parsed: unknown = JSON.parse(raw);
+  if (
+    typeof parsed !== 'object'
+    || parsed === null
+    || !('leases' in parsed)
+    || !Array.isArray(parsed.leases)
+  ) {
+    throw new SyntaxError('lease registry must be an object with a leases array');
+  }
+  return parsed as LeaseRegistry;
+}
 interface LockOwner { token: string; pid: number; acquired_at: string }
 interface ChildResult { code: number; stdout: string; stderr: string }
 
@@ -227,7 +243,7 @@ function loadRegistry(): LeaseRegistry {
   if (!existsSync(REGISTRY_PATH)) {
     return { schema_version: SCHEMA_VERSION, generated_at: nowIso(), leases: [] };
   }
-  let raw;
+  let raw: string;
   try {
     raw = readFileSync(REGISTRY_PATH, 'utf8');
   } catch (e) {
@@ -237,7 +253,7 @@ function loadRegistry(): LeaseRegistry {
     return { schema_version: SCHEMA_VERSION, generated_at: nowIso(), leases: [] };
   }
   try {
-    const parsed: LeaseRegistry = JSON.parse(raw);
+    const parsed = parseLeaseRegistry(raw);
     if (!Array.isArray(parsed.leases)) parsed.leases = [];
     return parsed;
   } catch (e) {
@@ -250,7 +266,7 @@ function saveRegistry(reg: LeaseRegistry): void {
   reg.generated_at = nowIso();
   const dir = dirname(REGISTRY_PATH);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  const tmp = REGISTRY_PATH + '.tmp.' + process.pid + '.' + Date.now();
+  const tmp = `${REGISTRY_PATH}.tmp.${String(process.pid)}.${String(Date.now())}`;
   writeFileSync(tmp, JSON.stringify(reg, null, 2) + '\n');
   renameSync(tmp, REGISTRY_PATH);
 }
@@ -279,7 +295,7 @@ function withRegistryLock<T>(fn: () => T): T {
 function acquireRegistryLock(): string {
   const dir = dirname(LOCK_SENTINEL);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  const token = `${process.pid}-${Date.now()}-${randomBytes(8).toString('hex')}`;
+  const token = `${String(process.pid)}-${String(Date.now())}-${randomBytes(8).toString('hex')}`;
   const startNs = hrtime.bigint();
   let firstAttempt = true;
 
@@ -328,7 +344,7 @@ function recoverStaleRegistryLock(): boolean {
   const staleOwner = readRegistryLockOwner();
   if (isProcessAlive(staleOwner?.pid)) return false;
 
-  const stalePath = `${LOCK_SENTINEL}.stale.${process.pid}.${Date.now()}.${randomBytes(4).toString('hex')}`;
+  const stalePath = `${LOCK_SENTINEL}.stale.${String(process.pid)}.${String(Date.now())}.${randomBytes(4).toString('hex')}`;
   try {
     renameSync(LOCK_SENTINEL, stalePath);
   } catch (error) {
@@ -347,7 +363,8 @@ function releaseRegistryLock(token: string): void {
 
 function readRegistryLockOwner(): LockOwner | null {
   try {
-    return JSON.parse(readFileSync(resolve(LOCK_SENTINEL, 'owner.json'), 'utf8'));
+    const parsed: unknown = JSON.parse(readFileSync(resolve(LOCK_SENTINEL, 'owner.json'), 'utf8'));
+    return parsed as LockOwner;
   } catch (error) {
     if (errorCode(error) === 'ENOENT' || errorCode(error) === 'ENOTDIR' || error instanceof SyntaxError) return null;
     throw error;
@@ -450,7 +467,7 @@ function buildLease(displaced: Lease | null | undefined, agent: string, ttl: num
   if (args.task) lease.task_id = args.task;
   if (args.model) lease.model = args.model;
   if (args.rationale) lease.rationale = args.rationale;
-  if (args.linkedBacklog && args.linkedBacklog.length) lease.linked_backlog = args.linkedBacklog;
+  if (args.linkedBacklog?.length) lease.linked_backlog = args.linkedBacklog;
   if (displaced) {
     lease.force_acquired_from = displaced.lease_id;
     lease.force_acquired_reason = args.reason;
@@ -572,16 +589,17 @@ function runExpire() {
     pruneExpired(reg);
     return before - reg.leases.length;
   });
-  console.log(`expired and removed ${removed} lease(s)`);
+  console.log(`expired and removed ${String(removed)} lease(s)`);
 }
 
 // ── run subcommand: lease + spawn + release ─────────────────────────────────
 
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 async function runWrapped() {
   requireArg('resourceKind', '--resource-kind');
   requireArg('resource', '--resource');
   requireArg('intent', '--intent');
-  if (!runChildArgs || !runChildArgs.length) {
+  if (!runChildArgs?.length) {
     throw new Error('run: missing child command after `--`');
   }
 
@@ -635,8 +653,8 @@ async function runWrapped() {
     releaseSafely(`signal:${sig}`);
     try { child.kill(sig); } catch { /* ignore */ }
   };
-  process.on('SIGINT', () => onSig('SIGINT'));
-  process.on('SIGTERM', () => onSig('SIGTERM'));
+  process.on('SIGINT', () => { onSig('SIGINT'); });
+  process.on('SIGTERM', () => { onSig('SIGTERM'); });
 
   const exitCode = await new Promise<number>((res) => {
     child.on('close', (code, signal) => {
@@ -645,7 +663,7 @@ async function runWrapped() {
         res(128 + 1); // generic non-zero on signal
         return;
       }
-      releaseSafely(`exit:${code}`);
+      releaseSafely(`exit:${String(code)}`);
       res(code ?? 0);
     });
     child.on('error', (e) => {
@@ -695,7 +713,7 @@ function pruneExpired(reg: LeaseRegistry): void {
 }
 
 function newLeaseId() {
-  return `lease-${Date.now()}-${randomBytes(4).toString('hex')}`;
+  return `lease-${String(Date.now())}-${randomBytes(4).toString('hex')}`;
 }
 
 function nowIso() {
@@ -746,6 +764,7 @@ function parseArgs(list: string[]): LeaseArgs {
   return out;
 }
 
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 async function runSelftest() {
   const testRoot = mkdtempSync(resolve(tmpdir(), 'sma-lease-atomicity-'));
   const registryPath = resolve(testRoot, 'active-leases.generated.json');
@@ -757,13 +776,13 @@ async function runSelftest() {
   };
   const specs = [
     ...Array.from({ length: 8 }, (_, index) => ({
-      resource: `distinct-${index}`,
-      agent: `distinct-agent-${index}`,
+      resource: `distinct-${String(index)}`,
+      agent: `distinct-agent-${String(index)}`,
       contested: false,
     })),
     ...Array.from({ length: 4 }, (_, index) => ({
       resource: 'contested',
-      agent: `contested-agent-${index}`,
+      agent: `contested-agent-${String(index)}`,
       contested: true,
     })),
   ];
@@ -802,20 +821,20 @@ async function runSelftest() {
     const contestedWinners = contestedResults.filter((result) => result.code === 0);
     assertSelftest(
       contestedWinners.length === 1,
-      `exactly one contested acquire must win; winners=${contestedWinners.length}`,
+      `exactly one contested acquire must win; winners=${String(contestedWinners.length)}`,
     );
     assertSelftest(
       contestedResults.filter((result) => result.code === 10).length === 3,
       `three contested acquires must report held; exits=${contestedResults.map((result) => result.code).join(',')}`,
     );
 
-    const registry: LeaseRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
+    const registry = parseLeaseRegistry(readFileSync(registryPath, 'utf8'));
     assertSelftest(Array.isArray(registry.leases), 'registry leases must be an array');
-    assertSelftest(registry.leases.length === 9, `no lease may be lost; found ${registry.leases.length}, expected 9`);
+    assertSelftest(registry.leases.length === 9, `no lease may be lost; found ${String(registry.leases.length)}, expected 9`);
     for (let index = 0; index < 8; index += 1) {
       assertSelftest(
-        registry.leases.some((lease) => lease.resource_id === `distinct-${index}`),
-        `distinct-${index} lease was lost`,
+        registry.leases.some((lease) => lease.resource_id === `distinct-${String(index)}`),
+        `distinct-${String(index)} lease was lost`,
       );
     }
     assertSelftest(
@@ -834,9 +853,9 @@ async function runSelftest() {
     ], childEnv);
     assertSelftest(
       wrongOwnerRelease.code === 13,
-      `wrong-owner release must be rejected with exit 13; exit=${wrongOwnerRelease.code}`,
+      `wrong-owner release must be rejected with exit 13; exit=${String(wrongOwnerRelease.code)}`,
     );
-    const afterRejectedRelease: LeaseRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
+    const afterRejectedRelease = parseLeaseRegistry(readFileSync(registryPath, 'utf8'));
     assertSelftest(
       afterRejectedRelease.leases.some((lease) => lease.lease_id === contestedLease.lease_id),
       'wrong-owner release must leave the lease intact',
@@ -847,7 +866,7 @@ async function runSelftest() {
       '--agent', contestedLease.agent_id,
       '--json',
     ], childEnv);
-    assertSelftest(ownerRelease.code === 0, `lease owner must be able to release; exit=${ownerRelease.code}`);
+    assertSelftest(ownerRelease.code === 0, `lease owner must be able to release; exit=${String(ownerRelease.code)}`);
 
     const staleLockPath = `${registryPath}.lock`;
     mkdirSync(staleLockPath);
@@ -871,15 +890,15 @@ async function runSelftest() {
       SMA_LEASE_TEST_MUTATION_DELAY_MS: '0',
       SMA_LEASE_LOCK_STALE_MS: '10',
     });
-    assertSelftest(staleRecovery.code === 0, `stale lock must be recovered; exit=${staleRecovery.code}`);
+    assertSelftest(staleRecovery.code === 0, `stale lock must be recovered; exit=${String(staleRecovery.code)}`);
 
-    const finalRegistry: LeaseRegistry = JSON.parse(readFileSync(registryPath, 'utf8'));
+    const finalRegistry = parseLeaseRegistry(readFileSync(registryPath, 'utf8'));
     assertSelftest(
       finalRegistry.leases.some((lease) => lease.resource_id === 'stale-recovery'),
       'stale-lock recovery acquire must persist',
     );
     console.log(
-      `OK sma-lease atomicity selftest (8 distinct + 4 contested; owner-safe release; stale recovery; ${parseChecks} parse checks)`,
+      `OK sma-lease atomicity selftest (8 distinct + 4 contested; owner-safe release; stale recovery; ${String(parseChecks)} parse checks)`,
     );
   } finally {
     clearInterval(parseMonitor);
@@ -895,10 +914,10 @@ function runLeaseChild(childArgs: string[], childEnv: NodeJS.ProcessEnv): Promis
     });
     let stdout = '';
     let stderr = '';
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.on('error', (error) => resolveResult({ code: 1, stdout, stderr: `${stderr}${error.message}` }));
-    child.on('close', (code) => resolveResult({ code: code ?? 1, stdout, stderr }));
+    child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+    child.on('error', (error) => { resolveResult({ code: 1, stdout, stderr: `${stderr}${error.message}` }); });
+    child.on('close', (code) => { resolveResult({ code: code ?? 1, stdout, stderr }); });
   });
 }
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Codex responses cross a runtime JSON boundary, so defensive response guards remain required. */
+/* CLI dispatch is a linear option table; complexity counts each independent option as nested control flow. */
+/* eslint @typescript-eslint/no-unnecessary-condition: "off", complexity: "off" */
 /**
  * WHAT: Classifies meaningful relationships between semantically enriched bricks.
  * WHY: Reuse planning needs explicit dependency, composition, alternative, and shared-concept edges rather than tag overlap alone.
@@ -31,6 +34,7 @@ interface BrickSummary { id: string; project: string; name?: string; kind?: stri
 interface ConnectionEdge { target: string; kind: string; confidence: string; reason: string }
 interface WrittenEdge { from: string; to: string; kind: string; confidence: string; reason: string }
 interface CandidateDocument { bricks?: Brick[] }
+interface SummaryEntry { brick: Brick; manifest: Manifest; summary: BrickSummary }
 
 function isEdgePayload(value: unknown): value is { edges: ConnectionEdge[] } {
   if (!value || typeof value !== "object" || !("edges" in value)) return false;
@@ -95,24 +99,30 @@ const SCHEMA = {
   }
 };
 
-async function readJson(p: string): Promise<CandidateDocument> { return JSON.parse(await fs.readFile(p, "utf8")); }
+async function readJson(p: string): Promise<CandidateDocument> {
+  const parsed: unknown = JSON.parse(await fs.readFile(p, "utf8"));
+  return parsed as CandidateDocument;
+}
 
 async function loadManifest(p: string): Promise<Manifest | null> {
-  try { return JSON.parse(await fs.readFile(p, "utf8")); } catch { return null; }
+  try {
+    const parsed: unknown = JSON.parse(await fs.readFile(p, "utf8"));
+    return parsed as Manifest;
+  } catch { return null; }
 }
 
 function brickSummary(brick: Brick, manifest: Manifest): BrickSummary {
-  const sem = manifest?.semantics || {};
+  const sem = manifest.semantics ?? {};
   return {
     id: brick.id,
     project: brick.project,
     name: brick.name,
     kind: brick.kind,
-    paths: brick.source_paths || [],
+    paths: brick.source_paths ?? [],
     purpose: sem.purpose ? sem.purpose.slice(0, 320) : "(no purpose)",
-    tags: sem.tags || [],
-    public_api: (sem.public_api || []).slice(0, 8),
-    archetype: sem.reuse_archetype || "unknown"
+    tags: sem.tags ?? [],
+    public_api: (sem.public_api ?? []).slice(0, 8),
+    archetype: sem.reuse_archetype ?? "unknown"
   };
 }
 
@@ -127,7 +137,7 @@ function jaccard(a: unknown[], b: unknown[]): number {
 }
 
 function pickNeighbours(anchorSummary: BrickSummary, allSummaries: BrickSummary[], k: number): BrickSummary[] {
-  const scored: Array<{ s: number; cand: BrickSummary }> = [];
+  const scored: { s: number; cand: BrickSummary }[] = [];
   for (const cand of allSummaries) {
     if (cand.id === anchorSummary.id) continue;
     let s = jaccard(anchorSummary.tags, cand.tags) * 3;
@@ -141,7 +151,7 @@ function pickNeighbours(anchorSummary: BrickSummary, allSummaries: BrickSummary[
 
 function buildPrompt(anchor: BrickSummary, neighbours: BrickSummary[]): string {
   const neighbourBlock = neighbours
-    .map((neighbour: BrickSummary, index: number) => `### N${index + 1}  id=${neighbour.id}  project=${neighbour.project}  kind=${neighbour.kind}  archetype=${neighbour.archetype}\nPurpose: ${neighbour.purpose}\nTags: ${neighbour.tags.join(", ")}\nPublic API: ${neighbour.public_api.join(", ")}`)
+    .map((neighbour: BrickSummary, index: number) => `### N${String(index + 1)}  id=${neighbour.id}  project=${neighbour.project}  kind=${String(neighbour.kind)}  archetype=${neighbour.archetype}\nPurpose: ${neighbour.purpose}\nTags: ${neighbour.tags.join(", ")}\nPublic API: ${neighbour.public_api.join(", ")}`)
     .join("\n\n");
 
   return `You classify relationships between software bricks (reusable code modules) for a multi-project registry.
@@ -149,7 +159,7 @@ function buildPrompt(anchor: BrickSummary, neighbours: BrickSummary[]): string {
 ## Anchor brick
 id: ${anchor.id}
 project: ${anchor.project}
-kind: ${anchor.kind}
+kind: ${String(anchor.kind)}
 archetype: ${anchor.archetype}
 Purpose: ${anchor.purpose}
 Tags: ${anchor.tags.join(", ")}
@@ -176,87 +186,77 @@ Return only the JSON object matching the schema.`;
 
 async function loadCandidates(opts: ConnectOptions): Promise<Brick[]> {
   const c = await readJson(opts.candidates);
-  let bricks = c.bricks || [];
-  if (opts.minScore > 0) bricks = bricks.filter((b) => (b.score || 0) >= opts.minScore);
+  let bricks = c.bricks ?? [];
+  if (opts.minScore > 0) bricks = bricks.filter((b) => (b.score ?? 0) >= opts.minScore);
   if (opts.project) bricks = bricks.filter((b) => b.project === opts.project);
   if (opts.filter) {
     const f = opts.filter;
     bricks = bricks.filter((b) =>
       (b.id || "").toLowerCase().includes(f) ||
-      (b.name || "").toLowerCase().includes(f) ||
-      (b.source_paths || []).some((p) => p.toLowerCase().includes(f))
+      (b.name ?? "").toLowerCase().includes(f) ||
+      (b.source_paths ?? []).some((p) => p.toLowerCase().includes(f))
     );
   }
   return bricks;
 }
 
+async function loadSummaries(candidates: Brick[]): Promise<SummaryEntry[]> {
+  const summaries: SummaryEntry[] = [];
+  for (const brick of candidates) {
+    const manifest = await loadManifest(brick.manifest_path);
+    if (manifest) summaries.push({ brick, manifest, summary: brickSummary(brick, manifest) });
+  }
+  return summaries;
+}
+
+async function enrichConnections(opts: ConnectOptions, anchors: SummaryEntry[], allSummaries: BrickSummary[]) {
+  const items = anchors.map((anchor) => {
+    const neighbours = pickNeighbours(anchor.summary, allSummaries, opts.neighbours);
+    return { id: anchor.brick.id, prompt: buildPrompt(anchor.summary, neighbours), schema: SCHEMA, _anchor: anchor, _neighbours: neighbours };
+  });
+  const allEdges: WrittenEdge[] = [];
+  const counters = { processed: 0, cacheHits: 0, failed: 0 };
+  await codexBatch(items, {
+    concurrency: opts.concurrency, model: opts.model, timeoutMs: opts.timeoutMs,
+    onResult: (wrapped) => {
+      counters.processed += 1;
+      const result = wrapped.result;
+      if (!result.ok) {
+        counters.failed += 1;
+        console.error(`  ${wrapped.id}: ${result.error}`);
+        return;
+      }
+      if (result.fromCache) counters.cacheHits += 1;
+      const item = items.find((candidate) => candidate.id === wrapped.id);
+      if (!item || !isEdgePayload(result.data)) return;
+      const knownIds = new Set(item._neighbours.map((neighbour) => neighbour.id));
+      for (const edge of result.data.edges) {
+        if (knownIds.has(edge.target)) allEdges.push({ from: wrapped.id, to: edge.target, kind: edge.kind, confidence: edge.confidence, reason: edge.reason });
+      }
+      const manifest = item._anchor.manifest;
+      manifest.semantics = manifest.semantics ?? {};
+      manifest.semantics.connections = result.data.edges.filter((edge) => knownIds.has(edge.target) && edge.kind !== "unrelated").slice(0, 20);
+      manifest.semantics.connections_source = "codex-gpt-5.4";
+      manifest.semantics.connections_at = new Date().toISOString();
+      void fs.writeFile(item._anchor.brick.manifest_path, `${JSON.stringify(manifest, null, 2)}\n`).catch(() => { /* best-effort manifest sync */ });
+      if (counters.processed % 5 === 0) console.error(`  ${String(counters.processed)}/${String(anchors.length)} done${result.fromCache ? " (cache)" : ""}`);
+    },
+  });
+  return { allEdges, counters };
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const candidates = await loadCandidates(opts);
-  console.error(`scanning ${candidates.length} bricks for connections (k=${opts.neighbours}, concurrency=${opts.concurrency})`);
+  console.error(`scanning ${String(candidates.length)} bricks for connections (k=${String(opts.neighbours)}, concurrency=${String(opts.concurrency)})`);
 
-  // Build summary index from manifests
-  const summaries = [];
-  for (const b of candidates) {
-    const mf = await loadManifest(b.manifest_path);
-    if (!mf) continue;
-    summaries.push({ brick: b, manifest: mf, summary: brickSummary(b, mf) });
-  }
+  const summaries = await loadSummaries(candidates);
   const allSummaries = summaries.map((s) => s.summary);
 
   const anchors = opts.limit > 0 ? summaries.slice(0, opts.limit) : summaries;
-  console.error(`enriching ${anchors.length} anchor brick(s) with neighbour relationships`);
+  console.error(`enriching ${String(anchors.length)} anchor brick(s) with neighbour relationships`);
 
-  const items = anchors.map((a) => {
-    const neighbours = pickNeighbours(a.summary, allSummaries, opts.neighbours);
-    return {
-      id: a.brick.id,
-      prompt: buildPrompt(a.summary, neighbours),
-      schema: SCHEMA,
-      _anchor: a,
-      _neighbours: neighbours
-    };
-  });
-
-  const allEdges: WrittenEdge[] = [];
-  let processed = 0;
-  let cacheHits = 0;
-  let failed = 0;
-
-  await codexBatch(items, {
-    concurrency: opts.concurrency,
-    model: opts.model,
-    timeoutMs: opts.timeoutMs,
-    onResult: (wrapped) => {
-      processed += 1;
-      const r = wrapped.result;
-      if (r.ok === true) {
-        if (r.fromCache) cacheHits += 1;
-        const item = items.find((x) => x.id === wrapped.id);
-        if (!item) return;
-        const knownIds = new Set(item._neighbours.map((neighbour: BrickSummary) => neighbour.id));
-        if (!isEdgePayload(r.data)) return;
-        for (const e of r.data.edges) {
-          if (!knownIds.has(e.target)) continue;
-          allEdges.push({ from: wrapped.id, to: e.target, kind: e.kind, confidence: e.confidence, reason: e.reason });
-        }
-        // Write into manifest
-        const mf = item._anchor.manifest;
-        mf.semantics = mf.semantics || {};
-        mf.semantics.connections = r.data.edges
-          .filter((edge: ConnectionEdge) => knownIds.has(edge.target) && edge.kind !== "unrelated")
-          .map((edge: ConnectionEdge) => ({ target: edge.target, kind: edge.kind, confidence: edge.confidence, reason: edge.reason }))
-          .slice(0, 20);
-        mf.semantics.connections_source = "codex-gpt-5.4";
-        mf.semantics.connections_at = new Date().toISOString();
-        fs.writeFile(item._anchor.brick.manifest_path, `${JSON.stringify(mf, null, 2)}\n`).catch(() => { /* best-effort manifest sync */ });
-        if (processed % 5 === 0) console.error(`  ${processed}/${anchors.length} done${r.fromCache ? " (cache)" : ""}`);
-      } else {
-        failed += 1;
-        console.error(`  ${wrapped.id}: ${r.error}`);
-      }
-    }
-  });
+  const { allEdges, counters } = await enrichConnections(opts, anchors, allSummaries);
 
   await fs.mkdir(path.dirname(opts.out), { recursive: true });
   await fs.writeFile(opts.out, JSON.stringify({
@@ -268,10 +268,10 @@ async function main() {
 
   console.log(JSON.stringify({
     anchors: anchors.length,
-    processed, cache_hits: cacheHits, failed,
+    processed: counters.processed, cache_hits: counters.cacheHits, failed: counters.failed,
     edges_written: allEdges.length,
     out: opts.out
   }, null, 2));
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch((err: unknown) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });

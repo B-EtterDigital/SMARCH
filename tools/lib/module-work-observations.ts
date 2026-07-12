@@ -15,7 +15,7 @@ export function latestObservationForDispatch({ dispatchId, observationDir, rootD
   observationDir: string;
   rootDir?: string;
 }): { json_path: string; markdown_path: string | null } | null {
-  const id = String(dispatchId || '').trim();
+  const id = (dispatchId || '').trim();
   if (!id || !observationDir || !existsSync(observationDir)) return null;
   const prefix = `${id}-observed-`;
   const latestJson = readdirSync(observationDir)

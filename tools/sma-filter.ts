@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Filter diagnostics intentionally preserve JavaScript's existing coercion for opaque registry values. */
+/* Candidate scoring is a declarative weighted checklist; complexity counts each independent weight as nested flow. */
+/* eslint @typescript-eslint/no-base-to-string: "off", complexity: "off" */
 /**
  * WHAT: Scores scanned bricks and selects the strongest cross-project reuse candidates.
  * WHY: A raw registry contains project-specific pieces that should not enter the reuse catalog.

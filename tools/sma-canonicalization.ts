@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-type-conversion, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-base-to-string -- Canonicalization consumes untrusted registry snapshots; legacy truthy fallback, defensive conversion, and guards are output-compatibility requirements. */
+/* eslint-disable complexity, max-lines-per-function -- Canonicalization is a single ordered scoring and report pass; keeping all weights and tie-breaks together makes policy precedence auditable. */
 /**
  * WHAT: Derives duplicate-family and preferred-candidate evidence from a brick registry.
  * WHY: Registry consumers need deterministic canonicalization signals without treating generic filenames as meaningful duplicates.

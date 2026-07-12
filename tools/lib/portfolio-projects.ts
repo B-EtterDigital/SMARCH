@@ -26,7 +26,7 @@ const ignoredNameFragments = [...portfolioConfig.ignored_name_fragments];
 
 const rootMarkers = [".git", "package.json", "pnpm-workspace.yaml"];
 
-export type PortfolioProject = {
+export interface PortfolioProject {
   id: string;
   name: string;
   relative_root: string;
@@ -34,20 +34,20 @@ export type PortfolioProject = {
   priority_tier: "priority" | "standard";
   priority_rank?: number;
   portfolio_rank?: number;
-};
+}
 
 type DirectoryEntry = Pick<Dirent, "name" | "isDirectory">;
-type PortfolioFs = {
+interface PortfolioFs {
   readdir(directory: string, options: { withFileTypes: true }): Promise<DirectoryEntry[]>;
   access(file: string): Promise<void>;
-};
-type PortfolioLogger = { warn?: (message: string) => void };
-type PortfolioOptions = {
+}
+interface PortfolioLogger { warn?: (message: string) => void }
+interface PortfolioOptions {
   projectsRoot?: string;
   fsApi?: PortfolioFs;
   logger?: PortfolioLogger;
   strict?: boolean;
-};
+}
 
 const portfolioOverrides = new Map(Object.entries(portfolioConfig.overrides));
 
@@ -70,16 +70,14 @@ export async function discoverPortfolioProjects(options: PortfolioOptions = {}):
   if (Object.keys(options).length > 0) {
     return loadPortfolioProjects(options);
   }
-  if (!portfolioCache) {
-    portfolioCache = loadPortfolioProjects({
+  portfolioCache ??= loadPortfolioProjects({
       strict: process.argv.includes("--strict"),
     });
-  }
   return portfolioCache;
 }
 
 export function projectPriorityRank(projectId: unknown, portfolioProjects: PortfolioProject[] = []): number {
-  const id = String(projectId || "").trim();
+  const id = legacyString(projectId ?? "").trim();
   const priorityIndex = priorityProjectIds.indexOf(id);
   if (priorityIndex >= 0) return priorityIndex + 1;
 
@@ -91,13 +89,14 @@ export function projectPriorityRank(projectId: unknown, portfolioProjects: Portf
 
 export function sortByPortfolioPriority<T>(entries: T[], portfolioProjects: PortfolioProject[] = [], idSelector: (entry: T) => unknown): T[] {
   return [...entries].sort((left, right) => {
-    const leftId = String(idSelector(left) || "");
-    const rightId = String(idSelector(right) || "");
+    const leftId = legacyString(idSelector(left) ?? "");
+    const rightId = legacyString(idSelector(right) ?? "");
     return projectPriorityRank(leftId, portfolioProjects) - projectPriorityRank(rightId, portfolioProjects)
       || leftId.localeCompare(rightId);
   });
 }
 
+// eslint-disable-next-line complexity -- Discovery is one bounded filesystem transaction; branch order preserves strict and non-strict error semantics.
 async function loadPortfolioProjects({
   projectsRoot = portfolioProjectsRoot,
   fsApi = fs,
@@ -110,7 +109,7 @@ async function loadPortfolioProjects({
     } catch (error) {
       if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return [];
       const discoveryError = new PortfolioDiscoveryError(directory, error);
-      logger?.warn?.(`warn: ${discoveryError.message}`);
+      logger.warn?.(`warn: ${discoveryError.message}`);
       if (strict) throw discoveryError;
       return [];
     }
@@ -125,7 +124,7 @@ async function loadPortfolioProjects({
 
     const topPath = path.join(projectsRoot, entry.name);
     if (await hasProjectMarkers(topPath, fsApi)) {
-      results.push(await describeProject(topPath, projectsRoot));
+      results.push(describeProject(topPath, projectsRoot));
       continue;
     }
 
@@ -136,7 +135,7 @@ async function loadPortfolioProjects({
 
       const nestedPath = path.join(topPath, nested.name);
       if (await hasProjectMarkers(nestedPath, fsApi)) {
-        results.push(await describeProject(nestedPath, projectsRoot));
+        results.push(describeProject(nestedPath, projectsRoot));
       }
     }
   }
@@ -162,11 +161,11 @@ async function loadPortfolioProjects({
   }));
 }
 
-async function describeProject(absolutePath: string, projectsRoot = portfolioProjectsRoot): Promise<PortfolioProject> {
+function describeProject(absolutePath: string, projectsRoot = portfolioProjectsRoot): PortfolioProject {
   const relativeRoot = normalizePath(path.relative(projectsRoot, absolutePath));
-  const override = portfolioOverrides.get(relativeRoot) || {};
-  const id = override.id || slugify(relativeRoot);
-  const name = override.name || humanizeName(path.basename(absolutePath));
+  const override = portfolioOverrides.get(relativeRoot) ?? {};
+  const id = override.id ?? slugify(relativeRoot);
+  const name = override.name ?? humanizeName(path.basename(absolutePath));
 
   return {
     id,
@@ -183,7 +182,7 @@ async function hasProjectMarkers(absolutePath: string, fsApi: PortfolioFs = fs):
       await fsApi.access(path.join(absolutePath, marker));
       return true;
     } catch (error) {
-      const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+      const code = error && typeof error === 'object' && 'code' in error ? legacyString((error as { code?: unknown }).code ?? '') : '';
       if (code !== 'ENOENT') console.error(JSON.stringify({ area: 'portfolio-projects.root-marker', severity: 'warning', hint: 'Check marker access permissions for the candidate project.', error: error instanceof Error ? error.message : String(error), ...(code ? { code } : {}) }));
       continue;
     }
@@ -192,7 +191,7 @@ async function hasProjectMarkers(absolutePath: string, fsApi: PortfolioFs = fs):
 }
 
 function shouldIgnore(name: unknown): boolean {
-  const value = String(name || "");
+  const value = legacyString(name ?? "");
   if (!value || value.startsWith(".")) return true;
   if (ignoredTopLevelDirs.has(value)) return true;
   const lowered = value.toLowerCase();
@@ -200,7 +199,7 @@ function shouldIgnore(name: unknown): boolean {
 }
 
 function slugify(value: unknown): string {
-  return String(value || "project")
+  return legacyString(value ?? "project")
     .toLowerCase()
     .replace(/[\\/]+/g, "-")
     .replace(/[^a-z0-9]+/g, "-")
@@ -208,7 +207,7 @@ function slugify(value: unknown): string {
 }
 
 function humanizeName(value: unknown): string {
-  return String(value || "Project")
+  return legacyString(value ?? "Project")
     .replace(/[_-]+/g, " ")
     .replace(/\b0+([A-Za-z0-9])/g, "$1")
     .replace(/\s+/g, " ")
@@ -216,7 +215,7 @@ function humanizeName(value: unknown): string {
 }
 
 function normalizePath(value: unknown): string {
-  return String(value || "").split(path.sep).join("/");
+  return legacyString(value ?? "").split(path.sep).join("/");
 }
 
 async function runSelftest() {
@@ -226,12 +225,13 @@ async function runSelftest() {
   const missing = Object.assign(new Error("not found"), { code: "ENOENT" });
   const warnings: string[] = [];
   const fsApi: PortfolioFs = {
-    async access() {
-      throw missing;
+    access() {
+      return Promise.reject(missing);
     },
-    async readdir(directory: string) {
-      if (directory === projectsRoot) return [directoryEntry("unreadable")];
-      throw unreadable;
+    readdir(directory: string) {
+      return directory === projectsRoot
+        ? Promise.resolve([directoryEntry("unreadable")])
+        : Promise.reject(unreadable);
     },
   };
 
@@ -260,11 +260,11 @@ async function runSelftest() {
   const empty = await discoverPortfolioProjects({
     projectsRoot,
     fsApi: {
-      async access() {
-        throw missing;
+      access() {
+        return Promise.reject(missing);
       },
-      async readdir() {
-        throw missing;
+      readdir() {
+        return Promise.reject(missing);
       },
     },
     strict: true,
@@ -277,9 +277,13 @@ async function runSelftest() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv.includes("--selftest")) {
-    runSelftest().catch((error) => {
+    runSelftest().catch((error: unknown) => {
       console.error(error instanceof Error ? error.stack : String(error));
       process.exitCode = 1;
     });
   }
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

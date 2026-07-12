@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Generates repair scaffolds for incomplete curated-build manifests and companion evidence.
  * WHY: Missing fields and declared documents need explicit machine-readable repair work.
@@ -124,6 +126,7 @@ async function main(): Promise<void> {
   }
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function buildManifestScaffolds(build: ScaffoldBuild) {
   const manifest = build.manifest ?? {};
   const source = manifest.source ?? {};

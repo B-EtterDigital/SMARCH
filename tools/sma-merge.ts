@@ -48,6 +48,7 @@ import {
 import { resolve } from 'node:path';
 import { argv, exit } from 'node:process';
 import { randomBytes } from 'node:crypto';
+import { buildMergeWhyProposal, renderMergeWhyMarkdown, runMergeWhySelftest, type MergeWhyEvent } from './lib/merge-why.ts';
 
 
 const SCHEMA_VERSION = '1.0.0';
@@ -63,9 +64,9 @@ interface MergeArgs {
   write: boolean;
   json: boolean;
   unresolved: boolean;
+  fromIntents: boolean;
 }
-interface MergeEvent {
-  timestamp: string;
+interface MergeEvent extends MergeWhyEvent {
   event_id?: string;
   session_id?: string;
   agent_id?: string;
@@ -116,6 +117,9 @@ try {
     case 'resolve':
       runResolve();
       break;
+    case '--selftest':
+      runMergeWhySelftest();
+      break;
     case 'help':
     case '--help':
     case '-h':
@@ -135,7 +139,7 @@ try {
 
 function usage() {
   console.log(`Usage:
-  sma-merge.ts propose  --project <id> --brick <id> [--since <iso>] [--write] [--json]
+  sma-merge.ts propose  --project <id> --brick <id> [--since <iso>] [--from-intents] [--write] [--json]
   sma-merge.ts list     --project <id> [--unresolved] [--json]
   sma-merge.ts show     --project <id> --proposal <id> [--json]
   sma-merge.ts resolve  --project <id> --proposal <id> --kind <kind> [--notes "..."] [--by <id>]
@@ -163,6 +167,20 @@ function runPropose() {
     exit(0);
   }
 
+  const [chainA, chainB] = chains.slice().sort((a, b) => b.events.length - a.events.length).slice(0, 2);
+  if (args.fromIntents) {
+    const proposalId = `mp-${args.brick.replace(/[^a-z0-9_-]/gi, '_')}-${String(Date.now())}-${randomBytes(3).toString('hex')}`;
+    const proposal = buildMergeWhyProposal({
+      schemaVersion: SCHEMA_VERSION, proposalId, project: args.project, brickId: args.brick, generatedAt: nowIso(),
+      sides: [toMergeWhySide('A', chainA), toMergeWhySide('B', chainB)],
+    });
+    const markdown = renderMergeWhyMarkdown(proposal);
+    if (args.write) persistIntentSynthesis(args.project, proposalId, markdown);
+    console.log(args.json ? JSON.stringify(proposal, null, 2) : markdown.trimEnd());
+    if (args.write && !args.json) console.log(`\nwritten → .smarch/merge-proposals/${proposalId}.why.md`);
+    return;
+  }
+
   const overlap = detectFileOverlap(chains);
   if (!overlap.hasOverlap) {
     const msg = `${String(chains.length)} chains found but no file overlap; not a divergence`;
@@ -173,7 +191,6 @@ function runPropose() {
 
   // Reduce to the two most active chains for the proposal. Multi-way merges
   // are still proposed pairwise; we always emit a 2-chain proposal.
-  const [chainA, chainB] = chains.slice().sort((a, b) => b.events.length - a.events.length).slice(0, 2);
   const proposal = buildProposal(chainA, chainB, overlap);
 
   if (args.write) {
@@ -186,6 +203,18 @@ function runPropose() {
     printProposal(proposal);
     if (args.write) console.log(`written → .smarch/merge-proposals/${proposal.proposal_id}.json`);
   }
+}
+
+function toMergeWhySide(label: 'A' | 'B', chain: MergeChain) {
+  return { label, chain_id: `chain-${label}-${chain.session_id ?? chain.agent_id ?? 'unknown'}`, ...chain };
+}
+
+function persistIntentSynthesis(projectId: string, proposalId: string, markdown: string) {
+  const dir = resolve(projectRoot(projectId), '.smarch/merge-proposals');
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  const path = resolve(dir, `${proposalId}.why.md`);
+  writeFileSync(`${path}.tmp`, markdown);
+  renameSync(`${path}.tmp`, path);
 }
 
 function buildProposal(chainA: MergeChain, chainB: MergeChain, _overlap: { hasOverlap: boolean; file?: string }) {
@@ -259,7 +288,7 @@ function groupIntoChains(events: MergeEvent[]) {
   // Bucket by session_id; if missing, by agent_id; if missing, fold into a synthetic 'unknown'.
   const buckets = new Map<string, MergeEvent[]>();
   for (const e of events) {
-    const key = (e.session_id ?? e.agent_id) ?? 'unknown';
+    const key = e.session_id ?? e.actor_id ?? e.agent_id ?? 'unknown';
     const bucket = buckets.get(key);
     if (bucket) bucket.push(e);
     else buckets.set(key, [e]);
@@ -270,7 +299,7 @@ function groupIntoChains(events: MergeEvent[]) {
     const head = evs[0];
     chains.push({
       session_id: head.session_id,
-      agent_id: head.actor_id,
+      agent_id: head.actor_id ?? head.agent_id,
       actor_kind: head.actor_kind,
       model: head.model,
       started_at: head.timestamp,
@@ -446,10 +475,11 @@ function pad(s: string, n: number) {
   return s.slice(0, n).padEnd(n);
 }
 
+// eslint-disable-next-line complexity -- The flat flag parser keeps supported booleans and value options auditable in one pass.
 function parseArgs(list: string[]): MergeArgs {
   const out: MergeArgs = {
     project: '', brick: '', since: '', proposal: '', kind: '', notes: '', by: '',
-    write: false, json: false, unresolved: false,
+    write: false, json: false, unresolved: false, fromIntents: false,
   };
   for (let i = 0; i < list.length; i++) {
     const a = list[i];
@@ -459,7 +489,7 @@ function parseArgs(list: string[]): MergeArgs {
     const next = list.at(i + 1);
     const isBool = next === undefined || next.startsWith('--');
     if (isBool) {
-      if (camel === 'write' || camel === 'json' || camel === 'unresolved') out[camel] = true;
+      if (camel === 'write' || camel === 'json' || camel === 'unresolved' || camel === 'fromIntents') out[camel] = true;
       continue;
     }
     if (camel === 'project' || camel === 'brick' || camel === 'since' || camel === 'proposal'

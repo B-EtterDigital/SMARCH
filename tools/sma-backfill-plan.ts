@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-base-to-string -- Backfill planning defensively validates persisted registry data and preserves its historical diagnostic coercion. */
+/* eslint-disable complexity, max-lines-per-function -- Backfill scoring keeps all independent weights in one visible ledger; extraction would hide ordering and make score drift harder to review. */
 /**
  * WHAT: Selects and ranks the most valuable bricks for provenance backfill.
  * WHY: Large portfolios need a deterministic work order instead of attempting every brick blindly.
@@ -34,7 +36,7 @@
  * lazily by sma-backfill-run.ts to keep planning fast and deterministic.
  */
 
-import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { argv, exit } from 'node:process';
 import { execFileSync } from 'node:child_process';

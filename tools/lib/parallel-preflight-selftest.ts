@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions -- Snapshot assertions intentionally interpolate observed primitive values into diagnostics. */
+/* eslint-disable max-lines-per-function -- The self-test keeps one fixture lifecycle in a single scope so setup, assertions, and cleanup cannot drift apart. */
 /**
  * WHAT: Runs fixed scenarios against the parallel-preflight decision engine.
  * WHY: A misleading launch recommendation can assign agents into blockers, stale work, or conflicting scopes.
@@ -9,19 +11,19 @@
  */
 /** Selftest harness for sma-parallel-preflight.ts. */
 
-type CommandGuidance = { active_lane: string; launchable_agents: number; module_dispatch_required?: boolean; stale_context_actionable?: boolean };
-type ModuleLaunchItem = { module_id: string; claim_command: string; agent_packet_markdown_path: string; graph_query_command: string; conflict_command: string; paths: string[]; required_gates: string[]; prompt: string };
-type LaneStatuses = { active_status: string; integration: { status: string; cleanup_required: boolean }; [key: string]: unknown };
-type LaunchDecision = { allowed: boolean; agents: number; integration_blocked: boolean; release_allowed: boolean };
-type BlockerPacket = { kind: string; uncovered_dirty_count?: number; conflict_command: string; parallel_claim_count?: number; prompt: string; command?: string; [key: string]: unknown };
-type MergedAssignment = { active: boolean; paths: string[]; [key: string]: unknown };
-type SelftestHarness = {
+interface CommandGuidance { active_lane: string; launchable_agents: number; module_dispatch_required?: boolean; stale_context_actionable?: boolean }
+interface ModuleLaunchItem { module_id: string; claim_command: string; agent_packet_markdown_path: string; graph_query_command: string; conflict_command: string; paths: string[]; required_gates: string[]; prompt: string }
+interface LaneStatuses { active_status: string; integration: { status: string; cleanup_required: boolean }; [key: string]: unknown }
+interface LaunchDecision { allowed: boolean; agents: number; integration_blocked: boolean; release_allowed: boolean }
+interface BlockerPacket { kind: string; uncovered_dirty_count?: number; conflict_command: string; parallel_claim_count?: number; prompt: string; command?: string; [key: string]: unknown }
+interface MergedAssignment { active: boolean; paths: string[]; [key: string]: unknown }
+interface SelftestHarness {
   buildBigPicture: (input: unknown) => { tldr: string; [key: string]: unknown };
   buildControllerBlockerPackets: (input: unknown) => BlockerPacket[];
   buildLaunchDecision: (input: unknown) => LaunchDecision;
   buildLaneStatuses: (input: unknown) => LaneStatuses;
   buildModuleLaunchPlan: (dispatch: unknown, limit: number) => ModuleLaunchItem[];
-  buildStaleContextLaunchPlan: (packets: BlockerPacket[], limit: number, project: string) => Array<{ command: string; conflict_command: string }>;
+  buildStaleContextLaunchPlan: (packets: BlockerPacket[], limit: number, project: string) => { command: string; conflict_command: string }[];
   formatDispatchBlocked: (dispatch: unknown) => string;
   mergeDispatchAssignments: (observed: unknown[], assignments: unknown[]) => MergedAssignment[];
   moduleProgressCommand: (input: unknown) => string;
@@ -29,7 +31,7 @@ type SelftestHarness = {
   scopedControllerIsClean: (input: unknown) => boolean;
   shouldUseControllerCleanupFallback: (packet: unknown, fallback: unknown) => boolean;
   summarizeCommandGuidance: (input: unknown) => CommandGuidance;
-};
+}
 
 export function runParallelPreflightSelftest(harness: SelftestHarness): void {
   const {
@@ -211,7 +213,7 @@ export function runParallelPreflightSelftest(harness: SelftestHarness): void {
     claim_command: moduleDispatch.assignments[0].claim_command,
   }];
   const merged = mergeDispatchAssignments(observed, moduleDispatch.assignments);
-  assertSelftest(merged[0].active === true, 'observed active status should stay authoritative');
+  assertSelftest(merged[0].active, 'observed active status should stay authoritative');
   assertSelftest(merged[0].paths.includes('src/module-1/**'), 'manifest paths should merge into observed assignment');
 
   const cleanupGuidance = summarizeCommandGuidance({
@@ -306,11 +308,11 @@ export function runParallelPreflightSelftest(harness: SelftestHarness): void {
           stale_assignment_count: 2,
         },
       },
-    }, cleanupFallback) === true,
+    }, cleanupFallback),
     'stale cleanup packets should use live controller cleanup fallback',
   );
   assertSelftest(
-    shouldUseControllerCleanupFallback({
+    !shouldUseControllerCleanupFallback({
       data: {
         freshness: { stale: false },
         readiness: {
@@ -320,7 +322,7 @@ export function runParallelPreflightSelftest(harness: SelftestHarness): void {
           stale_assignment_count: 0,
         },
       },
-    }, cleanupFallback) === false,
+    }, cleanupFallback),
     'fresh cleanup packets should stay authoritative',
   );
   assertSelftest(
@@ -333,7 +335,7 @@ export function runParallelPreflightSelftest(harness: SelftestHarness): void {
           targeted_dirty_paths: 0,
         },
       },
-    }, cleanupFallback) === true,
+    }, cleanupFallback),
     'empty packet wave should use non-empty live controller fallback',
   );
   const blockerPackets = buildControllerBlockerPackets({

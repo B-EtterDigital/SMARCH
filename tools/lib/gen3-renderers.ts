@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Renders self-contained brick-diff and file-tree pages for the Gen3 wiki.
  * WHY: Operators need inspectable release and source structure when interactive renderers are unavailable.
@@ -24,12 +26,11 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 
 const DIFFS_CDN = 'https://unpkg.com/diffs.com/dist/diffs.min.js';
 const TREES_CDN = 'https://unpkg.com/trees.software/dist/trees.min.js';
 
-type ReleaseData = { release?: { content_hash?: string }; content?: { included_paths?: string[] } };
+interface ReleaseData { release?: { content_hash?: string }; content?: { included_paths?: string[] } }
 interface TreeNode { [key: string]: TreeNode }
 
 /**

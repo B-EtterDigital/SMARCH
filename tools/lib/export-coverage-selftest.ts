@@ -32,12 +32,12 @@ const GUARDED_EXPORTERS: string[] = [
   'tools/sma-store-remote.ts',
 ];
 
-let n: number = 0;
+let n = 0;
 for (const rel of GUARDED_EXPORTERS) {
   const path = resolve(SMA_ROOT, rel);
   assert.ok(existsSync(path), `export tool missing: ${rel}`);
   const src = readFileSync(path, 'utf8');
-  assert.ok(/export-guard\.ts/.test(src), `${rel} does not import the export guard`);
+  assert.ok(src.includes('export-guard.ts'), `${rel} does not import the export guard`);
   assert.ok(/assertExportAllowed|evaluateExport/.test(src), `${rel} imports the guard but never calls it`);
   n += 1;
 }
@@ -47,4 +47,4 @@ for (const rel of GUARDED_EXPORTERS) {
 const guardSrc = readFileSync(resolve(SMA_ROOT, 'tools/lib/export-guard.ts'), 'utf8');
 assert.ok(/openness:\s*'closed'/.test(guardSrc), 'export guard must fail-safe unresolved bricks to closed');
 
-console.log(`export-coverage selftest: ${n} export tools guarded + fail-safe verified`);
+console.log(`export-coverage selftest: ${String(n)} export tools guarded + fail-safe verified`);

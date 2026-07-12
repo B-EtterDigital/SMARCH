@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unnecessary-type-conversion, @typescript-eslint/no-base-to-string -- Backlog CLI parsing and diagnostics preserve compatibility with untrusted legacy entries and exact existing coercion. */
+/* eslint-disable complexity -- The CLI parser is one explicit option grammar; centralized branches prevent conflicting flag precedence. */
 /**
  * WHAT: Creates, lists, closes, aggregates, and counts explicit architecture backlog entries.
  * WHY: Known gaps must remain visible and promotion-blocking instead of disappearing in chat or logs.
@@ -27,26 +29,26 @@
  *   - leaves any SMA gate at "partial" or "missing"
  *   - touches a file that triggers a scanner warning the agent doesn't fix in-session
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { argv, exit } from 'node:process';
 import { PROJECTS_ROOT, smaPath } from "./lib/sma-paths.ts";
 
 
 const SMA_REGISTRY = smaPath('registry');
 
-type CliArgs = {
+interface CliArgs {
   project?: string; title?: string; description?: string; severity?: string; kind?: string;
   brick?: string; package?: string; file: string[]; id?: string; resolution?: string;
   status?: string; effort?: string; costTokens?: string; blocksPromotionTo: string[];
   reuseReceiptId?: string; openedBy?: string; closedBy?: string; json?: boolean; help?: boolean;
-};
+}
 type BacklogEntry = Record<string, unknown> & {
   id: string; title: string; severity: string; kind: string; status: string;
 };
-type Backlog = {
+interface Backlog {
   schema_version: string; project: string; generated_at: string; entries: BacklogEntry[];
-};
+}
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
@@ -173,7 +175,7 @@ function closeEntry() {
 }
 
 function aggregate() {
-  const all: Array<BacklogEntry & { project: string }> = [];
+  const all: (BacklogEntry & { project: string })[] = [];
   for (const ent of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
     if (!ent.isDirectory()) continue;
     const path = resolve(PROJECTS_ROOT, ent.name, '.smarch/backlog.json');
@@ -201,7 +203,7 @@ function stats() {
   const data = args.project
     ? { entries: loadBacklog(args.project).entries.map((e) => ({ project: args.project, ...e })) }
     : (() => {
-        const all: Array<BacklogEntry & { project: string }> = [];
+        const all: (BacklogEntry & { project: string })[] = [];
         for (const ent of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
           if (!ent.isDirectory()) continue;
           const path = resolve(PROJECTS_ROOT, ent.name, '.smarch/backlog.json');

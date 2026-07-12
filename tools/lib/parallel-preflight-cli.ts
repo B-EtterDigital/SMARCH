@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- CLI argv indexing can be absent at runtime even though the standard library type models indexed access as a string. */
 /** Small, testable CLI parsing and help seams for sma-parallel-preflight.ts. */
 
 import type { PreflightArgs } from './parallel-preflight-types.d.ts';

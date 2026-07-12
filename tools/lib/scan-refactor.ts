@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-conversion, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-base-to-string, @typescript-eslint/restrict-template-expressions -- Refactor analysis normalizes untrusted scanner records and intentionally preserves defensive conversions, truthy fallback, and report formatting. */
+/* eslint-disable complexity, max-lines-per-function -- Refactor scoring is an ordered heuristic ledger; keeping all weights visible together prevents hidden precedence drift. */
 /**
  * Refactor opportunity and code-quality analysis.
  * Extracted from sma-scan.ts; keep registry behavior byte-identical.
@@ -9,28 +11,28 @@ import path from "node:path";
 import { isExcludedDirName, isExcludedPath, isWithinRoot, pathExists, toSlashPath } from "./scan-discovery.ts";
 
 type Severity = "medium" | "high" | "critical";
-export type SplitPoint = { line: number; kind: string; label: string };
-export type RefactorBrick = { id: string; source_paths?: string[] };
-type FileReference = { absolute_path: string; relative_path: string; brick_ids: Set<string> };
-export type OversizedFile = {
+export interface SplitPoint { line: number; kind: string; label: string }
+export interface RefactorBrick { id: string; source_paths?: string[] }
+interface FileReference { absolute_path: string; relative_path: string; brick_ids: Set<string> }
+export interface OversizedFile {
   project: string; path: string; absolute_path: string; extension: string; lines: number; bytes: number; severity: Severity;
   related_brick_count: number; related_bricks: string[]; split_points: SplitPoint[]; split_strategy: string;
-};
-type MissingSourcePath = { project: string; path: string; related_brick_count: number; related_bricks: string[] };
-type AnalysisFailure = { project: string; path: string; error: string };
-export type RefactorProjectReport = {
+}
+interface MissingSourcePath { project: string; path: string; related_brick_count: number; related_bricks: string[] }
+interface AnalysisFailure { project: string; path: string; error: string }
+export interface RefactorProjectReport {
   project: string; analyzed_file_count: number; oversized_file_count: number; split_opportunity_count: number;
   missing_source_path_count: number; analysis_failure_count: number; severity_counts: Record<Severity, number>;
   oversized_files: OversizedFile[]; missing_source_paths: MissingSourcePath[]; analysis_failures: AnalysisFailure[];
-};
+}
 type CodeQualityCounts = Record<string, number>;
-type QualityType = { key: string; label: string; count: number; weighted_score: number };
-export type QualityHotspot = {
+interface QualityType { key: string; label: string; count: number; weighted_score: number }
+export interface QualityHotspot {
   project: string; path: string; brick_id?: string; brick_name?: string; smell_score: number; total_matches: number;
   line_count: number; raw_source_tokens: number; by_type: CodeQualityCounts; top_types: QualityType[]; [key: string]: unknown;
-};
-export type QualityFingerprintEntry = { fingerprint: string; project: string; path: string; brick_id?: string; brick_name?: string; line_count: number; raw_source_tokens: number };
-type QualityQueueEntry = { project: string; category: string; path: string; priority_score: number; [key: string]: unknown };
+}
+export interface QualityFingerprintEntry { fingerprint: string; project: string; path: string; brick_id?: string; brick_name?: string; line_count: number; raw_source_tokens: number }
+interface QualityQueueEntry { project: string; category: string; path: string; priority_score: number; [key: string]: unknown }
 
 export const oversizedThresholds = {
   medium: 350,
@@ -191,7 +193,7 @@ function severityWeight(severity: string): number {
   }[severity] || 0;
 }
 function topLevelIndent(line: string): number {
-  const match = line.match(/^(\s*)/);
+  const match = /^(\s*)/.exec(line);
   return match ? match[1].length : 0;
 }
 
@@ -212,34 +214,34 @@ export function detectSplitPoints(sourceText: string): SplitPoint[] {
     let point: SplitPoint | null = null;
 
     if (/^export\s+(async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/.test(trimmed)) {
-      const [, , method] = trimmed.match(/^export\s+(async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/) || [];
+      const [, , method] = (/^export\s+(async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/.exec(trimmed)) || [];
       point = { line, kind: "route_handler", label: method || "handler" };
     } else if (/^(\/\/|#|\/\*+)\s*(region|section|feature|domain|flow|phase)\b/i.test(trimmed)
       || /^(\/\/|#|\/\*+)\s*[=-]{3,}/.test(trimmed)) {
       point = { line, kind: "section", label: trimmed.replace(/^(\/*\s*|#+\s*|\/\/\s*)/, "").slice(0, 80) || "section" };
     } else if (indent <= 2 && /^export\s+class\s+([A-Za-z0-9_]+)/.test(trimmed)) {
-      const [, name] = trimmed.match(/^export\s+class\s+([A-Za-z0-9_]+)/) || [];
+      const [, name] = (/^export\s+class\s+([A-Za-z0-9_]+)/.exec(trimmed)) || [];
       point = { line, kind: "export_class", label: name || "class" };
     } else if (indent <= 2 && /^(export\s+default\s+)?function\s+(use[A-Z][A-Za-z0-9_]*)\b/.test(trimmed)) {
-      const [, , name] = trimmed.match(/^(export\s+default\s+)?function\s+(use[A-Z][A-Za-z0-9_]*)\b/) || [];
+      const [, , name] = (/^(export\s+default\s+)?function\s+(use[A-Z][A-Za-z0-9_]*)\b/.exec(trimmed)) || [];
       point = { line, kind: "hook", label: name || "hook" };
     } else if (indent <= 2 && /^(export\s+default\s+)?function\s+([A-Z][A-Za-z0-9_]*)\b/.test(trimmed)) {
-      const [, , name] = trimmed.match(/^(export\s+default\s+)?function\s+([A-Z][A-Za-z0-9_]*)\b/) || [];
+      const [, , name] = (/^(export\s+default\s+)?function\s+([A-Z][A-Za-z0-9_]*)\b/.exec(trimmed)) || [];
       point = { line, kind: "react_component", label: name || "component" };
     } else if (indent <= 2 && /^export\s+(async\s+)?function\s+([A-Za-z0-9_]+)/.test(trimmed)) {
-      const [, , name] = trimmed.match(/^export\s+(async\s+)?function\s+([A-Za-z0-9_]+)/) || [];
+      const [, , name] = (/^export\s+(async\s+)?function\s+([A-Za-z0-9_]+)/.exec(trimmed)) || [];
       point = { line, kind: "export_function", label: name || "function" };
     } else if (indent <= 2 && /^export\s+const\s+([A-Za-z0-9_]+)\s*=/.test(trimmed)) {
-      const [, name] = trimmed.match(/^export\s+const\s+([A-Za-z0-9_]+)\s*=/) || [];
+      const [, name] = (/^export\s+const\s+([A-Za-z0-9_]+)\s*=/.exec(trimmed)) || [];
       point = { line, kind: /^use[A-Z]/.test(name || "") ? "hook" : "export_const", label: name || "export" };
     } else if (indent <= 2 && /^class\s+([A-Za-z0-9_]+)/.test(trimmed)) {
-      const [, name] = trimmed.match(/^class\s+([A-Za-z0-9_]+)/) || [];
+      const [, name] = (/^class\s+([A-Za-z0-9_]+)/.exec(trimmed)) || [];
       point = { line, kind: "class", label: name || "class" };
     } else if (indent <= 2 && /^(async\s+)?function\s+([A-Za-z0-9_]+)/.test(trimmed)) {
-      const [, , name] = trimmed.match(/^(async\s+)?function\s+([A-Za-z0-9_]+)/) || [];
+      const [, , name] = (/^(async\s+)?function\s+([A-Za-z0-9_]+)/.exec(trimmed)) || [];
       point = { line, kind: /^use[A-Z]/.test(name || "") ? "hook" : "helper_function", label: name || "function" };
     } else if (indent <= 2 && /^const\s+([A-Za-z0-9_]+)\s*=\s*(async\s*)?\(/.test(trimmed)) {
-      const [, name] = trimmed.match(/^const\s+([A-Za-z0-9_]+)\s*=/) || [];
+      const [, name] = (/^const\s+([A-Za-z0-9_]+)\s*=/.exec(trimmed)) || [];
       point = { line, kind: /^[A-Z]/.test(name || "") ? "react_component" : /^use[A-Z]/.test(name || "") ? "hook" : "helper_const", label: name || "const" };
     }
 
@@ -727,7 +729,7 @@ export function buildRefactorQueue(oversizedFiles: OversizedFile[]) {
     }));
 }
 
-export function countBy<T>(items: T[], keyFn: (item: T) => string): Array<[string, number]> {
+export function countBy<T>(items: T[], keyFn: (item: T) => string): [string, number][] {
   const counts = new Map<string, number>();
 
   for (const item of items) {

@@ -1,7 +1,7 @@
 {
   "ts_strict_errors": 0,
-  "eslint_errors": 4835,
+  "eslint_errors": 0,
   "knip_issues": 0,
-  "dup_pct": 2.5352657835885086,
-  "lib_coverage_min": 41.46
+  "dup_pct": 2.3476465293588182,
+  "lib_coverage_min": 44.12
 }

@@ -1,3 +1,6 @@
+/* Opaque worker failures intentionally retain JavaScript's existing diagnostic string coercion. */
+/* The worker lifecycle is linear; complexity counts independent cleanup and fallback guards as nested control flow. */
+/* eslint @typescript-eslint/no-base-to-string: "off", complexity: "off" */
 /**
  * WHAT: Runs Codex requests through the shared workforce contract with structured output and caching.
  * WHY: Ranking, enrichment, and wiki commands need one timeout, model, error, and cache policy for model calls.
@@ -41,23 +44,24 @@ const DEFAULT_MODEL = "gpt-5.4";
 const CACHE_DIR = path.join(os.homedir(), ".cache", "sma-codex");
 
 type JsonValue = { [key: string]: JsonValue } | JsonValue[] | string | number | boolean | null;
-type CodexOptions = {
+interface CodexOptions {
   prompt?: string;
   schema?: JsonValue;
   model?: string;
   timeoutMs?: number;
   noCache?: boolean;
   label?: string;
-};
-type CodexSuccess = { ok: true; data?: JsonValue; text?: string; fromCache?: boolean; durationMs: number };
-type CodexFailure = { ok: false; error: string; stderr?: string; rawText?: string; fromCache?: boolean; durationMs?: number };
+}
+interface CodexSuccess { ok: true; data?: JsonValue; text?: string; fromCache?: boolean; durationMs: number }
+interface CodexFailure { ok: false; error: string; stderr?: string; rawText?: string; fromCache?: boolean; durationMs?: number }
 type CodexResult = CodexSuccess | CodexFailure;
-type DispatchResult = { ok: boolean; output?: unknown; raw?: { stderr?: string; exitCode?: number; error?: string } };
+interface DispatchResult { ok: boolean; output?: unknown; raw?: { stderr?: string; exitCode?: number; error?: string } }
+interface SuccessfulCodexDispatch { ok: true; output: unknown; stderr: string; durationMs: number }
 type DispatchFunction = (prompt: string, options: {
   backend: string; model: string; schema?: string; readOnly: boolean; timeoutMs: number;
 }) => Promise<DispatchResult>;
 type BatchItem = CodexOptions & { id: string; prompt: string };
-type BatchWrapped = { id: string; result: CodexResult };
+interface BatchWrapped { id: string; result: CodexResult }
 
 function reportRunnerError(area: string, hint: string, error: unknown): void {
   const code = error && typeof error === 'object' && 'code' in error
@@ -114,26 +118,50 @@ async function writeCache(key: string, payload: CodexResult): Promise<void> {
 async function dispatchCodex({ prompt, schemaPath, model, timeoutMs }: {
   prompt: string; schemaPath: string | null; model: string; timeoutMs: number;
 }, dispatchFn: DispatchFunction = dispatch as DispatchFunction): Promise<
-  { ok: true; output: unknown; stderr: string; durationMs: number }
+  SuccessfulCodexDispatch
   | { ok: false; error: string; stderr: string; durationMs: number }
 > {
   const started = Date.now();
   const result = await dispatchFn(prompt, {
     backend: "codex",
     model,
-    schema: schemaPath || undefined,
+    schema: schemaPath ?? undefined,
     readOnly: true,
     timeoutMs,
   });
   const durationMs = Date.now() - started;
-  const stderr = result.raw?.stderr || "";
+  const stderr = result.raw?.stderr ?? "";
   if (!result.ok) {
     const exitCode = result.raw?.exitCode;
     const error = result.raw?.error
-      || (Number.isInteger(exitCode) ? `codex exit ${exitCode}` : "workforce codex dispatch failed");
+      ?? (Number.isInteger(exitCode) ? `codex exit ${String(exitCode)}` : "workforce codex dispatch failed");
     return { ok: false, error, stderr, durationMs };
   }
   return { ok: true, output: result.output, stderr, durationMs };
+}
+
+function parseCodexOutput(spawned: SuccessfulCodexDispatch, schema: JsonValue | null): CodexResult {
+  const raw = typeof spawned.output === "string"
+    ? spawned.output
+    : JSON.stringify(spawned.output ?? "");
+  if (!schema) return { ok: true, text: raw.trim(), durationMs: spawned.durationMs };
+
+  const unfenced = raw
+    .replace(/^\s*```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+  try {
+    const data = JSON.parse(unfenced) as JsonValue;
+    return { ok: true, data, durationMs: spawned.durationMs };
+  } catch (error: unknown) {
+    reportRunnerError('codex-runner.response-parse', 'Inspect the raw Codex response and requested schema.', error);
+    return {
+      ok: false,
+      error: `JSON parse failed: ${error instanceof Error ? error.message : String(error)}`,
+      rawText: unfenced.slice(0, 2000),
+      durationMs: spawned.durationMs,
+    };
+  }
 }
 
 /** @param {CodexOptions} [options] */
@@ -143,7 +171,7 @@ export async function codex({
   model = DEFAULT_MODEL,
   timeoutMs = 240000,
   noCache = false,
-  label = "codex"
+  label: _label = "codex"
 }: CodexOptions = {}): Promise<CodexResult> {
   if (!prompt || typeof prompt !== "string") {
     return { ok: false, error: "prompt is required" };
@@ -180,32 +208,7 @@ export async function codex({
     return spawned;
   }
 
-  const raw = typeof spawned.output === "string"
-    ? spawned.output
-    : JSON.stringify(spawned.output ?? "");
-
-  let result: CodexResult;
-  if (schema) {
-    // Codex sometimes wraps JSON in fenced blocks. Strip them.
-    const unfenced = raw
-      .replace(/^\s*```(?:json)?\s*/i, "")
-      .replace(/\s*```\s*$/i, "")
-      .trim();
-    try {
-      const data = JSON.parse(unfenced) as JsonValue;
-      result = { ok: true, data, durationMs: spawned.durationMs };
-    } catch (err: unknown) {
-      reportRunnerError('codex-runner.response-parse', 'Inspect the raw Codex response and requested schema.', err);
-      result = {
-        ok: false,
-        error: `JSON parse failed: ${err instanceof Error ? err.message : String(err)}`,
-        rawText: unfenced.slice(0, 2000),
-        durationMs: spawned.durationMs
-      };
-    }
-  } else {
-    result = { ok: true, text: raw.trim(), durationMs: spawned.durationMs };
-  }
+  const result = parseCodexOutput(spawned, schema);
 
   try { await fs.rm(tmp, { recursive: true, force: true }); } catch (error) {
     reportRunnerError('codex-runner.temp-cleanup', 'Remove the temporary schema directory manually.', error);
@@ -232,12 +235,12 @@ export async function codexBatch(items: BatchItem[], { concurrency = 3, model = 
   const queue = items.slice();
   const results: BatchWrapped[] = [];
   let active = 0;
-  let resolveAll: () => void = () => {};
+  let resolveAll: (() => void) | undefined;
   const done = new Promise<void>((resolveDone) => { resolveAll = resolveDone; });
 
   const tick = (): void => {
     if (queue.length === 0 && active === 0) {
-      resolveAll();
+      resolveAll?.();
       return;
     }
     while (active < concurrency && queue.length > 0) {
@@ -246,9 +249,9 @@ export async function codexBatch(items: BatchItem[], { concurrency = 3, model = 
       active += 1;
       codex({
         prompt: item.prompt,
-        schema: item.schema || null,
-        model: item.model || model,
-        timeoutMs: item.timeoutMs || timeoutMs,
+        schema: item.schema ?? null,
+        model: item.model ?? model,
+        timeoutMs: item.timeoutMs ?? timeoutMs,
         label: item.id
       }).then((result) => {
         const wrapped: BatchWrapped = { id: item.id, result };

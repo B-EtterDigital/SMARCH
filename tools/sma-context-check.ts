@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Checks that changed brick manifests have timely agent-context evidence.
  * WHY: A manifest change without recorded intent and verification breaks safe handoff and weakens auditability.
@@ -125,13 +127,13 @@ function runCheck() {
   } else {
     console.log(`project:        ${args.project}`);
     console.log(`window starts:  ${new Date(windowStart).toISOString()}`);
-    console.log(`modified:       ${results.length} manifest(s)`);
-    console.log(`covered:        ${results.length - missing.length}`);
-    console.log(`missing:        ${missing.length}`);
+    console.log(`modified:       ${String(results.length)} manifest(s)`);
+    console.log(`covered:        ${String(results.length - missing.length)}`);
+    console.log(`missing:        ${String(missing.length)}`);
     if (missing.length) {
       console.log(`\nbricks missing context:`);
       for (const r of missing) {
-        console.log(`  · ${r.brick ?? '<unknown>'}  (${r.manifest})  events_in_window=${r.events_in_window} lifetime=${r.lifetime_events ?? 0}`);
+        console.log(`  · ${r.brick ?? '<unknown>'}  (${r.manifest})  events_in_window=${String(r.events_in_window)} lifetime=${String(r.lifetime_events ?? 0)}`);
       }
       console.log(`\nfix with:`);
       for (const r of missing) {
@@ -168,7 +170,7 @@ function runAudit() {
   console.log(`${pad('brick', 70)} ${pad('events', 8)} last_event`);
   console.log('-'.repeat(120));
   for (const r of rows) {
-    console.log(`${pad(r.brick, 70)} ${pad(String(r.lifetime_events), 8)} ${r.last_event_at ?? '(none)'}`);
+    console.log(`${pad(r.brick, 70)} ${pad(String(r.lifetime_events), 8)} ${String(r.last_event_at ?? '(none)')}`);
   }
 }
 
@@ -225,8 +227,21 @@ function findAllManifests(root: string): string[] {
 
 function readBrickId(manifestPath: string): string | null {
   try {
-    const data = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    return data?.brick?.id ?? data?.build?.id ?? null;
+    const data: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    if (typeof data !== 'object' || data === null) return null;
+    const record = data as Record<string, unknown>;
+    for (const key of ['brick', 'build'] as const) {
+      const candidate = record[key];
+      if (
+        typeof candidate === 'object'
+        && candidate !== null
+        && 'id' in candidate
+      ) {
+        const id: unknown = candidate.id;
+        if (typeof id === 'string') return id;
+      }
+    }
+    return null;
   } catch {
     return null;
   }

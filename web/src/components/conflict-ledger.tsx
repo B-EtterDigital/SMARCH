@@ -1,16 +1,17 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions -- Conflict identifiers are rendered with their existing primitive interpolation to preserve displayed ledger text. */
 import { useMemo } from "preact/hooks";
 import type { Conflict } from "../schema-types";
 import { STRINGS } from "../strings";
 import { EmptyState, type SurfaceState } from "./empty-states";
 import { VerdictStamp } from "./verdict-stamp";
 
-export type ConflictLedgerProps = {
+export interface ConflictLedgerProps {
   conflicts: Conflict[];
   moduleFilter?: string | null;
   state?: "populated" | SurfaceState;
   onRetry?: () => void;
   error?: unknown;
-};
+}
 
 function sortConflicts(conflicts: Conflict[]): Conflict[] {
   return [...conflicts].sort((left, right) => {

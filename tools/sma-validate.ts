@@ -18,7 +18,7 @@ type DeepPartial<T> = T extends readonly unknown[]
   : T extends object
     ? { [Key in keyof T]?: DeepPartial<T[Key]> }
     : T;
-type ManifestInput = DeepPartial<BrickManifest> & Record<string, unknown>;
+type ManifestInput = DeepPartial<BrickManifest>;
 interface ValidationFinding { code: string; message: string }
 interface ValidationReport {
   brick_id: string; calculated_score?: number; declared_score?: number | null;
@@ -182,6 +182,7 @@ function candidateOrCanonical(manifest: ManifestInput): boolean {
   return manifest.brick?.status === "candidate" || manifest.brick?.status === "canonical";
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function validateManifest(manifestPath: string, manifest: ManifestInput): ValidationReport {
   const report: ValidationReport = {
     manifest_path: manifestPath,

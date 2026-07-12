@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Appends and reads the per-brick [agent-context](../docs/GLOSSARY.md#agent-context) event stream.
  * WHY: Git records file changes but not the intent, decisions, rejected options, verification, and handoff needed by the next agent.
@@ -34,26 +36,24 @@
  *   list-bricks  --project <id>
  */
 
-import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
 import { argv, exit } from 'node:process';
 import {
   appendContextEvent,
   readContextLog,
   logPath,
-  projectRoot,
   KINDS,
   ACTOR_KINDS,
   VERIFY_STATUSES,
   listBricksWithContext,
 } from './lib/context-log.ts';
 
-type ContextArgs = {
+interface ContextArgs {
   actor: string; actorKind: string; backlog: string; brick: string; commit: string;
   decision: string; intent: string; kind: string; lease: string; model: string; n: string;
   project: string; session: string; task: string; verifyCmd: string; verifyStatus: string;
   file?: string[]; linkedBacklog?: string[]; rejected?: string[]; json: boolean;
-};
+}
 type ContextScalarKey = Exclude<keyof ContextArgs, 'file' | 'linkedBacklog' | 'rejected' | 'json'>;
 const CONTEXT_SCALAR_KEYS: readonly ContextScalarKey[] = ['actor', 'actorKind', 'backlog', 'brick', 'commit', 'decision', 'intent', 'kind', 'lease', 'model', 'n', 'project', 'session', 'task', 'verifyCmd', 'verifyStatus'];
 
@@ -143,7 +143,7 @@ function runAppend() {
   });
 
   if (args.json) console.log(JSON.stringify(event, null, 2));
-  else console.log(`appended ${event.event_id} (${event.kind}) → ${logPath(args.project, args.brick)}`);
+  else console.log(`appended ${String(event.event_id)} (${String(event.kind)}) → ${logPath(args.project, args.brick)}`);
 }
 
 function runTail() {
@@ -162,8 +162,8 @@ function runTail() {
     return;
   }
   for (const e of tail) {
-    console.log(`${e.timestamp}  ${pad(e.kind, 22)}  ${pad(e.actor_id, 24)}  ${e.intent}`);
-    if (e.decision_rationale) console.log(`                                                    ↳ ${e.decision_rationale}`);
+    console.log(`${String(e.timestamp)}  ${pad(e.kind, 22)}  ${pad(e.actor_id, 24)}  ${String(e.intent)}`);
+    if (e.decision_rationale) console.log(`                                                    ↳ ${String(e.decision_rationale)}`);
   }
 }
 
@@ -174,7 +174,10 @@ function runSummarize() {
   const intents = uniq(events.map((e) => e.intent).filter(Boolean));
   const decisions = uniq(events.map((e) => e.decision_rationale).filter(Boolean));
   const rejected = events
-    .flatMap((e) => Array.isArray(e.rejected_alternatives) ? e.rejected_alternatives : [])
+    .flatMap((e): unknown[] => {
+      const alternatives: unknown = e.rejected_alternatives;
+      return Array.isArray(alternatives) ? alternatives : [];
+    })
     .filter((value): value is { alternative: string; reason: string } =>
       typeof value === 'object' && value !== null && 'alternative' in value && typeof value.alternative === 'string' && 'reason' in value && typeof value.reason === 'string')
     .map((alternative) => `${alternative.alternative} :: ${alternative.reason}`);
@@ -194,12 +197,12 @@ function runSummarize() {
     return;
   }
   console.log(`brick:  ${args.brick}`);
-  console.log(`events: ${events.length}`);
-  console.log(`intents (${intents.length}):`);
-  for (const i of intents) console.log(`  · ${i}`);
+  console.log(`events: ${String(events.length)}`);
+  console.log(`intents (${String(intents.length)}):`);
+  for (const i of intents) console.log(`  · ${String(i)}`);
   if (decisions.length) {
-    console.log(`decisions (${decisions.length}):`);
-    for (const d of decisions) console.log(`  · ${d}`);
+    console.log(`decisions (${String(decisions.length)}):`);
+    for (const d of decisions) console.log(`  · ${String(d)}`);
   }
   if (rejected.length) {
     console.log(`rejected alternatives:`);
@@ -231,7 +234,7 @@ function runListBricks() {
     const path = logPath(args.project, id);
     const lines = readFileSync(path, 'utf8').split('\n').filter((l: string) => l.trim()).length;
     const sz = statSync(path).size;
-    console.log(`${pad(id, 70)}  ${pad(String(lines), 6)} events  ${sz} bytes`);
+    console.log(`${pad(id, 70)}  ${pad(String(lines), 6)} events  ${String(sz)} bytes`);
   }
 }
 

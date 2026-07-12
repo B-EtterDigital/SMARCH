@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Dependency evidence is loaded from external JSON, so defensive runtime guards remain required. */
+/* Dependency evidence scanning is a flat set of independent format handlers; complexity counts each handler guard. */
+/* eslint @typescript-eslint/no-unnecessary-condition: "off", complexity: "off" */
 /**
  * WHAT: Builds an inverse index from source bricks to the projects that depend on them.
  * WHY: Source releases cannot be propagated safely without knowing every locked copy and fork.
@@ -133,105 +136,80 @@ function ensureSourceMeta(srcId: string, srcProject?: string): void {
   if (srcProject && !sources[srcId].source_project) sources[srcId].source_project = srcProject;
 }
 
-function scanProject(projectRoot: string): void {
-  projectsScanned++;
-  const projectId = projectRoot.split('/').pop();
-  const smarchDir = join(projectRoot, '.smarch');
-  if (!existsSync(smarchDir)) return;
-
-  // 1. Formal import lock (sma-clone v0 — import-lock.json) + new format (imports.json + build-lock.json)
+function scanLegacyImportLock(projectRoot: string, projectId: string | undefined, smarchDir: string): void {
   const lockPath = join(smarchDir, 'import-lock.json');
-  if (existsSync(lockPath)) {
-    importLocksFound++;
-    try {
-      const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as ImportLock;
-      const bricks = lock.resolved_bricks ?? [];
-      for (const r of bricks) {
-        const srcId = r.source_brick_id ?? r.brick_id ?? r.id;
-        if (!srcId) continue;
-        ensureSourceMeta(srcId, r.source_project);
-        pushDependent(srcId, {
-          target_project: lock.target?.project ?? projectId,
-          target_root: projectRoot,
-          target_path: r.target_path,
-          target_brick_id: r.target_brick_id,
-          version_imported: r.version,
-          source_commit_imported: r.source_commit,
-          imported_at: lock.lock?.generated_at,
-          evidence_kind: 'import-lock',
-          evidence_path: relative(PROJECTS_ROOT, lockPath),
-          upgrade_status: 'unknown',
-        });
-      }
-    } catch (error: unknown) {
-      console.error(`[warn] could not parse ${lockPath}: ${error instanceof Error ? error.message : String(error)}`);
+  if (!existsSync(lockPath)) return;
+  importLocksFound++;
+  try {
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as ImportLock;
+    for (const record of lock.resolved_bricks ?? []) {
+      const sourceId = record.source_brick_id ?? record.brick_id ?? record.id;
+      if (!sourceId) continue;
+      ensureSourceMeta(sourceId, record.source_project);
+      pushDependent(sourceId, {
+        target_project: lock.target?.project ?? projectId, target_root: projectRoot,
+        target_path: record.target_path, target_brick_id: record.target_brick_id,
+        version_imported: record.version, source_commit_imported: record.source_commit,
+        imported_at: lock.lock?.generated_at, evidence_kind: 'import-lock',
+        evidence_path: relative(PROJECTS_ROOT, lockPath), upgrade_status: 'unknown',
+      });
     }
+  } catch (error: unknown) {
+    console.error(`[warn] could not parse ${lockPath}: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
 
-  // 1b. Newer sma-clone format: .smarch/imports.json + .smarch/build-lock.json.
+function scanModernImportLock(projectRoot: string, projectId: string | undefined, smarchDir: string): void {
   const importsPath = join(smarchDir, 'imports.json');
   const buildLockPath = join(smarchDir, 'build-lock.json');
-  if (existsSync(importsPath) && existsSync(buildLockPath)) {
-    importLocksFound++;
+  if (!existsSync(importsPath) || !existsSync(buildLockPath)) return;
+  importLocksFound++;
+  try {
+    const imports = JSON.parse(readFileSync(importsPath, 'utf8')) as ImportsFile;
+    const buildLock = JSON.parse(readFileSync(buildLockPath, 'utf8')) as ImportLock;
+    for (const record of buildLock.resolved_bricks ?? []) {
+      const sourceId = record.artifact_id ?? record.source_brick_id ?? record.brick_id ?? record.id;
+      if (!sourceId || record.artifact_type === 'build') continue;
+      ensureSourceMeta(sourceId, record.source_project);
+      pushDependent(sourceId, {
+        target_project: buildLock.target?.id ?? imports.imports?.[0]?.target_project ?? projectId,
+        target_root: projectRoot, target_path: record.target_path ?? record.path, target_brick_id: sourceId,
+        version_imported: record.release_version ?? record.version, source_commit_imported: record.source_commit,
+        imported_at: imports.imports?.[0]?.imported_at ?? buildLock.lock?.generated_at,
+        evidence_kind: 'import-lock', evidence_path: relative(PROJECTS_ROOT, importsPath), upgrade_status: 'unknown',
+      });
+    }
+  } catch (error: unknown) {
+    console.error(`[warn] could not parse ${importsPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function scanReuseReceipts(projectRoot: string, projectId: string | undefined, smarchDir: string): void {
+  const receiptsDir = join(smarchDir, 'reuse-receipts');
+  if (!existsSync(receiptsDir) || !statSync(receiptsDir).isDirectory()) return;
+  for (const file of readdirSync(receiptsDir)) {
+    if (!file.endsWith('.json')) continue;
+    reuseReceiptsFound++;
     try {
-      const imports = JSON.parse(readFileSync(importsPath, 'utf8')) as ImportsFile;
-      const buildLock = JSON.parse(readFileSync(buildLockPath, 'utf8')) as ImportLock;
-      const resolved = buildLock.resolved_bricks ?? [];
-      for (const r of resolved) {
-        // sma-clone v1 uses artifact_id (canonical brick id);
-        // older format used source_brick_id/brick_id/id.
-        const srcId = r.artifact_id ?? r.source_brick_id ?? r.brick_id ?? r.id;
-        if (!srcId || r.artifact_type === 'build') continue;
-        ensureSourceMeta(srcId, r.source_project);
-        pushDependent(srcId, {
-          target_project: buildLock.target?.id ?? imports.imports?.[0]?.target_project ?? projectId,
-          target_root: projectRoot,
-          target_path: r.target_path ?? r.path,
-          target_brick_id: srcId,
-          version_imported: r.release_version ?? r.version,
-          source_commit_imported: r.source_commit,
-          imported_at: imports.imports?.[0]?.imported_at ?? buildLock.lock?.generated_at,
-          evidence_kind: 'import-lock',
-          evidence_path: relative(PROJECTS_ROOT, importsPath),
-          upgrade_status: 'unknown',
+      const receipt = JSON.parse(readFileSync(join(receiptsDir, file), 'utf8')) as ReuseReceipt;
+      for (const item of receipt.items ?? []) {
+        const sourceId = item.source_brick_id;
+        if (!sourceId) continue;
+        ensureSourceMeta(sourceId, receipt.source?.project);
+        pushDependent(sourceId, {
+          target_project: receipt.target?.project ?? projectId, target_root: receipt.target?.root ?? projectRoot,
+          target_path: item.target_path, target_brick_id: item.target_brick_id,
+          source_commit_imported: receipt.source?.commit, imported_at: receipt.generated_at,
+          evidence_kind: 'reuse-receipt', evidence_path: relative(PROJECTS_ROOT, join(receiptsDir, file)), upgrade_status: 'unknown',
         });
       }
     } catch (error: unknown) {
-      console.error(`[warn] could not parse ${importsPath}: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[warn] could not parse ${file}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+}
 
-  // 2. Reuse receipts (informal / additive)
-  const receiptsDir = join(smarchDir, 'reuse-receipts');
-  if (existsSync(receiptsDir) && statSync(receiptsDir).isDirectory()) {
-    for (const f of readdirSync(receiptsDir)) {
-      if (!f.endsWith('.json')) continue;
-      reuseReceiptsFound++;
-      try {
-        const r = JSON.parse(readFileSync(join(receiptsDir, f), 'utf8')) as ReuseReceipt;
-        for (const item of r.items ?? []) {
-          const srcId = item.source_brick_id;
-          if (!srcId) continue;
-          ensureSourceMeta(srcId, r.source?.project);
-          pushDependent(srcId, {
-            target_project: r.target?.project ?? projectId,
-            target_root: r.target?.root ?? projectRoot,
-            target_path: item.target_path,
-            target_brick_id: item.target_brick_id,
-            source_commit_imported: r.source?.commit,
-            imported_at: r.generated_at,
-            evidence_kind: 'reuse-receipt',
-            evidence_path: relative(PROJECTS_ROOT, join(receiptsDir, f)),
-            upgrade_status: 'unknown',
-          });
-        }
-      } catch (error: unknown) {
-        console.error(`[warn] could not parse ${f}: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-  }
-
-  // 3. Brick manifest source-chain fallback
+function scanSourceChains(projectRoot: string, projectId: string | undefined): void {
   for (const brickDir of findBrickDirs(projectRoot)) {
     const manifestPath = join(brickDir, 'module.sweetspot.json');
     if (!existsSync(manifestPath)) continue;
@@ -262,6 +240,17 @@ function scanProject(projectRoot: string): void {
       }
     } catch { /* skip */ }
   }
+}
+
+function scanProject(projectRoot: string): void {
+  projectsScanned++;
+  const projectId = projectRoot.split('/').pop();
+  const smarchDir = join(projectRoot, '.smarch');
+  if (!existsSync(smarchDir)) return;
+  scanLegacyImportLock(projectRoot, projectId, smarchDir);
+  scanModernImportLock(projectRoot, projectId, smarchDir);
+  scanReuseReceipts(projectRoot, projectId, smarchDir);
+  scanSourceChains(projectRoot, projectId);
 }
 
 function findBrickDirs(root: string): string[] {

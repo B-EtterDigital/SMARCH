@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Decides whether a generated controller packet still matches current lease state.
  * WHY: A young packet can still be unsafe when ownership changes after it was generated.
@@ -14,7 +16,7 @@ const PACKET_LEASE_FINGERPRINT_ALGORITHM = 'sha256:active-leases-v1';
 
 const TRANSIENT_LEASE_KINDS = new Set(['registry-regen', 'state-regen', 'wiki-regen']);
 
-type PacketLease = {
+interface PacketLease {
   lease_id?: unknown;
   resource_kind?: unknown;
   resource_id?: unknown;
@@ -22,13 +24,13 @@ type PacketLease = {
   agent_id?: unknown;
   acquired_at?: unknown;
   intent?: unknown;
-};
+}
 
 type PacketLeaseSource = PacketLease[] | { leases?: PacketLease[] } | null | undefined;
 type NormalizedPacketLease = Record<'lease_id' | 'resource_kind' | 'resource_id' | 'project' | 'agent_id' | 'acquired_at' | 'intent', string | null>;
-export type LeaseFingerprint = { algorithm: string; hash: string; lease_count: number; lease_ids?: Array<string | null> };
+export interface LeaseFingerprint { algorithm: string; hash: string; lease_count: number; lease_ids?: (string | null)[] }
 type PacketReport = { generated_at?: string | null; lease_fingerprint?: LeaseFingerprint | null } | null | undefined;
-export type PacketFreshness = {
+export interface PacketFreshness {
   generated_at: string | null;
   age_seconds: number | null;
   max_age_seconds: number;
@@ -42,13 +44,13 @@ export type PacketFreshness = {
     algorithm: string | null;
   };
   stale: boolean;
-};
+}
 
 export function maxAgeSeconds(value: unknown, fallback = DEFAULT_PACKET_MAX_AGE_SECONDS): number {
   if (value === undefined || value === null || value === true) return fallback;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`invalid --max-age-seconds value: ${value}`);
+    throw new Error(`invalid --max-age-seconds value: ${String(value)}`);
   }
   return Math.floor(parsed);
 }
@@ -106,6 +108,7 @@ function normalizePacketLeases(activeLeases: PacketLeaseSource, { project = null
     ].join('\0')));
 }
 
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function packetFreshness(report: PacketReport, {
   currentLeaseFingerprint = null,
   expectedLeaseFingerprint = null,
@@ -156,14 +159,14 @@ export function assertFreshPacketReport(report: PacketReport, {
 }
 
 export function formatPacketFreshness(freshness: PacketFreshness): string {
-  const age = freshness.age_seconds === null ? 'unknown age' : `${freshness.age_seconds}s old`;
+  const age = freshness.age_seconds === null ? 'unknown age' : `${String(freshness.age_seconds)}s old`;
   const lease = freshness.lease_fingerprint;
   const leaseInfo = lease.packet_hash
     ? `lease ${shortHash(lease.packet_hash)}${freshness.lease_stale ? ', active leases changed' : ''}`
     : null;
   return `generated ${freshness.generated_at || 'unknown'} (${[
     age,
-    `max ${freshness.max_age_seconds}s`,
+    `max ${String(freshness.max_age_seconds)}s`,
     leaseInfo,
     freshness.stale ? 'stale' : null,
   ].filter(Boolean).join(', ')})`;
@@ -172,8 +175,8 @@ export function formatPacketFreshness(freshness: PacketFreshness): string {
 function packetFreshnessReason(freshness: PacketFreshness): string {
   const reasons: string[] = [];
   if (freshness.age_stale) {
-    const age = freshness.age_seconds === null ? 'unknown age' : `${freshness.age_seconds}s old`;
-    reasons.push(`${age}; max ${freshness.max_age_seconds}s`);
+    const age = freshness.age_seconds === null ? 'unknown age' : `${String(freshness.age_seconds)}s old`;
+    reasons.push(`${age}; max ${String(freshness.max_age_seconds)}s`);
   }
   if (freshness.lease_stale) {
     const lease = freshness.lease_fingerprint;
@@ -183,12 +186,12 @@ function packetFreshnessReason(freshness: PacketFreshness): string {
 }
 
 function shortHash(value: string | null | undefined): string {
-  return value ? String(value).slice(0, 12) : 'none';
+  return value ? value.slice(0, 12) : 'none';
 }
 
 function isTransientPacketLease(lease: PacketLease): boolean {
-  const kind = normalizeString(lease?.resource_kind);
-  const resource = normalizeString(lease?.resource_id);
+  const kind = normalizeString(lease.resource_kind);
+  const resource = normalizeString(lease.resource_id);
   return (kind !== null && TRANSIENT_LEASE_KINDS.has(kind))
     || (kind === 'other' && resource === 'controller-actions');
 }

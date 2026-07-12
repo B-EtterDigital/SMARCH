@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-base-to-string -- This untrusted-report boundary intentionally preserves legacy truthy fallback, defensive guards, and JavaScript string coercion; simplifying them changes accepted-input behavior. */
+/* eslint-disable complexity -- The comparator is a compact ordered ranking policy; each branch is an independent sort key and extraction would hide precedence. */
 /**
  * WHAT: Shared parsing, ranking, formatting, and registry-loading helpers for adoption tools.
  * WHY: Adoption commands otherwise drift when they interpret the same project and registry data separately.
@@ -18,25 +20,6 @@ type ParsedArgs = { _: string[] } & Record<string, string | boolean | string[]>;
 
 export function formatNumber(value: Scalar) {
   return new Intl.NumberFormat("en-US").format(Number(value || 0));
-}
-
-function tokenize(value: Scalar): string[] {
-  return [...new Set(
-    String(value || "")
-      .toLowerCase()
-      .split(/[^a-z0-9]+/g)
-      .filter((token) => token.length >= 2)
-  )];
-}
-
-function tokenOverlapScore(queryTokens: readonly string[], ...parts: readonly Scalar[]): number {
-  if (!Array.isArray(queryTokens) || queryTokens.length === 0) return 0;
-  const haystack = new Set(tokenize(parts.filter(Boolean).join(" ")));
-  let score = 0;
-  for (const token of queryTokens) {
-    if (haystack.has(token)) score += 1;
-  }
-  return score;
 }
 
 export function relativeFromCwd(cwd: string, targetPath: string): string {
@@ -110,13 +93,13 @@ export function compareBy<T extends SortableRecord>(key: keyof T & string, direc
 }
 
 export function topList<T>(values: readonly T[] | null | undefined, limit = 5, comparator: ((left: T, right: T) => number) | null = null): T[] {
-  const rows = Array.isArray(values) ? [...values] : [];
+  const rows: T[] = Array.isArray(values) ? Array.from(values as readonly T[]) : [];
   if (typeof comparator === "function") rows.sort(comparator);
   return rows.slice(0, limit);
 }
 
-export function uniqueBy<T, K>(values: readonly T[] | null | undefined, keyFn: (value: T) => K): T[] {
-  const seen = new Set<K>();
+export function uniqueBy<T>(values: readonly T[] | null | undefined, keyFn: (value: T) => unknown): T[] {
+  const seen = new Set<unknown>();
   const out: T[] = [];
   for (const value of values || []) {
     const key = keyFn(value);

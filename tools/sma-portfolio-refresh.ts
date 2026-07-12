@@ -137,9 +137,10 @@ Use --force when a controller explicitly needs a fresh full portfolio scan.
 `);
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Refresh is a phase-ordered transaction; scan, state, and dashboard dependency ordering must remain visible.
 async function refreshPortfolio(): Promise<RefreshSummary> {
-  const projectIds = uniqueStrings(args.projects || []);
-  const changedFiles = uniqueStrings(args.changedFiles || []);
+  const projectIds = uniqueStrings(args.projects);
+  const changedFiles = uniqueStrings(args.changedFiles);
   const impact = classifyChangedFiles(changedFiles);
   const noScan = Boolean(args.noScan) || (changedFiles.length > 0 && !impact.requiresScan);
   const summary: RefreshSummary = {
@@ -190,8 +191,7 @@ async function refreshPortfolio(): Promise<RefreshSummary> {
       ],
     });
     summary.phases.push(provenancePhase);
-    const provenanceUpdated = provenancePhase
-      && ['refreshed', 'refreshed-after-wait', 'coalesced-fresh'].includes(provenancePhase.status);
+    const provenanceUpdated = ['refreshed', 'refreshed-after-wait', 'coalesced-fresh'].includes(provenancePhase.status);
     summary.phases.push(await maybeRefresh({
       name: 'anchor',
       artifactPath: resolve(repoRoot, 'registry/anchor.generated.json'),
@@ -447,12 +447,13 @@ function printSummary(summary: RefreshSummary): void {
 }
 
 /** @returns {PortfolioRefreshArgs} */
+// eslint-disable-next-line complexity -- Refresh is a phase-ordered transaction; scan, state, and dashboard dependency ordering must remain visible.
 function parseArgs(list: string[]): PortfolioRefreshArgs {
   /** @type {PortfolioRefreshArgs} */
   const out: PortfolioRefreshArgs = { ...DEFAULTS, projects: [], changedFiles: [] };
   for (let i = 0; i < list.length; i += 1) {
     const arg = list[i];
-    const next = list[i + 1];
+    const next = list.at(i + 1);
     if (arg === '--help' || arg === '-h') { out.help = true; continue; }
     if (arg === '--force') { out.force = true; continue; }
     if (arg === '--json') { out.json = true; continue; }
@@ -545,6 +546,7 @@ function isStateOnlyPath(file: string) {
     || file === '.smarch/context.ndjson';
 }
 
+// eslint-disable-next-line complexity -- Refresh is a phase-ordered transaction; scan, state, and dashboard dependency ordering must remain visible.
 function isScanImpactPath(file: string) {
   return file === 'sma.gen3.json'
     || file === 'AGENTS.md'

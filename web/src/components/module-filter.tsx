@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
 
-export type ModuleFilterProps = {
+export interface ModuleFilterProps {
   modules: string[];
   selected?: string[];
   paramName?: string;
   status?: "loading" | "ready" | "error";
   error?: unknown;
   onChange?: (selected: string[]) => void;
-};
+}
 
 export function readModuleSelection(paramName = "module", search = location.search): string[] {
   return [...new Set(new URLSearchParams(search).getAll(paramName).filter(Boolean))];
@@ -70,9 +70,9 @@ export function ModuleFilter({
 
   return (
     <div class="module-filter" aria-label={STRINGS.filter.label} role="group">
-      <button type="button" aria-pressed={current.length === 0} onClick={() => update([])}>{STRINGS.filter.all}</button>
+      <button type="button" aria-pressed={current.length === 0} onClick={() => { update([]); }}>{STRINGS.filter.all}</button>
       {available.map((module) => (
-        <button type="button" aria-pressed={current.includes(module)} onClick={() => toggle(module)} key={module}>{module}</button>
+        <button type="button" aria-pressed={current.includes(module)} onClick={() => { toggle(module); }} key={module}>{module}</button>
       ))}
     </div>
   );

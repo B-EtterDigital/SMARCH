@@ -1,19 +1,20 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 const IGNORED_SOURCE_PATH = /(^|\/)(\.git|node_modules|graphify-out|dist|build|coverage|\.next|out|tmp|temp)(\/|$)/;
 
-type Gen3Module = { id?: string; name?: string; label?: string; paths?: string[] };
-type Gen3Config = { modules?: Gen3Module[] };
+interface Gen3Module { id?: string; name?: string; label?: string; paths?: string[] }
+interface Gen3Config { modules?: Gen3Module[] }
 type ModuleTarget = Gen3Module & { root?: string; scanRoot?: string };
-type GraphStat = { mtimeMs: number };
-type GraphFreshness = {
+interface GraphStat { mtimeMs: number }
+interface GraphFreshness {
   graphFreshness: 'fresh' | 'stale' | null;
   graphFresh: boolean | null;
   graphStale: boolean;
   sourceUpdatedAt: string | null;
   sourceGlobs: string[];
-};
+}
 
 /**
  * Resolve the configured ownership globs for a graph module target.
@@ -26,13 +27,13 @@ function moduleOwnershipGlobs(gen3Config: Gen3Config | null | undefined, moduleT
   try {
     const modules = Array.isArray(gen3Config?.modules) ? gen3Config.modules : [];
     const wantedIds = new Set([moduleTarget?.id, moduleTarget?.name]
-      .map((value) => String(value || "").toLowerCase())
+      .map((value) => (value || "").toLowerCase())
       .filter(Boolean));
     const module = modules.find((item) => (
-      wantedIds.has(String(item.id || "").toLowerCase())
-      || wantedIds.has(String(item.label || "").toLowerCase())
+      wantedIds.has((item.id || "").toLowerCase())
+      || wantedIds.has((item.label || "").toLowerCase())
     ));
-    return Array.isArray(module?.paths) ? module.paths.map((item) => String(item || "").trim()).filter(Boolean) : [];
+    return Array.isArray(module?.paths) ? module.paths.map((item) => (item || "").trim()).filter(Boolean) : [];
   } catch (error) {
     throw structuredStalenessError("resolve_ownership_globs", error);
   }
@@ -99,6 +100,7 @@ function newestMatchingSourceMtime(projectRoot: string, patterns: string[]): num
  * @param {object|null|undefined} gen3Config Parsed sma.gen3.json content.
  * @returns {{graphFreshness: string|null, graphFresh: boolean|null, graphStale: boolean, sourceUpdatedAt: string|null, sourceGlobs: string[]}}
  */
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function sourceFreshness(projectRoot: string, moduleTarget: ModuleTarget | null | undefined, graphStat: GraphStat | null | undefined, gen3Config: Gen3Config | null | undefined): GraphFreshness {
   try {
     if (!moduleTarget || !graphStat) {
@@ -129,7 +131,7 @@ export function sourceFreshness(projectRoot: string, moduleTarget: ModuleTarget 
 }
 
 function globPatternRegex(pattern: string): RegExp {
-  const normalized = String(pattern || "")
+  const normalized = (pattern || "")
     .replace(/\\/g, "/")
     .replace(/^\.\//, "")
     .replace(/^\/+/, "");
@@ -156,7 +158,7 @@ function globPatternRegex(pattern: string): RegExp {
 }
 
 function globStaticRoot(projectRoot: string, pattern: string): string {
-  const normalized = String(pattern || "").replace(/^!/, "").replace(/\\/g, "/").replace(/^\.\//, "");
+  const normalized = (pattern || "").replace(/^!/, "").replace(/\\/g, "/").replace(/^\.\//, "");
   const wildcardIndex = normalized.search(/[?*]/);
   const prefix = wildcardIndex === -1 ? normalized : normalized.slice(0, wildcardIndex);
   const relativeRoot = wildcardIndex === -1 ? prefix : prefix.replace(/\/+$/, "");

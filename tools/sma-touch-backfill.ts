@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Commit and context inputs cross runtime process and JSON boundaries, so defensive guards remain required. */
+/* Git evidence selection is a linear fallback chain; complexity counts independent compatibility guards as nested flow. */
+/* eslint @typescript-eslint/no-unnecessary-condition: "off", complexity: "off" */
 /**
  * WHAT: Adds structured edit rationale to a brick manifest's touch history.
  * WHY: Thin commit metadata cannot explain intent, rejected alternatives, or backlog links.
@@ -23,30 +26,30 @@ import { appendContextEvent } from './lib/context-log.ts';
 const ROLES = new Set(['architect', 'implementer', 'reviewer', 'security', 'tester', 'refactor', 'release', 'scanner']);
 const ACTOR_KINDS = new Set(['human', 'ai_model', 'agent', 'automation', 'tool']);
 
-type CliArgs = {
+interface CliArgs {
   manifest?: string; intent?: string; role?: string; actorKind?: string; actor?: string;
   summary?: string; decision?: string; rejected?: string[]; linkedBacklog?: string[];
   commit?: string; model?: string; session?: string; task?: string; lease?: string;
   project?: string; noContext?: boolean; intentFromMessage?: boolean; eventId?: string;
-};
+}
 type StringArgKey = Exclude<keyof CliArgs, 'rejected' | 'linkedBacklog' | 'noContext' | 'intentFromMessage'>;
-type RejectedAlternative = { alternative: string; reason: string };
+interface RejectedAlternative { alternative: string; reason: string }
 type TouchEvent = Record<string, unknown> & {
   actor_kind: string; actor_id: string; role: string; timestamp: string; summary: string; intent: string;
   context_event_ids?: string[];
 };
-type Manifest = {
+interface Manifest {
   brick?: { id?: string };
   build?: { id?: string };
   provenance?: { created_by?: TouchEvent; touched_by?: TouchEvent[] };
-};
-type TouchInput = {
+}
+interface TouchInput {
   actorKind: string; actorId: string; role: string; intent: string; summary?: string;
   decisionRationale?: string; rejectedAlternatives?: RejectedAlternative[]; linkedBacklog?: string[];
   commit?: string; model?: string; sessionId?: string; taskId?: string; leaseId?: string;
   attestation?: { method: string; reference: string }; timestamp?: string;
-};
-type GitCommit = { sha: string; author_name: string; author_email: string; iso_date: string; subject: string; body: string };
+}
+interface GitCommit { sha: string; author_name: string; author_email: string; iso_date: string; subject: string; body: string }
 
 const cmd = argv[2];
 const args = parseArgs(argv.slice(3));
@@ -110,7 +113,7 @@ function runAdd() {
   if (!ACTOR_KINDS.has(actorKind)) throw new Error(`bad --actor-kind: ${actorKind}`);
 
   const manifest = loadManifest(manifestPath);
-  const brickId = manifest?.brick?.id ?? manifest?.build?.id;
+  const brickId = manifest.brick?.id ?? manifest.build?.id;
   if (!brickId) throw new Error('manifest has no brick.id or build.id');
 
   const touch = buildTouchEvent({
@@ -168,7 +171,7 @@ function runFromGit() {
   if (!ROLES.has(role)) throw new Error(`bad --role: ${role}`);
 
   const manifest = loadManifest(manifestPath);
-  const brickId = manifest?.brick?.id ?? manifest?.build?.id;
+  const brickId = manifest.brick?.id ?? manifest.build?.id;
   if (!brickId) throw new Error('manifest has no brick.id or build.id');
 
   const cwd = dirname(manifestPath);
@@ -219,13 +222,13 @@ function runSyncTouch() {
   const manifestPath = requireArg('manifest', '--manifest');
   const eventId = requireArg('eventId', '--event-id');
   const manifest = loadManifest(manifestPath);
-  const arr = manifest?.provenance?.touched_by ?? [];
+  const arr = manifest.provenance?.touched_by ?? [];
   if (!arr.length) throw new Error('manifest has no touched_by[] entries');
   const last = arr[arr.length - 1];
-  if (!last.context_event_ids) last.context_event_ids = [];
+  last.context_event_ids ??= [];
   if (!last.context_event_ids.includes(eventId)) last.context_event_ids.push(eventId);
   saveManifest(manifestPath, manifest);
-  console.log(`linked ${eventId} into last touch_event of ${manifest?.brick?.id ?? manifest?.build?.id}`);
+  console.log(`linked ${eventId} into last touch_event of ${String(manifest.brick?.id ?? manifest.build?.id)}`);
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -239,7 +242,7 @@ function loadManifest(path: string): Manifest {
 
 function saveManifest(path: string, manifest: Manifest): void {
   const abs = resolve(path);
-  const tmp = abs + '.tmp.' + process.pid;
+  const tmp = `${abs}.tmp.${String(process.pid)}`;
   writeFileSync(tmp, JSON.stringify(manifest, null, 2) + '\n');
   renameSync(tmp, abs);
 }
@@ -293,8 +296,8 @@ function buildTouchEvent({
   if (taskId) t.task_id = taskId;
   if (commit) t.commit = commit;
   if (decisionRationale) t.decision_rationale = decisionRationale;
-  if (rejectedAlternatives && rejectedAlternatives.length) t.rejected_alternatives = rejectedAlternatives;
-  if (linkedBacklog && linkedBacklog.length) t.linked_backlog = linkedBacklog;
+  if (rejectedAlternatives?.length) t.rejected_alternatives = rejectedAlternatives;
+  if (linkedBacklog?.length) t.linked_backlog = linkedBacklog;
   if (leaseId) t.lease_id = leaseId;
   if (attestation) t.attestation = attestation;
   return t;

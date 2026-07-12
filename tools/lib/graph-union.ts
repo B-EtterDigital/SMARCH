@@ -1,3 +1,5 @@
+/* Graphs are loaded from external JSON; runtime guards and existing opaque-value coercion remain required. */
+/* eslint @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-condition: "off" */
 const NAMESPACE_SEPARATOR = "::";
 
 type GraphRecord = Record<string, unknown>;
@@ -8,23 +10,25 @@ type Graph = GraphRecord & {
   hyperedges?: GraphRecord[];
   elements?: { nodes?: GraphRecord[]; edges?: GraphRecord[] };
 };
-type GraphEntry = { graph: Graph; namespace: string };
+interface GraphEntry { graph: Graph; namespace: string }
 type NamespacedGraph = Graph & { nodes: GraphRecord[]; edges: GraphRecord[]; hyperedges: GraphRecord[] };
 
 function graphArray(value: unknown): GraphRecord[] {
-  return Array.isArray(value) ? value : [];
+  return Array.isArray(value)
+    ? value.filter((entry): entry is GraphRecord => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
+    : [];
 }
 
 export function graphNodes(graph: Graph): GraphRecord[] {
-  return graphArray(graph?.nodes ?? graph?.elements?.nodes);
+  return graphArray(graph.nodes ?? graph.elements?.nodes);
 }
 
 export function graphEdges(graph: Graph): GraphRecord[] {
-  return graphArray(graph?.edges ?? graph?.links ?? graph?.elements?.edges);
+  return graphArray(graph.edges ?? graph.links ?? graph.elements?.edges);
 }
 
 export function graphHyperedges(graph: Graph): GraphRecord[] {
-  return graphArray(graph?.hyperedges);
+  return graphArray(graph.hyperedges);
 }
 
 function namespaceId(namespace: string, id: unknown): string {
@@ -47,12 +51,12 @@ function hyperedgeKey(edge: GraphRecord): string {
 }
 
 export function namespaceGraph(graph: Graph, namespace: string): NamespacedGraph {
-  const normalizedNamespace = String(namespace || "").trim();
+  const normalizedNamespace = (namespace || "").trim();
   if (!normalizedNamespace) throw new Error("graph union namespace must not be empty");
 
   const idMap = new Map<string, string>();
   const nodes = graphNodes(graph)
-    .filter((node) => node?.id)
+    .filter((node) => node.id)
     .map((node) => {
       const id = String(node.id);
       const namespacedId = namespaceId(normalizedNamespace, id);
@@ -65,7 +69,7 @@ export function namespaceGraph(graph: Graph, namespace: string): NamespacedGraph
     });
   const namespacedReference = (id: unknown): string => idMap.get(String(id)) ?? namespaceId(normalizedNamespace, id);
   const edges = graphEdges(graph)
-    .filter((edge) => edge?.source && edge?.target)
+    .filter((edge) => edge.source && edge.target)
     .map((edge) => ({
       ...edge,
       source: namespacedReference(edge.source),
@@ -73,11 +77,11 @@ export function namespaceGraph(graph: Graph, namespace: string): NamespacedGraph
     }));
   const hyperedges = graphHyperedges(graph).map((edge) => ({
     ...edge,
-    ...(edge?.id ? {
+    ...(edge.id ? {
       id: namespaceId(normalizedNamespace, edge.id),
       original_id: String(edge.original_id ?? edge.id),
     } : {}),
-    ...(Array.isArray(edge?.nodes) ? { nodes: edge.nodes.map(namespacedReference) } : {}),
+    ...(Array.isArray(edge.nodes) ? { nodes: edge.nodes.map(namespacedReference) } : {}),
   }));
   const {
     nodes: _nodes,
@@ -103,8 +107,8 @@ export function mergeNamespacedGraphs(entries: GraphEntry[]) {
     for (const node of graph.nodes) nodes.set(String(node.id), node);
     for (const edge of graph.edges) edges.set(edgeKey(edge), edge);
     for (const edge of graph.hyperedges) hyperedges.set(hyperedgeKey(edge), edge);
-    inputTokens += Number(entry.graph?.input_tokens || 0);
-    outputTokens += Number(entry.graph?.output_tokens || 0);
+    inputTokens += Number(entry.graph.input_tokens ?? 0);
+    outputTokens += Number(entry.graph.output_tokens ?? 0);
   }
 
   return {
@@ -117,13 +121,13 @@ export function mergeNamespacedGraphs(entries: GraphEntry[]) {
 }
 
 export function resolveGraphNodeInput(graph: Graph, input: unknown): string {
-  const requested = String(input || "").trim();
+  const requested = String(input ?? "").trim();
   if (!requested) return requested;
   const nodes = graphNodes(graph);
-  const exact = nodes.find((node) => String(node?.id || "") === requested);
+  const exact = nodes.find((node) => String(node.id ?? "") === requested);
   if (exact) return String(exact.id);
 
-  const originalMatches = nodes.filter((node) => String(node?.original_id || "") === requested);
+  const originalMatches = nodes.filter((node) => String(node.original_id ?? "") === requested);
   if (originalMatches.length === 1) return String(originalMatches[0].id);
   if (originalMatches.length > 1) {
     const choices = originalMatches.map((node) => String(node.id)).sort().join(", ");

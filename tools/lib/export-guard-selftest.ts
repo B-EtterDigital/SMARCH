@@ -68,4 +68,4 @@ ok('assertExportAllowed throws on closed→community, passes with allowClosed', 
   assert.equal(r.meet_openness, 'closed');
 });
 
-console.log(`export-guard selftest: ${n} groups passed`);
+console.log(`export-guard selftest: ${String(n)} groups passed`);

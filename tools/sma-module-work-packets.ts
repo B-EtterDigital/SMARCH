@@ -749,7 +749,7 @@ function writeDispatchManifest(plan: Plan): DispatchReceipt {
     })),
   };
   mkdirSync(dirname(base), { recursive: true });
-  writeAgentPackets(manifest as unknown as Parameters<typeof writeAgentPackets>[0], { smaRoot: SMA_ROOT });
+  writeAgentPackets(manifest, { smaRoot: SMA_ROOT });
   writeFileSync(jsonPath, `${JSON.stringify(manifest, null, 2)}\n`);
   writeFileSync(markdownPath, renderDispatchMarkdown(manifest));
   return {

@@ -15,7 +15,7 @@ import { VerdictStamp } from "./components/verdict-stamp";
 
 type RouteKey = keyof typeof STRINGS.routeTitles;
 
-const ROUTES: Array<{ key: RouteKey; path: string; mark: string }> = [
+const ROUTES: { key: RouteKey; path: string; mark: string }[] = [
   { key: "ledger", path: "/", mark: STRINGS.navMarks.ledger },
   { key: "bricks", path: "/bricks", mark: STRINGS.navMarks.bricks },
   { key: "leases", path: "/leases", mark: STRINGS.navMarks.leases },
@@ -57,8 +57,8 @@ function Stats({ snapshot }: { snapshot: DashboardSnapshot }) {
 function LeaseBoard({ leases }: { leases: Lease[] }) {
   const [, tick] = useState(0);
   useEffect(() => {
-    const timer = window.setInterval(() => tick((value) => value + 1), 1_000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => { tick((value) => value + 1); }, 1_000);
+    return () => { clearInterval(timer); };
   }, []);
   if (!leases.length) return <EmptyState sentence={STRINGS.empty.leases} command={STRINGS.empty.leasesCommand} />;
   return (
@@ -86,7 +86,7 @@ function BrickRegistry({ bricks }: { bricks: RegistryBrick[] }) {
       }
     };
     addEventListener("keydown", onKey);
-    return () => removeEventListener("keydown", onKey);
+    return () => { removeEventListener("keydown", onKey); };
   }, []);
   const projects = useMemo(() => [STRINGS.filter.all, ...new Set(bricks.map((brick) => brick.project))], [bricks]);
   const filtered = useMemo(() => bricks.filter((brick) => {
@@ -97,17 +97,17 @@ function BrickRegistry({ bricks }: { bricks: RegistryBrick[] }) {
   return (
     <>
       <div class="search-row">
-        <label><span>{STRINGS.search.label}</span><input ref={inputRef} type="search" value={query} placeholder={STRINGS.search.placeholder} onInput={(event) => setQuery(event.currentTarget.value)} /></label>
+        <label><span>{STRINGS.search.label}</span><input ref={inputRef} type="search" value={query} placeholder={STRINGS.search.placeholder} onInput={(event) => { setQuery(event.currentTarget.value); }} /></label>
         <kbd>{STRINGS.search.hint}</kbd>
       </div>
-      <div class="module-filter" aria-label={STRINGS.filter.label}>{projects.map((item) => <button type="button" aria-pressed={project === item} onClick={() => setProject(item)} key={item}>{item}</button>)}</div>
+      <div class="module-filter" aria-label={STRINGS.filter.label}>{projects.map((item) => <button type="button" aria-pressed={project === item} onClick={() => { setProject(item); }} key={item}>{item}</button>)}</div>
       {!bricks.length ? <EmptyState sentence={STRINGS.empty.bricks} command={STRINGS.empty.bricksCommand} /> : filtered.length === 0 ? <p class="no-results">{STRINGS.search.noResults}</p> : <div class="brick-wall">{filtered.map((brick) => <article class={`brick brick--${brick.status}`} title={brick.id} key={brick.id}><div><span>{brick.project}</span><strong>{brick.id}</strong></div><Verdict kind={brick.health_status === "ok" ? "pass" : "fail"} label={brick.status.toUpperCase()} /><small>{brick.score}</small></article>)}</div>}
     </>
   );
 }
 
 function Settings({ theme, onTheme }: { theme: Theme; onTheme: (theme: Theme) => void }) {
-  return <div class="settings-grid"><Frame title={STRINGS.settings.appearance}><div class="setting-options"><button type="button" aria-pressed={theme === "dark"} onClick={() => onTheme("dark")}>{STRINGS.settings.dark}</button><button type="button" aria-pressed={theme === "light"} onClick={() => onTheme("light")}>{STRINGS.settings.light}</button></div></Frame><Frame title={STRINGS.settings.mode}><Verdict kind="pass" label={STRINGS.settings.mode} /><p>{STRINGS.settings.modeDescription}</p></Frame><Frame title={STRINGS.settings.endpoint}><code>{STRINGS.settings.endpointValue}</code></Frame><Frame title={STRINGS.settings.dataRoot}><code>{STRINGS.settings.dataRootValue}</code></Frame></div>;
+  return <div class="settings-grid"><Frame title={STRINGS.settings.appearance}><div class="setting-options"><button type="button" aria-pressed={theme === "dark"} onClick={() => { onTheme("dark"); }}>{STRINGS.settings.dark}</button><button type="button" aria-pressed={theme === "light"} onClick={() => { onTheme("light"); }}>{STRINGS.settings.light}</button></div></Frame><Frame title={STRINGS.settings.mode}><Verdict kind="pass" label={STRINGS.settings.mode} /><p>{STRINGS.settings.modeDescription}</p></Frame><Frame title={STRINGS.settings.endpoint}><code>{STRINGS.settings.endpointValue}</code></Frame><Frame title={STRINGS.settings.dataRoot}><code>{STRINGS.settings.dataRootValue}</code></Frame></div>;
 }
 
 function AppContent({ route, snapshot, theme, onTheme }: { route: RouteKey; snapshot: DashboardSnapshot; theme: Theme; onTheme: (theme: Theme) => void }) {
@@ -140,9 +140,9 @@ export function App() {
     }
   };
 
-  useEffect(() => { void load(); return subscribeToDashboardEvents(() => void load(), () => reportClientError("dashboard.sse", "error", new Error(STRINGS.toast.disconnected))); }, []);
+  useEffect(() => { void load(); return subscribeToDashboardEvents(() => void load(), () => { reportClientError("dashboard.sse", "error", new Error(STRINGS.toast.disconnected)); }); }, []);
   useEffect(() => {
-    const onPop = () => setRoute(routeFromPath(location.pathname));
+    const onPop = () => { setRoute(routeFromPath(location.pathname)); };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "[") setRailCollapsed(true);
       if (event.key === "]") setRailCollapsed(false);
@@ -162,8 +162,8 @@ export function App() {
       <a class="skip-link" href="#main">{STRINGS.skipToContent}</a>
       <aside class="rail">
         <div class="rail__stamp"><span>{STRINGS.appName}</span><small>{STRINGS.appDescriptor}</small></div>
-        <nav aria-label={STRINGS.navigation}>{ROUTES.map((item) => <button type="button" class={route === item.key ? "nav-item nav-item--active" : "nav-item"} aria-current={route === item.key ? "page" : undefined} onClick={() => navigate(item)} key={item.key}><span class="nav-item__mark" aria-hidden="true">{item.mark}</span><span class="nav-item__label">{STRINGS.nav[item.key]}</span></button>)}</nav>
-        <button type="button" class="rail__toggle" onClick={() => setRailCollapsed((value) => !value)} aria-label={railCollapsed ? STRINGS.rail.expand : STRINGS.rail.collapse}><span aria-hidden="true">{railCollapsed ? "]" : "["}</span><span class="nav-item__label">{STRINGS.railKeyHint}</span></button>
+        <nav aria-label={STRINGS.navigation}>{ROUTES.map((item) => <button type="button" class={route === item.key ? "nav-item nav-item--active" : "nav-item"} aria-current={route === item.key ? "page" : undefined} onClick={() => { navigate(item); }} key={item.key}><span class="nav-item__mark" aria-hidden="true">{item.mark}</span><span class="nav-item__label">{STRINGS.nav[item.key]}</span></button>)}</nav>
+        <button type="button" class="rail__toggle" onClick={() => { setRailCollapsed((value) => !value); }} aria-label={railCollapsed ? STRINGS.rail.expand : STRINGS.rail.collapse}><span aria-hidden="true">{railCollapsed ? "]" : "["}</span><span class="nav-item__label">{STRINGS.railKeyHint}</span></button>
       </aside>
       <div class="workspace">
         <header class="topbar"><div class="topbar__repo"><span>{STRINGS.appName}</span><b>{STRINGS.routeEyebrow}</b></div><ThemeToggle theme={theme} onThemeChange={setTheme} /></header>

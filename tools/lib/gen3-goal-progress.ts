@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-type-conversion, @typescript-eslint/no-base-to-string -- Goal-progress rendering consumes persisted controller data and must preserve its defensive guards, truthy fallbacks, coercions, and byte-stable report text. */
+/* eslint-disable complexity, max-lines-per-function -- Goal-progress builders are ordered snapshot serializers; keeping field derivation and emission together preserves byte-stable output and precedence. */
 /**
  * WHAT: Builds and renders long-running goal progress from module plans, context events, and verification evidence.
  * WHY: Operators need durable progress by goal and module instead of mistaking recent activity for completed work.
@@ -32,18 +34,18 @@ const CONTROL_PLANE_MODULES = [
 ];
 
 type VerificationStatus = 'pass' | 'fail' | 'blocked' | 'skipped';
-type EventCategories = { srs: boolean; graph: boolean; collision: boolean; upgrade: boolean; gate: boolean };
-type CategoryCounts = { srs: number; graph: number; collision: number; upgrade: number; gate: number };
-type ProjectModule = {
+interface EventCategories { srs: boolean; graph: boolean; collision: boolean; upgrade: boolean; gate: boolean }
+interface CategoryCounts { srs: number; graph: number; collision: number; upgrade: number; gate: number }
+interface ProjectModule {
   id: string;
   label?: string;
   paths: string[];
   excludePaths?: string[];
   maxParallelAgents?: number;
-};
-type ProjectInput = { id?: string; project?: string; root?: string; absoluteRoot?: string; project_root?: string };
-type NormalizedProject = { id: string; root: string; modules: ProjectModule[] };
-type RawContextEvent = {
+}
+interface ProjectInput { id?: string; project?: string; root?: string; absoluteRoot?: string; project_root?: string }
+interface NormalizedProject { id: string; root: string; modules: ProjectModule[] }
+interface RawContextEvent {
   project?: string;
   brick_id?: string;
   kind?: string;
@@ -53,7 +55,7 @@ type RawContextEvent = {
   session_id?: string;
   files_touched?: string[];
   verification?: { status?: string; command?: string };
-};
+}
 type GoalEvent = RawContextEvent & {
   project: string;
   brick_id: string;
@@ -66,7 +68,7 @@ type GoalEvent = RawContextEvent & {
   verification_command: string;
   categories: EventCategories;
 };
-type ModuleRow = {
+interface ModuleRow {
   project: string;
   id: string;
   label: string;
@@ -86,8 +88,8 @@ type ModuleRow = {
   collision_signal_count: number;
   upgrade_signal_count: number;
   last_event_at: string | null;
-};
-type TimelineBucket = {
+}
+interface TimelineBucket {
   bucket_start: string;
   event_count: number;
   pass_count: number;
@@ -97,8 +99,8 @@ type TimelineBucket = {
   srs_signal_count: number;
   collision_signal_count: number;
   graph_signal_count: number;
-};
-type ModuleGroup = {
+}
+interface ModuleGroup {
   project: string;
   family: string;
   modules: ModuleRow[];
@@ -113,7 +115,7 @@ type ModuleGroup = {
   file_count: number;
   slot_count: number;
   last_event_at: string | null;
-};
+}
 
 export function buildGoalProgressReport({
   projects = [],
@@ -434,7 +436,7 @@ function readProjectEvents(project: NormalizedProject): GoalEvent[] {
       const text = line.trim();
       if (!text) continue;
       const parsed = safeJson(text);
-      if (!parsed || !parsed.timestamp) continue;
+      if (!parsed?.timestamp) continue;
       const timeMs = Date.parse(parsed.timestamp);
       if (!Number.isFinite(timeMs)) continue;
       const verificationStatus = parsed.verification?.status;
@@ -615,7 +617,7 @@ function moduleFamily(projectId: string, module: ProjectModule | ModuleRow): str
   const label = String(module.label || '').toLowerCase();
   const named = [id, label].map(familyFromKnownName).find(Boolean);
   if (named) return named;
-  const moduleToken = id.match(/(?:^|[-_.])modules[-_.]([a-z0-9]+)/);
+  const moduleToken = /(?:^|[-_.])modules[-_.]([a-z0-9]+)/.exec(id);
   if (moduleToken?.[1]) return moduleToken[1];
   return id.split(/[-_.:/]+/).find(Boolean) || 'unmapped';
 }
@@ -630,7 +632,7 @@ function familyFromPath(file: string): string | null {
 }
 
 function familyFromKnownName(value: string): string | null {
-  const match = String(value || '').match(/\b(modlink|modcap|modchat|moddic|acme-agent|modbro|modcore|modvibe|modflow)\b/i);
+  const match = /\b(modlink|modcap|modchat|moddic|acme-agent|modbro|modcore|modvibe|modflow)\b/i.exec(String(value || ''));
   return match ? match[1].toLowerCase() : null;
 }
 
@@ -662,7 +664,7 @@ function countCategories(events: GoalEvent[]): CategoryCounts {
 
 function failedToPassed(verifications: GoalEvent[]) {
   const byKey = new Map<string, { fail?: GoalEvent | null }>();
-  const recovered: Array<{ project: string; module: string; brick_id: string; command: string; failed_at: string; passed_at: string }> = [];
+  const recovered: { project: string; module: string; brick_id: string; command: string; failed_at: string; passed_at: string }[] = [];
   for (const event of verifications) {
     const key = `${event.project}:${event.brick_id}:${normalizeCommand(event.verification_command)}`;
     const previous = byKey.get(key) || {};

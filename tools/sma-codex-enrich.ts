@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable complexity, max-lines-per-function -- Enrichment runs one bounded batch transaction whose counters, writes, and progress reporting share a single lifecycle. */
 /**
  * WHAT: Replaces synthesized brick semantics with structured descriptions grounded in source files.
  * WHY: Search and reuse decisions are unreliable when purpose, interfaces, risks, and adaptation steps come only from filename heuristics.
@@ -289,7 +290,7 @@ async function main(): Promise<void> {
     onResult: (wrapped) => {
       processed += 1;
       const r = wrapped.result;
-      if (r.ok === true) {
+      if (r.ok) {
         if (r.fromCache) cacheHits += 1;
         if (!isEnrichmentData(r.data)) {
           failed += 1;
@@ -304,13 +305,13 @@ async function main(): Promise<void> {
         Object.assign(mf.semantics, {
           purpose: data.purpose,
           use_when: data.use_when,
-          do_not_use_when: data.do_not_use_when || [],
+          do_not_use_when: data.do_not_use_when,
           public_api: data.public_api,
           tags: data.tags,
           clone_steps: data.clone_steps,
-          risks: data.risks || [],
+          risks: data.risks,
           reuse_archetype: data.reuse_archetype,
-          related_concepts: data.related_concepts || []
+          related_concepts: data.related_concepts
         });
         delete mf.semantics.purpose_synthesized;
         mf.semantics.enrichment_source = "codex-gpt-5.4";

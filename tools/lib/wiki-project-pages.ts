@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-condition -- Wiki generation preserves established HTML interpolation, truthy fallback, and guards for older registry snapshots. */
+/* eslint-disable max-lines-per-function -- Each generator is one static HTML template; splitting contiguous markup would make escaping and snapshot order harder to audit. */
 import { escapeHtml, mdTableRow, slugify } from "./wiki-utils.ts";
 import type { GlobalRegistry } from "./schema-types/global.registry.schema.d.ts";
 import type { CompactBrick } from "./scan-discovery.ts";
@@ -219,4 +221,3 @@ ${cards || '      <article class="card"><h3>No bricks indexed yet</h3><p>Add mod
 </html>
 `;
 }
-

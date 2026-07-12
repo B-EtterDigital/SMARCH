@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-base-to-string, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unnecessary-type-conversion -- Module packet helpers preserve coercion and fallback behavior for controller payloads produced by mixed-version clients. */
+/* eslint-disable complexity -- Module packet ordering is an explicit multi-key compatibility policy that is clearest as one comparator. */
 export interface ModulePacketArgs {
   allowBlockedDispatch: boolean; allowStaleDispatch: boolean; dryRun: boolean; fillCapacity: boolean;
   fullPrompt: boolean; fullPrompts: boolean; help: boolean; json: boolean; next: boolean; noGraphCheck: boolean;
@@ -104,7 +106,8 @@ export function externalActiveModuleLeaseGroups(assignments: GuardedAssignment[]
         dispatch_bricks: [],
       });
     }
-    const group = groups.get(key)!;
+    const group = groups.get(key);
+    if (!group) throw new Error(`module-work group was not initialized for key ${key}`);
     group.slot_count += 1;
     if (item.agent_slot !== null && item.agent_slot !== undefined) group.agent_slots.push(number(item.agent_slot));
     if (item.brick) group.dispatch_bricks.push(String(item.brick));

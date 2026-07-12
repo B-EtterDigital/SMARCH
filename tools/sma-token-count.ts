@@ -9,6 +9,7 @@
  * Glossary: [SMA](../docs/GLOSSARY.md).
  */
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { resolve, relative, extname, join } from 'node:path';
 import { argv, exit } from 'node:process';
 
@@ -33,6 +34,21 @@ const METHOD = args.method ?? 'heuristic';
 const MULTIPLIER = Number(args.multiplier ?? 3.8);
 const COUNT_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.sql', '.md']);
 const SKIP_DIR = new Set(['node_modules', '.next', 'dist', 'build', '.git', '.expo', 'ios', 'android', 'coverage']);
+const loadOptionalModule = createRequire(import.meta.url);
+
+interface TokenEncoder {
+  encode(value: string): { length: number };
+  free(): void;
+}
+
+interface TiktokenModule {
+  encoding_for_model(model: string): TokenEncoder;
+}
+
+function isTiktokenModule(value: unknown): value is TiktokenModule {
+  return typeof value === 'object' && value !== null &&
+    'encoding_for_model' in value && typeof value.encoding_for_model === 'function';
+}
 
 interface TokenCountArgs {
   help?: boolean;
@@ -60,7 +76,7 @@ interface PathEstimate {
   realistic_regenerate_tokens: number;
   multiplier: number;
   method: string;
-  per_file: Array<FileEstimate & { path: string }>;
+  per_file: (FileEstimate & { path: string })[];
 }
 
 interface BrickEstimate {
@@ -90,8 +106,9 @@ function countTokensInFile(file: string): FileEstimate {
   if (METHOD === 'tiktoken') {
     // Optional path; falls back to heuristic if unavailable.
     try {
-      const { encoding_for_model } = require('tiktoken');
-      const enc = encoding_for_model('gpt-4o');
+      const moduleValue: unknown = loadOptionalModule('tiktoken');
+      if (!isTiktokenModule(moduleValue)) throw new TypeError('tiktoken module has no encoding_for_model export');
+      const enc = moduleValue.encoding_for_model('gpt-4o');
       const n = enc.encode(buf).length;
       enc.free();
       return { tokens: n, chars: buf.length, lines: buf.split('\n').length, method: 'tiktoken' };
@@ -117,8 +134,8 @@ function* walk(dir: string): Generator<string, void, unknown> {
   }
 }
 
-function findBrickRoots(root: string): Array<{ id: string; path: string }> {
-  const out: Array<{ id: string; path: string }> = [];
+function findBrickRoots(root: string): { id: string; path: string }[] {
+  const out: { id: string; path: string }[] = [];
   for (const subdir of ['packages', 'apps', 'web/src/modules', 'src/renderer/modules', 'apps/web/src/modules']) {
     const base = resolve(root, subdir);
     if (!existsSync(base)) continue;
@@ -137,7 +154,7 @@ function estimateForPath(p: string): PathEstimate {
   const st = statSync(p);
   const files = st.isFile() ? [p] : [...walk(p)];
   let tokens = 0, chars = 0, lines = 0, fileCount = 0;
-  const perFile: Array<FileEstimate & { path: string }> = [];
+  const perFile: (FileEstimate & { path: string })[] = [];
   for (const f of files) {
     const r = countTokensInFile(f);
     tokens += r.tokens; chars += r.chars; lines += r.lines; fileCount++;
@@ -215,7 +232,7 @@ function main() {
   else printSummary(result.bricks, result.totals);
 }
 
-function printSummary(bricks: Record<string, BrickEstimate | PathEstimate>, totals: Totals | undefined = undefined): void {
+function printSummary(bricks: Record<string, BrickEstimate | PathEstimate>, totals?: Totals  ): void {
   const rows = Object.entries(bricks).sort((a, b) => b[1].static_tokens - a[1].static_tokens);
   const w = (s: string | number, n: number): string => String(s).padEnd(n);
   console.log(`${w('brick', 50)} ${w('files', 6)} ${w('lines', 8)} ${w('static_tok', 12)} ${w('regen_tok', 12)}`);

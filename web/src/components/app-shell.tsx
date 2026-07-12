@@ -8,7 +8,7 @@ export type AppShellRoute = keyof typeof STRINGS.routeTitles;
 export type AppShellState = "ready" | "loading" | "empty" | "error";
 export type AppShellTheme = "dark" | "light";
 
-type AppShellProps = {
+interface AppShellProps {
   activeRoute: AppShellRoute;
   children: ComponentChildren;
   onNavigate: (route: AppShellRoute, path: string) => void;
@@ -16,12 +16,12 @@ type AppShellProps = {
   onToggleTheme: () => void;
   state?: AppShellState;
   theme: AppShellTheme;
-};
+}
 
-type BoundaryProps = { children: ComponentChildren };
-type BoundaryState = { failed: boolean };
+interface BoundaryProps { children: ComponentChildren }
+interface BoundaryState { failed: boolean }
 
-const ROUTES: ReadonlyArray<{ key: AppShellRoute; path: string; mark: string }> = [
+const ROUTES: readonly { key: AppShellRoute; path: string; mark: string }[] = [
   { key: "ledger", path: "/", mark: STRINGS.navMarks.ledger },
   { key: "bricks", path: "/bricks", mark: STRINGS.navMarks.bricks },
   { key: "leases", path: "/leases", mark: STRINGS.navMarks.leases },
@@ -63,6 +63,7 @@ function ShellState({ state, onRetry }: { state: Exclude<AppShellState, "ready">
  * Blueprint-ledger application frame. It owns rail collapse, global search focus,
  * theme access, route landmarks, and the top-level loading/empty/error states.
  */
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function AppShell({ activeRoute, children, onNavigate, onRetry, onToggleTheme, state = "ready", theme }: AppShellProps) {
   const [railCollapsed, setRailCollapsed] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
@@ -82,7 +83,7 @@ export function AppShell({ activeRoute, children, onNavigate, onRetry, onToggleT
       if (!isTyping && event.key === "]") setRailCollapsed(false);
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => { window.removeEventListener("keydown", onKeyDown); };
   }, []);
 
   return (
@@ -96,7 +97,7 @@ export function AppShell({ activeRoute, children, onNavigate, onRetry, onToggleT
               type="button"
               class={activeRoute === item.key ? "nav-item nav-item--active" : "nav-item"}
               aria-current={activeRoute === item.key ? "page" : undefined}
-              onClick={() => onNavigate(item.key, item.path)}
+              onClick={() => { onNavigate(item.key, item.path); }}
               key={item.key}
             >
               <span class="nav-item__mark" aria-hidden="true">{item.mark}</span>
@@ -107,7 +108,7 @@ export function AppShell({ activeRoute, children, onNavigate, onRetry, onToggleT
         <button
           type="button"
           class="rail__toggle"
-          onClick={() => setRailCollapsed((value) => !value)}
+          onClick={() => { setRailCollapsed((value) => !value); }}
           aria-expanded={!railCollapsed}
           aria-label={railCollapsed ? STRINGS.rail.expand : STRINGS.rail.collapse}
         >

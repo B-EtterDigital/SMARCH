@@ -57,20 +57,20 @@ export function RegistryTable({ rows, loading = false, error = null, onRetry, in
   if (error) return <div class="component-state component-state--error" role="alert"><span>{STRINGS.components.registryTable.error}</span>{onRetry ? <button type="button" onClick={onRetry}>{STRINGS.components.registryTable.retry}</button> : null}</div>;
   if (rows.length === 0) return <div class="component-state" role="status">{STRINGS.components.registryTable.empty}</div>;
 
-  const headers: Array<[SortKey, string]> = [
+  const headers: [SortKey, string][] = [
     ["id", STRINGS.components.registryTable.columns.brick], ["project", STRINGS.components.registryTable.columns.project],
     ["status", STRINGS.components.registryTable.columns.status], ["score", STRINGS.components.registryTable.columns.score]
   ];
 
   return (
-    <div class="registry-table__scroller" onScroll={(event) => virtual && setScrollTop(event.currentTarget.scrollTop)}>
+    <div class="registry-table__scroller" onScroll={(event) => { if (virtual) setScrollTop(event.currentTarget.scrollTop); }}>
       <table class="registry-table">
-        <caption>{`${STRINGS.components.registryTable.caption}: ${rows.length} ${STRINGS.components.registryTable.rowCount}`}</caption>
-        <thead><tr>{headers.map(([key, title]) => <th scope="col" aria-sort={sortKey === key ? direction : "none"} key={key}><button type="button" onClick={() => sort(key)} aria-label={`${title}: ${sortKey === key && direction === "ascending" ? STRINGS.components.registryTable.sortDescending : STRINGS.components.registryTable.sortAscending}`}><span>{title}</span><span aria-hidden="true">{sortKey === key ? direction === "ascending" ? "↑" : "↓" : "↕"}</span></button></th>)}</tr></thead>
+        <caption>{`${STRINGS.components.registryTable.caption}: ${String(rows.length)} ${STRINGS.components.registryTable.rowCount}`}</caption>
+        <thead><tr>{headers.map(([key, title]) => <th scope="col" aria-sort={sortKey === key ? direction : "none"} key={key}><button type="button" onClick={() => { sort(key); }} aria-label={`${title}: ${sortKey === key && direction === "ascending" ? STRINGS.components.registryTable.sortDescending : STRINGS.components.registryTable.sortAscending}`}><span>{title}</span><span aria-hidden="true">{sortKey === key ? direction === "ascending" ? "↑" : "↓" : "↕"}</span></button></th>)}</tr></thead>
         <tbody>
-          {virtual && start > 0 ? <tr class="registry-table__spacer" aria-hidden="true" style={{ "--registry-spacer-height": `${start * ROW_HEIGHT}px` }}><td colSpan={4} /></tr> : null}
+          {virtual && start > 0 ? <tr class="registry-table__spacer" aria-hidden="true" style={{ "--registry-spacer-height": `${String(start * ROW_HEIGHT)}px` }}><td colSpan={4} /></tr> : null}
           {visible.map((row) => <tr class="registry-table__row" key={`${row.project}:${row.id}`}><td title={row.id}>{row.id}</td><td title={row.project}>{row.project}</td><td><SealChip status={row.health_status === "ok" ? "pass" : "fail"} label={row.status.toUpperCase()} /></td><td class="registry-table__score">{row.score.toLocaleString()}</td></tr>)}
-          {virtual && end < sorted.length ? <tr class="registry-table__spacer" aria-hidden="true" style={{ "--registry-spacer-height": `${(sorted.length - end) * ROW_HEIGHT}px` }}><td colSpan={4} /></tr> : null}
+          {virtual && end < sorted.length ? <tr class="registry-table__spacer" aria-hidden="true" style={{ "--registry-spacer-height": `${String((sorted.length - end) * ROW_HEIGHT)}px` }}><td colSpan={4} /></tr> : null}
         </tbody>
       </table>
     </div>

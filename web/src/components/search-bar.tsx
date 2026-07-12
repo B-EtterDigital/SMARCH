@@ -41,7 +41,7 @@ export function SearchBar({ results, value, loading = false, error = null, onQue
       }
     };
     window.addEventListener("keydown", onShortcut);
-    return () => window.removeEventListener("keydown", onShortcut);
+    return () => { window.removeEventListener("keydown", onShortcut); };
   }, []);
   useEffect(() => {
     if (error && reported.current !== error) { reported.current = error; reportClientError("dashboard.search-bar", "error", error); }
@@ -58,11 +58,11 @@ export function SearchBar({ results, value, loading = false, error = null, onQue
 
   return (
     <div class="search-bar">
-      <label class="search-bar__field"><span class="visually-hidden">{STRINGS.components.searchBar.label}</span><input ref={inputRef} type="search" role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={listboxId} aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined} value={query} placeholder={STRINGS.components.searchBar.placeholder} onFocus={() => setOpen(true)} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={onKeyDown} /><kbd title={STRINGS.components.searchBar.shortcutHint}>{STRINGS.components.searchBar.shortcut}</kbd></label>
+      <label class="search-bar__field"><span class="visually-hidden">{STRINGS.components.searchBar.label}</span><input ref={inputRef} type="search" role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={listboxId} aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${String(activeIndex)}` : undefined} value={query} placeholder={STRINGS.components.searchBar.placeholder} onFocus={() => { setOpen(true); }} onInput={(event) => { setQuery(event.currentTarget.value); }} onKeyDown={onKeyDown} /><kbd title={STRINGS.components.searchBar.shortcutHint}>{STRINGS.components.searchBar.shortcut}</kbd></label>
       {open ? <div id={listboxId} class="search-bar__results" role="listbox" aria-label={STRINGS.components.searchBar.results}>
         {loading ? <p class="search-bar__message" role="status">{STRINGS.components.searchBar.loading}</p> : error ? <p class="search-bar__message search-bar__message--error" role="alert">{STRINGS.components.searchBar.error}{onRetry ? <button type="button" onClick={onRetry}>{STRINGS.components.searchBar.retry}</button> : null}</p> : filtered.length === 0 ? <p class="search-bar__message" role="status">{STRINGS.components.searchBar.empty}</p> : KINDS.map((kind) => {
           const group = filtered.map((result, index) => ({ result, index })).filter(({ result }) => result.kind === kind);
-          return group.length ? <div class="search-bar__group" role="group" aria-label={STRINGS.components.searchBar.kinds[kind]} key={kind}><p class="search-bar__group-label">{STRINGS.components.searchBar.kinds[kind]}</p>{group.map(({ result, index }) => <button id={`${listboxId}-${index}`} type="button" role="option" class="search-bar__option" aria-selected={activeIndex === index} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(index)} key={`${result.kind}:${result.id}`}><span>{result.label}</span><small>{result.detail}</small></button>)}</div> : null;
+          return group.length ? <div class="search-bar__group" role="group" aria-label={STRINGS.components.searchBar.kinds[kind]} key={kind}><p class="search-bar__group-label">{STRINGS.components.searchBar.kinds[kind]}</p>{group.map(({ result, index }) => <button id={`${listboxId}-${String(index)}`} type="button" role="option" class="search-bar__option" aria-selected={activeIndex === index} onMouseDown={(event) => { event.preventDefault(); }} onClick={() => { choose(index); }} key={`${result.kind}:${result.id}`}><span>{result.label}</span><small>{result.detail}</small></button>)}</div> : null;
         })}
       </div> : null}
     </div>

@@ -4,10 +4,10 @@ import { STRINGS } from "../strings";
 
 export type LeaseRowValue = Lease & { state?: string };
 
-export type LeaseRowProps = {
+export interface LeaseRowProps {
   lease: LeaseRowValue;
   now?: number;
-};
+}
 
 export function formatLeaseTtl(expiresAt: string, now = Date.now()): string {
   const parsed = Date.parse(expiresAt);
@@ -35,8 +35,8 @@ export function LeaseRow({ lease, now = Date.now() }: LeaseRowProps) {
     if (previousFingerprint.current === fingerprint) return;
     previousFingerprint.current = fingerprint;
     setFlip(false);
-    const frame = requestAnimationFrame(() => setFlip(true));
-    const timer = window.setTimeout(() => setFlip(false), 150);
+    const frame = requestAnimationFrame(() => { setFlip(true); });
+    const timer = window.setTimeout(() => { setFlip(false); }, 150);
     return () => {
       cancelAnimationFrame(frame);
       clearTimeout(timer);

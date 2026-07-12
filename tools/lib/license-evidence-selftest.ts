@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/restrict-template-expressions -- The self-test intentionally includes the observed numeric value in its failure text. */
 /**
  * WHAT: Exercises source-license detection and declared-versus-observed mismatch policy on temporary fixtures.
  * WHY: A scanner that trusts filenames or declarations could miss restricted headers and permit license laundering.

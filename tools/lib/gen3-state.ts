@@ -24,7 +24,6 @@ import {
   readFileSync,
   existsSync,
   readdirSync,
-  statSync,
 } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -32,23 +31,23 @@ import { resolve } from 'node:path';
 const LEASES_PATH = resolve(SMA_ROOT, 'registry/active-leases.generated.json');
 const VOLATILE_SMA_REGEN_KINDS = new Set(['registry-regen', 'state-regen', 'wiki-regen']);
 
-type RawLease = {
+interface RawLease {
   lease_id: string; resource_kind: string; resource_id: string; agent_id: string;
   project?: string | null; acquired_at: string; expires_at: string; intent?: string;
-};
-type LeaseRegistry = { generated_at?: string; leases?: RawLease[] };
-type ContextBrick = {
+}
+interface LeaseRegistry { generated_at?: string; leases?: RawLease[] }
+interface ContextBrick {
   brick_id: string; event_count: number; last_event_at: string | null; last_intent: string | null;
   last_kind: string | null; conflict_detected: number; conflict_resolved: number; open_conflicts: number;
-};
-type ContextCoverage = {
+}
+interface ContextCoverage {
   bricks_with_context: number; total_events: number; last_event_at: string | null;
   conflict_detected: number; conflict_resolved: number; open_conflicts: number; bricks: ContextBrick[];
-};
-type MergeProposal = {
+}
+interface MergeProposal {
   proposal_id?: string; brick_id?: string; generated_at?: string; resolved_at: string | null;
   resolution_kind: string | null; recommendation: string | null; chain_count: number;
-};
+}
 
 export function isVolatileSmaRegenLease(lease: Partial<RawLease> | null | undefined): boolean {
   return lease?.project === 'sma'
@@ -60,6 +59,7 @@ export function isVolatileSmaRegenLease(lease: Partial<RawLease> | null | undefi
  * Read the lease registry and return a summary.
  * Honors expires_at (already-expired leases are excluded by default).
  */
+// eslint-disable-next-line complexity -- Collectors assemble ordered compatibility snapshots; fallback branches encode schema precedence and splitting would obscure the read contract.
 export function readActiveLeases({
   includeExpired = false,
   excludeCurrentWrapperLease = false,
@@ -82,7 +82,7 @@ export function readActiveLeases({
   try {
     parsed = JSON.parse(readFileSync(LEASES_PATH, 'utf8')) as LeaseRegistry;
   } catch (error) {
-    const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+    const code = error && typeof error === 'object' && 'code' in error ? legacyString((error as { code?: unknown }).code ?? '') : '';
     if (code !== 'ENOENT') console.error(JSON.stringify({ area: 'gen3-state.active-leases', severity: 'warning', hint: 'Repair the active lease registry or check its permissions.', error: error instanceof Error ? error.message : String(error), ...(code ? { code } : {}) }));
     return {
       generated_at: null,
@@ -125,6 +125,7 @@ export function readActiveLeases({
  * Per-project context coverage. Reads .smarch/agent-context/*.ndjson and counts
  * events. Cheap; we only count lines, not parse every event for the summary.
  */
+// eslint-disable-next-line max-lines-per-function, complexity -- Collectors assemble ordered compatibility snapshots; fallback branches encode schema precedence and splitting would obscure the read contract.
 export function readProjectContextCoverage(projectRoot: string): ContextCoverage {
   const dir = resolve(projectRoot, '.smarch/agent-context');
   if (!existsSync(dir)) {
@@ -249,7 +250,8 @@ function readProjectMergeProposals(projectRoot: string): { open_count: number; r
  * Build the global gen3 block to embed in the state snapshot.
  * `projects` is an array of `{ id, absoluteRoot }`.
  */
-export function collectGlobalGen3({ projects = [] }: { projects?: Array<{ id: string; absoluteRoot: string }> } = {}) {
+// eslint-disable-next-line max-lines-per-function -- Collectors assemble ordered compatibility snapshots; fallback branches encode schema precedence and splitting would obscure the read contract.
+export function collectGlobalGen3({ projects = [] }: { projects?: { id: string; absoluteRoot: string }[] } = {}) {
   const leases = readActiveLeases({
     excludeCurrentWrapperLease: true,
     excludeVolatileSmaRegenLeases: true,
@@ -267,7 +269,7 @@ export function collectGlobalGen3({ projects = [] }: { projects?: Array<{ id: st
   let totalConflictResolved = 0;
   let totalOpenConflicts = 0;
   for (const proj of projects) {
-    if (!proj || !proj.absoluteRoot) continue;
+    if (!proj.absoluteRoot) continue;
     const ctx = readProjectContextCoverage(proj.absoluteRoot);
     const mp = readProjectMergeProposals(proj.absoluteRoot);
     if (!ctx.bricks_with_context && !mp.open_count && !mp.resolved_count) continue;
@@ -328,7 +330,7 @@ export function collectGlobalGen3({ projects = [] }: { projects?: Array<{ id: st
 export function collectProjectGen3({ projectId, projectRoot }: { projectId: string; projectRoot: string }) {
   const leases = readActiveLeases({ excludeCurrentWrapperLease: true });
   const projectLeases = leases.leases.filter(
-    (l) => l.project === projectId || (l.resource_kind === 'brick' && /* heuristic */ false),
+    (l) => l.project === projectId,
   );
   const ctx = readProjectContextCoverage(projectRoot);
   const mp = readProjectMergeProposals(projectRoot);
@@ -343,10 +345,14 @@ export function collectProjectGen3({ projectId, projectRoot }: { projectId: stri
   };
 }
 
-function bucket<T extends Record<string, unknown>>(arr: readonly T[], key: keyof T): Record<string, number> {
+function bucket<T>(arr: readonly T[], key: keyof T): Record<string, number> {
   return arr.reduce<Record<string, number>>((counts, entry) => {
-    const value = String(entry[key] ?? 'unknown');
+    const value = legacyString(entry[key] ?? 'unknown');
     counts[value] = (counts[value] ?? 0) + 1;
     return counts;
   }, {});
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

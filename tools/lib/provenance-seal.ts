@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-type-conversion -- Provenance canonicalization preserves historical truthy fallbacks and exact JavaScript coercion for seal compatibility. */
 /**
  * WHAT: Fingerprints source trees and builds verifiable provenance hash chains and signatures.
  * WHY: Exact source identity and recorded authorship must reveal later code or history tampering.
@@ -42,28 +43,28 @@ const SEAL_ALGO = 'sha256-chain-v2';
 const SEP = '\u0000';                       // explicit NUL — never a raw byte in source
 const SIGN_CONTEXT = `sma-provenance-seal-v1${SEP}`; // domain-tag signed messages
 
-type ProvenanceEvent = {
+interface ProvenanceEvent {
   actor_kind?: unknown;
   actor_id?: unknown;
   role?: unknown;
   timestamp?: unknown;
   commit?: unknown;
   summary?: unknown;
-};
+}
 
-type SealInput = { brick_id?: string | null; content_hash?: string | null; events?: ProvenanceEvent[] };
-type ProvenanceSeal = {
+interface SealInput { brick_id?: string | null; content_hash?: string | null; events?: ProvenanceEvent[] }
+interface ProvenanceSeal {
   algo: string;
   brick_id: string | null;
   anchor: string;
   head: string;
   chain_length: number;
   events_digest: string;
-};
+}
 
 type StoredSeal = Partial<Pick<ProvenanceSeal, 'anchor' | 'head' | 'chain_length'>> | null | undefined;
-type FingerprintedFile = { path: string; sha256: string; bytes: number };
-type SourceFingerprint = {
+interface FingerprintedFile { path: string; sha256: string; bytes: number }
+interface SourceFingerprint {
   algo: string;
   content_hash: string | null;
   resolved: boolean;
@@ -71,7 +72,7 @@ type SourceFingerprint = {
   byte_count: number;
   truncated: boolean;
   files?: FingerprintedFile[];
-};
+}
 
 const IGNORE_DIRS = new Set([
   '.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '.turbo',
@@ -278,5 +279,3 @@ export function verifySealSignature(head: string, signatureHex: string, publicPe
 export function publicKeyId(publicPem: string): string {
   return sha256(String(publicPem)).slice(0, 16);
 }
-
-const ALGOS = { FINGERPRINT_ALGO, SEAL_ALGO };

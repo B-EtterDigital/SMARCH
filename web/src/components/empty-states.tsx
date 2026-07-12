@@ -4,14 +4,14 @@ import { STRINGS } from "../strings";
 
 export type SurfaceState = "loading" | "empty" | "error";
 
-export type EmptyStateProps = {
+export interface EmptyStateProps {
   state?: SurfaceState;
   sentence: string;
   command: string;
   onRetry?: () => void;
   error?: unknown;
   telemetryArea?: string;
-};
+}
 
 /** Warm, actionable fallback for loading, empty, and error surfaces. */
 export function EmptyState({ state = "empty", sentence, command, onRetry, error, telemetryArea = "dashboard.empty-state" }: EmptyStateProps) {

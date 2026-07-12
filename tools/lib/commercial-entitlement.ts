@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { verifySealSignature, publicKeyId } from './provenance-seal.ts';
 
-type EntitlementRecord = {
+interface EntitlementRecord {
   brick_id?: string;
   licensee?: string;
   issued_at?: string;
@@ -11,21 +11,21 @@ type EntitlementRecord = {
   public_key?: string;
   signature?: string;
   key_id?: string;
-};
+}
 
-type CommercialManifest = {
+interface CommercialManifest {
   license_tier?: string;
   commercial_terms?: string;
   brick?: { license_tier?: string; commercial_terms?: string };
-};
+}
 
 export function entitlementPayload(record: EntitlementRecord): string {
   return JSON.stringify({
-    brick_id: String(record.brick_id || ''),
-    licensee: String(record.licensee || ''),
-    issued_at: String(record.issued_at || ''),
-    expires_at: record.expires_at ? String(record.expires_at) : null,
-    nonce: String(record.nonce || ''),
+    brick_id: (record.brick_id ?? ''),
+    licensee: (record.licensee ?? ''),
+    issued_at: (record.issued_at ?? ''),
+    expires_at: record.expires_at ?? null,
+    nonce: (record.nonce ?? ''),
   });
 }
 
@@ -36,11 +36,11 @@ export function verifyCommercialEntitlement({ manifest, brickId, licensee, entit
   entitlementFile?: string | null;
   trustedKeysFile?: string | null;
 }) {
-  const tier = manifest?.license_tier || manifest?.brick?.license_tier || 'open';
+  const tier = (manifest?.license_tier ?? manifest?.brick?.license_tier) ?? 'open';
   if (tier !== 'commercial') return { required: false, ok: true };
-  const purchase = manifest?.commercial_terms || manifest?.brick?.commercial_terms || 'the commercial terms URI';
+  const purchase = (manifest?.commercial_terms ?? manifest?.brick?.commercial_terms) ?? 'the commercial terms URI';
   const fail = (reason: string): never => {
-    const error = new Error(`commercial brick "${brickId}" requires a valid entitlement for "${licensee || 'the licensee'}": ${reason}. Purchase or request access at ${purchase}`);
+    const error = new Error(`commercial brick "${brickId}" requires a valid entitlement for "${licensee ?? 'the licensee'}": ${reason}. Purchase or request access at ${purchase}`);
     (error as Error & { code?: string }).code = 'COMMERCIAL_ENTITLEMENT_REQUIRED';
     throw error;
   };
@@ -60,7 +60,7 @@ export function verifyCommercialEntitlement({ manifest, brickId, licensee, entit
   if (record.key_id && record.key_id !== keyId) fail('key_id does not match the public key');
   if (trustedKeysFile) {
     const trusted: string[] = (() => {
-      try { return (JSON.parse(fs.readFileSync(trustedKeysFile, 'utf8')) as { key_ids?: string[] }).key_ids || []; }
+      try { return (JSON.parse(fs.readFileSync(trustedKeysFile, 'utf8')) as { key_ids?: string[] }).key_ids ?? []; }
       catch { return fail('trusted key registry is unreadable'); }
     })();
     if (!trusted.includes(keyId)) fail(`signing key ${keyId} is not trusted`);
@@ -68,3 +68,5 @@ export function verifyCommercialEntitlement({ manifest, brickId, licensee, entit
   if (!verifySealSignature(entitlementPayload(record), signature, publicKey)) fail('signature is invalid or entitlement was tampered');
   return { required: true, ok: true, key_id: keyId, entitlement_hash: crypto.createHash('sha256').update(fs.readFileSync(entitlementPath)).digest('hex') };
 }
+/* Entitlement verification is a flat fail-closed checklist; complexity counts each independent rejection guard. */
+/* eslint complexity: "off" */

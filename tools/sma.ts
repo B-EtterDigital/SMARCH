@@ -63,6 +63,7 @@ const COMMANDS: Record<string, CommandEntry | undefined> = {
   conflict:        { script: 'sma-conflict.ts',       desc: 'Report and resolve Gen3 agent collisions' },
   'context-check': { script: 'sma-context-check.ts',  desc: 'CI gate: modified manifests have context' },
   'context-replay':{ script: 'sma-context-replay.ts', desc: 'Render a brick\'s log as a story' },
+  blame:            { script: 'sma-blame.ts', desc: 'Intent-blame: lines → intent + evidence (Gen3-VC)' },
   merge:           { script: 'sma-merge.ts',          desc: 'Divergence proposals from context chains' },
   'start-edit':    { script: 'sma-start-edit.ts',     desc: 'Acquire lease + log edit_planned in one shot' },
   'end-edit':      { script: 'sma-end-edit.ts',       desc: 'Log edit_applied + release lease' },

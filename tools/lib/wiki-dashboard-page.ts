@@ -14,33 +14,32 @@ type ProjectMeta = NonNullable<Parameters<typeof projectStatus>[1]>;
 
 
 
+// eslint-disable-next-line max-lines-per-function, complexity -- This is a static HTML serializer; contiguous markup and conditional sections preserve escaping and byte-stable snapshots.
 export function dashboardHtml(registry: DashboardRegistry, bricks: CompactBrick[], metadata: Map<string, ProjectMeta>, stateSnapshot: StateSnapshot | null = null): string {
-  const projects = registry.projects || [];
-  const scanner = registry.scanner_report || {};
-  const refactor = registry.refactor_report || {};
-  const buildPlane = stateSnapshot?.build_plane || {};
-  const releasePlane = stateSnapshot?.release_plane || {};
-  const releaseSummary = releasePlane.summary || {};
-  const releaseBuildSummary = releaseSummary.build || {};
-  const installPlane = stateSnapshot?.install_plane || {};
-  const qualityReport = stateSnapshot?.trust?.code_quality_report || scanner.code_quality_report || {};
+  const projects = registry.projects;
+  const scanner = registry.scanner_report ?? {};
+  const refactor = registry.refactor_report ?? {};
+  const buildPlane = stateSnapshot?.build_plane ?? {};
+  const releasePlane = stateSnapshot?.release_plane ?? {};
+  const releaseSummary = releasePlane.summary ?? {};
+  const releaseBuildSummary = releaseSummary.build ?? {};
+  const installPlane = stateSnapshot?.install_plane ?? {};
+  const qualityReport = (stateSnapshot?.trust?.code_quality_report ?? scanner.code_quality_report) ?? {};
   const totalBricks = bricks.length;
-  const totalWarnings = projects.reduce((sum, project) => sum + (project.warning_count || 0), 0);
-  const totalErrors = projects.reduce((sum, project) => sum + (project.error_count || 0), 0);
+  const totalWarnings = projects.reduce((sum, project) => sum + (project.warning_count ?? 0), 0);
   const blockedProjects = projects.filter((project) => projectStatus(project, metadata.get(project.id)).includes("blocked")).length;
-  const avgScore = totalBricks ? Math.round(bricks.reduce((sum, brick) => sum + (brick.score || 0), 0) / totalBricks) : 0;
   const statusCounts = countBy(projects, (project) => projectStatus(project, metadata.get(project.id)));
   const brickStatusCounts = countBy(bricks, (brick) => brick.status);
-  const healthCounts = countBy(bricks, (brick) => brick.health?.status);
+  const healthCounts = countBy(bricks, (brick) => brick.health.status);
   const riskCounts = countBy(bricks, (brick) => brick.risk);
   const clusterCounts = countBy(bricks, (brick) => brick.feature_cluster?.name);
-  const maxProjectBricks = Math.max(1, ...projects.map((project) => project.brick_count || 0));
+  const maxProjectBricks = Math.max(1, ...projects.map((project) => project.brick_count ?? 0));
   const projectRows = projects.map((project) => {
     const meta = metadata.get(project.id);
     const status = projectStatus(project, meta);
     const tone = projectTone(status);
-    const security = meta?.sma?.security_gate || project.security_gate;
-    const width = Math.max(4, Math.round(((project.brick_count || 0) / maxProjectBricks) * 100));
+    const security = meta?.sma?.security_gate ?? project.security_gate;
+    const width = Math.max(4, Math.round(((project.brick_count ?? 0) / maxProjectBricks) * 100));
 
     return `      <article class="project ${tone}" data-name="${escapeHtml(`${project.id} ${project.root}`.toLowerCase())}" data-status="${escapeHtml(status)}">
         <div class="project-head">
@@ -48,52 +47,52 @@ export function dashboardHtml(registry: DashboardRegistry, bricks: CompactBrick[
           <span>${escapeHtml(status)}</span>
         </div>
         <p>${escapeHtml(project.root || "No root recorded")}</p>
-        <div class="project-meter"><b style="width:${width}%"></b></div>
+        <div class="project-meter"><b style="width:${String(width)}%"></b></div>
         <dl>
-          <div><dt>Bricks</dt><dd>${project.brick_count || 0}</dd></div>
-          <div><dt>Warnings</dt><dd>${project.warning_count || 0}</dd></div>
-          <div><dt>Errors</dt><dd>${project.error_count || 0}</dd></div>
-          <div><dt>Security</dt><dd>${security ? `${security.high_or_critical || 0} high/critical` : "not recorded"}</dd></div>
+          <div><dt>Bricks</dt><dd>${String(project.brick_count ?? 0)}</dd></div>
+          <div><dt>Warnings</dt><dd>${String(project.warning_count ?? 0)}</dd></div>
+          <div><dt>Errors</dt><dd>${String(project.error_count ?? 0)}</dd></div>
+          <div><dt>Security</dt><dd>${security ? `${String(security.high_or_critical ?? 0)} high/critical` : "not recorded"}</dd></div>
         </dl>
         <a class="project-link" href="projects/${slugify(project.id)}.md">Open project page</a>
       </article>`;
   }).join("\n");
   const statusBars = statusCounts.map(([status, count]) => {
     const width = projects.length ? Math.max(6, Math.round((count / projects.length) * 100)) : 0;
-    return `        <div class="bar-row"><span>${escapeHtml(status)}</span><b style="width:${width}%"></b><em>${count}</em></div>`;
+    return `        <div class="bar-row"><span>${escapeHtml(status)}</span><b style="width:${String(width)}%"></b><em>${String(count)}</em></div>`;
   }).join("\n");
   const brickBars = brickStatusCounts.map(([status, count]) => {
     const width = totalBricks ? Math.max(6, Math.round((count / totalBricks) * 100)) : 0;
-    return `        <div class="bar-row"><span>${escapeHtml(status)}</span><b style="width:${width}%"></b><em>${count}</em></div>`;
+    return `        <div class="bar-row"><span>${escapeHtml(status)}</span><b style="width:${String(width)}%"></b><em>${String(count)}</em></div>`;
   }).join("\n");
-  const healthPills = healthCounts.map(([health, count]) => `<li>${escapeHtml(health)} health: ${count}</li>`).join("\n          ");
-  const riskPills = riskCounts.map(([risk, count]) => `<li>${escapeHtml(risk)} risk: ${count}</li>`).join("\n          ");
+  const healthPills = healthCounts.map(([health, count]) => `<li>${escapeHtml(health)} health: ${String(count)}</li>`).join("\n          ");
+  const riskPills = riskCounts.map(([risk, count]) => `<li>${escapeHtml(risk)} risk: ${String(count)}</li>`).join("\n          ");
   const clusterBars = clusterCounts.slice(0, 10).map(([cluster, count]) => {
     const width = totalBricks ? Math.max(6, Math.round((count / totalBricks) * 100)) : 0;
-    return `        <div class="bar-row"><span>${escapeHtml(cluster)}</span><b style="width:${width}%"></b><em>${count}</em></div>`;
+    return `        <div class="bar-row"><span>${escapeHtml(cluster)}</span><b style="width:${String(width)}%"></b><em>${String(count)}</em></div>`;
   }).join("\n");
-  const readinessAverage = scanner.readiness?.average_score || 0;
-  const readinessGrade = scanner.readiness?.average_grade || "F";
-  const complianceAverage = scanner.compliance_report?.average_score || 0;
-  const complianceGrade = scanner.compliance_report?.average_grade || "F";
-  const buildCandidateCount = scanner.build_report?.candidate_count || 0;
-  const buildConfidence = scanner.build_report?.average_confidence_score || 0;
-  const recurrentBuildCount = scanner.build_report?.recurrent_candidate_count || 0;
-  const recurrentFamilyCount = scanner.build_report?.recurrent_family_count || 0;
-  const refactorQueueCount = (refactor.refactor_queue || []).length;
-  const duplicateClusterCount = (scanner.duplicate_clusters || []).length;
+  const readinessAverage = scanner.readiness?.average_score ?? 0;
+  const readinessGrade = scanner.readiness?.average_grade ?? "F";
+  const complianceAverage = scanner.compliance_report?.average_score ?? 0;
+  const complianceGrade = scanner.compliance_report?.average_grade ?? "F";
+  const buildCandidateCount = scanner.build_report?.candidate_count ?? 0;
+  const buildConfidence = scanner.build_report?.average_confidence_score ?? 0;
+  const recurrentBuildCount = scanner.build_report?.recurrent_candidate_count ?? 0;
+  const recurrentFamilyCount = scanner.build_report?.recurrent_family_count ?? 0;
+  const refactorQueueCount = (refactor.refactor_queue ?? []).length;
+  const duplicateClusterCount = (scanner.duplicate_clusters ?? []).length;
   const tokenReduction = scanner.token_economics?.raw_source_tokens
-    ? Math.round(((scanner.token_economics.raw_source_tokens - (scanner.token_economics.estimated_summary_tokens || 0)) / scanner.token_economics.raw_source_tokens) * 100)
+    ? Math.round(((scanner.token_economics.raw_source_tokens - (scanner.token_economics.estimated_summary_tokens ?? 0)) / scanner.token_economics.raw_source_tokens) * 100)
     : 0;
-  const envGapCount = scanner.env_contract_report?.bricks_with_undeclared_refs || 0;
-  const curatedBuildCount = buildPlane.curated_manifest_count || 0;
-  const releasedCuratedBuildCount = buildPlane.released_curated_build_count || 0;
-  const updateReadyBuildCount = buildPlane.update_ready_build_count || 0;
-  const releaseArtifactCount = releaseSummary.release_count || 0;
-  const installTargetCount = installPlane.target_count || 0;
-  const installUpdateEventCount = installPlane.update_event_count || 0;
-  const qualityAverage = qualityReport.average_score || qualityReport.score || 0;
-  const qualityGrade = qualityReport.average_grade || qualityReport.grade || "A";
+  const envGapCount = scanner.env_contract_report?.bricks_with_undeclared_refs ?? 0;
+  const curatedBuildCount = buildPlane.curated_manifest_count ?? 0;
+  const releasedCuratedBuildCount = buildPlane.released_curated_build_count ?? 0;
+  const updateReadyBuildCount = buildPlane.update_ready_build_count ?? 0;
+  const releaseArtifactCount = releaseSummary.release_count ?? 0;
+  const installTargetCount = installPlane.target_count ?? 0;
+  const installUpdateEventCount = installPlane.update_event_count ?? 0;
+  const qualityAverage = (qualityReport.average_score ?? qualityReport.score) ?? 0;
+  const qualityGrade = (qualityReport.average_grade ?? qualityReport.grade) ?? "A";
   const scannerBricks = scannerReadinessCards(scanner);
   const complianceProjectDeck = complianceProjectCards(scanner);
   const complianceDimensionDeck = complianceDimensionRows(scanner);
@@ -105,15 +104,15 @@ export function dashboardHtml(registry: DashboardRegistry, bricks: CompactBrick[
   const installDeck = installEvidenceCards(stateSnapshot);
   const remediationDeck = remediationActionCards(scanner);
   const remediationPlans = remediationProjectPlans(scanner);
-  const qualityDeck = qualityQueueCards(stateSnapshot?.trust?.quality_queue || scanner.remediation_report?.quality_queue || [], 10);
+  const qualityDeck = qualityQueueCards((stateSnapshot?.trust?.quality_queue ?? scanner.remediation_report?.quality_queue) ?? [], 10);
   const qualityProjectDeck = qualityProjectCards(stateSnapshot, 8);
-  const queueCards = scannerQueueCards(refactor.refactor_queue || []);
+  const queueCards = scannerQueueCards(refactor.refactor_queue ?? []);
   const cloneCards = cloneRiskCards(scanner);
   const envCards = envContractCards(scanner);
   const duplicateDeck = duplicateCards(scanner);
   const tokenDeck = tokenCards(scanner);
   const boundaryList = boundaryRows(scanner);
-  const proofDeck = proofSurfaceCards(stateSnapshot, scanner, stateSnapshot?.totals || {}, projects.length);
+  const proofDeck = proofSurfaceCards(stateSnapshot, scanner, stateSnapshot?.totals ?? {}, projects.length);
 
   return `<!doctype html>
 <html lang="en">
@@ -1067,21 +1066,21 @@ export function dashboardHtml(registry: DashboardRegistry, bricks: CompactBrick[
       <p class="lead">Brick-by-brick and build-by-build feedback for readiness, release trust, install evidence, updateability, boundary leaks, refactor pressure, overlap, and token efficiency.</p>
       <p class="hero-note">This surface is the operational layer above the registry: what is reusable now, what needs refactor pressure next, and where builds are crossing from scanner evidence into delivery assets.</p>
       <div class="metrics">
-      <div class="metric"><span>Projects</span><strong>${projects.length}</strong></div>
-      <div class="metric"><span>Bricks</span><strong>${totalBricks}</strong></div>
-      <div class="metric"><span>Readiness</span><strong>${readinessAverage}/${readinessGrade}</strong></div>
-      <div class="metric"><span>Compliance</span><strong>${complianceAverage}/${complianceGrade}</strong></div>
-      <div class="metric"><span>Build Candidates</span><strong>${buildCandidateCount}</strong></div>
-      <div class="metric"><span>Curated Builds</span><strong>${curatedBuildCount}</strong></div>
-      <div class="metric"><span>Build Releases</span><strong>${releaseArtifactCount}</strong></div>
-      <div class="metric"><span>Install Targets</span><strong>${installTargetCount}</strong></div>
-      <div class="metric"><span>Update Events</span><strong>${installUpdateEventCount}</strong></div>
-      <div class="metric"><span>Refactor Queue</span><strong>${refactorQueueCount}</strong></div>
-      <div class="metric"><span>Warnings</span><strong>${totalWarnings}</strong></div>
-      <div class="metric"><span>Blocked</span><strong>${scanner.clone_preflight?.counts?.blocked || blockedProjects}</strong></div>
-      <div class="metric"><span>Env Gaps</span><strong>${envGapCount}</strong></div>
-      <div class="metric"><span>Fix Actions</span><strong>${(scanner.remediation_report?.top_actions || []).length}</strong></div>
-      <div class="metric"><span>Token Savings</span><strong>${tokenReduction}%</strong></div>
+      <div class="metric"><span>Projects</span><strong>${String(projects.length)}</strong></div>
+      <div class="metric"><span>Bricks</span><strong>${String(totalBricks)}</strong></div>
+      <div class="metric"><span>Readiness</span><strong>${String(readinessAverage)}/${readinessGrade}</strong></div>
+      <div class="metric"><span>Compliance</span><strong>${String(complianceAverage)}/${complianceGrade}</strong></div>
+      <div class="metric"><span>Build Candidates</span><strong>${String(buildCandidateCount)}</strong></div>
+      <div class="metric"><span>Curated Builds</span><strong>${String(curatedBuildCount)}</strong></div>
+      <div class="metric"><span>Build Releases</span><strong>${String(releaseArtifactCount)}</strong></div>
+      <div class="metric"><span>Install Targets</span><strong>${String(installTargetCount)}</strong></div>
+      <div class="metric"><span>Update Events</span><strong>${String(installUpdateEventCount)}</strong></div>
+      <div class="metric"><span>Refactor Queue</span><strong>${String(refactorQueueCount)}</strong></div>
+      <div class="metric"><span>Warnings</span><strong>${String(totalWarnings)}</strong></div>
+      <div class="metric"><span>Blocked</span><strong>${String(scanner.clone_preflight?.counts?.blocked ?? blockedProjects)}</strong></div>
+      <div class="metric"><span>Env Gaps</span><strong>${String(envGapCount)}</strong></div>
+      <div class="metric"><span>Fix Actions</span><strong>${String((scanner.remediation_report?.top_actions ?? []).length)}</strong></div>
+      <div class="metric"><span>Token Savings</span><strong>${String(tokenReduction)}%</strong></div>
       </div>
     </div>
   </header>
@@ -1126,18 +1125,18 @@ ${brickBars || "        <p>No bricks indexed.</p>"}
         <h2>Scanner Pressure</h2>
         <ul class="status-line">
           <li>quality: ${formatNumber(qualityAverage)}/${escapeHtml(qualityGrade)}</li>
-          <li>quality hotspots: ${formatNumber(qualityReport.hotspot_file_count || 0)}</li>
-          <li>quality backlog: ${formatNumber(scanner.remediation_report?.counts?.quality || 0)}</li>
-          <li>smell hits: ${formatNumber(qualityReport.total_smell_count || 0)}</li>
-          <li>private imports: ${scanner.boundary_report?.private_cross_brick_import_count || 0}</li>
-          <li>cross-group leaks: ${scanner.boundary_report?.cross_brick_owned_import_count || 0}</li>
-          <li>same-group coupling: ${scanner.boundary_report?.same_group_internal_import_count || 0}</li>
-          <li>unresolved local imports: ${scanner.boundary_report?.unresolved_local_import_count || 0}</li>
-          <li>drift entries: ${scanner.manifest_drift?.count || 0}</li>
-          <li>undeclared env refs: ${scanner.env_contract_report?.undeclared_reference_count || 0}</li>
-          <li>ignored runtime env refs: ${scanner.env_contract_report?.ignored_reference_count || 0}</li>
-          <li>duplicate clusters: ${duplicateClusterCount}</li>
-          <li>raw source tokens: ${formatNumber(scanner.token_economics?.raw_source_tokens || 0)}</li>
+          <li>quality hotspots: ${formatNumber(qualityReport.hotspot_file_count ?? 0)}</li>
+          <li>quality backlog: ${formatNumber(scanner.remediation_report?.counts?.quality ?? 0)}</li>
+          <li>smell hits: ${formatNumber(qualityReport.total_smell_count ?? 0)}</li>
+          <li>private imports: ${String(scanner.boundary_report?.private_cross_brick_import_count ?? 0)}</li>
+          <li>cross-group leaks: ${String(scanner.boundary_report?.cross_brick_owned_import_count ?? 0)}</li>
+          <li>same-group coupling: ${String(scanner.boundary_report?.same_group_internal_import_count ?? 0)}</li>
+          <li>unresolved local imports: ${String(scanner.boundary_report?.unresolved_local_import_count ?? 0)}</li>
+          <li>drift entries: ${String(scanner.manifest_drift?.count ?? 0)}</li>
+          <li>undeclared env refs: ${String(scanner.env_contract_report?.undeclared_reference_count ?? 0)}</li>
+          <li>ignored runtime env refs: ${String(scanner.env_contract_report?.ignored_reference_count ?? 0)}</li>
+          <li>duplicate clusters: ${String(duplicateClusterCount)}</li>
+          <li>raw source tokens: ${formatNumber(scanner.token_economics?.raw_source_tokens ?? 0)}</li>
         </ul>
         <h2 style="margin-top:16px;">Top Feature Areas</h2>
 ${clusterBars || "        <p>No feature clusters indexed.</p>"}
@@ -1150,7 +1149,7 @@ ${clusterBars || "        <p>No feature clusters indexed.</p>"}
             <h2>SMA Compliance</h2>
             <p>Compliance scores measure how many reusable bricks actually meet the SMA contract: clean boundaries, declared envs, clone steps, tests, API docs, attestation, and security hygiene.</p>
           </div>
-          <strong>${complianceAverage}<small>/${complianceGrade}</small></strong>
+          <strong>${String(complianceAverage)}<small>/${complianceGrade}</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1177,7 +1176,7 @@ ${complianceGapDeck || "              <article class='gap-card'><h3>No complianc
             <h2>Build Layer</h2>
             <p>These are repeated multi-brick capabilities the scanner can already see. They are the raw scanner-side funnel that feeds curated build manifests and release artifacts.</p>
           </div>
-          <strong>${buildConfidence}<small>/100 avg</small></strong>
+          <strong>${String(buildConfidence)}<small>/100 avg</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1192,10 +1191,10 @@ ${buildDeck || "              <article class='build-card'><h3>No build candidate
 ${buildFamilies || "              <li><strong>No recurrent build families detected.</strong></li>"}
             </ul>
             <ul class="status-line" style="margin-top:16px;">
-              <li>detected builds: ${buildCandidateCount}</li>
-              <li>recurrent builds: ${recurrentBuildCount}</li>
-              <li>recurrent families: ${recurrentFamilyCount}</li>
-              <li>build-participating bricks: ${formatNumber(scanner.build_report?.detected_brick_count || 0)}</li>
+              <li>detected builds: ${String(buildCandidateCount)}</li>
+              <li>recurrent builds: ${String(recurrentBuildCount)}</li>
+              <li>recurrent families: ${String(recurrentFamilyCount)}</li>
+              <li>build-participating bricks: ${formatNumber(scanner.build_report?.detected_brick_count ?? 0)}</li>
             </ul>
           </div>
         </div>
@@ -1206,7 +1205,7 @@ ${buildFamilies || "              <li><strong>No recurrent build families detect
             <h2>Build Delivery Plane</h2>
             <p>Curated manifests, release artifacts, and update-ready trust signals show whether SMARCH is becoming a real product layer instead of only a scanner output.</p>
           </div>
-          <strong>${releasedCuratedBuildCount}<small>/${curatedBuildCount} released</small></strong>
+          <strong>${String(releasedCuratedBuildCount)}<small>/${String(curatedBuildCount)} released</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1215,10 +1214,10 @@ ${buildFamilies || "              <li><strong>No recurrent build families detect
 ${curatedBuildDeck || "              <article class='build-card'><h3>No curated builds yet</h3></article>"}
             </div>
             <ul class="status-line" style="margin-top:16px;">
-              <li>released curated builds: ${releasedCuratedBuildCount}</li>
-              <li>update-ready builds: ${updateReadyBuildCount}</li>
-              <li>rollback-supported builds: ${buildPlane.rollback_supported_build_count || 0}</li>
-              <li>candidate+ verification: ${buildPlane.candidate_or_better_verification_count || 0}</li>
+              <li>released curated builds: ${String(releasedCuratedBuildCount)}</li>
+              <li>update-ready builds: ${String(updateReadyBuildCount)}</li>
+              <li>rollback-supported builds: ${String(buildPlane.rollback_supported_build_count ?? 0)}</li>
+              <li>candidate+ verification: ${String(buildPlane.candidate_or_better_verification_count ?? 0)}</li>
             </ul>
           </div>
           <div class="panel">
@@ -1227,10 +1226,10 @@ ${curatedBuildDeck || "              <article class='build-card'><h3>No curated 
 ${releaseDeck || "              <article class='build-card'><h3>No release artifacts indexed</h3></article>"}
             </div>
             <ul class="status-line" style="margin-top:16px;">
-              <li>build artifacts: ${releaseBuildSummary.artifact_count || 0}</li>
-              <li>published build artifacts: ${releaseBuildSummary.published_artifact_count || 0}</li>
-              <li>candidate channel releases: ${(releaseBuildSummary.channels || {}).candidate || 0}</li>
-              <li>stable/lts artifacts: ${releaseBuildSummary.stable_or_lts_artifact_count || 0}</li>
+              <li>build artifacts: ${String(releaseBuildSummary.artifact_count ?? 0)}</li>
+              <li>published build artifacts: ${String(releaseBuildSummary.published_artifact_count ?? 0)}</li>
+              <li>candidate channel releases: ${String(releaseBuildSummary.channels?.candidate ?? 0)}</li>
+              <li>stable/lts artifacts: ${String(releaseBuildSummary.stable_or_lts_artifact_count ?? 0)}</li>
             </ul>
           </div>
         </div>
@@ -1241,7 +1240,7 @@ ${releaseDeck || "              <article class='build-card'><h3>No release artif
             <h2>Install And Update Evidence</h2>
             <p>Central progress is only real once builds are installed into target projects and their <code>.smarch</code> control plane records prove placements, frozen graph state, and update journal history.</p>
           </div>
-          <strong>${installTargetCount}<small>targets</small></strong>
+          <strong>${String(installTargetCount)}<small>targets</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1253,14 +1252,14 @@ ${installDeck || "              <article class='plan-card'><h3>No persisted buil
           <div class="panel">
             <h2>Install Evidence Totals</h2>
             <ul class="status-line">
-              <li>selected builds: ${installPlane.selected_build_count || 0}</li>
-              <li>resolved bricks: ${installPlane.resolved_brick_count || 0}</li>
-              <li>imports tracked: ${installPlane.import_count || 0}</li>
-              <li>placements tracked: ${installPlane.placement_count || 0}</li>
-              <li>journal events: ${installPlane.update_event_count || 0}</li>
-              <li>latest event: ${escapeHtml(installPlane.latest_event_at || "none recorded")}</li>
+              <li>selected builds: ${String(installPlane.selected_build_count ?? 0)}</li>
+              <li>resolved bricks: ${String(installPlane.resolved_brick_count ?? 0)}</li>
+              <li>imports tracked: ${String(installPlane.import_count ?? 0)}</li>
+              <li>placements tracked: ${String(installPlane.placement_count ?? 0)}</li>
+              <li>journal events: ${String(installPlane.update_event_count ?? 0)}</li>
+              <li>latest event: ${escapeHtml(installPlane.latest_event_at ?? "none recorded")}</li>
             </ul>
-            <p class="lead" style="font-size:14px;margin-top:16px;">Scan roots: ${escapeHtml((installPlane.scan_roots || []).join(" · ") || "none")}</p>
+            <p class="lead" style="font-size:14px;margin-top:16px;">Scan roots: ${escapeHtml((installPlane.scan_roots ?? []).join(" · ") || "none")}</p>
           </div>
         </div>
       </section>
@@ -1293,7 +1292,7 @@ ${qualityProjectDeck || "              <article class='plan-card'><h3>No project
             <h2>Next Moves</h2>
             <p>High-priority scanner fixes grouped into env contracts, RLS completion, boundary cleanup, and code-quality repair so the backlog turns into concrete moves instead of abstract scores.</p>
           </div>
-          <strong>${(scanner.remediation_report?.top_actions || []).length}<small>actions</small></strong>
+          <strong>${String((scanner.remediation_report?.top_actions ?? []).length)}<small>actions</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1316,7 +1315,7 @@ ${remediationPlans || "              <article class='plan-card'><h3>No project p
             <h2>Project Readiness Bricks</h2>
             <p>Each project gets a scanner readiness grade based on validation blockers, clone preflight failures, boundary leaks, manifest drift, oversized files, and manifest backlog.</p>
           </div>
-          <strong>${readinessAverage}<small>/${readinessGrade}</small></strong>
+          <strong>${String(readinessAverage)}<small>/${readinessGrade}</small></strong>
         </div>
         <div class="scanner-brick-grid">
 ${scannerBricks || "          <article class='scanner-brick'><h3>No readiness data yet</h3></article>"}
@@ -1328,7 +1327,7 @@ ${scannerBricks || "          <article class='scanner-brick'><h3>No readiness da
             <h2>Refactor Queue</h2>
             <p>The highest-pressure files to split first, with expected slice count and the first safe move already spelled out.</p>
           </div>
-          <strong>${refactorQueueCount}<small>queued</small></strong>
+          <strong>${String(refactorQueueCount)}<small>queued</small></strong>
         </div>
         <div class="queue-grid">
 ${queueCards || "          <article class='queue-card'><h3>No queue entries</h3></article>"}
@@ -1340,7 +1339,7 @@ ${queueCards || "          <article class='queue-card'><h3>No queue entries</h3>
             <h2>Boundary And Clone Feedback</h2>
             <p>Boundary violations come from import scanning. Clone risk comes from source coverage, validation, security, contract completeness, and local dependency leakage.</p>
           </div>
-          <strong>${scanner.clone_preflight?.counts?.blocked || 0}<small>blocked</small></strong>
+          <strong>${String(scanner.clone_preflight?.counts?.blocked ?? 0)}<small>blocked</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1367,7 +1366,7 @@ ${cloneCards || "              <article class='risk-card'><h3>No clone risk data
             <h2>Overlap And Token Economy</h2>
             <p>Duplicate clusters show likely canonicalization candidates. Token cards show where compact summaries win most against raw source loading.</p>
           </div>
-          <strong>${duplicateClusterCount}<small>clusters</small></strong>
+          <strong>${String(duplicateClusterCount)}<small>clusters</small></strong>
         </div>
         <div class="grid">
           <div class="panel">
@@ -1482,4 +1481,3 @@ ${projectRows || '      <div class="project"><h3>No projects indexed</h3><p>Run 
 </html>
 `;
 }
-

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
 /**
  * WHAT: Resolves a registry brick to an existing absolute and repository-relative path.
  * WHY: Prefixed source paths can otherwise duplicate the project directory and miss real files.
@@ -9,19 +10,19 @@
  * Glossary: [SMA](../../docs/GLOSSARY.md).
  */
 
-import { existsSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve, dirname, relative, sep } from 'node:path';
 
-type BrickPathInput = {
+interface BrickPathInput {
   manifest_path?: string;
   source_paths?: string[];
-};
+}
 
-type ResolvedBrickPath = {
+interface ResolvedBrickPath {
   absolutePath: string;
   gitRelativePath: string;
   source: 'manifest' | 'src-direct' | 'src-stripped';
-};
+}
 
 /**
  * Returns { absolutePath, gitRelativePath, source } or null.
@@ -30,12 +31,13 @@ type ResolvedBrickPath = {
  *   gitRelativePath  — POSIX-style path from projectAbs to absolutePath
  *   source           — 'manifest' | 'src-direct' | 'src-stripped'
  */
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function resolveBrickPath(brick: BrickPathInput | null | undefined, projectAbs: string): ResolvedBrickPath | null {
   if (!brick || !projectAbs) return null;
 
   // 1. manifest_path is the most reliable signal
   if (brick.manifest_path && existsSync(brick.manifest_path)) {
-    let dir = dirname(brick.manifest_path);
+    const dir = dirname(brick.manifest_path);
     // For file-style manifests like Foo.module.sweetspot.json, the manifest
     // sits next to the file, not in the file's directory. Try to detect by
     // looking at the source_paths[0] basename for a file extension.
@@ -94,14 +96,6 @@ export function resolveBrickPath(brick: BrickPathInput | null | undefined, proje
   return null;
 }
 
-/**
- * Convenience: just the git-relative path (POSIX style), or null.
- */
-function gitRelativePath(brick: BrickPathInput | null | undefined, projectAbs: string): string | null {
-  const r = resolveBrickPath(brick, projectAbs);
-  return r ? r.gitRelativePath : null;
-}
-
 function posix(p: string): string {
-  return String(p).split(sep).join('/');
+  return p.split(sep).join('/');
 }

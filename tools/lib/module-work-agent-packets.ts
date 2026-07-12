@@ -13,21 +13,21 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { renderAgentPacketMarkdown } from './module-work-renderers.ts';
 
-type AgentPacketDescriptor = { json_path: string; markdown_path: string; first_read: true };
+interface AgentPacketDescriptor { json_path: string; markdown_path: string; first_read: true }
 type SharedScopeItem = string | { id?: string; path?: string };
-type ModuleAssignment = {
+interface ModuleAssignment {
   project: string; task: string; agent_slot: number; module_id: string; slot: number;
   partition_id?: string | null; partition_label?: string | null; brick: string;
   graph_query_command?: string; claim_command?: string; paths?: string[]; exclude_paths?: string[];
   shared_hot_paths?: SharedScopeItem[]; iteration_gates?: string[]; required_gates?: string[];
   prompt?: string; agent_packet?: Partial<AgentPacketDescriptor>;
-};
-type ModuleManifest = {
+}
+interface ModuleManifest {
   created_at: string; dispatch_id: string; assignments?: ModuleAssignment[];
   gains?: Record<string, number | undefined>;
   controller_commands?: Record<string, string | undefined>;
   dispatch_paths?: { json_path?: string; markdown_path?: string };
-};
+}
 
 export function agentPacketDescriptor({ dispatchBase, slot, smaRoot }: { dispatchBase: string; slot: Pick<ModuleAssignment, 'agent_slot' | 'module_id'>; smaRoot: string }): AgentPacketDescriptor {
   const slotLabel = String(positiveInt(slot.agent_slot, 1)).padStart(2, '0');
@@ -41,8 +41,8 @@ export function agentPacketDescriptor({ dispatchBase, slot, smaRoot }: { dispatc
 }
 
 export function writeAgentPackets(manifest: ModuleManifest, { smaRoot }: { smaRoot: string }): void {
-  for (const assignment of manifest.assignments || []) {
-    if (!assignment.agent_packet?.json_path || !assignment.agent_packet?.markdown_path) continue;
+  for (const assignment of manifest.assignments ?? []) {
+    if (!assignment.agent_packet?.json_path || !assignment.agent_packet.markdown_path) continue;
     const jsonPath = resolve(smaRoot, assignment.agent_packet.json_path);
     const markdownPath = resolve(smaRoot, assignment.agent_packet.markdown_path);
     const packet = agentPacketPayload(manifest, assignment);
@@ -52,6 +52,7 @@ export function writeAgentPackets(manifest: ModuleManifest, { smaRoot }: { smaRo
   }
 }
 
+// eslint-disable-next-line complexity -- Packet assembly is an ordered compatibility serializer; branches map optional manifest fields without independent control flow.
 export function agentPacketPayload(manifest: ModuleManifest, assignment: ModuleAssignment) {
   return {
     schema_version: '1.0.0',
@@ -63,8 +64,8 @@ export function agentPacketPayload(manifest: ModuleManifest, assignment: ModuleA
     agent_slot: assignment.agent_slot,
     module_id: assignment.module_id,
     slot: assignment.slot,
-    partition_id: assignment.partition_id || null,
-    partition_label: assignment.partition_label || null,
+    partition_id: assignment.partition_id ?? null,
+    partition_label: assignment.partition_label ?? null,
     brick: assignment.brick,
     first_read: true,
     gains: {
@@ -73,26 +74,26 @@ export function agentPacketPayload(manifest: ModuleManifest, assignment: ModuleA
       collision_reduction_percent_estimate: number(manifest.gains?.collision_reduction_percent_estimate),
     },
     commands: {
-      graph_query: assignment.graph_query_command || '',
-      claim: assignment.claim_command || '',
-      observe: manifest.controller_commands?.observe || '',
+      graph_query: assignment.graph_query_command ?? '',
+      claim: assignment.claim_command ?? '',
+      observe: manifest.controller_commands?.observe ?? '',
       observe_write: manifest.controller_commands?.observe_write,
       conflict_summary: manifest.controller_commands?.conflict_summary,
     },
     scope: {
-      paths: assignment.paths || [],
-      exclude_paths: assignment.exclude_paths || [],
-      shared_hot_paths: assignment.shared_hot_paths || [],
+      paths: assignment.paths ?? [],
+      exclude_paths: assignment.exclude_paths ?? [],
+      shared_hot_paths: assignment.shared_hot_paths ?? [],
     },
     gates: {
-      iteration: assignment.iteration_gates || [],
-      required: assignment.required_gates || [],
+      iteration: assignment.iteration_gates ?? [],
+      required: assignment.required_gates ?? [],
     },
     links: {
-      dispatch_json: manifest.dispatch_paths?.json_path || null,
-      dispatch_markdown: manifest.dispatch_paths?.markdown_path || null,
-      agent_packet_json: assignment.agent_packet?.json_path || null,
-      agent_packet_markdown: assignment.agent_packet?.markdown_path || null,
+      dispatch_json: manifest.dispatch_paths?.json_path ?? null,
+      dispatch_markdown: manifest.dispatch_paths?.markdown_path ?? null,
+      agent_packet_json: assignment.agent_packet?.json_path ?? null,
+      agent_packet_markdown: assignment.agent_packet?.markdown_path ?? null,
     },
     rules: [
       'Read this packet before the full dispatch, dashboard, or state file.',
@@ -111,7 +112,7 @@ function relativeToRoot(base: string, root: string, extension: string): string {
 }
 
 function safeId(value: unknown): string {
-  return String(value || 'module').replace(/[^a-z0-9._-]/gi, '-').replace(/-+/g, '-');
+  return legacyString(value ?? 'module').replace(/[^a-z0-9._-]/gi, '-').replace(/-+/g, '-');
 }
 
 function positiveInt(value: unknown, fallback: number): number {
@@ -123,4 +124,8 @@ function positiveInt(value: unknown, fallback: number): number {
 function number(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

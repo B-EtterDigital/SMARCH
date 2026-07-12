@@ -63,6 +63,7 @@ main().catch((error: unknown) => {
   process.exit(1);
 });
 
+// eslint-disable-next-line complexity -- Promotion planning is an ordered release policy and serializer; branch order is part of the release contract.
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
@@ -193,12 +194,13 @@ function toArray(value: unknown): unknown[] {
 
 async function maybeReadJson(filePath: string): Promise<JsonDocument | null> {
   try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
+    return JSON.parse(await fs.readFile(filePath, "utf8")) as JsonDocument;
   } catch {
     return null;
   }
 }
 
+// eslint-disable-next-line complexity -- Promotion planning is an ordered release policy and serializer; branch order is part of the release contract.
 function normalizeVerificationEntry(entry: unknown): Verification | null {
   if (!entry || typeof entry !== 'object' || typeof Reflect.get(entry, 'build_id') !== 'string') return null;
   const value = entry as Record<string, unknown>;
@@ -297,6 +299,7 @@ function trustTierForStatus(status: string, currentTrustTier = "experimental"): 
   return currentTrustTier || "experimental";
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Promotion planning is an ordered release policy and serializer; branch order is part of the release contract.
 function planPromotion({ manifest, manifestPath, verification, releaseArtifact }: { manifest: BuildManifest; manifestPath: string; verification: Verification | null; releaseArtifact: ReleaseArtifact | null }): PromotionPlan {
   const build = manifest.build ?? {};
   const publishing = manifest.publishing ?? {};
@@ -435,6 +438,7 @@ function inferDimension(code: unknown): string {
   return "general";
 }
 
+// eslint-disable-next-line complexity -- Promotion planning is an ordered release policy and serializer; branch order is part of the release contract.
 function determineDesiredStatus({ currentStatus, verification, latestRelease, publishing }: { currentStatus: string; verification: Verification | null; latestRelease: ReleaseArtifact['latest_release']; publishing: NonNullable<BuildManifest['publishing']> }): string {
   if (["deprecated", "unsafe"].includes(currentStatus)) return currentStatus;
   const suggestedStatus = normalizeStatus(verification?.suggested_build_status, currentStatus);

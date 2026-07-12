@@ -161,7 +161,7 @@ export const STRINGS = {
     empty: "No bricks match this ledger view.",
     error: "Brick wall unavailable.",
     openDetail: (id: string) => `Open details for ${id}`,
-    reuseCount: (count: number) => `${count} reuses`
+    reuseCount: (count: number) => `${String(count)} reuses`
   },
   trust: {
     candidate: "CANDIDATE",
@@ -205,12 +205,12 @@ export const STRINGS = {
     nodeSuffix: "nodes",
     edgeSuffix: "links",
     selectNode: (module: string) => `Open ${module} module details`,
-    summary: (module: string, nodes: number, links: number) => `${module}: ${nodes} nodes, ${links} links`
+    summary: (module: string, nodes: number, links: number) => `${module}: ${String(nodes)} nodes, ${String(links)} links`
   },
   heatStrip: {
     thirtyDaysAgo: "30 days ago",
     today: "Today",
-    summary: (module: string, total: number) => `${module}: ${total} conflicts in the last 30 days`
+    summary: (module: string, total: number) => `${module}: ${String(total)} conflicts in the last 30 days`
   },
   conflictLedger: {
     caption: "Conflict history with open conflicts first"

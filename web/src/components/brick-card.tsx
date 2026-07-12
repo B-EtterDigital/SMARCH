@@ -7,10 +7,10 @@ import { VerdictStamp } from "./verdict-stamp";
 
 export type BrickCardState = "populated" | "loading" | "empty" | "error";
 
-type BrickCardProps = {
+interface BrickCardProps {
   brick?: BrickRecord | null;
   state?: BrickCardState;
-};
+}
 
 /**
  * Full brick record card for detail surfaces. It renders provenance, trust,

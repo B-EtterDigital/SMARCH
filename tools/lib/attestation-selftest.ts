@@ -173,7 +173,7 @@ try {
   rmSync(forgeDir, { recursive: true, force: true });
 }
 
-console.log(`attestation-selftest: OK (${n} assertions)`);
+console.log(`attestation-selftest: OK (${String(n)} assertions)`);
 
 function writeJson(dir: string, name: string, v: unknown): void {
   writeFileSync(resolve(dir, name), `${JSON.stringify(v, null, 2)}\n`);

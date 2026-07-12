@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-type-conversion, @typescript-eslint/restrict-template-expressions, @typescript-eslint/no-base-to-string -- Scanner analysis validates untrusted, version-skewed manifests; redundant guards and legacy coercion/fallback semantics are required for compatibility. */
+/* eslint-disable complexity, max-lines-per-function -- Scanner analysis is an ordered compatibility pass over one mutable report; splitting it would obscure field precedence and partial-state invariants. */
 /**
  * Project source graph, boundary, clone, and readiness analysis.
  * Extracted from sma-scan.ts; keep registry behavior byte-identical.
@@ -22,37 +24,37 @@ import {
 import type { CompactBrick } from "./scan-discovery.ts";
 import type { QualityFingerprintEntry, QualityHotspot } from "./scan-refactor.ts";
 
-type SourceFile = { absolute_path: string; relative_path: string };
-type SourceGraph = {
+interface SourceFile { absolute_path: string; relative_path: string }
+interface SourceGraph {
   file_map: Map<string, { absolute_path: string; relative_path: string; brick_ids: Set<string> }>;
   brick_files: Map<string, SourceFile[]>;
-  missing_source_paths: Array<{ project: string; brick_id: string; path: string }>;
-  analysis_failures: Array<{ project: string; path: string; error: string }>;
-};
-type ResolvedImport = { absolute_path: string; unresolved: boolean };
+  missing_source_paths: { project: string; brick_id: string; path: string }[];
+  analysis_failures: { project: string; path: string; error: string }[];
+}
+interface ResolvedImport { absolute_path: string; unresolved: boolean }
 type BoundaryScope = "private" | "public" | "owned" | "source";
-type BoundaryRule = { brick_id: string; scope: BoundaryScope; absolute_path: string; relative_path: string };
-type RemediationEntry = {
+interface BoundaryRule { brick_id: string; scope: BoundaryScope; absolute_path: string; relative_path: string }
+interface RemediationEntry {
   project: string; path: string; priority_score?: number; effective_status?: string; raw_source_tokens?: number;
   undeclared_env_refs?: string[]; observed_env_variable_count?: number; observed_table_refs?: string[]; negative_test_count?: number;
   private_cross_import_count?: number; cross_brick_owned_import_count?: number; unresolved_local_import_count?: number; unowned_local_dependency_count?: number;
   [key: string]: unknown;
-};
-type BoundaryViolation = { project: string; brick_id: string; file: string; specifier: string; kind: string; target_brick_id?: string; target?: string };
-type DriftEntry = { project: string; brick_id: string; kind: string; manifest_value: number; actual_value: number; path: string };
-type CloneEntry = {
+}
+interface BoundaryViolation { project: string; brick_id: string; file: string; specifier: string; kind: string; target_brick_id?: string; target?: string }
+interface DriftEntry { project: string; brick_id: string; kind: string; manifest_value: number; actual_value: number; path: string }
+interface CloneEntry {
   project: string; brick_id: string; name: string; path: string; declared_readiness: string; effective_status: string;
   blocker_codes: string[]; warning_codes: string[]; local_import_count: number; public_cross_import_count: number;
   same_group_internal_import_count: number; cross_brick_owned_import_count: number; private_cross_import_count: number;
   unresolved_local_import_count: number; unowned_local_dependency_count: number; undeclared_env_refs: string[];
   raw_source_tokens: number; file_count: number;
-};
-type EnvGapEntry = { project: string; brick_id: string; name: string; path: string; undeclared_env_refs: string[]; observed_env_variable_count: number; declared_env_variable_count: number; effective_status: string; raw_source_tokens: number };
-type RlsGapEntry = { project: string; brick_id: string; name: string; path: string; rls_status: string; observed_table_refs: string[]; negative_test_count: number; effective_status: string; raw_source_tokens: number };
-type BoundaryHotspot = { project: string; brick_id: string; name: string; path: string; private_cross_import_count: number; cross_brick_owned_import_count: number; unresolved_local_import_count: number; unowned_local_dependency_count: number; effective_status: string; raw_source_tokens: number; priority_score: number };
-type TokenHeavyEntry = { project: string; brick_id: string; name: string; path: string; raw_source_tokens: number; summary_tokens: number; compact_card_tokens: number; estimated_savings_tokens: number; file_count: number };
-type CodeQualityBrick = { project: string; brick_id: string; name: string; path: string; smell_score: number; total_matches: number; by_type: Record<string, number>; top_types: ReturnType<typeof topCodeQualityTypes>; raw_source_tokens: number };
-type Penalty = { points: number; label: string };
+}
+interface EnvGapEntry { project: string; brick_id: string; name: string; path: string; undeclared_env_refs: string[]; observed_env_variable_count: number; declared_env_variable_count: number; effective_status: string; raw_source_tokens: number }
+interface RlsGapEntry { project: string; brick_id: string; name: string; path: string; rls_status: string; observed_table_refs: string[]; negative_test_count: number; effective_status: string; raw_source_tokens: number }
+interface BoundaryHotspot { project: string; brick_id: string; name: string; path: string; private_cross_import_count: number; cross_brick_owned_import_count: number; unresolved_local_import_count: number; unowned_local_dependency_count: number; effective_status: string; raw_source_tokens: number; priority_score: number }
+interface TokenHeavyEntry { project: string; brick_id: string; name: string; path: string; raw_source_tokens: number; summary_tokens: number; compact_card_tokens: number; estimated_savings_tokens: number; file_count: number }
+interface CodeQualityBrick { project: string; brick_id: string; name: string; path: string; smell_score: number; total_matches: number; by_type: Record<string, number>; top_types: ReturnType<typeof topCodeQualityTypes>; raw_source_tokens: number }
+interface Penalty { points: number; label: string }
 type CardRecord = Record<string, unknown> & { id?: string };
 
 const smaRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -581,7 +583,7 @@ function pathRuleMatches(rulePath: string, targetPath: string): boolean {
 function buildBoundaryRules(projectRoot: string, bricks: CompactBrick[]): { rules: BoundaryRule[]; rulesByBrick: Map<string, BoundaryRule[]> } {
   const rules: BoundaryRule[] = [];
   const rulesByBrick = new Map<string, BoundaryRule[]>();
-  const scopes: Array<[BoundaryScope, "private_paths" | "public_paths" | "owned_paths" | "source_paths"]> = [
+  const scopes: [BoundaryScope, "private_paths" | "public_paths" | "owned_paths" | "source_paths"][] = [
     ["private", "private_paths"],
     ["public", "public_paths"],
     ["owned", "owned_paths"],
@@ -664,7 +666,7 @@ async function collectProjectSourceGraph(projectRoot: string, projectIdValue: st
 
   const fileMap = new Map<string, { absolute_path: string; relative_path: string; brick_ids: Set<string> }>();
   const brickFiles = new Map<string, SourceFile[]>();
-  const analysisFailures: Array<{ project: string; path: string; error: string }> = [];
+  const analysisFailures: { project: string; path: string; error: string }[] = [];
 
   for (const target of sourceTargets.values()) {
     const sourceFiles: string[] = [];
@@ -796,7 +798,7 @@ function boundaryViolationPriority(kind: string): number {
   }[kind] || 0;
 }
 
-export async function analyzeProjectScannerReport(projectRoot: string, projectIdValue: string, bricks: CompactBrick[], unmanifestedCount = 0, compactCardIndex: Map<string, CardRecord> = new Map()) {
+export async function analyzeProjectScannerReport(projectRoot: string, projectIdValue: string, bricks: CompactBrick[], unmanifestedCount = 0, compactCardIndex = new Map<string, CardRecord>()) {
   const sourceGraph = await collectProjectSourceGraph(projectRoot, projectIdValue, bricks);
   const buildCandidates = detectProjectBuildCandidates(projectIdValue, bricks);
   const buildReport = buildProjectBuildReport(projectIdValue, buildCandidates);

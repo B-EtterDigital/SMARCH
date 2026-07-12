@@ -11,12 +11,12 @@
 
 import type { BigPicture, ModuleObservation } from './module-work-renderers.ts';
 
-type DispatchAssignmentState = { agent_slot: number; status: string; claimed: boolean; open_conflicts: number; graph_ready: boolean; context_error?: string | null; launch_blocked?: boolean; launch_blocked_reason?: string };
-type ExternalLeaseGroup = { module_id?: string; held_resource?: string; slot_count: number; agent_slots: number[] };
-type DirtyScope = { count: number; brick: string; [key: string]: unknown };
-type ClaimReceipt = { graph_query_command: string; paths: string[]; exclude_paths: string[]; required_gates: string[]; conflict_command: string; agent_packet_markdown_path: string; prompt: string; claim_command?: string; project?: string; module_id?: string; slot?: number };
-type AgentPacketResult = { first_read: boolean; commands: { claim: string; graph_query: string }; links: { dispatch_markdown: string } };
-type SelfTestHarness = {
+interface DispatchAssignmentState { agent_slot: number; status: string; claimed: boolean; open_conflicts: number; graph_ready: boolean; context_error?: string | null; launch_blocked?: boolean; launch_blocked_reason?: string }
+interface ExternalLeaseGroup { module_id?: string; held_resource?: string; slot_count: number; agent_slots: number[] }
+interface DirtyScope { count: number; brick: string; [key: string]: unknown }
+interface ClaimReceipt { graph_query_command: string; paths: string[]; exclude_paths: string[]; required_gates: string[]; conflict_command: string; agent_packet_markdown_path: string; prompt: string; claim_command?: string; project?: string; module_id?: string; slot?: number }
+interface AgentPacketResult { first_read: boolean; commands: { claim: string; graph_query: string }; links: { dispatch_markdown: string } }
+interface SelfTestHarness {
   DEFAULT_DISPATCH_DIR: string;
   DEFAULT_STALE_UNCLAIMED_DISPATCH_MS: number;
   SMA_ROOT: string;
@@ -39,8 +39,9 @@ type SelfTestHarness = {
   parseGitShortDirtyPaths: (text: string) => string[];
   renderObservationMarkdown: (observation: ModuleObservation, deps: { blockedReasonSuffix: (summary: unknown) => string; formatPercent: (value: number) => string }) => string;
   resolve: (...paths: string[]) => string;
-};
+}
 
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function runModuleWorkSelfTest(harness: SelfTestHarness): number {
   const {
     DEFAULT_DISPATCH_DIR,
@@ -179,7 +180,7 @@ export function runModuleWorkSelfTest(harness: SelfTestHarness): number {
       moduleId: 'demo',
       slot: 1,
       task: 'demo task',
-      moduleWorkBrick: (moduleId: string, slotId: number) => `module-work-${moduleId}-slot-${slotId}`,
+      moduleWorkBrick: (moduleId: string, slotId: number) => `module-work-${moduleId}-slot-${String(slotId)}`,
       shellArg: (value: string) => `'${value}'`,
     }).includes("conflict -- report --project 'demo-project'"),
     'module conflict command is standalone and actionable',
@@ -281,7 +282,7 @@ export function runModuleWorkSelfTest(harness: SelfTestHarness): number {
   observationArtifact.big_picture = moduleObservationBigPicture(observationArtifact);
   const observationMarkdown = renderObservationMarkdown(observationArtifact, {
     blockedReasonSuffix,
-    formatPercent: (value: number) => `${value}%`,
+    formatPercent: (value: number) => `${String(value)}%`,
   });
   assertSelfTest(observationArtifact.big_picture.tldr.includes('launch-ready'), 'observation artifact has big-picture launch TLDR');
   assertSelfTest(observationMarkdown.includes('## Big Picture'), 'observation markdown renders big-picture section');
@@ -366,7 +367,7 @@ export function runModuleWorkSelfTest(harness: SelfTestHarness): number {
       markdown_path: 'handoffs/module-waves/module-wave-test.agent-packets/01-demo.md',
     },
   });
-  assertSelfTest(agentPacket.first_read === true, 'agent packet is marked first-read');
+  assertSelfTest(agentPacket.first_read, 'agent packet is marked first-read');
   assertSelfTest(agentPacket.commands.claim.includes('module:claim'), 'agent packet carries the exact claim command');
   assertSelfTest(agentPacket.commands.graph_query.includes('graphify:query'), 'agent packet carries the module graph command');
   assertSelfTest(agentPacket.links.dispatch_markdown.endsWith('.md'), 'agent packet links back to the full dispatch markdown');

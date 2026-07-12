@@ -27,12 +27,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-type FalsyValue = false | 0 | 0n | '' | null | undefined;
-function orElse<T, U>(value: T, fallback: () => U): Exclude<T, FalsyValue> | U {
-  if (!value) return fallback();
-  return value as Exclude<T, FalsyValue>;
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -146,9 +140,9 @@ async function buildContext(): Promise<GateContext> {
         const text = readCached(f);
         if (!text) continue;
         const lines = text.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-          if (regex.test(lines[i])) {
-            hits.push({ file: path.relative(REPO_ROOT, f), line: lines[i].trim().slice(0, 160) });
+        for (const line of lines) {
+          if (regex.test(line)) {
+            hits.push({ file: path.relative(REPO_ROOT, f), line: line.trim().slice(0, 160) });
             if (hits.length > 50) return hits;
           }
         }
@@ -168,6 +162,7 @@ async function countFiles(dir: string, include: (file: string) => boolean): Prom
 const STATUS_ORDER: Record<ComplianceStatus, number> = { missing: 0, partial: 1, covered: 2 };
 const ICON: Record<ComplianceStatus, string> = { covered: '✅', partial: '🟡', missing: '❌' };
 
+// eslint-disable-next-line max-lines-per-function -- Gate evaluation is one ordered transaction; result aggregation, output, and exit status share a lifecycle.
 async function main(): Promise<void> {
   const ctx = await buildContext();
   if (ctx.applicationFileCount === 0 && ctx.manifestCount === 0) {

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition -- Publish-index diagnostics preserve compatibility stringification and validate persisted bundle data defensively. */
+/* eslint-disable complexity -- Publishability is an auditable ordered policy decision; centralized branches keep blocker precedence visible. */
 /**
  * What: Builds a local inventory of community-export bundles and their gate results.
  * Why: Operators need one view of publish candidates without opening every bundle directory.
@@ -20,7 +22,8 @@ const SCHEMA_VERSION = "1.0.0";
 const DEFAULT_ROOT = "publish";
 const DEFAULT_OUT = "publish/publish-index.generated.json";
 const SKIP_DIRS = new Set([".git", "node_modules", ".next", ".nuxt", ".turbo", "dist", "coverage"]);
-const EXPECTED_FILES = ["bundle.json", "publish-report.json", "manifest.community.json"];
+const EXPECTED_FILES = ["bundle.json", "publish-report.json", "manifest.community.json"] as const;
+type ExpectedFile = (typeof EXPECTED_FILES)[number];
 
 interface PublishArgs { root: string; out: string; stdout: boolean; dryRun: boolean; help: boolean }
 interface ArtifactInput { community_id?: unknown; name?: unknown; type?: unknown; version?: unknown }
@@ -118,7 +121,7 @@ async function main(): Promise<void> {
 
   for (const bundleDir of bundleDirs) {
     const result = await summarizeBundle(bundleDir, options.root);
-    if (result.ok === false) {
+    if (!result.ok) {
       skipped.push({
         bundle_path: toPosix(path.relative(process.cwd(), bundleDir)),
         reason: result.reason,
@@ -234,7 +237,11 @@ async function collectBundleDirectories(rootPath: string): Promise<string[]> {
 }
 
 async function summarizeBundle(bundleDir: string, rootPath: string): Promise<BundleResult> {
-  const filesPresent = Object.fromEntries(await Promise.all(EXPECTED_FILES.map(async (fileName) => [fileName, await pathExists(path.join(bundleDir, fileName))])));
+  const fileEntries = await Promise.all(EXPECTED_FILES.map(async (fileName): Promise<readonly [ExpectedFile, boolean]> => [
+    fileName,
+    await pathExists(path.join(bundleDir, fileName)),
+  ]));
+  const filesPresent = Object.fromEntries(fileEntries) as Record<ExpectedFile, boolean>;
   const bundleDoc = await maybeReadJson<BundleDocument>(path.join(bundleDir, "bundle.json"));
   const reportDoc = await maybeReadJson<ReportDocument>(path.join(bundleDir, "publish-report.json"));
   const manifestDoc = await maybeReadJson<ManifestDocument>(path.join(bundleDir, "manifest.community.json"));
@@ -275,13 +282,12 @@ async function summarizeBundle(bundleDir: string, rootPath: string): Promise<Bun
     top_blockers: selectTopFindings(findings, "blocker", 6),
     top_warnings: selectTopFindings(findings, "warning", 4),
     limitations: Array.isArray(reportDoc?.limitations) ? reportDoc.limitations : [],
-    publish_safe: Boolean(
+    publish_safe:
       decision.status !== "blocked" &&
       inferDeclaredPublishable(manifestDoc) === true &&
       filesPresent["bundle.json"] &&
       filesPresent["publish-report.json"] &&
       filesPresent["manifest.community.json"],
-    ),
   };
 
   return { ok: true, value: summary };

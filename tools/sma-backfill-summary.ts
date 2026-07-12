@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
 /**
  * WHAT: Rolls all persisted backfill batches and failures into operator-facing summaries.
  * WHY: Individual reports do not reveal portfolio progress, repeated failures, or project coverage.
@@ -162,6 +163,7 @@ function loadFailures(): BackfillFailure[] {
 
 // ── summary ──────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function runSummary() {
   const includeDryRuns = args.includeDryRuns === true;
   const all = loadBatches();
@@ -248,16 +250,16 @@ function runSummary() {
   }
   console.log(`wrote ${outPath}`);
   console.log('');
-  console.log(`batches:         ${summary.counts.batches}`);
-  console.log(`processed:       ${summary.counts.total_processed}`);
-  console.log(`succeeded:       ${summary.counts.total_succeeded}`);
-  console.log(`failures:        ${summary.counts.total_failures}`);
-  console.log(`distinct bricks: ${summary.counts.distinct_bricks_attempted}`);
-  console.log(`projects:        ${summary.counts.distinct_projects}`);
+  console.log(`batches:         ${String(summary.counts.batches)}`);
+  console.log(`processed:       ${String(summary.counts.total_processed)}`);
+  console.log(`succeeded:       ${String(summary.counts.total_succeeded)}`);
+  console.log(`failures:        ${String(summary.counts.total_failures)}`);
+  console.log(`distinct bricks: ${String(summary.counts.distinct_bricks_attempted)}`);
+  console.log(`projects:        ${String(summary.counts.distinct_projects)}`);
   console.log('');
   console.log('per-project (top 12):');
   for (const p of summary.per_project.slice(0, 12)) {
-    console.log(`  ${pad(p.project, 24)}  succ=${pad(String(p.succeeded), 5)}  distinct=${pad(String(p.distinct_bricks), 5)}  batches=${p.batches.length}`);
+    console.log(`  ${pad(p.project, 24)}  succ=${pad(String(p.succeeded), 5)}  distinct=${pad(String(p.distinct_bricks), 5)}  batches=${String(p.batches.length)}`);
   }
   if (failures.length) {
     console.log('');
@@ -295,7 +297,7 @@ function runPerProject() {
   if (args.json) { console.log(JSON.stringify(rows, null, 2)); return; }
   console.log(`${pad('project', 24)} ${pad('succ', 6)} ${pad('attempted', 10)} ${pad('distinct', 9)} batches`);
   console.log('-'.repeat(80));
-  for (const r of rows) console.log(`${pad(r.project, 24)} ${pad(String(r.succeeded), 6)} ${pad(String(r.attempted), 10)} ${pad(String(r.distinct_bricks), 9)} ${r.batches.length}`);
+  for (const r of rows) console.log(`${pad(r.project, 24)} ${pad(String(r.succeeded), 6)} ${pad(String(r.attempted), 10)} ${pad(String(r.distinct_bricks), 9)} ${String(r.batches.length)}`);
 }
 
 function runPerBatch() {
@@ -317,12 +319,12 @@ function runFailures() {
     byReason[f.reason] = (byReason[f.reason] ?? 0) + 1;
     byProject[(f.brick || '').split('.')[0]] = (byProject[(f.brick || '').split('.')[0]] ?? 0) + 1;
   }
-  console.log(`total failures: ${failures.length}`);
+  console.log(`total failures: ${String(failures.length)}`);
   console.log('');
-  console.log(`by reason (top ${top}):`);
+  console.log(`by reason (top ${String(top)}):`);
   for (const [k, v] of Object.entries(byReason).sort((a, b) => b[1] - a[1]).slice(0, top)) console.log(`  ${pad(String(v), 5)}  ${k}`);
   console.log('');
-  console.log(`by project (top ${top}):`);
+  console.log(`by project (top ${String(top)}):`);
   for (const [k, v] of Object.entries(byProject).sort((a, b) => b[1] - a[1]).slice(0, top)) console.log(`  ${pad(String(v), 5)}  ${k}`);
   if (failures.length) {
     console.log('');
@@ -331,9 +333,9 @@ function runFailures() {
   }
 }
 
-function pad(s: string, n: number) { return String(s ?? '').slice(0, n).padEnd(n); }
+function pad(s: string, n: number) { return (s ?? '').slice(0, n).padEnd(n); }
 
-type SummaryArgs = { out?: string; json?: boolean; includeDryRuns?: boolean; top?: string };
+interface SummaryArgs { out?: string; json?: boolean; includeDryRuns?: boolean; top?: string }
 
 function parseArgs(list: string[]): SummaryArgs {
   const out: SummaryArgs = {};

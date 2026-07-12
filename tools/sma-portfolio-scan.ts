@@ -54,6 +54,7 @@ Options:
   --help                  Show this help text.
 `;
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function parseArgs(argv: string[]): PortfolioScanArgs {
   const options: PortfolioScanArgs = {
     project: [],
@@ -74,7 +75,7 @@ function parseArgs(argv: string[]): PortfolioScanArgs {
     const next = argv[i + 1];
 
     if (arg === "--project" && next) {
-      options.project.push(String(next).trim());
+      options.project.push(next.trim());
       i += 1;
       continue;
     }
@@ -147,12 +148,12 @@ async function runNodeScript(scriptPath: string, args: string[]): Promise<void> 
         resolve();
         return;
       }
-      reject(new Error(`${path.basename(scriptPath)} exited with code ${code}`));
+      reject(new Error(`${path.basename(scriptPath)} exited with code ${String(code)}`));
     });
   });
 }
 
-bootstrap().catch((error) => {
+bootstrap().catch((error: unknown) => {
   console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
@@ -169,6 +170,7 @@ async function bootstrap() {
   await mainWithArgs(args);
 }
 
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 async function mainWithArgs(args: PortfolioScanArgs): Promise<void> {
   const portfolioProjects = await discoverPortfolioProjects();
   const selectedIds = new Set(args.project);

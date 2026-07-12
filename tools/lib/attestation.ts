@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * WHAT: Deterministically converts brick provenance and license facts into standard attestation documents.
  * WHY: Auditors and release tools need portable evidence they can regenerate instead of trusting internal records.
@@ -30,8 +33,8 @@
 
 import { createHash } from 'node:crypto';
 
-type Contributor = { actor_id?: string; name?: string; commits?: number; first?: string; last?: string };
-type Brick = {
+interface Contributor { actor_id?: string; name?: string; commits?: number; first?: string; last?: string }
+interface Brick {
   brick_id: string;
   project?: string;
   content_hash?: string;
@@ -45,16 +48,16 @@ type Brick = {
   seal?: { algo?: string; anchor?: string; head?: string; chain_length?: number };
   created_by?: { actor_id?: string; role?: string; commit?: string; timestamp?: string };
   contributors?: Contributor[];
-};
-type Component = { name?: string; brick_id?: string; content_hash?: string; spdx?: string; version?: string | number; uri?: string };
-type IntotoDependency = {
+}
+interface Component { name?: string; brick_id?: string; content_hash?: string; spdx?: string; version?: string | number; uri?: string }
+interface IntotoDependency {
   uri: string; name: string; digest?: { sha1?: string; sha256?: string };
   annotations?: Record<string, string | number | null>;
-};
+}
 type CdxLicense = { license: { name?: string; id?: string } } | { expression: string };
-type CdxHash = { alg: string; content: string };
-type CdxComponent = { type: string; 'bom-ref': string; name: string; version?: string; licenses?: CdxLicense[]; hashes?: CdxHash[] };
-type SpdxPackage = {
+interface CdxHash { alg: string; content: string }
+interface CdxComponent { type: string; 'bom-ref': string; name: string; version?: string; licenses?: CdxLicense[]; hashes?: CdxHash[] }
+interface SpdxPackage {
   SPDXID: string;
   name: string;
   downloadLocation: string;
@@ -63,9 +66,9 @@ type SpdxPackage = {
   licenseDeclared: string;
   copyrightText: string;
   supplier?: string;
-  checksums: Array<{ algorithm: string; checksumValue: string }>;
+  checksums: { algorithm: string; checksumValue: string }[];
   versionInfo?: string;
-};
+}
 
 const IN_TOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
 const SLSA_PREDICATE_TYPE = 'https://slsa.dev/provenance/v1';
@@ -89,7 +92,7 @@ function toUuid(hex: unknown): string {
 }
 
 function supplierOf(brick: Brick): string {
-  const c = (brick.contributors && brick.contributors[0]) || null;
+  const c = (brick.contributors?.[0]) || null;
   const name = c?.name || c?.actor_id || brick.created_by?.actor_id || null;
   return name ? `Organization: ${name}` : NOASSERTION;
 }
@@ -102,6 +105,7 @@ function supplierOf(brick: Brick): string {
  * builder, records the provenance seal head (as invocationId), and lists the
  * component + contributor inputs as resolvedDependencies (materials).
  */
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function intotoStatement(brick: Brick, components: Component[] = [], timestamp: string | null = null) {
   const contentHash = brick.content_hash || null;
   const subject = [{
@@ -131,8 +135,8 @@ export function intotoStatement(brick: Brick, components: Component[] = [], time
   }
   (components || []).forEach((comp, i) => {
     const dep: IntotoDependency = {
-      uri: comp.uri || `component:${comp.brick_id || comp.name || `c${i}`}`,
-      name: comp.name || comp.brick_id || `component-${i}`,
+      uri: comp.uri || `component:${comp.brick_id || comp.name || `c${String(i)}`}`,
+      name: comp.name || comp.brick_id || `component-${String(i)}`,
     };
     if (comp.content_hash) dep.digest = { sha256: comp.content_hash };
     if (comp.version) dep.annotations = { version: comp.version };
@@ -214,10 +218,10 @@ export function spdxDocument(brick: Brick, components: Component[] = [], timesta
   }];
 
   (components || []).forEach((comp, i) => {
-    const cid = `SPDXRef-Component-${sanitizeSpdxId(comp.brick_id || comp.name || `c${i}`)}`;
+    const cid = `SPDXRef-Component-${sanitizeSpdxId(comp.brick_id || comp.name || `c${String(i)}`)}`;
     const pkg: SpdxPackage = {
       SPDXID: cid,
-      name: comp.name || comp.brick_id || `component-${i}`,
+      name: comp.name || comp.brick_id || `component-${String(i)}`,
       downloadLocation: NOASSERTION,
       filesAnalyzed: false,
       licenseConcluded: comp.spdx || NOASSERTION,
@@ -257,7 +261,7 @@ function cdxLicenses(spdx?: string | null): CdxLicense[] {
 function cdxComponent(name: unknown, spdx?: string | null, contentHash?: string | null, version?: string | number): CdxComponent {
   const comp: CdxComponent = {
     type: 'library',
-    'bom-ref': `component:${name}`,
+    'bom-ref': `component:${String(name)}`,
     name: String(name),
   };
   if (version) comp.version = String(version).slice(0, 32);

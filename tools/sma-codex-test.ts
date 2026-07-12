@@ -208,7 +208,7 @@ async function main() {
     onResult: (wrapped) => { void (async () => {
       processed += 1;
       const r = wrapped.result;
-      if (r.ok === false) { failed += 1; console.error(`  ${wrapped.id}: ${r.error}`); return; }
+      if (!r.ok) { failed += 1; console.error(`  ${wrapped.id}: ${r.error}`); return; }
       if (r.fromCache) cacheHits += 1;
       const m = meta.get(wrapped.id);
       if (!m) return;
@@ -242,3 +242,5 @@ function isGeneratedTest(value: unknown): value is GeneratedTest {
     && 'test_filename' in value && typeof value.test_filename === 'string'
     && 'test_source' in value && typeof value.test_source === 'string';
 }
+/* CLI and source selection are linear dispatch tables; complexity counts each independent option and fallback. */
+/* eslint complexity: "off" */

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-base-to-string -- String() deliberately preserves the prior template-literal coercion contract for human-readable reports. */
 /**
  * What: Emits a small public-safe aggregate of provenance and license evidence.
  * Why: Public surfaces cannot depend on large private ledgers or expose sensitive seal material.
@@ -46,6 +48,7 @@ function handle(email: unknown): string {
   return String(email).split("@")[0] || String(email);
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 function main() {
   const prov = readJson("registry/provenance-ledger.generated.json");
   const lic = readJson("registry/license-ledger.generated.json");
@@ -68,7 +71,7 @@ function main() {
   } : null;
 
   // sample sealed bricks — one per project for diversity, public-safe fields only
-  const samples: Array<Record<string, string | number>> = [];
+  const samples: Record<string, string | number>[] = [];
   const seenProject = new Set<string>();
   for (const r of rows) {
     if (!isRecord(r.seal) || !r.seal.anchor) continue;
@@ -112,7 +115,7 @@ function main() {
 
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, `${JSON.stringify(summary, null, 2)}\n`);
-  console.log(JSON.stringify({ out: OUT, sealed, signed, open: license && license.open, closed: license && license.closed, cross_owner_theft: summary.similarity && summary.similarity.cross_owner_theft, samples: samples.length }, null, 2));
+  console.log(JSON.stringify({ out: OUT, sealed, signed, open: license?.open, closed: license?.closed, cross_owner_theft: summary.similarity?.cross_owner_theft, samples: samples.length }, null, 2));
 }
 
 main();

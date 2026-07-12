@@ -102,6 +102,7 @@ function dedupeRecommendations(entries: Recommendation[]): Recommendation[] {
   return output;
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- The CLI parser is one explicit option grammar; centralized branches preserve flag precedence.
 function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
     vision: "",

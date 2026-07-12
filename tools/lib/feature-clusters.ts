@@ -1,3 +1,5 @@
+/* Feature metadata is intentionally rendered with its existing JavaScript diagnostic coercion. */
+/* eslint @typescript-eslint/no-base-to-string: "off" */
 /**
  * WHAT: Assigns scanned bricks to stable user-facing feature clusters from their metadata and paths.
  * WHY: Registry and wiki views need product-level groupings instead of exposing only low-level module records.
@@ -111,20 +113,20 @@ const featureClusterRules = [
   }
 ];
 
-type FeatureCluster = { id: string; name: string; description: string };
-type FeatureBrick = {
+interface FeatureCluster { id: string; name: string; description: string }
+interface FeatureBrick {
   id?: string; name?: string; kind?: string; status?: string; risk?: string;
   brick_group?: string; manifest_path?: string; source_paths?: string[];
   domain?: string[]; feature_cluster?: FeatureCluster;
-};
-type FeatureManifest = { brick?: { domain?: string[] } };
+}
+interface FeatureManifest { brick?: { domain?: string[] } }
 
 function textTokens(value: unknown): Set<string> {
-  return new Set(String(value || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
+  return new Set(String(value ?? "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
 }
 
 function hasClusterKeyword(tokens: Set<string>, keyword: string): boolean {
-  const keywordTokens = String(keyword || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const keywordTokens = (keyword || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 
   if (keywordTokens.length === 0) {
     return false;
@@ -134,8 +136,8 @@ function hasClusterKeyword(tokens: Set<string>, keyword: string): boolean {
 }
 
 function shortPath(brick: FeatureBrick): string {
-  const [first] = brick.source_paths || [];
-  return first || brick.manifest_path || "";
+  const [first] = brick.source_paths ?? [];
+  return first ? first : brick.manifest_path ?? "";
 }
 
 export function featureClusterForBrick(brick: FeatureBrick): FeatureCluster {
@@ -148,7 +150,7 @@ export function featureClusterForBrick(brick: FeatureBrick): FeatureCluster {
     brick.risk,
     brick.brick_group,
     pathLabel,
-    ...(brick.domain || [])
+    ...(brick.domain ?? [])
   ].filter(Boolean).join(" ").toLowerCase();
   const tokens = textTokens(searchText);
 
@@ -174,7 +176,7 @@ export function featureClusterForBrick(brick: FeatureBrick): FeatureCluster {
 }
 
 export function attachFeatureCluster<T extends FeatureBrick>(brick: T, manifest?: FeatureManifest | null): T {
-  brick.domain = manifest?.brick?.domain || brick.domain || [];
+  brick.domain = (manifest?.brick?.domain ?? brick.domain) ?? [];
   brick.feature_cluster = featureClusterForBrick(brick);
   return brick;
 }

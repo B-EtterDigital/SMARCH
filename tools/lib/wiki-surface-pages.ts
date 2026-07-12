@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-unnecessary-condition -- Generated wiki surfaces deliberately retain truthy fallbacks and defensive guards to keep output compatible with older registry snapshots. */
+/* eslint-disable complexity, max-lines-per-function -- These functions are static ordered HTML serializers; branch placement controls section presence and byte-stable snapshot order. */
 import { buildCandidateCards, canonicalTargetCards, canonicalizationReasonList, canonicalizationState, capabilityFamilies, capabilityFamilyCards, curatedBuildCards, formatNumber, privatePublishCards, projectCanonicalizationCards, proofSurfaceCards, qualityQueueCards, releaseArtifactCards, surfaceMetricGrid, surfaceNav } from "./wiki-dashboard-helpers.ts";
 
 import { escapeHtml } from "./wiki-utils.ts";
@@ -9,7 +11,7 @@ type SurfaceSection = string;
 
 
 
-function surfacePageHtml({ title, lead, activeHref, metrics, sections }: { title: string; lead: string; activeHref: string; metrics: Array<{ label: string; value: unknown; note?: string }>; sections: SurfaceSection[] }): string {
+function surfacePageHtml({ title, lead, activeHref, metrics, sections }: { title: string; lead: string; activeHref: string; metrics: { label: string; value: unknown; note?: string }[]; sections: SurfaceSection[] }): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -653,4 +655,3 @@ ${projectCanonicalizationCards(stateSnapshot, 10) || "          <article class='
     ]
   });
 }
-

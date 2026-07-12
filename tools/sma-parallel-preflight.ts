@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable complexity, max-lines-per-function -- Preflight is an ordered compatibility snapshot; lane precedence and byte-stable CLI output are the contract. */
 /**
  * What: Produces one readiness report before parallel work is launched or resumed.
  * Why: A launch can otherwise collide with leases, stale handoffs, or unclaimed dirty work.
@@ -29,7 +30,7 @@ const SMA_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TOOLS_DIR = resolve(SMA_ROOT, 'tools');
 const PLACEHOLDER_MODULE_TASK = '<describe module task>';
 import type {
-  RawRecord, CliValue, PreflightArgs, ToolData, ToolResult, LimitPlan,
+  RawRecord, ToolData, ToolResult, LimitPlan,
   ModuleWorkSummary, ModuleAssignment, ModuleDispatchSummary, ControllerBlockerPacket, CommandGuidance, CommandGuidanceInput,
   LaneStatuses, ScoreInput, LaneStatusInput, BigPictureInput, PrimaryNextInput,
 } from './lib/parallel-preflight-types.d.ts';
@@ -74,8 +75,8 @@ try {
 }
 
 function runPreflight(): PreflightResult {
-  const projectScope = args.project ? args.project : null;
-  const moduleTask = args.task ? args.task : null;
+  const projectScope = args.project ?? null;
+  const moduleTask = args.task ?? null;
   const controllerArgs = [
     resolve(TOOLS_DIR, 'sma-controller-snapshot.ts'),
     '--dirty-limit', '0',
@@ -381,7 +382,7 @@ function scorePreflight({ generatedAt, projectScope, limit, limitPlan, controlle
   );
   const queuedModuleLaunchPlan = buildModuleLaunchPlan(
     moduleDispatchSummary,
-    commandGuidance.active_lane.startsWith('module') ? 0 : Math.min(limit, number(moduleDispatchSummary.claimable_unclaimed ?? moduleDispatchSummary.unclaimed)),
+    commandGuidance.active_lane.startsWith('module') ? 0 : Math.min(limit, number(moduleDispatchSummary.claimable_unclaimed)),
   );
   const laneStatuses = buildLaneStatuses({
     status,
@@ -557,7 +558,7 @@ function summarizeModuleWork(
   const summary = asRecord(plan?.summary);
   const launchPlan = Array.isArray(plan?.launch_plan) ? plan.launch_plan : [];
   const gains = asRecord(plan?.gains);
-  const task = (orElse(plan?.task || moduleTask, () => (PLACEHOLDER_MODULE_TASK)));
+  const task = (orElse(plan?.task ?? moduleTask, () => (PLACEHOLDER_MODULE_TASK)));
   const observeCommand = projectScope
     ? `npm run module:observe -- --dispatch latest --project ${shellArg(projectScope)}`
     : 'npm run module:observe -- --dispatch latest';
@@ -623,7 +624,7 @@ function summarizeModuleDispatch(moduleObserve: ToolResult, projectScope: string
   return {
     available: Boolean(observation && !error),
     status,
-    project: projectScope || stringValue(dispatch.project) || null,
+    project: (projectScope ?? stringValue(dispatch.project)) || null,
     dispatch_id: dispatchId,
     task: stringValue(dispatch.task),
     assignment_count: number(summary.assignment_count ?? dispatch.assignment_count),
@@ -847,11 +848,11 @@ function mergeDispatchAssignments(
   for (const assignment of manifestAssignments) {
     const key = dispatchAssignmentKey(assignment);
     if (key) byKey.set(key, assignment);
-    if (assignment.claim_command) byClaim.set(String(assignment.claim_command), assignment);
+    if (assignment.claim_command) byClaim.set(legacyString(assignment.claim_command), assignment);
   }
   return observedAssignments.map((assignment) => {
     const manifestAssignment = orElse(byKey.get(dispatchAssignmentKey(assignment))
-      || byClaim.get(String(orElse(assignment.claim_command, () => ('')))), () => (null));
+      ?? byClaim.get(String(orElse(assignment.claim_command, () => ('')))), () => (null));
     return manifestAssignment ? { ...manifestAssignment, ...assignment } : assignment;
   });
 }
@@ -896,7 +897,7 @@ function controllerCleanupFallback(parallelWave: unknown) {
     conflict_command: orElse(item.conflict, () => ('')),
     finish_rule: 'Use end-edit with verification evidence, then refresh project preflight.',
     prompt: item.command
-      ? `Use $sma-gen3. Claim this cleanup group with \`${String(item.command)}\`. Clean or commit only this ownership group; conflict-report any overlap before continuing.`
+      ? `Use $sma-gen3. Claim this cleanup group with \`${legacyString(item.command)}\`. Clean or commit only this ownership group; conflict-report any overlap before continuing.`
       : '',
     sample_paths: Array.isArray(item.sample_paths) ? item.sample_paths.slice(0, 5) : [],
     held: false,
@@ -907,7 +908,7 @@ function controllerCleanupFallback(parallelWave: unknown) {
   return {
     assignments,
     assignment_count: assignments.length,
-    first_claim_command: assignments[0]?.claim_command || '',
+    first_claim_command: assignments[0]?.claim_command ?? '',
     summary: {
       packet_count: assignments.length,
       assignment_count: assignments.length,
@@ -928,11 +929,11 @@ function controllerCleanupFallback(parallelWave: unknown) {
       claimable_dirty_paths: targetedPaths,
       blocked_dirty_paths: 0,
       claimable_percent: targetedPaths > 0 ? 100 : 0,
-      top_wave_gain_percent: number(top?.wave_gain_percent),
-      top_project_gain_percent: nullableNumber(top?.project_gain_percent),
+      top_wave_gain_percent: number(top.wave_gain_percent),
+      top_project_gain_percent: nullableNumber(top.project_gain_percent),
       total_candidate_count: number(orElse(wave.total_candidate_count, () => (assignments.length))),
       overflow_count: number(wave.overflow_count),
-      recommended_next_command: assignments[0]?.claim_command || 'npm run controller:sweep:write',
+      recommended_next_command: assignments[0]?.claim_command ?? 'npm run controller:sweep:write',
     },
   };
 }
@@ -1005,7 +1006,7 @@ function summarizeCommandGuidance({
   const moduleDispatchOpen = (moduleDispatch.available && moduleDispatch.status !== 'complete' && !moduleDispatchNeedsRefresh);
   const concreteTask = hasConcreteModuleTask(moduleWork.task);
   const moduleDispatchMissing = Boolean(projectScope && moduleWork.available && (!moduleDispatch.available || moduleDispatchNeedsRefresh));
-  const dispatchLaunchableAgents = moduleDispatchOpen ? number(moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed) : 0;
+  const dispatchLaunchableAgents = moduleDispatchOpen ? number(moduleDispatch.claimable_unclaimed) : 0;
   const moduleCapacityAvailable = (moduleWork.available && moduleWork.launch_ready_slots > 0);
   const activeDirtyScopePresent = number(activeDirtyScopeProjects) > 0 || number(activeDirtyScopePaths) > 0;
   const staleContextPresent = number(staleContextProjects) > 0 || number(staleContextPaths) > 0;
@@ -1175,7 +1176,7 @@ function buildLaneStatuses({
       status: moduleStatus,
       ready_agents: moduleReadyAgents,
       capacity_agents: number(moduleWork.launch_ready_slots),
-      dispatch_claimable_agents: number(moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed),
+      dispatch_claimable_agents: number(moduleDispatch.claimable_unclaimed),
       dispatch_held_or_stale_agents: number(moduleDispatch.launch_blocked_unclaimed),
       dispatch_held_blocked_agents: number(moduleDispatch.held_blocked_unclaimed),
       dispatch_dirty_scope_blocked_agents: number(moduleDispatch.dirty_scope_blocked_unclaimed),
@@ -1396,8 +1397,8 @@ function buildBigPicture({
     : '';
   const dispatchOpen = moduleDispatch.available && moduleDispatch.status !== 'complete';
   const dispatchId = moduleDispatch.dispatch_id || 'latest';
-  const dispatchClaimReady = moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed ?? 0;
-  const dispatchBlocked = moduleDispatch.launch_blocked_unclaimed ?? 0;
+  const dispatchClaimReady = moduleDispatch.claimable_unclaimed;
+  const dispatchBlocked = moduleDispatch.launch_blocked_unclaimed;
   const dispatchBlockedText = formatDispatchBlocked(moduleDispatch);
   const dispatchText = moduleDispatch.available
     ? ` Dispatch ${dispatchId}: ${String(moduleDispatch.claimed)}/${String(moduleDispatch.assignment_count)} claimed, ${String(moduleDispatch.active)} active, ${String(moduleDispatch.completed)} done, ${String(dispatchClaimReady)}/${String(moduleDispatch.unclaimed)} open claim-ready, ${String(dispatchBlocked)} blocked${dispatchBlockedText}.`
@@ -1504,20 +1505,20 @@ function buildBigPicture({
       top_wave_gain_percent: topWaveGainPercent,
       top_project_gain_percent: topProjectGainPercent,
       overflow_groups: overflowGroups,
-      module_work_slots: moduleWork.launch_ready_slots ?? 0,
-      module_work_graphs_ready: moduleWork.graph_ready_modules ?? 0,
-      module_work_graphs_total: moduleWork.modules_total ?? 0,
+      module_work_slots: moduleWork.launch_ready_slots,
+      module_work_graphs_ready: moduleWork.graph_ready_modules,
+      module_work_graphs_total: moduleWork.modules_total,
       module_dispatch_status: moduleDispatch.status || 'not-requested',
-      module_dispatch_claimed: moduleDispatch.claimed ?? 0,
-      module_dispatch_active: moduleDispatch.active ?? 0,
-      module_dispatch_completed: moduleDispatch.completed ?? 0,
-      module_dispatch_unclaimed: moduleDispatch.unclaimed ?? 0,
-      module_dispatch_claimable_unclaimed: moduleDispatch.claimable_unclaimed ?? 0,
-      module_dispatch_launch_blocked_unclaimed: moduleDispatch.launch_blocked_unclaimed ?? 0,
-      module_dispatch_held_blocked_unclaimed: moduleDispatch.held_blocked_unclaimed ?? 0,
-      module_dispatch_dirty_scope_blocked_unclaimed: moduleDispatch.dirty_scope_blocked_unclaimed ?? 0,
-      module_dispatch_other_blocked_unclaimed: moduleDispatch.other_blocked_unclaimed ?? 0,
-      module_dispatch_open_conflicts: moduleDispatch.open_conflicts ?? 0,
+      module_dispatch_claimed: moduleDispatch.claimed,
+      module_dispatch_active: moduleDispatch.active,
+      module_dispatch_completed: moduleDispatch.completed,
+      module_dispatch_unclaimed: moduleDispatch.unclaimed,
+      module_dispatch_claimable_unclaimed: moduleDispatch.claimable_unclaimed,
+      module_dispatch_launch_blocked_unclaimed: moduleDispatch.launch_blocked_unclaimed,
+      module_dispatch_held_blocked_unclaimed: moduleDispatch.held_blocked_unclaimed,
+      module_dispatch_dirty_scope_blocked_unclaimed: moduleDispatch.dirty_scope_blocked_unclaimed,
+      module_dispatch_other_blocked_unclaimed: moduleDispatch.other_blocked_unclaimed,
+      module_dispatch_open_conflicts: moduleDispatch.open_conflicts,
     },
     eta: {
       strong_daily_standard: '2-3 focused SMA slices',
@@ -1660,7 +1661,7 @@ function moduleProgressCommand({ projectScope, moduleWork, moduleDispatch }: {
     return moduleWork.dispatch_command || moduleDispatch.next_command || moduleWork.plan_command || scopedCommand('npm run module:plan', projectScope);
   }
   const dispatchClaimableAgents = hasOpenModuleDispatch
-    ? number(moduleDispatch.claimable_unclaimed ?? moduleDispatch.unclaimed)
+    ? number(moduleDispatch.claimable_unclaimed)
     : 0;
   if (hasOpenModuleDispatch) {
     if (dispatchClaimableAgents > 0 && moduleDispatch.next_command) return moduleDispatch.next_command;
@@ -1710,12 +1711,8 @@ function printText(result: PreflightResult): void {
   if (result.command_guidance.active_lane) {
     console.log(`active lane:      ${result.command_guidance.active_lane} (${result.command_guidance.cleanup_reason}; ${result.command_guidance.module_observe_reason})`);
   }
-  if (result.lane_statuses) {
-    console.log(`lane status:      ${result.lane_statuses.active_lane} ${result.lane_statuses.active_status}; stale ${result.lane_statuses.stale_context.status} (${String(result.lane_statuses.stale_context.ready_agents)} ready); module ${result.lane_statuses.module.status} (${String(result.lane_statuses.module.ready_agents)} ready); integration ${result.lane_statuses.integration.status} (${String(result.lane_statuses.integration.active_dirty_scope_paths)} dirty-scope paths)`);
-  }
-  if (result.launch_decision) {
-    console.log(`launch decision:  ${result.launch_decision.allowed ? 'allowed' : 'blocked'} ${result.launch_decision.lane} (${String(result.launch_decision.agents)} agent${result.launch_decision.agents === 1 ? '' : 's'}); release ${result.launch_decision.release_allowed ? 'allowed' : 'blocked'}`);
-  }
+  console.log(`lane status:      ${result.lane_statuses.active_lane} ${result.lane_statuses.active_status}; stale ${result.lane_statuses.stale_context.status} (${String(result.lane_statuses.stale_context.ready_agents)} ready); module ${result.lane_statuses.module.status} (${String(result.lane_statuses.module.ready_agents)} ready); integration ${result.lane_statuses.integration.status} (${String(result.lane_statuses.integration.active_dirty_scope_paths)} dirty-scope paths)`);
+  console.log(`launch decision:  ${result.launch_decision.allowed ? 'allowed' : 'blocked'} ${result.launch_decision.lane} (${String(result.launch_decision.agents)} agent${result.launch_decision.agents === 1 ? '' : 's'}); release ${result.launch_decision.release_allowed ? 'allowed' : 'blocked'}`);
   console.log(`cleanup:          ${String(result.cleanup_wave.claimable_assignment_count)}/${String(result.cleanup_wave.assignment_count)} assignments claimable, ${String(result.cleanup_wave.claimable_percent)}% paths claimable`);
   if (result.cleanup_wave.source && result.cleanup_wave.source !== 'cleanup-packets') {
     console.log(`cleanup source:   ${result.cleanup_wave.source}`);
@@ -1741,10 +1738,10 @@ function printText(result: PreflightResult): void {
   }
   console.log(`cleanup launch:   ${String(result.launch_plan.length)} cleanup spawn-ready slots${result.launch_plan.length ? ' (rerun with --launch-plan for commands)' : ''}`);
   if (result.controller.stale_context_projects || result.stale_context_launch_plan.length) {
-    console.log(`stale renew:      ${String((result.stale_context_launch_plan || []).length)}/${String(result.controller_blocker_packets.filter((packet) => packet.kind === 'stale-context').length)} stale-context packets launch-ready${(result.stale_context_launch_plan || []).length ? ' (rerun with --launch-plan for commands)' : ''}`);
+    console.log(`stale renew:      ${String((result.stale_context_launch_plan).length)}/${String(result.controller_blocker_packets.filter((packet) => packet.kind === 'stale-context').length)} stale-context packets launch-ready${(result.stale_context_launch_plan).length ? ' (rerun with --launch-plan for commands)' : ''}`);
   }
   if (result.module_dispatch.available) {
-    console.log(`module launch:    ${String((result.module_launch_plan || []).length)}/${String(result.module_dispatch.claimable_unclaimed)} dispatch slots claim-ready, ${String(result.module_dispatch.launch_blocked_unclaimed)} blocked${formatDispatchBlocked(result.module_dispatch)}${(result.module_launch_plan || []).length ? ' (rerun with --launch-plan for commands)' : ''}`);
+    console.log(`module launch:    ${String((result.module_launch_plan).length)}/${String(result.module_dispatch.claimable_unclaimed)} dispatch slots claim-ready, ${String(result.module_dispatch.launch_blocked_unclaimed)} blocked${formatDispatchBlocked(result.module_dispatch)}${(result.module_launch_plan).length ? ' (rerun with --launch-plan for commands)' : ''}`);
   }
   if (result.queued_module_launch_plan.length) {
     console.log(`queued module:    ${String(result.queued_module_launch_plan.length)}/${String(result.module_dispatch.claimable_unclaimed)} dispatch slots ready after ${result.active_lane} clears`);
@@ -1764,7 +1761,7 @@ function printText(result: PreflightResult): void {
     if (first.command) console.log(`blocker command:  ${first.command}`);
     if (first.conflict_command) console.log(`blocker conflict: ${first.conflict_command}`);
   }
-  for (const [index, item] of (result.big_picture.next_slices || []).slice(0, 3).entries()) {
+  for (const [index, item] of (result.big_picture.next_slices).slice(0, 3).entries()) {
     console.log(`outlook ${String(index + 1)}:        ${item}`);
   }
   if (result.big_picture.horizon.length) {
@@ -1783,8 +1780,8 @@ function printText(result: PreflightResult): void {
     for (const item of result.launch_plan) {
       console.log(`${String(item.agent_slot)}. ${String(item.project)} ${String(item.group)} (${String(item.dirty_path_count)} paths, wave ${formatPercent(item.wave_gain_percent)}, project ${formatPercent(item.project_gain_percent)})`);
       console.log(`   claim: ${String(item.claim_command)}`);
-      if (item.conflict_command) console.log(`   conflict: ${String(item.conflict_command)}`);
-      if (printFullPrompts && item.prompt) console.log(`   prompt: ${String(item.prompt)}`);
+      if (item.conflict_command) console.log(`   conflict: ${legacyString(item.conflict_command)}`);
+      if (printFullPrompts && item.prompt) console.log(`   prompt: ${legacyString(item.prompt)}`);
     }
   }
   if (args.launchPlan && result.stale_context_launch_plan.length) {
@@ -1846,7 +1843,7 @@ function capacityPercent(activeAgents: unknown, requestedAgents: unknown): numbe
 }
 
 function shellArg(value: unknown): string {
-  return `'${String(value ?? '').replace(/'/g, `'\\''`)}'`;
+  return `'${legacyString(value ?? '').replace(/'/g, `'\\''`)}'`;
 }
 
 function formatStatusSuffix(result: PreflightResult): string {
@@ -1895,4 +1892,8 @@ function rawRecords(value: unknown): RawRecord[] {
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value : '';
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

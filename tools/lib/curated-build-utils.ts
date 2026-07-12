@@ -1,3 +1,6 @@
+/* Curated-build reports intentionally preserve JavaScript's existing coercion for opaque external metadata. */
+/* Curated-build assembly is a declarative evidence join; complexity counts independent optional fields as branches. */
+/* eslint @typescript-eslint/no-base-to-string: "off", complexity: "off" */
 /**
  * WHAT: Normalizes arguments, paths, filters, and shared state for curated-build commands.
  * WHY: Build packets, drafts, queues, and blocker reports must select the same builds and evidence consistently.
@@ -20,7 +23,7 @@ const repoRoot = path.resolve(__dirname, "../..");
 const SKIP_DIRS = new Set([".git", "node_modules", ".next", ".nuxt", ".turbo", "dist", "build", "coverage"]);
 
 type CliArgs = { _: string[] } & Record<string, string | boolean | string[]>;
-type Blocker = { code?: string; rule_id?: string; message?: string; summary?: string };
+interface Blocker { code?: string; rule_id?: string; message?: string; summary?: string }
 type PublishFinding = Blocker & {
   scope?: string;
   location?: string;
@@ -29,30 +32,30 @@ type PublishFinding = Blocker & {
   actual_path?: string | null;
   declared_root_path?: string | null;
 };
-type BuildManifest = { build?: { id?: string }; source?: { project?: string; paths?: string[] } };
-type ManifestEntry = { absolutePath: string; relativePath: string; buildId: string | null; manifest: BuildManifest | null };
-type ProjectEntry = { id?: string; project?: string; root?: string };
-type PromotionEntry = { build_id?: string; blockers?: Blocker[] };
-type VerificationEntry = { build_id?: string };
-type PublishReport = { findings?: PublishFinding[] };
-type PublishBundle = {
+interface BuildManifest { build?: { id?: string }; source?: { project?: string; paths?: string[] } }
+interface ManifestEntry { absolutePath: string; relativePath: string; buildId: string | null; manifest: BuildManifest | null }
+interface ProjectEntry { id?: string; project?: string; root?: string }
+interface PromotionEntry { build_id?: string; blockers?: Blocker[] }
+interface VerificationEntry { build_id?: string }
+interface PublishReport { findings?: PublishFinding[] }
+interface PublishBundle {
   artifact?: { original_id?: string };
   bundle_path?: string;
   top_blockers?: PublishFinding[];
   report?: PublishReport | null;
   bundle_dir?: string;
   resolved_findings?: PublishFinding[];
-};
-type StateBuild = { artifact_id?: string; source_project?: string; manifest_path?: string; name?: string; [key: string]: unknown };
-type StateSnapshot = { build_plane?: { curated_builds?: StateBuild[] }; projects?: Array<{ project?: string }> };
-type AliasEntry = { actual_path: string; absolute_path: string; root_relative_path: string };
-type SourceRoot = {
+}
+interface StateBuild { artifact_id?: string; source_project?: string; manifest_path?: string; name?: string; [key: string]: unknown }
+interface StateSnapshot { build_plane?: { curated_builds?: StateBuild[] }; projects?: { project?: string }[] }
+interface AliasEntry { actual_path: string; absolute_path: string; root_relative_path: string }
+interface SourceRoot {
   index: number;
   declared_path: string;
   absolute_path: string | null;
   exists: boolean;
   alias_map: Map<string, AliasEntry>;
-};
+}
 type CuratedBuild = Omit<StateBuild, 'manifest_path'> & {
   build_id: string;
   manifest: BuildManifest | null;
@@ -80,20 +83,36 @@ const defaultCuratedBuildPaths = {
   buildsRoot: path.resolve(repoRoot, "builds"),
 };
 
+function resolveCuratedBuildPaths(options: Record<string, string | undefined>) {
+  return {
+    state: path.resolve(options.state ?? defaultCuratedBuildPaths.state),
+    registry: path.resolve(options.registry ?? defaultCuratedBuildPaths.registry),
+    buildIndex: path.resolve((options["build-index"] ?? options.buildIndex) ?? defaultCuratedBuildPaths.buildIndex),
+    verification: path.resolve(options.verification ?? defaultCuratedBuildPaths.verification),
+    promotion: path.resolve(options.promotion ?? defaultCuratedBuildPaths.promotion),
+    publishIndex: path.resolve((options["publish-index"] ?? options.publishIndex) ?? defaultCuratedBuildPaths.publishIndex),
+    releaseIndex: path.resolve((options["release-index"] ?? options.releaseIndex) ?? defaultCuratedBuildPaths.releaseIndex),
+    buildsRoot: path.resolve((options.root ?? options["builds-root"]) ?? defaultCuratedBuildPaths.buildsRoot),
+  };
+}
+
 export function toArray<T>(value: readonly T[] | null | undefined): T[] {
-  return Array.isArray(value) ? [...value] : [];
+  return value ? Array.from(value) : [];
 }
 
 function normalizePath(value: unknown): string {
-  return String(value || "").split(path.sep).join("/").replace(/^\.\//, "");
+  return String(value ?? "").split(path.sep).join("/").replace(/^\.\//, "");
 }
 
 export function uniqueStrings(values: readonly unknown[] | null | undefined): string[] {
-  return [...new Set(toArray(values).flatMap((value) => {
-    if (Array.isArray(value)) return value;
-    if (value == null) return [];
-    return [String(value)];
-  }).map((value) => String(value).trim()).filter(Boolean))];
+  const strings: string[] = [];
+  for (const value of values ?? []) {
+    const entries: readonly unknown[] = Array.isArray(value) ? value : [value];
+    for (const entry of entries) {
+      if (entry != null) strings.push(String(entry).trim());
+    }
+  }
+  return [...new Set(strings.filter(Boolean))];
 }
 
 function relativeFromRepo(targetPath: string): string {
@@ -105,14 +124,12 @@ export function parseArgs(argv: string[], booleanFlags = ["stdout", "dry-run", "
 }
 
 function selectedBuildIdsFromArgs(args: Partial<CliArgs> = {}): Set<string> {
-  return new Set(
-    ([] as unknown[])
-      .concat(args.build || [])
-      .concat(toArray(args._).filter((value) => String(value).startsWith("build:")).map((value) => String(value).slice(6)))
-      .flatMap((value) => Array.isArray(value) ? value : [value])
-      .map((value) => String(value || "").trim())
-      .filter(Boolean)
-  );
+  const explicit = args.build;
+  const buildValues: readonly unknown[] = Array.isArray(explicit) ? explicit : [explicit];
+  const positional = toArray(args._)
+    .filter((value) => value.startsWith("build:"))
+    .map((value) => value.slice(6));
+  return new Set([...buildValues, ...positional].map((value) => String(value ?? "").trim()).filter(Boolean));
 }
 
 export function filterCuratedBuilds(curatedBuilds: readonly CuratedBuild[] | null | undefined, args: Partial<CliArgs> = {}): CuratedBuild[] {
@@ -121,8 +138,8 @@ export function filterCuratedBuilds(curatedBuilds: readonly CuratedBuild[] | nul
 }
 
 export function buildHandoffPaths(build: Partial<StateBuild>): Record<string, string> {
-  const projectId = String(build?.source_project || "");
-  const buildId = String(build?.build_id || build?.artifact_id || "");
+  const projectId = (build.source_project ?? "");
+  const buildId = String(build.build_id ?? build.artifact_id ?? "");
   return {
     queue_doc: `handoffs/repo-queues/${projectId}.md`,
     repo_prompt: `handoffs/repo-builds/${buildId}.prompt.md`,
@@ -138,16 +155,7 @@ export function buildHandoffPaths(build: Partial<StateBuild>): Record<string, st
 }
 
 export async function loadCuratedBuildContext(options: Record<string, string | undefined> = {}) {
-  const paths = {
-    state: path.resolve(options.state || defaultCuratedBuildPaths.state),
-    registry: path.resolve(options.registry || defaultCuratedBuildPaths.registry),
-    buildIndex: path.resolve(options["build-index"] || options.buildIndex || defaultCuratedBuildPaths.buildIndex),
-    verification: path.resolve(options.verification || defaultCuratedBuildPaths.verification),
-    promotion: path.resolve(options.promotion || defaultCuratedBuildPaths.promotion),
-    publishIndex: path.resolve(options["publish-index"] || options.publishIndex || defaultCuratedBuildPaths.publishIndex),
-    releaseIndex: path.resolve(options["release-index"] || options.releaseIndex || defaultCuratedBuildPaths.releaseIndex),
-    buildsRoot: path.resolve(options.root || options["builds-root"] || defaultCuratedBuildPaths.buildsRoot),
-  };
+  const paths = resolveCuratedBuildPaths(options);
 
   const [state, registry, buildIndex, verification, promotion, publishIndex, releaseIndex] = await Promise.all([
     maybeReadJson(paths.state),
@@ -172,10 +180,10 @@ export async function loadCuratedBuildContext(options: Record<string, string | u
   const manifestsByBuildId = new Map<string, ManifestEntry>(
     manifestEntries.flatMap((entry) => entry.buildId ? [[entry.buildId, entry] as [string, ManifestEntry]] : []),
   );
-  const projectsById = new Map(toArray(typedRegistry.projects).map((entry) => [String(entry.id || entry.project), entry]));
+  const projectsById = new Map(toArray(typedRegistry.projects).map((entry) => [String(entry.id ?? entry.project), entry]));
   const promotionByBuildId = new Map(toArray(typedPromotion?.promotion_queue).filter((entry) => entry.build_id).map((entry) => [String(entry.build_id), entry]));
   const verificationByBuildId = new Map(toArray(typedVerification?.builds).filter((entry) => entry.build_id).map((entry) => [String(entry.build_id), entry]));
-  const releaseByBuildId = new Map(Object.entries(typedReleaseIndex?.artifacts?.build || {}));
+  const releaseByBuildId = new Map(Object.entries(typedReleaseIndex?.artifacts?.build ?? {}));
   const publishBundlesByBuildId = await collectPublishBundlesByBuildId(typedPublishIndex, manifestsByBuildId, projectsById);
 
   const curatedBuilds = await materializeCuratedBuilds({
@@ -211,20 +219,20 @@ export async function loadCuratedBuildContext(options: Record<string, string | u
 export function summarizeBlockerCodes(entries: readonly Blocker[] | null | undefined, limit = 8) {
   const counts = new Map<string, { code: string; message: string; count: number }>();
   for (const entry of toArray(entries)) {
-    const code = entry?.code || entry?.rule_id || "unknown";
-    const current = counts.get(code) || { code, message: entry?.message || entry?.summary || "", count: 0 };
+    const code = entry.code ?? entry.rule_id ?? "unknown";
+    const current = counts.get(code) ?? { code, message: entry.message ?? entry.summary ?? "", count: 0 };
     current.count += 1;
     counts.set(code, current);
   }
   return [...counts.values()]
-    .sort((left, right) => right.count - left.count || String(left.code).localeCompare(String(right.code)))
+    .sort((left, right) => right.count - left.count || left.code.localeCompare(right.code))
     .slice(0, limit);
 }
 
 function firstActionsForBuild(build: { promotion?: PromotionEntry | null; publishBundle?: PublishBundle | null }): string[] {
   const actions: string[] = [];
   const push = (value: unknown) => {
-    const text = String(value || "").trim();
+    const text = String(value ?? "").trim();
     if (text) actions.push(text);
   };
 
@@ -290,24 +298,24 @@ async function materializeCuratedBuilds({
   publishBundlesByBuildId: Map<string, PublishBundle>;
 }): Promise<CuratedBuild[]> {
   const rows: CuratedBuild[] = [];
-  for (const entry of toArray(state?.build_plane?.curated_builds)) {
+  for (const entry of toArray(state.build_plane?.curated_builds)) {
     const buildId = entry.artifact_id;
     if (!buildId) continue;
-    const manifestEntry = manifestsByBuildId.get(buildId) || null;
-    const projectEntry = projectsById.get(String(entry.source_project || "")) || null;
-    const promotionEntry = promotionByBuildId.get(buildId) || null;
-    const verificationEntry = verificationByBuildId.get(buildId) || null;
-    const releaseEntry = releaseByBuildId.get(buildId) || null;
-    const publishBundle = publishBundlesByBuildId.get(buildId) || null;
+    const manifestEntry = manifestsByBuildId.get(buildId) ?? null;
+    const projectEntry = projectsById.get((entry.source_project ?? "")) ?? null;
+    const promotionEntry = promotionByBuildId.get(buildId) ?? null;
+    const verificationEntry = verificationByBuildId.get(buildId) ?? null;
+    const releaseEntry = releaseByBuildId.get(buildId) ?? null;
+    const publishBundle = publishBundlesByBuildId.get(buildId) ?? null;
     const sourceRoots = await resolveSourceRoots(manifestEntry?.manifest, projectEntry?.root);
     const leakHotspots = summarizeLeakHotspots(publishBundle?.report, sourceRoots);
     rows.push({
       ...entry,
       build_id: buildId,
-      manifest: manifestEntry?.manifest || null,
-      manifest_path: manifestEntry?.relativePath || entry.manifest_path || null,
-      project_root: projectEntry?.root || null,
-      project_state: (state.projects || []).find((project) => project.project === entry.source_project) || null,
+      manifest: manifestEntry?.manifest ?? null,
+      manifest_path: (manifestEntry?.relativePath ?? entry.manifest_path) ?? null,
+      project_root: projectEntry?.root ?? null,
+      project_state: (state.projects ?? []).find((project) => project.project === entry.source_project) ?? null,
       promotion: promotionEntry,
       verificationEntry,
       release: releaseEntry,
@@ -320,12 +328,12 @@ async function materializeCuratedBuilds({
       }),
     });
   }
-  return rows.sort((left, right) => String(left.source_project || "").localeCompare(String(right.source_project || "")) || String(left.name || "").localeCompare(String(right.name || "")));
+  return rows.sort((left, right) => String(left.source_project ?? "").localeCompare(String(right.source_project ?? "")) || String(left.name ?? "").localeCompare(String(right.name ?? "")));
 }
 
 async function collectBuildManifests(rootPath: string): Promise<ManifestEntry[]> {
   const stat = await fs.stat(rootPath).catch(() => null);
-  if (!stat || !stat.isDirectory()) return [];
+  if (!stat?.isDirectory()) return [];
 
   const files: ManifestEntry[] = [];
   async function walk(currentPath: string): Promise<void> {
@@ -339,11 +347,11 @@ async function collectBuildManifests(rootPath: string): Promise<ManifestEntry[]>
         continue;
       }
       if (entry.isFile() && entry.name.endsWith(".build.sweetspot.json")) {
-        const manifest = await maybeReadJson(fullPath) as BuildManifest | null;
+        const manifest = await maybeReadJson<BuildManifest>(fullPath);
         files.push({
           absolutePath: fullPath,
           relativePath: relativeFromRepo(fullPath),
-          buildId: manifest?.build?.id || null,
+          buildId: manifest?.build?.id ?? null,
           manifest,
         });
       }
@@ -361,12 +369,12 @@ async function collectPublishBundlesByBuildId(
 ): Promise<Map<string, PublishBundle>> {
   const bundles = new Map<string, PublishBundle>();
   for (const bundle of toArray(publishIndex?.bundles)) {
-    const buildId = bundle?.artifact?.original_id;
+    const buildId = bundle.artifact?.original_id;
     if (!buildId) continue;
-    const bundleDir = path.resolve(repoRoot, bundle.bundle_path || "");
-    const report = await maybeReadJson(path.join(bundleDir, "publish-report.json")) as PublishReport | null;
-    const manifestEntry = manifestsByBuildId.get(buildId) || null;
-    const projectRoot = projectsById.get(String(manifestEntry?.manifest?.source?.project || ""))?.root || null;
+    const bundleDir = path.resolve(repoRoot, bundle.bundle_path ?? "");
+    const report = await maybeReadJson<PublishReport>(path.join(bundleDir, "publish-report.json"));
+    const manifestEntry = manifestsByBuildId.get(buildId) ?? null;
+    const projectRoot = projectsById.get((manifestEntry?.manifest?.source?.project ?? ""))?.root ?? null;
     const sourceRoots = await resolveSourceRoots(manifestEntry?.manifest, projectRoot);
     bundles.set(buildId, {
       ...bundle,
@@ -441,16 +449,16 @@ async function collectDirectoryFiles(rootPath: string): Promise<string[]> {
 
 function resolvePublishFindings(report: PublishReport | null | undefined, sourceRoots: SourceRoot[]): PublishFinding[] {
   return toArray(report?.findings).map((finding) => {
-    const location = String(finding?.location || "");
+    const location = (finding.location ?? "");
     const rootMatch = /^source\/(\d{3})\//.exec(location);
     let actualPath = null;
     let declaredRootPath = null;
     if (rootMatch) {
       const rootIndex = Number(rootMatch[1]);
       const root = sourceRoots[rootIndex - 1];
-      const aliasEntry = root?.alias_map?.get(location) || null;
-      actualPath = aliasEntry?.actual_path || null;
-      declaredRootPath = root?.declared_path || null;
+      const aliasEntry = root.alias_map.get(location) ?? null;
+      actualPath = aliasEntry?.actual_path ?? null;
+      declaredRootPath = root.declared_path || null;
     }
     return {
       ...finding,
@@ -466,22 +474,22 @@ function summarizeLeakHotspots(report: PublishReport | null | undefined, sourceR
     recommendation: string | null; count: number; samples: string[];
   }>();
   for (const finding of resolvePublishFindings(report, sourceRoots).filter((entry) => entry.scope === "source")) {
-    const key = `${finding.rule_id || "unknown"}::${finding.actual_path || finding.location || "unknown"}`;
-    const current = counts.get(key) || {
-      rule_id: finding.rule_id || "unknown",
-      summary: finding.summary || finding.message || "Finding recorded.",
-      actual_path: finding.actual_path || null,
-      declared_root_path: finding.declared_root_path || null,
-      recommendation: finding.recommendation || null,
+    const key = `${finding.rule_id ?? "unknown"}::${(finding.actual_path ?? finding.location) ?? "unknown"}`;
+    const current = counts.get(key) ?? {
+      rule_id: finding.rule_id ?? "unknown",
+      summary: (finding.summary ?? finding.message) ?? "Finding recorded.",
+      actual_path: finding.actual_path ?? null,
+      declared_root_path: finding.declared_root_path ?? null,
+      recommendation: finding.recommendation ?? null,
       count: 0,
       samples: [],
     };
     current.count += 1;
-    if (current.samples.length < 3) current.samples.push(finding.evidence || "");
+    if (current.samples.length < 3) current.samples.push(finding.evidence ?? "");
     counts.set(key, current);
   }
 
   return [...counts.values()]
-    .sort((left, right) => right.count - left.count || String(left.actual_path || "").localeCompare(String(right.actual_path || "")))
+    .sort((left, right) => right.count - left.count || (left.actual_path ?? "").localeCompare((right.actual_path ?? "")))
     .slice(0, 12);
 }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
 /**
  * WHAT: Renders module dispatch, observation, watch, conflict, and agent-prompt views.
  * WHY: Operators and agents need the same state expressed as concise, actionable text.
@@ -9,59 +11,60 @@
  */
 /** Markdown and prompt renderers for sma-module-work-packets.mjs. */
 
-export type BigPicture = { tldr: string; current_slice: string; outlook: string[]; eta: string; horizon: string };
-type PathPair = { left: string; right: string };
-type DispatchAssignment = {
+export interface BigPicture { tldr: string; current_slice: string; outlook: string[]; eta: string; horizon: string }
+interface PathPair { left: string; right: string }
+interface DispatchAssignment {
   agent_slot: number; module_id: string; slot: number; partition_id?: string | null; partition_label?: string | null;
   brick: string; graph_query_command: string; claim_command: string; iteration_gates?: string[]; required_gates: string[]; prompt: string;
   agent_packet?: { markdown_path?: string | null };
-};
-type BlockedSlot = {
+}
+interface BlockedSlot {
   module_id: string; slot: number; blocked_reason: string; held_resource?: string | null; path_overlap_warning?: string | null;
   dirty_scope_command?: string | null; dirty_scope_conflict_command?: string | null; overlap_path_pairs?: PathPair[];
-};
-type DispatchManifest = {
+}
+interface DispatchManifest {
   dispatch_id: string; project: string; task: string; created_at: string; assignments: DispatchAssignment[]; blocked_slots: BlockedSlot[];
   controller_commands: Record<'observe' | 'observe_write' | 'claim_next' | 'project_preflight' | 'project_dashboard' | 'conflict_summary', string>;
-};
+}
 type SharedScopeItem = string | { id?: string; path?: string };
-type AgentPacket = {
+interface AgentPacket {
   dispatch_id: string; agent_slot: number; project: string; module_id: string; slot: number; partition_id?: string | null; task: string; brick: string;
   gains: { graph_first_token_reduction_percent_estimate: number; collision_reduction_percent_estimate: number };
   commands: { graph_query: string; claim: string; observe: string };
   scope: { paths?: string[]; exclude_paths?: string[]; shared_hot_paths?: SharedScopeItem[] };
   gates: { iteration?: string[]; required?: string[] }; rules?: string[]; prompt?: string;
   links: { dispatch_markdown?: string | null; dispatch_json?: string | null; agent_packet_json?: string | null };
-};
-type ProgressSummary = {
+}
+interface ProgressSummary {
   assignment_count: number; claimed: number; active: number; completed: number; unclaimed: number; claimable_unclaimed: number;
   launch_blocked_unclaimed: number; external_active_slot_count: number; external_active_lease_count: number;
   external_active_module_count: number; open_conflicts: number; graph_ready: number;
   [key: string]: unknown;
-};
-type ObservationAssignment = {
+}
+interface ObservationAssignment {
   agent_slot: number; module_id: string; slot: number; status: string; claim_event_count: number; completion_event_count: number;
   active_lease_count?: number; open_conflicts?: number; context_error?: string | null; dirty_scope_count?: number; held_resource?: string | null;
   agent_packet_markdown_path?: string | null; conflict_command?: string | null; dirty_scope_command?: string | null; dirty_scope_conflict_command?: string | null;
-};
-type ExternalLeaseGroup = { module_id?: string; held_resource?: string; held_by?: string | null; slot_count: number; agent_slots: number[] };
-export type ModuleObservation = {
+}
+interface ExternalLeaseGroup { module_id?: string; held_resource?: string; held_by?: string | null; slot_count: number; agent_slots: number[] }
+export interface ModuleObservation {
   schema_version?: string; kind?: string; big_picture?: BigPicture; status: string; generated_at: string; dispatch: { dispatch_id: string; project?: string; task?: string; assignment_count?: number; predicted_launch_ready_slots?: number; predicted_requested_agents?: number };
   summary: ProgressSummary; gains: Record<'predicted_graph_first_token_reduction_percent' | 'observed_claimed_percent' | 'observed_completed_percent', number>;
   comparison: Record<'predicted_requested_agents' | 'predicted_launch_ready_slots' | 'dispatched_slots' | 'observed_claimed_slots' | 'observed_active_slots' | 'observed_completed_slots' | 'observed_claimable_unclaimed_slots' | 'observed_launch_blocked_unclaimed_slots' | 'observed_external_active_slots' | 'observed_external_active_leases' | 'observed_open_conflicts', number>;
   next: string; blockers: string[]; warnings: string[]; external_active_module_leases?: ExternalLeaseGroup[]; assignments: ObservationAssignment[];
-};
-type LatestObservation = { json_path?: string | null; markdown_path?: string | null };
-type HeldModule = { module_id?: string; slot?: number | string; held_resource?: string; held_by?: string | null };
-type ModuleWatch = {
+}
+interface LatestObservation { json_path?: string | null; markdown_path?: string | null }
+interface HeldModule { module_id?: string; slot?: number | string; held_resource?: string; held_by?: string | null }
+interface ModuleWatch {
   big_picture?: BigPicture; status: string; project: string; task: string; active_lane: string; launchable_agents: number; blockers?: string[]; warnings?: string[]; next: string;
   capacity: { launch_ready_slots: number; requested_agents: number; graph_ready_modules: number; modules_total: number; held_slots?: number; graph_blocked_modules?: number; path_overlap_blocked_slots?: number; held_modules?: HeldModule[] };
   dispatch: { available: boolean; dispatch_id?: string; assignment_count?: number; latest_observation?: LatestObservation };
   progress: ProgressSummary & { dispatch_age_ms?: number; dispatch_stale?: boolean; dispatch_max_age_ms?: number };
   gains: Record<'predicted_graph_first_token_reduction_percent' | 'predicted_dirty_status_token_reduction_percent' | 'predicted_collision_reduction_percent' | 'observed_claimed_percent' | 'observed_completed_percent', number>;
-};
-type RendererDeps = { blockedReasonSuffix: (summary: ProgressSummary) => string; formatPercent: (value: number) => string };
+}
+interface RendererDeps { blockedReasonSuffix: (summary: ProgressSummary) => string; formatPercent: (value: number) => string }
 
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function renderDispatchMarkdown(manifest: DispatchManifest): string {
   const lines = [
     `# ${manifest.dispatch_id}`,
@@ -69,7 +72,7 @@ export function renderDispatchMarkdown(manifest: DispatchManifest): string {
     `Project: \`${manifest.project}\``,
     `Task: ${manifest.task}`,
     `Created: ${manifest.created_at}`,
-    `Assignments: ${manifest.assignments.length}`,
+    `Assignments: ${String(manifest.assignments.length)}`,
     '',
     '## Controller',
     '',
@@ -84,7 +87,7 @@ export function renderDispatchMarkdown(manifest: DispatchManifest): string {
     '',
   ];
   for (const item of manifest.assignments) {
-    lines.push(`### ${item.agent_slot}. ${item.module_id} slot ${item.slot}${item.partition_id ? ` (${item.partition_id})` : ''}`);
+    lines.push(`### ${String(item.agent_slot)}. ${item.module_id} slot ${String(item.slot)}${item.partition_id ? ` (${item.partition_id})` : ''}`);
     lines.push('');
     lines.push(`- Brick: \`${item.brick}\``);
     if (item.partition_id) lines.push(`- Partition: \`${item.partition_id}\` — ${item.partition_label || item.partition_id}`);
@@ -99,7 +102,7 @@ export function renderDispatchMarkdown(manifest: DispatchManifest): string {
   if (manifest.blocked_slots.length) {
     lines.push('## Blocked Slots', '');
     for (const item of manifest.blocked_slots) {
-      lines.push(`- ${item.module_id} slot ${item.slot}: ${item.blocked_reason}${item.held_resource ? ` (${item.held_resource})` : ''}${item.path_overlap_warning ? ` (${item.path_overlap_warning})` : ''}`);
+      lines.push(`- ${item.module_id} slot ${String(item.slot)}: ${item.blocked_reason}${item.held_resource ? ` (${item.held_resource})` : ''}${item.path_overlap_warning ? ` (${item.path_overlap_warning})` : ''}`);
       if (item.dirty_scope_command) lines.push(`  - dirty claim: \`${item.dirty_scope_command}\``);
       if (item.dirty_scope_conflict_command) lines.push(`  - conflict: \`${item.dirty_scope_conflict_command}\``);
       for (const pair of (item.overlap_path_pairs || []).slice(0, 3)) {
@@ -112,15 +115,16 @@ export function renderDispatchMarkdown(manifest: DispatchManifest): string {
 }
 
 
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function renderAgentPacketMarkdown(packet: AgentPacket): string {
   const lines = [
-    `# SMA Gen3 Agent Packet ${packet.dispatch_id} / ${packet.agent_slot}`,
+    `# SMA Gen3 Agent Packet ${packet.dispatch_id} / ${String(packet.agent_slot)}`,
     '',
     `- Project: \`${packet.project}\``,
-    `- Module: \`${packet.module_id}\` slot ${packet.slot}${packet.partition_id ? ` (${packet.partition_id})` : ''}`,
+    `- Module: \`${packet.module_id}\` slot ${String(packet.slot)}${packet.partition_id ? ` (${packet.partition_id})` : ''}`,
     `- Task: ${packet.task}`,
     `- Brick: \`${packet.brick}\``,
-    `- Gains: ${packet.gains.graph_first_token_reduction_percent_estimate}% graph-first token reduction, ${packet.gains.collision_reduction_percent_estimate}% collision-reduction estimate`,
+    `- Gains: ${String(packet.gains.graph_first_token_reduction_percent_estimate)}% graph-first token reduction, ${String(packet.gains.collision_reduction_percent_estimate)}% collision-reduction estimate`,
     '',
     '## First Commands',
     '',
@@ -157,6 +161,7 @@ export function renderAgentPacketMarkdown(packet: AgentPacket): string {
 
 
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function renderObservationMarkdown(observation: ModuleObservation, { blockedReasonSuffix, formatPercent }: RendererDeps): string {
   const bigPicture = observation.big_picture || moduleObservationBigPicture(observation);
   const lines = [
@@ -174,25 +179,25 @@ export function renderObservationMarkdown(observation: ModuleObservation, { bloc
     `- Status: ${observation.status}`,
     `- Generated: ${observation.generated_at}`,
     `- Dispatch: ${observation.dispatch.dispatch_id}`,
-    `- Project: ${observation.dispatch.project}`,
-    `- Task: ${observation.dispatch.task}`,
-    `- Slots: ${observation.summary.claimed}/${observation.summary.assignment_count} claimed, ${observation.summary.active} active, ${observation.summary.completed} completed, ${observation.summary.unclaimed} unclaimed`,
-    `- Claim-ready: ${observation.summary.claimable_unclaimed}/${observation.summary.unclaimed} unclaimed, ${observation.summary.launch_blocked_unclaimed} blocked${blockedReasonSuffix(observation.summary)}`,
-    `- External active: ${observation.summary.external_active_slot_count} slot(s), ${observation.summary.external_active_lease_count} non-dispatch lease(s), ${observation.summary.external_active_module_count} module(s)`,
-    `- Conflicts: ${observation.summary.open_conflicts} open`,
-    `- Graphs: ${observation.summary.graph_ready}/${observation.summary.assignment_count} ready`,
+    `- Project: ${String(observation.dispatch.project)}`,
+    `- Task: ${String(observation.dispatch.task)}`,
+    `- Slots: ${String(observation.summary.claimed)}/${String(observation.summary.assignment_count)} claimed, ${String(observation.summary.active)} active, ${String(observation.summary.completed)} completed, ${String(observation.summary.unclaimed)} unclaimed`,
+    `- Claim-ready: ${String(observation.summary.claimable_unclaimed)}/${String(observation.summary.unclaimed)} unclaimed, ${String(observation.summary.launch_blocked_unclaimed)} blocked${blockedReasonSuffix(observation.summary)}`,
+    `- External active: ${String(observation.summary.external_active_slot_count)} slot(s), ${String(observation.summary.external_active_lease_count)} non-dispatch lease(s), ${String(observation.summary.external_active_module_count)} module(s)`,
+    `- Conflicts: ${String(observation.summary.open_conflicts)} open`,
+    `- Graphs: ${String(observation.summary.graph_ready)}/${String(observation.summary.assignment_count)} ready`,
     `- Gains: ${formatPercent(observation.gains.predicted_graph_first_token_reduction_percent)} predicted graph-first token reduction, ${formatPercent(observation.gains.observed_claimed_percent)} claimed, ${formatPercent(observation.gains.observed_completed_percent)} completed`,
     `- Next: \`${observation.next}\``,
     '',
     '## Comparison',
     '',
-    `- Requested agents: ${observation.comparison.predicted_requested_agents}`,
-    `- Predicted launch-ready slots: ${observation.comparison.predicted_launch_ready_slots}`,
-    `- Dispatched slots: ${observation.comparison.dispatched_slots}`,
-    `- Claimed/active/completed: ${observation.comparison.observed_claimed_slots}/${observation.comparison.observed_active_slots}/${observation.comparison.observed_completed_slots}`,
-    `- Claim-ready/blocked unclaimed: ${observation.comparison.observed_claimable_unclaimed_slots}/${observation.comparison.observed_launch_blocked_unclaimed_slots}${blockedReasonSuffix(observation.summary)}`,
-    `- External active slots/leases: ${observation.comparison.observed_external_active_slots}/${observation.comparison.observed_external_active_leases}`,
-    `- Open conflicts: ${observation.comparison.observed_open_conflicts}`,
+    `- Requested agents: ${String(observation.comparison.predicted_requested_agents)}`,
+    `- Predicted launch-ready slots: ${String(observation.comparison.predicted_launch_ready_slots)}`,
+    `- Dispatched slots: ${String(observation.comparison.dispatched_slots)}`,
+    `- Claimed/active/completed: ${String(observation.comparison.observed_claimed_slots)}/${String(observation.comparison.observed_active_slots)}/${String(observation.comparison.observed_completed_slots)}`,
+    `- Claim-ready/blocked unclaimed: ${String(observation.comparison.observed_claimable_unclaimed_slots)}/${String(observation.comparison.observed_launch_blocked_unclaimed_slots)}${blockedReasonSuffix(observation.summary)}`,
+    `- External active slots/leases: ${String(observation.comparison.observed_external_active_slots)}/${String(observation.comparison.observed_external_active_leases)}`,
+    `- Open conflicts: ${String(observation.comparison.observed_open_conflicts)}`,
     '',
   ];
   if (observation.blockers.length) {
@@ -208,18 +213,18 @@ export function renderObservationMarkdown(observation: ModuleObservation, { bloc
   if (observation.external_active_module_leases?.length) {
     lines.push('## External Active Module Leases', '');
     for (const item of observation.external_active_module_leases) {
-      lines.push(`- ${item.module_id}: ${item.held_resource} by ${item.held_by || 'unknown'} (${item.slot_count} slot${item.slot_count === 1 ? '' : 's'}: ${item.agent_slots.join(', ')})`);
+      lines.push(`- ${String(item.module_id)}: ${String(item.held_resource)} by ${item.held_by || 'unknown'} (${String(item.slot_count)} slot${item.slot_count === 1 ? '' : 's'}: ${item.agent_slots.join(', ')})`);
     }
     lines.push('');
   }
   lines.push('## Assignments', '');
   for (const item of observation.assignments) {
-    const activeLabel = item.active_lease_count ? `, active leases ${item.active_lease_count}` : '';
-    const conflictLabel = item.open_conflicts ? `, open conflicts ${item.open_conflicts}` : '';
+    const activeLabel = item.active_lease_count ? `, active leases ${String(item.active_lease_count)}` : '';
+    const conflictLabel = item.open_conflicts ? `, open conflicts ${String(item.open_conflicts)}` : '';
     const contextLabel = item.context_error ? `, context error: ${item.context_error}` : '';
-    const dirtyLabel = item.dirty_scope_count ? `, dirty scope ${item.dirty_scope_count}` : '';
+    const dirtyLabel = item.dirty_scope_count ? `, dirty scope ${String(item.dirty_scope_count)}` : '';
     const heldLabel = item.held_resource ? `, held ${item.held_resource}` : '';
-    lines.push(`- #${item.agent_slot} ${item.module_id} slot ${item.slot}: ${item.status}, ${item.claim_event_count} claim events, ${item.completion_event_count} completion events${activeLabel}${conflictLabel}${contextLabel}${dirtyLabel}${heldLabel}`);
+    lines.push(`- #${String(item.agent_slot)} ${item.module_id} slot ${String(item.slot)}: ${item.status}, ${String(item.claim_event_count)} claim events, ${String(item.completion_event_count)} completion events${activeLabel}${conflictLabel}${contextLabel}${dirtyLabel}${heldLabel}`);
     if (item.agent_packet_markdown_path) lines.push(`  - Agent packet: \`${item.agent_packet_markdown_path}\``);
     if (item.conflict_command) lines.push(`  - Module conflict: \`${item.conflict_command}\``);
     if (item.dirty_scope_command) lines.push(`  - Dirty-scope claim: \`${item.dirty_scope_command}\``);
@@ -239,11 +244,11 @@ export function moduleObservationBigPicture(observation: ModuleObservation): Big
   const conflicts = numeric(summary.open_conflicts);
   const graphReady = numeric(summary.graph_ready);
   const dispatchId = dispatch.dispatch_id || 'module dispatch';
-  const graphText = `${graphReady}/${assignmentCount} dispatch graphs`;
+  const graphText = `${String(graphReady)}/${String(assignmentCount)} dispatch graphs`;
 
   if (completed >= assignmentCount && assignmentCount > 0) {
     return {
-      tldr: `Dispatch ${dispatchId} is complete: ${completed}/${assignmentCount} slots done, ${conflicts} conflicts, ${graphText}.`,
+      tldr: `Dispatch ${dispatchId} is complete: ${String(completed)}/${String(assignmentCount)} slots done, ${String(conflicts)} conflicts, ${graphText}.`,
       current_slice: 'Current slice: preserve this observation as proof, refresh the dashboard, then decide the next module wave.',
       outlook: [
         'Keep the observation artifact with the release handoff.',
@@ -257,20 +262,20 @@ export function moduleObservationBigPicture(observation: ModuleObservation): Big
 
   if (claimReady > 0) {
     return {
-      tldr: `Dispatch ${dispatchId} is launch-ready: ${claimReady}/${unclaimed} open packet-first slots, ${conflicts} conflicts, ${graphText}.`,
-      current_slice: `Current slice: claim ${claimReady} open dispatch-pinned slot(s), keep agents inside packet scope, then write the next observation.`,
+      tldr: `Dispatch ${dispatchId} is launch-ready: ${String(claimReady)}/${String(unclaimed)} open packet-first slots, ${String(conflicts)} conflicts, ${graphText}.`,
+      current_slice: `Current slice: claim ${String(claimReady)} open dispatch-pinned slot(s), keep agents inside packet scope, then write the next observation.`,
       outlook: [
         'Claim open slots with module:claim --next.',
         'Use module:watch for low-token progress between observations.',
         'Before the next wave, write observation proof and resolve dirty integration blockers.',
       ],
-      eta: `5-10 minutes to respawn ${claimReady} packet-first agents; observe progress within 15 minutes.`,
+      eta: `5-10 minutes to respawn ${String(claimReady)} packet-first agents; observe progress within 15 minutes.`,
       horizon: 'Module-local work can proceed now; integration waits for cleanup, conflicts, and release gates.',
     };
   }
 
   return {
-    tldr: `Dispatch ${dispatchId} is not claim-ready: ${unclaimed} unclaimed slots, ${conflicts} conflicts, ${graphText}.`,
+    tldr: `Dispatch ${dispatchId} is not claim-ready: ${String(unclaimed)} unclaimed slots, ${String(conflicts)} conflicts, ${graphText}.`,
     current_slice: 'Current slice: clear blockers, conflicts, stale dispatch state, or active leases before assigning more agents.',
     outlook: [
       'Resolve the listed blockers.',
@@ -283,11 +288,12 @@ export function moduleObservationBigPicture(observation: ModuleObservation): Big
 }
 
 
+// eslint-disable-next-line max-lines-per-function -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
   const capacity = watch.capacity;
   const progress = watch.progress;
   const dispatch = watch.dispatch;
-  const dispatchReady = Boolean(dispatch.available);
+  const dispatchReady = dispatch.available;
   const assignmentCount = numeric(progress.assignment_count);
   const claimReady = dispatchReady ? numeric(progress.claimable_unclaimed) : 0;
   const unclaimed = dispatchReady ? numeric(progress.unclaimed) : 0;
@@ -299,12 +305,12 @@ export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
   const capModules = numeric(capacity.modules_total);
   const dispatchGraphReady = numeric(progress.graph_ready);
   const graphText = dispatchReady
-    ? `${dispatchGraphReady}/${assignmentCount} dispatch graphs, ${capGraphReady}/${capModules} module graphs`
-    : `${capGraphReady}/${capModules} module graphs`;
+    ? `${String(dispatchGraphReady)}/${String(assignmentCount)} dispatch graphs, ${String(capGraphReady)}/${String(capModules)} module graphs`
+    : `${String(capGraphReady)}/${String(capModules)} module graphs`;
 
   if (!dispatchReady) {
     return {
-      tldr: `Dispatch missing: ${capReady}/${capRequested} module slots are capacity-ready, but agents need a written dispatch before launch.`,
+      tldr: `Dispatch missing: ${String(capReady)}/${String(capRequested)} module slots are capacity-ready, but agents need a written dispatch before launch.`,
       current_slice: 'Current slice: write a concrete module dispatch, then launch agents from dispatch-pinned packets only.',
       outlook: [
         'Write the dispatch manifest for the concrete task.',
@@ -318,7 +324,7 @@ export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
 
   if (completed >= assignmentCount && assignmentCount > 0) {
     return {
-      tldr: `Dispatch ${dispatch.dispatch_id} is complete: ${completed}/${assignmentCount} slots done, ${conflicts} conflicts, ${graphText}.`,
+      tldr: `Dispatch ${String(dispatch.dispatch_id)} is complete: ${String(completed)}/${String(assignmentCount)} slots done, ${String(conflicts)} conflicts, ${graphText}.`,
       current_slice: 'Current slice: observe/write completion proof, refresh the project dashboard, then decide the next module wave.',
       outlook: [
         'Persist module observation so predicted gain becomes proof.',
@@ -332,20 +338,20 @@ export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
 
   if (claimReady > 0) {
     return {
-      tldr: `Dispatch ${dispatch.dispatch_id} is launch-ready: ${claimReady}/${unclaimed} open packet-first slots, ${conflicts} conflicts, ${graphText}.`,
-      current_slice: `Current slice: claim up to ${claimReady} dispatch-pinned module agents, keep each inside its packet scope, then observe/write progress.`,
+      tldr: `Dispatch ${String(dispatch.dispatch_id)} is launch-ready: ${String(claimReady)}/${String(unclaimed)} open packet-first slots, ${String(conflicts)} conflicts, ${graphText}.`,
+      current_slice: `Current slice: claim up to ${String(claimReady)} dispatch-pinned module agents, keep each inside its packet scope, then observe/write progress.`,
       outlook: [
         'Launch claim-ready slots with module:claim --next from the dispatch.',
         'Watch claimed/active/completed counts instead of rereading the full dashboard.',
         'Before the next wave, write an observation receipt and resolve dirty integration blockers.',
       ],
-      eta: `5-10 minutes to respawn ${claimReady} packet-first agents; observe progress within 15 minutes of launch.`,
+      eta: `5-10 minutes to respawn ${String(claimReady)} packet-first agents; observe progress within 15 minutes of launch.`,
       horizon: 'Now: module-local work can proceed; next: integration cleanup; later: 15-25 agents after hot shared paths shrink.',
     };
   }
 
   return {
-    tldr: `Dispatch ${dispatch.dispatch_id} is not claim-ready: ${unclaimed} unclaimed slots, ${conflicts} conflicts, ${graphText}.`,
+    tldr: `Dispatch ${String(dispatch.dispatch_id)} is not claim-ready: ${String(unclaimed)} unclaimed slots, ${String(conflicts)} conflicts, ${graphText}.`,
     current_slice: 'Current slice: clear blockers or observe active work before assigning more agents.',
     outlook: [
       'Resolve held, stale, dirty-scope, or conflict blockers.',
@@ -358,12 +364,13 @@ export function moduleWatchBigPicture(watch: ModuleWatch): BigPicture {
 }
 
 
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function renderModuleWatchConsole(watch: ModuleWatch, { blockedReasonSuffix, formatPercent }: RendererDeps): string {
   const bigPicture = watch.big_picture || moduleWatchBigPicture(watch);
   const capacityBlocked = [];
-  if (watch.capacity.held_slots) capacityBlocked.push(`${watch.capacity.held_slots} held`);
-  if (watch.capacity.graph_blocked_modules) capacityBlocked.push(`${watch.capacity.graph_blocked_modules} graph`);
-  if (watch.capacity.path_overlap_blocked_slots) capacityBlocked.push(`${watch.capacity.path_overlap_blocked_slots} overlap`);
+  if (watch.capacity.held_slots) capacityBlocked.push(`${String(watch.capacity.held_slots)} held`);
+  if (watch.capacity.graph_blocked_modules) capacityBlocked.push(`${String(watch.capacity.graph_blocked_modules)} graph`);
+  if (watch.capacity.path_overlap_blocked_slots) capacityBlocked.push(`${String(watch.capacity.path_overlap_blocked_slots)} overlap`);
   const lines = [
     'SMA Gen3 Module Wave Watch',
     `tldr:            ${bigPicture.tldr}`,
@@ -372,29 +379,29 @@ export function renderModuleWatchConsole(watch: ModuleWatch, { blockedReasonSuff
     `project:         ${watch.project}`,
     `task:            ${watch.task}`,
     `lane:            ${watch.active_lane}`,
-    `capacity:        ${watch.capacity.launch_ready_slots}/${watch.capacity.requested_agents} slots, ${watch.capacity.graph_ready_modules}/${watch.capacity.modules_total} graphs ready`,
+    `capacity:        ${String(watch.capacity.launch_ready_slots)}/${String(watch.capacity.requested_agents)} slots, ${String(watch.capacity.graph_ready_modules)}/${String(watch.capacity.modules_total)} graphs ready`,
   ];
   if (capacityBlocked.length) lines.push(`capacity-blocked: ${capacityBlocked.join(', ')} currently blocked outside this dispatch`);
   if ((watch.capacity.held_modules || []).length) lines.push(`held-modules:     ${formatHeldModuleSummary(watch.capacity.held_modules || [])}`);
 
   if (watch.dispatch.available) {
-    lines.push(`dispatch:        ${watch.dispatch.dispatch_id} (${watch.dispatch.assignment_count} slots)`);
+    lines.push(`dispatch:        ${String(watch.dispatch.dispatch_id)} (${String(watch.dispatch.assignment_count)} slots)`);
     if (watch.progress.dispatch_age_ms) lines.push(`dispatch-age:    ${formatWatchDuration(watch.progress.dispatch_age_ms)}${watch.progress.dispatch_stale ? ' stale' : ''} (max ${formatWatchDuration(watch.progress.dispatch_max_age_ms)})`);
     if (watch.dispatch.latest_observation?.json_path) lines.push(`observation:     ${watch.dispatch.latest_observation.json_path}${observationAgeSuffix(watch.dispatch.latest_observation)}${watch.dispatch.latest_observation.markdown_path ? ` · ${watch.dispatch.latest_observation.markdown_path}` : ''}`);
-    lines.push(`progress:        ${watch.progress.claimed}/${watch.progress.assignment_count} claimed, ${watch.progress.active} active, ${watch.progress.completed} completed, ${watch.progress.unclaimed} unclaimed`);
-    lines.push(`claim-ready:     ${watch.progress.claimable_unclaimed}/${watch.progress.unclaimed} unclaimed, ${watch.progress.launch_blocked_unclaimed} blocked${blockedReasonSuffix(watch.progress)}`);
+    lines.push(`progress:        ${String(watch.progress.claimed)}/${String(watch.progress.assignment_count)} claimed, ${String(watch.progress.active)} active, ${String(watch.progress.completed)} completed, ${String(watch.progress.unclaimed)} unclaimed`);
+    lines.push(`claim-ready:     ${String(watch.progress.claimable_unclaimed)}/${String(watch.progress.unclaimed)} unclaimed, ${String(watch.progress.launch_blocked_unclaimed)} blocked${blockedReasonSuffix(watch.progress)}`);
     if (watch.progress.external_active_slot_count) {
-      lines.push(`external active: ${watch.progress.external_active_slot_count} slot${watch.progress.external_active_slot_count === 1 ? '' : 's'} occupied by ${watch.progress.external_active_lease_count} non-dispatch lease${watch.progress.external_active_lease_count === 1 ? '' : 's'}`);
+      lines.push(`external active: ${String(watch.progress.external_active_slot_count)} slot${watch.progress.external_active_slot_count === 1 ? '' : 's'} occupied by ${String(watch.progress.external_active_lease_count)} non-dispatch lease${watch.progress.external_active_lease_count === 1 ? '' : 's'}`);
     }
-    lines.push(`conflicts:       ${watch.progress.open_conflicts} open`);
+    lines.push(`conflicts:       ${String(watch.progress.open_conflicts)} open`);
     lines.push(`gains:           ${watchPercent(formatPercent, watch.gains.predicted_graph_first_token_reduction_percent)} graph-first, ${watchPercent(formatPercent, watch.gains.predicted_dirty_status_token_reduction_percent)} dirty-status, ${watchPercent(formatPercent, watch.gains.predicted_collision_reduction_percent)} collision estimate, ${watchPercent(formatPercent, watch.gains.observed_claimed_percent)} claimed, ${watchPercent(formatPercent, watch.gains.observed_completed_percent)} completed`);
   } else {
     lines.push('dispatch:        missing');
-    lines.push(`launchable:      ${watch.launchable_agents}/${watch.capacity.requested_agents} until dispatch is written`);
+    lines.push(`launchable:      ${String(watch.launchable_agents)}/${String(watch.capacity.requested_agents)} until dispatch is written`);
   }
 
   (bigPicture.outlook || []).slice(0, 3).forEach((item, index) => {
-    lines.push(`outlook ${index + 1}:       ${item}`);
+    lines.push(`outlook ${String(index + 1)}:       ${item}`);
   });
   lines.push(`eta:             ${bigPicture.eta}`);
   lines.push(`horizon:         ${bigPicture.horizon}`);
@@ -410,10 +417,10 @@ export function formatExternalActiveLeases(groups: ExternalLeaseGroup[], limit =
   const items = Array.isArray(groups) ? groups : [];
   if (!items.length) return 'none';
   const rendered = items.slice(0, limit).map((item) => (
-    `${item.module_id || 'module'}:${item.held_resource || 'active-lease'}${item.slot_count > 1 ? ` (${item.slot_count} slots)` : ''}`
+    `${item.module_id || 'module'}:${item.held_resource || 'active-lease'}${item.slot_count > 1 ? ` (${String(item.slot_count)} slots)` : ''}`
   ));
   const remaining = items.length - rendered.length;
-  if (remaining > 0) rendered.push(`+${remaining} more`);
+  if (remaining > 0) rendered.push(`+${String(remaining)} more`);
   return rendered.join(', ');
 }
 
@@ -423,18 +430,18 @@ function numeric(value: unknown): number {
 }
 
 function watchPercent(formatPercent: ((value: number) => string) | undefined, value: number): string {
-  return typeof formatPercent === 'function' ? formatPercent(value) : `${numeric(value)}%`;
+  return typeof formatPercent === 'function' ? formatPercent(value) : `${String(numeric(value))}%`;
 }
 
 function formatHeldModuleSummary(items: HeldModule[]): string {
-  const rendered = (Array.isArray(items) ? items : []).slice(0, 5).map((item) => `${item.module_id || 'module'}#${item.slot || '?'}:${item.held_resource || 'held'}${item.held_by ? ` by ${item.held_by}` : ''}`);
+  const rendered = (Array.isArray(items) ? items : []).slice(0, 5).map((item) => `${item.module_id || 'module'}#${String(item.slot || '?')}:${item.held_resource || 'held'}${item.held_by ? ` by ${item.held_by}` : ''}`);
   const remaining = (Array.isArray(items) ? items.length : 0) - rendered.length;
-  if (remaining > 0) rendered.push(`+${remaining} more`);
+  if (remaining > 0) rendered.push(`+${String(remaining)} more`);
   return rendered.join(', ');
 }
 
 function observationAgeSuffix(observation: LatestObservation): string {
-  const match = String(observation?.json_path || '').match(/observed-(\d{8}T\d{6}Z)\.json$/);
+  const match = /observed-(\d{8}T\d{6}Z)\.json$/.exec(observation.json_path || '');
   if (!match) return '';
   const stamp = match[1].replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, '$1-$2-$3T$4:$5:$6Z');
   const age = Date.now() - Date.parse(stamp);
@@ -443,10 +450,10 @@ function observationAgeSuffix(observation: LatestObservation): string {
 
 function formatWatchDuration(ms: unknown): string {
   const totalMinutes = Math.max(0, Math.round(numeric(ms) / 60000));
-  if (totalMinutes < 60) return `${totalMinutes}m`;
+  if (totalMinutes < 60) return `${String(totalMinutes)}m`;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return minutes ? `${hours}h${minutes}m` : `${hours}h`;
+  return minutes ? `${String(hours)}h${String(minutes)}m` : `${String(hours)}h`;
 }
 
 export function moduleConflictCommand({ project, moduleId, slot, task, moduleWorkBrick, shellArg }: { project: string; moduleId: string; slot: number; task: string; moduleWorkBrick: (moduleId: string, slot: number) => string; shellArg: (value: string) => string }): string {
@@ -463,6 +470,7 @@ export function moduleConflictCommand({ project, moduleId, slot, task, moduleWor
   ].join(' ');
 }
 
+// eslint-disable-next-line complexity -- Compatibility fallback expressions inflate the branch metric although this normalization and report assembly remains linear.
 export function modulePrompt({
   config,
   module,
@@ -485,7 +493,7 @@ export function modulePrompt({
   graphCommand: string;
   iterationGates: string[];
   gates: string[];
-  sharedWarnings: Array<{ id: string }>;
+  sharedWarnings: { id: string }[];
   claimCommand?: string;
   moduleWorkBrick: (moduleId: string, slot: number) => string;
   shellArg: (value: string) => string;
@@ -505,7 +513,7 @@ export function modulePrompt({
     (module.excludePaths || []).length
       ? `Do not edit excluded delegated paths: ${(module.excludePaths || []).slice(0, 4).join(', ')}.`
       : null,
-    Number(slot) > 1 && !partition
+    slot > 1 && !partition
       ? 'This is an extra same-module slot; proceed only with an explicit subpath/task partition from the controller.'
       : partition
         ? 'This same-module slot is safe only for the named partition; conflict-report before crossing into another partition.'

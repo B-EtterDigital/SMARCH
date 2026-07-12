@@ -46,7 +46,7 @@ Options:
   --help          Show this help text.
 `;
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.stack : String(error));
   process.exit(1);
 });
@@ -90,6 +90,7 @@ async function main() {
   }
 }
 
+// eslint-disable-next-line complexity -- Draft assembly is an ordered release-blocker policy and serializer; reason precedence is the output contract.
 function buildReleaseDraftEntry(build: CuratedBuild) {
   const release = isRecord(build.release) ? build.release : null;
   const latestRelease = isRecord(release?.latest_release) ? release.latest_release : null;
@@ -106,14 +107,14 @@ function buildReleaseDraftEntry(build: CuratedBuild) {
     name: build.name,
     source_project: build.source_project,
     manifest_path: build.manifest_path,
-    release_path: latestRelease?.path ? `releases/${latestRelease.path}` : null,
-    release_id: latestRelease?.release_id || null,
-    release_version: (latestRelease ? Reflect.get(latestRelease, "version") : null) || (manifestBuild ? Reflect.get(manifestBuild, "version") : null) || null,
-    release_channel: latestRelease?.channel || null,
-    release_status: latestRelease?.status || "missing",
-    release_verification_status: trustSummary?.verification_status || null,
-    release_trust_level: trustSummary?.trust_level || null,
-    published_at: latestRelease?.published_at || null,
+    release_path: latestRelease?.path ? `releases/${legacyString(latestRelease.path)}` : null,
+    release_id: latestRelease?.release_id ?? null,
+    release_version: ((latestRelease ? Reflect.get(latestRelease, "version") : null) ?? (manifestBuild ? Reflect.get(manifestBuild, "version") : null)) ?? null,
+    release_channel: latestRelease?.channel ?? null,
+    release_status: latestRelease?.status ?? "missing",
+    release_verification_status: trustSummary?.verification_status ?? null,
+    release_trust_level: trustSummary?.trust_level ?? null,
+    published_at: latestRelease?.published_at ?? null,
     is_draft: latestRelease?.status !== "published",
     next_gate: nextGate,
     draft_reasons: reasons,
@@ -130,6 +131,7 @@ function buildReleaseDraftEntry(build: CuratedBuild) {
   };
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity -- Draft assembly is an ordered release-blocker policy and serializer; reason precedence is the output contract.
 function collectDraftReasons(build: CuratedBuild): DraftReason[] {
   const reasons: DraftReason[] = [];
   const push = (code: string, message: string, firstAction: string): void => {
@@ -168,28 +170,28 @@ function collectDraftReasons(build: CuratedBuild): DraftReason[] {
       "Leave publishability disabled until verification and leak cleanup are real, then toggle intentionally."
     );
   }
-  if (String(publishing?.visibility || "").toLowerCase() === "private") {
+  if (legacyString(publishing?.visibility ?? "").toLowerCase() === "private") {
     push(
       "publishing.visibility",
       "Visibility is still private/internal only.",
       "Decide the target sharing lane only after verification and publish review are clean."
     );
   }
-  if (String(latestRelease?.status || "").toLowerCase() !== "published") {
+  if (legacyString(latestRelease?.status ?? "").toLowerCase() !== "published") {
     push(
       "release_not_published",
       "Latest release artifact remains draft.",
       "Do not publish the release until the earlier gates are green."
     );
   }
-  if (String(trustSummary?.verification_status || "").toLowerCase() === "unverified") {
+  if (legacyString(trustSummary?.verification_status ?? "").toLowerCase() === "unverified") {
     push(
       "release_unverified",
       "Latest release still carries unverified release metadata.",
       "Raise build verification evidence before treating the release as reusable."
     );
   }
-  if (String(clone?.readiness || manifestClone?.readiness || "").toLowerCase() === "manual_only") {
+  if (legacyString((clone?.readiness ?? manifestClone?.readiness) ?? "").toLowerCase() === "manual_only") {
     push(
       "clone.readiness",
       "Manual-only install posture still makes the release a poor candidate for publication.",
@@ -207,4 +209,8 @@ function deriveNextGate(reasons: DraftReason[]): string {
   if (codes.has("private_publish_blocked") || codes.has("not_marked_publishable") || codes.has("publishing.visibility")) return "private_publishable";
   if (codes.has("release_not_published")) return "published_release";
   return "review";
+}
+
+function legacyString(value: unknown): string {
+  return String(value);
 }

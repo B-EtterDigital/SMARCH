@@ -4,12 +4,12 @@ import { STRINGS } from "../strings";
 import { BrickCard, type BrickCardState } from "./brick-card";
 import type { BrickRecord } from "./brick-model";
 
-type BrickDetailProps = {
+interface BrickDetailProps {
   brick?: BrickRecord | null;
   onClose: () => void;
   open: boolean;
   state?: BrickCardState;
-};
+}
 
 const FOCUSABLE = "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 

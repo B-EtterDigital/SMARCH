@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable complexity, max-lines-per-function -- Bootstrap assembly is an ordered manifest transaction; keeping derivation and validation together prevents partially initialized output. */
 /**
  * WHAT: Generates reviewable starter manifests for scanner candidates that lack one.
  * WHY: Unmanifested modules cannot enter scoring and governance without an explicit initial contract.

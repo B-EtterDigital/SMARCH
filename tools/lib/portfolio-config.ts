@@ -11,14 +11,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { SMA_ROOT } from "./sma-paths.ts";
 
-type PortfolioConfig = {
+interface PortfolioConfig {
   priority_project_ids: string[];
   overrides: Record<string, PortfolioOverride>;
   ignored_top_level_dirs: string[];
   ignored_name_fragments: string[];
-};
+}
 
-export type PortfolioOverride = { id?: string; name?: string };
+export interface PortfolioOverride { id?: string; name?: string }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -51,7 +51,7 @@ export function loadPortfolioConfig() {
     : path.join(SMA_ROOT, "registry", "portfolio.config.json");
   let raw: Partial<PortfolioConfig> & Record<string, unknown> = {};
   try {
-    raw = JSON.parse(readFileSync(configPath, "utf8"));
+    raw = JSON.parse(readFileSync(configPath, "utf8")) as Partial<PortfolioConfig> & Record<string, unknown>;
   } catch (error) {
     if (!(error && typeof error === "object" && "code" in error && error.code === "ENOENT")) {
       console.error(JSON.stringify({

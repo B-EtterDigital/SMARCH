@@ -9,7 +9,7 @@ import type {
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(path, { signal, headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+  if (!response.ok) throw new Error(`${path} returned ${String(response.status)}`);
   return response.json() as Promise<T>;
 }
 
@@ -28,22 +28,24 @@ export function subscribeToDashboardEvents(
   onError: () => void
 ): () => void {
   const source = new EventSource("/api/events");
-  source.onmessage = (event) => {
+  source.onmessage = (event: MessageEvent<string>) => {
     try {
-      onEvent(JSON.parse(event.data) as DashboardEvent);
+      const parsed: unknown = JSON.parse(event.data);
+      onEvent(parsed as DashboardEvent);
     } catch (error) {
       reportClientError("dashboard.sse", "error", error);
     }
   };
   source.onerror = onError;
-  return () => source.close();
+  return () => { source.close(); };
 }
 
 export function reportClientError(area: string, severity: "error" | "fatal", value: unknown): void {
   const error = value instanceof Error ? value : new Error(String(value));
-  const body = JSON.stringify({ area, severity, message: error.message, stack: error.stack || "" });
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon("/api/client-errors", new Blob([body], { type: "application/json" }));
+  const body = JSON.stringify({ area, severity, message: error.message, stack: error.stack ?? "" });
+  const sendBeacon = (navigator as Partial<Navigator>).sendBeacon;
+  if (sendBeacon) {
+    sendBeacon.call(navigator, "/api/client-errors", new Blob([body], { type: "application/json" }));
     return;
   }
   void fetch("/api/client-errors", {

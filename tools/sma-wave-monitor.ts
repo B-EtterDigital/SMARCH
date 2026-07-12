@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/restrict-template-expressions, @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/no-base-to-string, @typescript-eslint/no-unnecessary-condition -- Monitor output and truthy fallback semantics are a compatibility contract for mixed-version controller snapshots. */
+/* eslint-disable complexity, max-lines-per-function -- Wave monitoring is an ordered terminal snapshot renderer whose section order and omission rules are the CLI contract. */
 /**
  * WHAT: Reports the live state of a Gen3 cleanup wave in one compact view.
  * WHY: Controllers otherwise have to reconcile preflight, dirty progress, and conflicts manually.
@@ -38,6 +40,10 @@ interface ToolProbe { label: string; data?: ToolData; error?: string }
 
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.entries(value)) : {};
+}
+
+function isToolData(value: unknown): value is ToolData {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function message(error: unknown): string {
@@ -266,7 +272,8 @@ function runJsonTool(label: string, commandArgs: string[]): ToolProbe {
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
     });
-    return { label, data: JSON.parse(stdout) };
+    const data: unknown = JSON.parse(stdout);
+    return isToolData(data) ? { label, data } : { label, error: 'tool returned a non-object JSON payload' };
   } catch (err) {
     return {
       label,

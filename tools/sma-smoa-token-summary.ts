@@ -15,15 +15,15 @@ import os from 'node:os';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
-type TokenSum = { input: number; cacheWrite: number; cacheRead: number; output: number; calls: number };
-type CodexSum = { model: string; input: number; cached: number; output: number; id: string };
-type WorkforceSum = { backend: string; model: string; input: number; output: number; id: string; ts: number };
-type Price = { input: number; output: number; cacheWrite?: number; cacheRead?: number; cachedInput?: number; key?: string };
-type ClaudeMessage = { ts: number; model: string; input: number; cacheWrite: number; cacheRead: number; output: number };
-type PriceDocument = { asOf: string; perMTok: Record<string, Price> };
-type SummaryRow = { agent: string; model: string; calls: number; tokens: string; cost: number | null; fablePct: string; allPct: string };
-type ClaudeEvent = { requestId?: string; timestamp?: string; message?: { id?: string; model?: string; usage?: { input_tokens?: number; cache_creation_input_tokens?: number; cache_read_input_tokens?: number; output_tokens?: number } } };
-type WorkforceReceipt = { schema?: string; backend?: string; model?: string; tokens_in?: number; tokens_out?: number; session_id?: string; timestamp?: string };
+interface TokenSum { input: number; cacheWrite: number; cacheRead: number; output: number; calls: number }
+interface CodexSum { model: string; input: number; cached: number; output: number; id: string }
+interface WorkforceSum { backend: string; model: string; input: number; output: number; id: string; ts: number }
+interface Price { input: number; output: number; cacheWrite?: number; cacheRead?: number; cachedInput?: number; key?: string }
+interface ClaudeMessage { ts: number; model: string; input: number; cacheWrite: number; cacheRead: number; output: number }
+interface PriceDocument { asOf: string; perMTok: Record<string, Price> }
+interface SummaryRow { agent: string; model: string; calls: number; tokens: string; cost: number | null; fablePct: string; allPct: string }
+interface ClaudeEvent { requestId?: string; timestamp?: string; message?: { id?: string; model?: string; usage?: { input_tokens?: number; cache_creation_input_tokens?: number; cache_read_input_tokens?: number; output_tokens?: number } } }
+interface WorkforceReceipt { schema?: string; backend?: string; model?: string; tokens_in?: number; tokens_out?: number; session_id?: string; timestamp?: string }
 
 const args = process.argv.slice(2);
 const opt = <T extends string | null>(name: string, dflt: T): string | T => {
@@ -37,11 +37,11 @@ const NOW = Date.now();
 const WINDOW_START = NOW - WINDOW_DAYS * 864e5;
 const CODEX_SINCE = Date.parse(opt('codex-since', new Date(NOW - 864e5).toISOString()));
 const CLAUDE_SESSION = opt('claude-session', null);
-const WORKFORCE_LOG = opt('workforce-log', process.env.SMA_WORKFORCE_USAGE_LOG || path.join(os.homedir(), '.smarch', 'workforce-usage.jsonl'));
+const WORKFORCE_LOG = opt('workforce-log', process.env.SMA_WORKFORCE_USAGE_LOG ?? path.join(os.homedir(), '.smarch', 'workforce-usage.jsonl'));
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRICES_PATH = path.join(HERE, '..', 'skills', 'sweetspot-moa', 'model-prices.json');
-const PRICES: PriceDocument = JSON.parse(fs.readFileSync(PRICES_PATH, 'utf8'));
+const PRICES = JSON.parse(fs.readFileSync(PRICES_PATH, 'utf8')) as PriceDocument;
 
 function priceFor(model: string): Price | null {
   if (!model) return null;
@@ -53,23 +53,24 @@ function priceFor(model: string): Price | null {
 // ---- Claude Code logs -------------------------------------------------
 // One line per event; assistant messages carry message.model + message.usage.
 // Multi-block messages repeat the same usage -> dedupe on requestId/message.id.
+// eslint-disable-next-line complexity -- The streaming log parser is one bounded state machine; extraction would duplicate dedupe and accounting state.
 async function scanClaudeFile(file: string, onMsg: (message: ClaudeMessage) => void): Promise<void> {
   const rl = readline.createInterface({ input: fs.createReadStream(file), crlfDelay: Infinity });
   const seen = new Set();
   for await (const line of rl) {
     if (!line.includes('"usage"')) continue;
-    let obj: ClaudeEvent; try { obj = JSON.parse(line); } catch { continue; }
-    const u = obj?.message?.usage;
+    let obj: ClaudeEvent; try { obj = JSON.parse(line) as ClaudeEvent; } catch { continue; }
+    const u = obj.message?.usage;
     if (!u || typeof u.output_tokens !== 'number') continue;
-    const key = obj.requestId || obj.message?.id || `${file}:${obj.timestamp}`;
+    const key = (obj.requestId ?? obj.message?.id) ?? `${file}:${String(obj.timestamp)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     onMsg({
-      ts: Date.parse(obj.timestamp || '0'),
-      model: obj.message?.model || 'unknown',
-      input: u.input_tokens || 0,
-      cacheWrite: u.cache_creation_input_tokens || 0,
-      cacheRead: u.cache_read_input_tokens || 0,
+      ts: Date.parse(obj.timestamp ?? '0'),
+      model: obj.message?.model ?? 'unknown',
+      input: u.input_tokens ?? 0,
+      cacheWrite: u.cache_creation_input_tokens ?? 0,
+      cacheRead: u.cache_read_input_tokens ?? 0,
       output: u.output_tokens || 0,
     });
   }
@@ -130,18 +131,21 @@ function scanCodexFile(fp: string): CodexSum | null {
   const head = readSlice(fp, 0, Math.min(size, 64 * 1024));
   const tailLen = Math.min(size, 512 * 1024);
   const tail = readSlice(fp, size - tailLen, tailLen);
-  const model = head.match(/"model":"([^"]+)"/)?.[1] || tail.match(/"model":"([^"]+)"/)?.[1] || 'gpt-5.5';
+  const model = ((/"model":"([^"]+)"/.exec(head))?.[1] ?? (/"model":"([^"]+)"/.exec(tail))?.[1]) ?? 'gpt-5.5';
   const events = [...tail.matchAll(/"total_token_usage":\{[^}]*\}/g)];
   if (!events.length) return null;
   const lastEvent = events.at(-1);
   if (!lastEvent) return null;
   let last: { input_tokens?: number; cached_input_tokens?: number; output_tokens?: number };
-  try { last = JSON.parse(`{${lastEvent[0]}}`).total_token_usage; } catch { return null; }
+  try {
+    const parsed = JSON.parse(`{${lastEvent[0]}}`) as { total_token_usage: typeof last };
+    last = parsed.total_token_usage;
+  } catch { return null; }
   return {
     model,
-    input: last.input_tokens || 0,
-    cached: last.cached_input_tokens || 0,
-    output: last.output_tokens || 0,
+    input: last.input_tokens ?? 0,
+    cached: last.cached_input_tokens ?? 0,
+    output: last.output_tokens ?? 0,
     id: path.basename(fp, '.jsonl').replace(/^rollout-/, '').slice(-12),
   };
 }
@@ -177,15 +181,15 @@ const workforceWeek: WorkforceSum[] = [];
 if (fs.existsSync(WORKFORCE_LOG)) {
   for (const line of fs.readFileSync(WORKFORCE_LOG, 'utf8').split(/\r?\n/)) {
     if (!line.trim()) continue;
-    let row: WorkforceReceipt; try { row = JSON.parse(line); } catch { continue; }
-    if (row?.schema !== 'smarch.workforce-usage.v1' || row.backend === 'codex') continue;
+    let row: WorkforceReceipt; try { row = JSON.parse(line) as WorkforceReceipt; } catch { continue; }
+    if (row.schema !== 'smarch.workforce-usage.v1' || row.backend === 'codex') continue;
     const item = {
-      backend: String(row.backend || 'unknown'),
-      model: String(row.model || row.backend || 'unknown'),
-      input: Number(row.tokens_in || 0),
-      output: Number(row.tokens_out || 0),
-      id: String(row.session_id || row.timestamp || '').slice(-12),
-      ts: Date.parse(row.timestamp || '0'),
+      backend: (row.backend ?? 'unknown'),
+      model: ((row.model ?? row.backend) ?? 'unknown'),
+      input: (row.tokens_in ?? 0),
+      output: (row.tokens_out ?? 0),
+      id: ((row.session_id ?? row.timestamp) ?? '').slice(-12),
+      ts: Date.parse(row.timestamp ?? '0'),
     };
     if (item.ts >= WINDOW_START) workforceWeek.push(item);
     if (item.ts >= CODEX_SINCE) workforceRun.push(item);
@@ -245,7 +249,7 @@ const off = codexRun.reduce((a, s) => ({ input: a.input + s.input, cached: a.cac
 const offTotal = off.input + off.output;
 const actualCodex = codexRun.reduce((a, s) => a + (usd(s.model, (p) => codexCost(s, p)) ?? 0), 0);
 const soloAt = (key: string): number | null => {
-  const p = PRICES.perMTok[key];
+  const p = (PRICES.perMTok as Partial<Record<string, Price>>)[key];
   if (!p) return null;
   return ((off.input - off.cached) * p.input + off.cached * (p.cacheRead ?? p.input) + off.output * p.output) / 1e6;
 };
@@ -261,7 +265,7 @@ if (has('json')) {
   console.log(`SMOA token summary  (prices as of ${PRICES.asOf}; costs imputed at published API rates)`);
   console.log(`| Agent | Model | Calls | Tokens in/out | API cost | % Fable 7d | % all models 7d |`);
   console.log(`|---|---|---|---|---|---|---|`);
-  for (const r of rows) console.log(`| ${r.agent} | ${r.model} | ${r.calls} | ${r.tokens} | ${money(r.cost)} | ${r.fablePct} | ${r.allPct} |`);
+  for (const r of rows) console.log(`| ${r.agent} | ${r.model} | ${String(r.calls)} | ${r.tokens} | ${money(r.cost)} | ${r.fablePct} | ${r.allPct} |`);
   console.log('');
   console.log(saveLine('Fable-5', 'claude-fable-5'));
   console.log(saveLine('Opus 4.8', 'claude-opus-4-8'));

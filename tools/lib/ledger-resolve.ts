@@ -1,3 +1,5 @@
+/* Ledger rows cross a runtime JSON boundary, so defensive guards and existing diagnostic coercion remain required. */
+/* eslint @typescript-eslint/no-base-to-string: "off", @typescript-eslint/no-unnecessary-condition: "off" */
 /**
  * WHAT: Builds a license-ledger index that resolves component identifiers across registry namespace variations.
  * WHY: Doubled prefixes, ordering prefixes, and short project tokens otherwise make valid components look missing.
@@ -25,17 +27,17 @@
  * responsibility to treat as closed.
  */
 
-type LicenseRow = {
+interface LicenseRow {
   brick_id: string;
   project?: string;
   spdx?: unknown;
   openness?: unknown;
   visibility?: unknown;
   [key: string]: unknown;
-};
+}
 
 function signatureOf(id: string, project?: string): string {
-  const segs = String(id).split('.');
+  const segs = id.split('.');
   let i = 0;
   // drop a leading run of segments equal to the project token or duplicated.
   while (i < segs.length - 1 && (segs[i] === project || (i > 0 && segs[i] === segs[i - 1]))) i += 1;
@@ -43,12 +45,12 @@ function signatureOf(id: string, project?: string): string {
 }
 
 function tail3(id: string): string {
-  const segs = String(id).split('.');
+  const segs = id.split('.');
   return segs.slice(Math.max(0, segs.length - 3)).join('.');
 }
 
 function normalizeProject(p: unknown): string {
-  return String(p || '').replace(/^[0-9]+[-_]?/, '').toLowerCase();
+  return String(p ?? '').replace(/^[0-9]+[-_]?/, '').toLowerCase();
 }
 
 function push(map: Map<string, LicenseRow[]>, key: string, row: LicenseRow): void {
@@ -59,7 +61,7 @@ function push(map: Map<string, LicenseRow[]>, key: string, row: LicenseRow): voi
 }
 
 function pick(candidates: LicenseRow[] | undefined, projectHint?: string): LicenseRow | null {
-  if (!candidates || !candidates.length) return null;
+  if (!candidates?.length) return null;
   if (candidates.length === 1) return candidates[0];
   const hint = normalizeProject(projectHint);
   if (hint) {

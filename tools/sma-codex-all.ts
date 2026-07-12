@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/restrict-template-expressions -- The orchestrator intentionally includes observed subprocess status values in diagnostics. */
 /**
  * WHAT: Orchestrates the complete Codex-assisted enrichment, connection, test, promotion, and wiki pipeline.
  * WHY: Operators need a repeatable stage order so derived metadata and documentation are rebuilt from compatible inputs.
@@ -77,4 +78,4 @@ async function main() {
   console.log("\n=== sma-codex-all complete ===");
 }
 
-main().catch((err) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });
+main().catch((err: unknown) => { console.error(err instanceof Error ? err.stack : err); process.exit(1); });

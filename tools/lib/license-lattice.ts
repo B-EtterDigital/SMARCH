@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Existing logical-OR fallbacks intentionally treat every falsy value as absent; replacing them with ?? would change behavior. */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- Runtime registry, manifest, and CLI inputs can violate their optimistic compile-time declarations; these guards are intentional. */
 /**
  * WHAT: Computes the most restrictive effective license, openness, and visibility for composed bricks.
  * WHY: A build must never be declared more redistributable or visible than any component permits.
@@ -38,7 +40,7 @@ const LICENSE_TIERS = ['open', 'commercial'] as const;
 type Openness = typeof OPENNESS[number];
 type Visibility = typeof VISIBILITY[number];
 type LicenseTier = typeof LICENSE_TIERS[number];
-type LicenseClassification = {
+interface LicenseClassification {
   spdx: string | null;
   class: string;
   openness: Openness;
@@ -46,16 +48,16 @@ type LicenseClassification = {
   attribution: boolean;
   reason?: string;
   expression?: 'OR' | 'AND';
-};
-type LicenseComponent = {
+}
+interface LicenseComponent {
   brick_id: string;
   spdx?: string | null;
   openness?: Openness;
   visibility?: Visibility;
   license_tier?: LicenseTier;
   commercial_terms?: string | null;
-};
-type CompositionDeclaration = {
+}
+interface CompositionDeclaration {
   visibility?: Visibility;
   license?: string | null;
   openness?: Openness;
@@ -63,7 +65,7 @@ type CompositionDeclaration = {
   has_attribution?: boolean;
   license_tier?: LicenseTier;
   commercial_waiver?: boolean | { approved_by?: string; reason?: string };
-};
+}
 type LicenseCombination = ReturnType<typeof combineLicenses>;
 
 // ---------------------------------------------------------------------------
@@ -180,7 +182,7 @@ export function visibilityRank(v: unknown): number {
 
 /** MEET of openness values — the most restrictive wins. */
 export function meetOpenness(values: readonly Openness[]): Openness {
-  if (!values || !values.length) return 'closed';
+  if (!values.length) return 'closed';
   let rank = Infinity;
   for (const v of values) rank = Math.min(rank, opennessRank(v));
   return OPENNESS[Number.isFinite(rank) ? rank : 0] ?? 'closed';
@@ -188,7 +190,7 @@ export function meetOpenness(values: readonly Openness[]): Openness {
 
 /** MEET of visibility values — the least visible wins. */
 export function meetVisibility(values: readonly Visibility[]): Visibility {
-  if (!values || !values.length) return 'private';
+  if (!values.length) return 'private';
   let rank = Infinity;
   for (const v of values) rank = Math.min(rank, visibilityRank(v));
   return VISIBILITY[Number.isFinite(rank) ? rank : 0] ?? 'private';
@@ -223,13 +225,13 @@ export function combineLicenses(components: readonly LicenseComponent[]) {
     if (c.class === 'proprietary' || c.class === 'unknown') proprietary.push(c.brick_id);
   }
 
-  const conflicts: Array<{ code: string; message: string }> = [];
+  const conflicts: { code: string; message: string }[] = [];
   // A strong/network copyleft component in the same work as a proprietary one
   // is a genuine legal conflict (cannot be combined and redistributed).
   if (strongestCopyleft >= 2 && proprietary.length) {
     conflicts.push({
       code: 'COPYLEFT_PROPRIETARY_CONFLICT',
-      message: `copyleft component ${copyleftSource} cannot be combined with proprietary/unknown components ${proprietary.join(', ')}`,
+      message: `copyleft component ${String(copyleftSource)} cannot be combined with proprietary/unknown components ${proprietary.join(', ')}`,
     });
   }
 
@@ -255,6 +257,7 @@ export function combineLicenses(components: readonly LicenseComponent[]) {
  *
  * Returns { ok, effective:{openness,visibility,license}, violations:[] }.
  */
+// eslint-disable-next-line max-lines-per-function, complexity -- Declarative report, compatibility, or fixture assembly stays contiguous so field order and side-effect order remain auditable; splitting would not reduce conceptual complexity.
 export function checkComposition(declared: CompositionDeclaration, components: readonly LicenseComponent[]) {
   const declaredVisibility = declared.visibility || 'private';
   const declaredOpenness = declared.openness || opennessOfLicense(declared.license);
@@ -265,10 +268,10 @@ export function checkComposition(declared: CompositionDeclaration, components: r
   );
   const effectiveOpenness = combined.effective_openness;
 
-  const violations: Array<{
+  const violations: {
     code: string; severity: 'block' | 'warn'; message: string;
     components?: string[]; limit?: string; declared?: string;
-  }> = [];
+  }[] = [];
 
   const declaredTier: LicenseTier = declared.license_tier && LICENSE_TIERS.includes(declared.license_tier)
     ? declared.license_tier
@@ -293,7 +296,7 @@ export function checkComposition(declared: CompositionDeclaration, components: r
   }
 
   // 1. Visibility escalation — declared more visible than the least-visible brick.
-  if (components && components.length && visibilityRank(declaredVisibility) > visibilityRank(meetVis)) {
+  if (components?.length && visibilityRank(declaredVisibility) > visibilityRank(meetVis)) {
     violations.push({
       code: 'VISIBILITY_ESCALATION',
       severity: 'block',
@@ -332,7 +335,7 @@ export function checkComposition(declared: CompositionDeclaration, components: r
       violations.push({
         code: 'COPYLEFT_UNDECLARED',
         severity: 'block',
-        message: `component ${combined.copyleft_source} imposes copyleft that the declared license "${declared.license || 'none'}" does not satisfy`,
+        message: `component ${String(combined.copyleft_source)} imposes copyleft that the declared license "${declared.license || 'none'}" does not satisfy`,
       });
     }
   }

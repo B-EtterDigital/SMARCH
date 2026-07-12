@@ -7,11 +7,11 @@ import { brickSize, brickTrust, type BrickRecord } from "./brick-model";
 
 export type BrickWallState = "populated" | "loading" | "empty" | "error";
 
-type BrickWallProps = {
+interface BrickWallProps {
   bricks: BrickRecord[];
   onRetry?: () => void;
   state?: BrickWallState;
-};
+}
 
 const BrickTile = memo(function BrickTile({ brick, onSelect }: { brick: BrickRecord; onSelect: (brick: BrickRecord) => void }) {
   const trust = brickTrust(brick.status);
@@ -21,7 +21,7 @@ const BrickTile = memo(function BrickTile({ brick, onSelect }: { brick: BrickRec
       type="button"
       role="listitem"
       class={`brick brick--${trust} brick--${size}`}
-      onClick={() => onSelect(brick)}
+      onClick={() => { onSelect(brick); }}
       title={brick.id}
       aria-label={STRINGS.brickWall.openDetail(brick.id)}
     >
@@ -56,7 +56,7 @@ export function BrickWall({ bricks, onRetry, state = bricks.length ? "populated"
       <div class="brick-wall" role="list" aria-label={STRINGS.brickWall.label}>
         {bricks.map((brick) => <BrickTile brick={brick} onSelect={openBrick} key={`${brick.project}:${brick.id}`} />)}
       </div>
-      <BrickDetail brick={selected} open={selected !== null} onClose={() => setSelected(null)} />
+      <BrickDetail brick={selected} open={selected !== null} onClose={() => { setSelected(null); }} />
     </>
   );
 }

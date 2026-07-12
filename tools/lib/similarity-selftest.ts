@@ -90,7 +90,7 @@ ok('kGramShingles / winnow / simhash / hamming basics', () => {
 ok('identical text -> ~1.0', () => {
   const s = similarity(BIG, BIG);
   achieved.identical = s;
-  assert.ok(Math.abs(s - 1) < 1e-9, `identical should be 1.0, got ${s}`);
+  assert.ok(Math.abs(s - 1) < 1e-9, `identical should be 1.0, got ${String(s)}`);
 });
 
 ok('one-character (structural) change -> > 0.9', () => {
@@ -99,7 +99,7 @@ ok('one-character (structural) change -> > 0.9', () => {
   assert.notEqual(changed, BIG, 'edit applied');
   const s = similarity(BIG, changed);
   achieved.oneChar = s;
-  assert.ok(s > 0.9, `one-char change should be > 0.9, got ${r3(s)}`);
+  assert.ok(s > 0.9, `one-char change should be > 0.9, got ${String(r3(s))}`);
   assert.ok(s < 1, 'one-char change is not identical');
 });
 
@@ -114,7 +114,7 @@ ok('reformatted (whitespace/indent) -> > 0.9', () => {
   assert.notEqual(reflowed, BIG, 'reflow applied');
   const s = similarity(BIG, reflowed);
   achieved.reformatted = s;
-  assert.ok(s > 0.9, `reformatted should be > 0.9, got ${r3(s)}`);
+  assert.ok(s > 0.9, `reformatted should be > 0.9, got ${String(r3(s))}`);
 });
 
 ok('variable renamed throughout -> > 0.8', () => {
@@ -131,7 +131,7 @@ ok('variable renamed throughout -> > 0.8', () => {
   assert.notEqual(renamed, BIG, 'rename applied');
   const s = similarity(BIG, renamed);
   achieved.renamed = s;
-  assert.ok(s > 0.8, `renamed should be > 0.8, got ${r3(s)}`);
+  assert.ok(s > 0.8, `renamed should be > 0.8, got ${String(r3(s))}`);
 });
 
 ok('completely unrelated code -> < 0.3', () => {
@@ -152,7 +152,7 @@ ok('completely unrelated code -> < 0.3', () => {
   `;
   const s = similarity(BIG, other);
   achieved.unrelated = s;
-  assert.ok(s < 0.3, `unrelated should be < 0.3, got ${r3(s)}`);
+  assert.ok(s < 0.3, `unrelated should be < 0.3, got ${String(r3(s))}`);
 });
 
 /* ---- symmetry ---- */
@@ -184,9 +184,9 @@ ok('fileSetSimilarity: symmetric, separates copies from strangers', () => {
   achieved.fileSetStranger = sStranger;
   assert.equal(sCopy, fileSetSimilarity(setB, setA), 'fileSetSimilarity symmetric');
   assert.ok(sCopy > sStranger, 'a lifted-file set scores higher than strangers');
-  assert.ok(sStranger < 0.3, `stranger set should be low, got ${r3(sStranger)}`);
+  assert.ok(sStranger < 0.3, `stranger set should be low, got ${String(r3(sStranger))}`);
 });
 
-console.log(`similarity selftest: ${n} groups passed`);
+console.log(`similarity selftest: ${String(n)} groups passed`);
 console.log('achieved scores:');
-for (const [k, v] of Object.entries(achieved)) console.log(`  ${k.padEnd(16)} ${r3(v)}`);
+for (const [k, v] of Object.entries(achieved)) console.log(`  ${k.padEnd(16)} ${String(r3(v))}`);
