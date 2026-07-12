@@ -39,4 +39,10 @@ Every signal and outcome is appended to the `spl-process-lifecycle` context log 
 
 ## Platform support
 
-The release adapter is Linux-only and uses `/proc`. The platform contract is already additive: macOS can supply `ps -o lstart=` identity/liveness and Windows can supply PowerShell `StartTime`, while preserving the same tiers and platform-specific parent checks. Until those adapters ship, Darwin and Win32 fail with typed `SPL_PLATFORM_UNSUPPORTED` and this documentation pointer.
+| Platform | Process identity and liveness | Session | Termination | Machine budget |
+| --- | --- | --- | --- | --- |
+| Linux | `/proc/<pid>/stat` start ticks and state | `/proc/<pid>/stat` session | SIGTERM, grace, then SIGKILL | `/proc/loadavg`, `/proc/meminfo`, logical CPUs |
+| macOS | `kill -0` plus matching `ps -o lstart=` timestamp | `ps -o sess=` | SIGTERM, grace, then SIGKILL | `sysctl` CPUs/load and `vm_stat` free + inactive memory |
+| Windows | PowerShell `Get-Process` plus matching `StartTime.Ticks` | `Get-Process.SessionId` | `Stop-Process`, grace, then `-Force` | CIM logical CPUs, load percentage, and physical memory |
+
+All adapters preserve the PID-plus-opaque-start-token contract and recheck identity immediately before termination. The macOS and Windows budget APIs do not expose comparable swap detail through these probes, so `swap_used_pct` is reported as `0`; available physical memory and load still drive pressure. Unsupported future platforms fail with typed `SPL_PLATFORM_UNSUPPORTED` and this documentation pointer.

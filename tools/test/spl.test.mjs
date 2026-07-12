@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { linuxBudgetSnapshot, linuxIsAlive, linuxSessionId, linuxStartToken, linuxTerminate } from '../lib/spl-platform/linux.ts';
+import { darwinBudgetSnapshot, darwinIsAlive, darwinSessionId, darwinStartToken, darwinTerminate } from '../lib/spl-platform/darwin.ts';
+import { win32BudgetSnapshot, win32IsAlive, win32SessionId, win32StartToken, win32Terminate } from '../lib/spl-platform/win32.ts';
+import { resolveSplPlatform } from '../lib/spl-platform/contract.ts';
 import { findAgentOrphans } from '../lib/spl-agents.ts';
 import { list, register, unregister, unregisterLease } from '../lib/spl-registry.ts';
 
@@ -12,6 +15,13 @@ import { list, register, unregister, unregisterLease } from '../lib/spl-registry
 function statLine(pid, ppid, start = 1234, utime = 10, stime = 5, session = 1) {
   const fields = ['S', String(ppid), '0', String(session), '0', '0', '0', '0', '0', '0', '0', String(utime), String(stime), '0', '0', '0', '0', '1', '0', String(start), '1000', '10'];
   return `${pid} (agent process (worker)) ${fields.join(' ')}\n`;
+}
+
+/** @param {(command:string,args:string[]) => string} handler @returns {{calls:string[][],run(command:string,args:string[]):string}} */
+function cannedRunner(handler) {
+  /** @type {string[][]} */
+  const calls = [];
+  return { calls, /** @param {string} command @param {string[]} args */ run(command, args) { calls.push([command, ...args]); return handler(command, args); } };
 }
 
 /** @param {string} root @param {number} pid @param {{ppid?:number,start?:number,argv?:string,rss?:number,session?:number}} [options] */
@@ -31,6 +41,53 @@ test('Linux identity parser handles parentheses and refuses start-token mismatch
   assert.equal(linuxIsAlive(42, '9988', root), true);
   assert.equal(linuxIsAlive(42, 'other', root), false);
   assert.deepEqual(await linuxTerminate(42, 'other', { graceMs: 0 }, root), { outcome: 'identity-mismatch' });
+});
+
+test('Darwin parses ps, sysctl, and vm_stat fixtures and refuses token-mismatch reap', async () => {
+  const runner = cannedRunner((command, args) => {
+    if (command === 'ps' && args[1] === 'lstart=') return ' Mon Jul  6 12:34:56 2026\n';
+    if (command === 'ps' && args[1] === 'sess=') return ' 321\n';
+    if (command === 'kill' && args[0] === '-0') return '';
+    if (command === 'sysctl' && args[1] === 'hw.ncpu') return '8\n';
+    if (command === 'sysctl' && args[1] === 'vm.loadavg') return '{ 2.50 2.00 1.50 }\n';
+    if (command === 'vm_stat') return 'Mach Virtual Memory Statistics: (page size of 4096 bytes)\nPages free: 524288.\nPages inactive: 524288.\n';
+    throw new Error(`unexpected command: ${command} ${args.join(' ')}`);
+  });
+  const token = 'Mon Jul  6 12:34:56 2026';
+  assert.equal(darwinStartToken(42, runner), token);
+  assert.equal(darwinSessionId(42, runner), 321);
+  assert.equal(darwinIsAlive(42, token, runner), true);
+  assert.deepEqual(darwinBudgetSnapshot(runner), { cores: 8, load: 2.5, mem_available_gb: 4, swap_used_pct: 0, pressure: 'ok', recommended_agents: 4 });
+  assert.deepEqual(await darwinTerminate(42, 'wrong-token', { graceMs: 0 }, runner), { outcome: 'identity-mismatch' });
+  assert.equal(runner.calls.some((call) => call[0] === 'kill' && call[1] === '-TERM'), false);
+});
+
+test('Win32 parses PowerShell fixtures and refuses token-mismatch reap', async () => {
+  const runner = cannedRunner((_command, args) => {
+    const script = String(args.at(-1));
+    if (script.includes('StartTime.Ticks')) return '638874884960000000\r\n';
+    if (script.includes('.SessionId')) return '2\r\n';
+    if (script.includes('Get-CimInstance')) return '16,25,8388608,16777216\r\n';
+    throw new Error(`unexpected script: ${script}`);
+  });
+  const token = '638874884960000000';
+  assert.equal(win32StartToken(77, runner), token);
+  assert.equal(win32SessionId(77, runner), 2);
+  assert.equal(win32IsAlive(77, token, runner), true);
+  assert.deepEqual(win32BudgetSnapshot(runner), { cores: 16, load: 4, mem_available_gb: 8, swap_used_pct: 0, pressure: 'ok', recommended_agents: 8 });
+  assert.deepEqual(await win32Terminate(77, 'wrong-token', { graceMs: 0 }, runner), { outcome: 'identity-mismatch' });
+  assert.equal(runner.calls.some((call) => String(call.at(-1)).startsWith('Stop-Process')), false);
+});
+
+test('platform resolver selects Linux, Darwin, and Win32 adapters', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'spl-resolve-'));
+  await procEntry(root, 42, { start: 901 });
+  assert.equal((await resolveSplPlatform(root, 'linux')).startToken(42), '901');
+  const darwinRunner = cannedRunner((_command, args) => args[1] === 'lstart=' ? 'token-darwin\n' : '1\n');
+  assert.equal((await resolveSplPlatform(undefined, 'darwin', darwinRunner)).startToken(42), 'token-darwin');
+  const winRunner = cannedRunner(() => '123456\r\n');
+  assert.equal((await resolveSplPlatform(undefined, 'win32', winRunner)).startToken(42), '123456');
+  await assert.rejects(resolveSplPlatform(undefined, 'aix'), /SPL_PLATFORM_UNSUPPORTED/);
 });
 
 test('registry annotates ACTIVE, EXPIRED, DEAD and unregisters by lease', async () => {

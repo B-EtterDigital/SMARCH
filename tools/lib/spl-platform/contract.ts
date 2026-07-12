@@ -13,6 +13,10 @@ export interface SplBudgetSnapshot {
   recommended_agents: number;
 }
 
+export interface SplCommandRunner {
+  run(command: string, args: string[]): string;
+}
+
 interface SplTerminateOptions { graceMs: number }
 export interface SplTerminateResult { outcome: 'terminated' | 'killed' | 'already-dead' | 'identity-mismatch' | 'signal-refused'; signals?: ('SIGTERM' | 'SIGKILL')[] }
 
@@ -32,8 +36,18 @@ class SplPlatformUnsupportedError extends Error {
   }
 }
 
-export async function resolveSplPlatform(procRoot?: string): Promise<SplPlatform> {
-  if (process.platform !== 'linux') throw new SplPlatformUnsupportedError(process.platform);
-  const { linuxSplPlatform } = await import('./linux.ts');
-  return linuxSplPlatform(procRoot);
+export async function resolveSplPlatform(procRoot?: string, platform: NodeJS.Platform = process.platform, runner?: SplCommandRunner): Promise<SplPlatform> {
+  if (platform === 'linux') {
+    const { linuxSplPlatform } = await import('./linux.ts');
+    return linuxSplPlatform(procRoot);
+  }
+  if (platform === 'darwin') {
+    const { darwinSplPlatform } = await import('./darwin.ts');
+    return darwinSplPlatform(runner);
+  }
+  if (platform === 'win32') {
+    const { win32SplPlatform } = await import('./win32.ts');
+    return win32SplPlatform(runner);
+  }
+  throw new SplPlatformUnsupportedError(platform);
 }
