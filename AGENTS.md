@@ -25,6 +25,23 @@ list, never inside it. Tables and prose paragraphs are not a substitute — the
 done/open split must be scannable at a glance. Applies to every agent, every
 session, every project that consumes this SMA workflow.
 
+## Background processes never outlive their owner (SPL)
+
+Detached watch-loops, `setsid`/`nohup` wrappers, and spawned agent trees leak
+when a session is suspended or killed — the loop waits forever on a sentinel
+that never comes. Prevent it:
+
+- **Bound every monitor.** A background poll loop must have a max-lifetime AND
+  exit when its watched target (pid/lease) is gone — never `while true` with no
+  deadline and no liveness check.
+- **Lease your spawns.** Wrap dispatched commands in `sma spl-exec` so the child
+  registers against a lease and is reclaimable: if your session dies, the next
+  `sma spl reap` finds it EXPIRED and cleans it — no manual PID hunting.
+- **Size fan-out by `sma spl doctor`.** Never exceed `recommended_agents`.
+
+`sma spl list` / `reap` surface and reclaim what still slips through; every
+reap is audited. See docs/SPL_SWEETSPOT_PROCESS_LEASE.md.
+
 ## SMA Gen3 Collision Reporting (mandatory)
 
 - Before editing an SMA brick/module, use `npm run start:edit -- --project <id> --brick <id> --intent "..."` so the lease and `edit_planned` event are recorded together.

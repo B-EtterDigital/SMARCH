@@ -1,8 +1,27 @@
 {
   "schema_version": "1.0.0",
   "signatures": [
-    { "id": "codex", "argv_regex": "(^|/)(codex|codex-code-mode)(\\s|$)" },
-    { "id": "claude", "argv_regex": "(^|/)claude(\\s|$)" },
-    { "id": "agent-session-node", "argv_regex": "(^|/)node(\\s|.*\\s).*(codex|claude|agent)[-_/.](session|sessions|runtime|runs)(/|\\s|$)" }
+    {
+      "id": "codex",
+      "argv_regex": "(^|/)(codex|codex-code-mode)(\\s|$)"
+    },
+    {
+      "id": "claude",
+      "argv_regex": "(^|/)claude(\\s|$)"
+    },
+    {
+      "id": "agent-session-node",
+      "argv_regex": "(^|/)node(\\s|.*\\s).*(codex|claude|agent)[-_/.](session|sessions|runtime|runs)(/|\\s|$)"
+    },
+    {
+      "id": "orchestration-watchloop",
+      "argv_regex": "(?=.*\\bwhile\\b)(?=.*\\bsleep\\b)(?=.*(grep|pgrep|EXIT:|dispatch\\.status))",
+      "note": "detached completion-poll loops (Monitor watch-loops) whose sentinel may never fire"
+    },
+    {
+      "id": "detached-dispatch-wrapper",
+      "argv_regex": "bash -c .*(codex exec|dispatch\\.status|scratchpad/lanes)",
+      "note": "setsid/nohup lane wrappers that outlive their orchestrator"
+    }
   ]
 }
