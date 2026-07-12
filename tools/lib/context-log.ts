@@ -74,6 +74,8 @@ export const KINDS = new Set([
   'merge_resolved',
   'conflict_detected',
   'conflict_resolved',
+  'spl_signal_sent',
+  'spl_reap_outcome',
   'note',
 ]);
 
@@ -97,6 +99,7 @@ interface ContextEventInput {
   commit?: string | null;
   verification?: { status?: string; [key: string]: unknown } | null;
   lockHeld?: boolean;
+  spl?: { pid: number; start_token: string; tier: string; reason: string; signal?: string; outcome?: string } | null;
 }
 
 type ContextEvent = Record<string, unknown>;
@@ -221,6 +224,7 @@ export function appendContextEvent({
   commit,
   verification,
   lockHeld = false,
+  spl,
 }: ContextEventInput): ContextEvent {
   validateContextEventInput({ project, brick, kind, intent, actorKind, verification });
 
@@ -250,6 +254,7 @@ export function appendContextEvent({
   if (Array.isArray(filesTouched) && filesTouched.length) event.files_touched = filesTouched;
   if (commit) event.commit = commit;
   if (verification?.status) event.verification = verification;
+  if (spl) event.spl = spl;
 
   const path = logPath(project, brick);
   if (!existsSync(dirname(path))) mkdirSync(dirname(path), { recursive: true });

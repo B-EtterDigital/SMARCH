@@ -73,6 +73,7 @@
     "lease": "node tools/sma-lease.ts",
     "lease:list": "node tools/sma-lease.ts list",
     "lease:expire": "node tools/sma-lease.ts expire",
+    "spl": "node tools/sma-spl.ts",
     "context": "node tools/sma-context.ts",
     "context:normalize": "node tools/sma-context-normalize.ts",
     "conflict": "node tools/sma-conflict.ts",

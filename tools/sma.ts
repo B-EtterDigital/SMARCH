@@ -59,6 +59,7 @@ interface RoutedCommandEntry {
 const COMMANDS: Record<string, CommandEntry | undefined> = {
   // multi-agent layer
   lease:           { script: 'sma-lease.ts',          desc: 'Soft locks on bricks/regen targets' },
+  spl:             { script: 'sma-spl.ts',            desc: 'Lease-bound process lifecycle and machine health' },
   context:         { script: 'sma-context.ts',        desc: 'Append-only agent-context log' },
   conflict:        { script: 'sma-conflict.ts',       desc: 'Report and resolve Gen3 agent collisions' },
   'context-check': { script: 'sma-context-check.ts',  desc: 'CI gate: modified manifests have context' },
@@ -192,6 +193,7 @@ Usage:
 
 Multi-agent:
   sma lease         soft-lock on bricks/regen targets
+  sma spl           lease-bound process lifecycle and agent-orphan health
   sma context       append-only intent log per brick
   sma conflict      report/resolve agent collisions
   sma portfolio-refresh queued/debounced scan + state + dashboard refresh

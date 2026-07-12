@@ -34,6 +34,8 @@ interface StartEditArgs extends Record<string, string | string[] | boolean | und
   model?: string;
   noDirtyBaseline?: boolean;
   json?: boolean;
+  registerPid?: string;
+  registerLabel?: string;
 }
 
 interface LeaseReceipt {
@@ -107,6 +109,18 @@ try {
     exit(res.status ?? 1);
   }
   const lease = JSON.parse(res.stdout) as LeaseReceipt;
+
+  if (args.registerPid) {
+    const spl = spawnSync('node', [resolve(TOOLS_DIR, 'sma-spl.ts'), 'register', '--lease', lease.lease_id, '--pid', args.registerPid, '--label', args.registerLabel ?? args.intent], { encoding: 'utf8' });
+    if (spl.status !== 0) {
+      process.stderr.write(spl.stderr);
+      const releaseArgs = [LEASE, 'release', '--lease', lease.lease_id, '--reason', 'SPL registration failed', '--auto-context'];
+      if (args.session) releaseArgs.push('--session', args.session);
+      const cleanup = spawnSync('node', releaseArgs, { encoding: 'utf8' });
+      if (cleanup.status !== 0) throw new Error(`SPL_REGISTER_FAILED_AND_LEASE_RELEASE_FAILED: ${cleanup.stderr.trim()}`);
+      throw new Error('SPL_REGISTER_FAILED: lease released');
+    }
+  }
 
   // The acquire above already auto-stamped a `lease_acquired` event. Now add
   // an `edit_planned` event so the next agent reading the log sees the actual
@@ -235,6 +249,7 @@ function usage() {
                      [--rationale "..."] [--task <id>] [--session <id>]
                      [--actor-kind <kind>] [--model <name>]
                      [--linked-backlog <id>]... [--file <path>]...
+                     [--register-pid <pid>] [--register-label <label>]
                      [--no-dirty-baseline] [--json]
 
 Acquires a lease + appends an edit_planned context event in one shot.

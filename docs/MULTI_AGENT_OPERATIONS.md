@@ -4,6 +4,8 @@ This guide explains how operators coordinate concurrent agents without losing ow
 
 The operator's guide for the SMA Gen3 multi-agent layer.
 
+For lease-bound process lifecycle and public machine-health recovery, see [SPL — Sweetspot Process Lease](SPL_SWEETSPOT_PROCESS_LEASE.md). SPL protects live-lease processes, surfaces expired registrations and unregistered AI-agent orphan candidates, and reaps only through an explicit audited path.
+
 This is the operator's manual for the lease, agent-context, merge, and release-store layers. If you only read one section, read **The 30-second flow**.
 
 ## The 30-second flow

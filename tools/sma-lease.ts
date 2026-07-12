@@ -83,6 +83,7 @@ import {
   resolveActorId,
   resolveSessionId,
 } from './lib/context-log.ts';
+import { unregisterLease } from './lib/spl-registry.ts';
 
 
 const REGISTRY_PATH = env.SMA_LEASE_REGISTRY_PATH
@@ -180,7 +181,7 @@ try {
       runRenew();
       break;
     case 'release':
-      runRelease();
+      await runRelease();
       break;
     case 'list':
       runList();
@@ -189,7 +190,7 @@ try {
       runStatus();
       break;
     case 'expire':
-      runExpire();
+      await runExpire();
       break;
     case 'run':
       await runWrapped();
@@ -510,13 +511,14 @@ function doRenew(leaseId: string, ttl: number, owner: string | null, maxWaitMs =
   }, maxWaitMs);
 }
 
-function runRelease() {
+async function runRelease() {
   requireArg('lease', '--lease');
   const owner = resolveAgent(resolveSessionId(args.session));
   const released = doRelease(args.lease, owner);
   if (args.json) console.log(JSON.stringify(released, null, 2));
   else console.log(`released ${released.lease_id} (${released.resource_kind}:${released.resource_id})`);
   maybeStampContext('lease_released', released, args.reason ?? `released lease ${released.lease_id}`);
+  await unregisterLease(released.lease_id, {}, args.reason ?? 'lease released');
 }
 
 function doRelease(leaseId: string, owner: string | null): Lease {
@@ -593,13 +595,15 @@ function runStatus() {
   exit(isSelf ? 11 : 10);
 }
 
-function runExpire() {
+async function runExpire() {
   const removed = mutateRegistry((reg) => {
-    const before = reg.leases.length;
-    pruneExpired(reg);
-    return before - reg.leases.length;
+    const now = Date.now();
+    const expired = reg.leases.filter((lease) => Date.parse(lease.expires_at) <= now);
+    reg.leases = reg.leases.filter((lease) => Date.parse(lease.expires_at) > now);
+    return expired;
   });
-  console.log(`expired and removed ${String(removed)} lease(s)`);
+  for (const lease of removed) await unregisterLease(lease.lease_id, {}, 'lease expired');
+  console.log(`expired and removed ${String(removed.length)} lease(s)`);
 }
 
 // ── run subcommand: lease + spawn + release ─────────────────────────────────
@@ -627,7 +631,7 @@ async function runWrapped() {
   let terminationStarted = false;
   let forcedExitCode: number | null = null;
   let leaseExpiresAt = Date.parse(lease.expires_at);
-  const releaseSafely = (label: string): void => {
+  const releaseSafely = async (label: string): Promise<void> => {
     if (releasedAlready) return;
     releasedAlready = true;
     if (renewTimer) clearTimeout(renewTimer);
@@ -636,6 +640,7 @@ async function runWrapped() {
       doRelease(lease.lease_id, lease.agent_id);
       console.log(`[sma-lease] released ${lease.lease_id} (${label})`);
       maybeStampContext('lease_released', lease, `${label}: released ${lease.lease_id}`);
+      await unregisterLease(lease.lease_id, {}, `${label}: lease released`);
     } catch (e) {
       console.error(`[sma-lease] release failed: ${errorMessage(e)}`);
     }
@@ -708,20 +713,24 @@ async function runWrapped() {
   process.on('SIGTERM', () => { onSig('SIGTERM'); });
 
   const exitCode = await new Promise<number>((res) => {
-    child.on('close', (code, signal) => {
+    const handleClose = async (code: number | null, signal: NodeJS.Signals | null): Promise<void> => {
       if (signal) {
-        releaseSafely(`child-signal:${signal}`);
+        await releaseSafely(`child-signal:${signal}`);
         res(forcedExitCode ?? 129);
         return;
       }
-      releaseSafely(`exit:${String(code)}`);
+      await releaseSafely(`exit:${String(code)}`);
       res(forcedExitCode ?? code ?? 0);
-    });
-    child.on('error', (e) => {
+    };
+    const handleError = async (e: Error): Promise<void> => {
       console.error(`[sma-lease] spawn error: ${e.message}`);
-      releaseSafely('spawn-error');
+      await releaseSafely('spawn-error');
       res(1);
-    });
+    };
+    // Signal/close listeners expect void; run the async closer and swallow the
+    // promise explicitly (res settles the outer await — no floating work).
+    child.on('close', (code, signal) => { void handleClose(code, signal); });
+    child.on('error', (e) => { void handleError(e); });
   });
 
   exit(exitCode);

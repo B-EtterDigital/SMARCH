@@ -26,7 +26,7 @@ const ACTIVE_LEASE_KINDS = new Set([
 ]);
 const ACTOR_KINDS = new Set(['human','ai_model','agent','automation','tool']);
 const CONTEXT_KINDS = new Set([
-  'lease_acquired','lease_renewed','lease_released','lease_expired','lease_force_acquired',
+  'lease_acquired','lease_renewed','lease_released','lease_expired','lease_force_acquired','spl_signal_sent','spl_reap_outcome',
   'edit_planned','edit_applied','decision_recorded','alternative_rejected',
   'verification_run','proof_recorded','promotion_attempted','promotion_blocked','release_cut',
   'merge_proposed','merge_resolved','conflict_detected','conflict_resolved','note',

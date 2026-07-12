@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0.0",
+  "signatures": [
+    { "id": "codex", "argv_regex": "(^|/)(codex|codex-code-mode)(\\s|$)" },
+    { "id": "claude", "argv_regex": "(^|/)claude(\\s|$)" },
+    { "id": "agent-session-node", "argv_regex": "(^|/)node(\\s|.*\\s).*(codex|claude|agent)[-_/.](session|sessions|runtime|runs)(/|\\s|$)" }
+  ]
+}

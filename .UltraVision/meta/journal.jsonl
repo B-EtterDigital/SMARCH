@@ -3446,3 +3446,4 @@
 {"ts": "2026-07-11T22:46:31+00:00", "action": "complete", "id": "UV-RG-dogma-strict-tools", "detail": "npx tsc --noEmit"}
 {"ts": "2026-07-12T00:11:02+00:00", "action": "complete", "id": "UV-PR-dogma-vcs-intent-blame", "detail": "node tools/sma-blame.ts --selftest"}
 {"ts": "2026-07-12T00:11:11+00:00", "action": "complete", "id": "UV-CO-dogma-vcs-merge-why", "detail": "npm run gen3:selftest"}
+{"ts": "2026-07-12T11:02:19+00:00", "action": "complete", "id": "UV-CO-spl-detached-sessions", "detail": "node tools/sma-spl.ts doctor"}

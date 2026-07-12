@@ -88,6 +88,8 @@
         "lease_released",
         "lease_expired",
         "lease_force_acquired",
+        "spl_signal_sent",
+        "spl_reap_outcome",
         "edit_planned",
         "edit_applied",
         "decision_recorded",
@@ -180,8 +182,22 @@
         "notes": {
           "type": "string",
           "description": "Additional notes about the verification."
-        }
       }
+    },
+    "spl": {
+      "type": "object",
+      "description": "Audited Sweetspot Process Lease intervention identity and outcome.",
+      "required": ["pid", "start_token", "tier", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "pid": { "type": "integer", "minimum": 2 },
+        "start_token": { "type": "string", "minLength": 1 },
+        "tier": { "enum": ["ACTIVE", "EXPIRED", "DEAD", "ORPHAN?"] },
+        "reason": { "type": "string", "minLength": 4 },
+        "signal": { "enum": ["SIGTERM", "SIGKILL"] },
+        "outcome": { "enum": ["terminated", "killed", "already-dead", "identity-mismatch", "signal-refused", "refused-protected", "refused-live-non-init-parent"] }
+      }
+    }
     },
     "proof": {
       "type": "array",
