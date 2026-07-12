@@ -31,6 +31,7 @@ import '../test/module-work.test.mjs';
 import '../test/parallel-preflight-cli.test.mjs';
 import '../test/scanner-analysis.test.mjs';
 import '../test/schema-workforce.test.mjs';
+import '../test/spl.test.mjs';
 
 import { intotoStatement, spdxDocument, cyclonedxDocument, resolveAnchorBinding } from './attestation.ts';
 import { leafHash, buildMerkle, inclusionProof } from './merkle.ts';

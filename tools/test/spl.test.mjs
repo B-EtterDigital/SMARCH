@@ -8,7 +8,7 @@ import { linuxBudgetSnapshot, linuxIsAlive, linuxSessionId, linuxStartToken, lin
 import { darwinBudgetSnapshot, darwinIsAlive, darwinSessionId, darwinStartToken, darwinTerminate } from '../lib/spl-platform/darwin.ts';
 import { win32BudgetSnapshot, win32IsAlive, win32SessionId, win32StartToken, win32Terminate } from '../lib/spl-platform/win32.ts';
 import { resolveSplPlatform } from '../lib/spl-platform/contract.ts';
-import { findAgentOrphans } from '../lib/spl-agents.ts';
+import { findAgentOrphans, processResourceEstimate } from '../lib/spl-agents.ts';
 import { list, register, unregister, unregisterLease } from '../lib/spl-registry.ts';
 
 /** @param {number} pid @param {number} ppid @param {number} [start] @param {number} [utime] @param {number} [stime] @param {number} [session] */
@@ -41,6 +41,26 @@ test('Linux identity parser handles parentheses and refuses start-token mismatch
   assert.equal(linuxIsAlive(42, '9988', root), true);
   assert.equal(linuxIsAlive(42, 'other', root), false);
   assert.deepEqual(await linuxTerminate(42, 'other', { graceMs: 0 }, root), { outcome: 'identity-mismatch' });
+});
+
+test('Linux identity helpers fail closed for invalid, missing, malformed, and zombie processes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'spl-proc-invalid-'));
+  assert.equal(linuxStartToken(0, root), null);
+  assert.equal(linuxSessionId(-1, root), null);
+  assert.equal(linuxStartToken(404, root), null);
+  assert.equal(linuxIsAlive(404, 'token', root), false);
+
+  await mkdir(join(root, '10'), { recursive: true });
+  await writeFile(join(root, '10/stat'), 'malformed process stat\n');
+  assert.equal(linuxStartToken(10, root), null);
+  assert.equal(linuxSessionId(10, root), null);
+
+  await procEntry(root, 11, { start: 444 });
+  const zombie = (await readFile(join(root, '11/stat'), 'utf8')).replace(') S ', ') Z ');
+  await writeFile(join(root, '11/stat'), zombie);
+  assert.equal(linuxIsAlive(11, '444', root), false);
+  assert.deepEqual(await linuxTerminate(404, 'missing', { graceMs: 0 }, root), { outcome: 'already-dead' });
+  await assert.rejects(() => linuxTerminate(process.pid, 'anything', { graceMs: 0 }, root), /SPL_SIGNAL_REFUSED/);
 });
 
 test('Darwin parses ps, sysctl, and vm_stat fixtures and refuses token-mismatch reap', async () => {
@@ -111,6 +131,29 @@ test('registry annotates ACTIVE, EXPIRED, DEAD and unregisters by lease', async 
   assert.match(await readFile(registryPath, 'utf8'), /"event":"unregistered"/);
 });
 
+test('registry validates registrations and ignores corrupt event and lease rows', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'spl-registry-invalid-'));
+  const registryPath = join(root, 'registry/spl.ndjson');
+  const leasePath = join(root, 'registry/leases.json');
+  /** @type {import('../lib/spl-platform/contract.ts').SplPlatform} */
+  const platform = {
+    startToken: (pid) => pid === 42 ? 'fixture-token' : null,
+    sessionId: () => 1,
+    isAlive: () => true,
+    terminate: () => Promise.resolve({ outcome: 'terminated' }),
+    budgetSnapshot: () => ({ cores: 1, load: 0, mem_available_gb: 1, swap_used_pct: 0, pressure: 'ok', recommended_agents: 1 }),
+  };
+  await assert.rejects(() => register('', 42, 'worker', { registryPath, leaseRegistryPath: leasePath, platform }), /SPL_REGISTER_INVALID/);
+  await assert.rejects(() => register('lease', 1, 'worker', { registryPath, leaseRegistryPath: leasePath, platform }), /SPL_REGISTER_INVALID/);
+  await assert.rejects(() => register('lease', 99, 'worker', { registryPath, leaseRegistryPath: leasePath, platform }), /SPL_PROCESS_NOT_FOUND/);
+
+  await mkdir(join(root, 'registry'), { recursive: true });
+  await writeFile(registryPath, 'not-json\n');
+  await writeFile(leasePath, 'not-json\n');
+  assert.deepEqual(await list({ registryPath, leaseRegistryPath: leasePath, platform }), []);
+  assert.equal(await unregister(42, 'fixture-token', { registryPath, leaseRegistryPath: leasePath, platform }), false);
+});
+
 test('orphan classifier catches init and detached leaders but protects orchestrator session', async () => {
   const root = await mkdtemp(join(tmpdir(), 'spl-orphan-'));
   await writeFile(join(root, 'uptime'), '1000.00 0.00\n');
@@ -127,6 +170,8 @@ test('orphan classifier catches init and detached leaders but protects orchestra
   const rows = findAgentOrphans([staleParent], { procRoot: root, configPath: config, minAgeSeconds: 600, clockTicks: 100, currentPid: 700 });
   assert.deepEqual(rows.map((row) => row.pid).sort(), [500, 502]);
   assert.equal(rows[0].tier, 'ORPHAN?');
+  assert.deepEqual(processResourceEstimate(500, root, 100), { rss_mb: 2, cpu_seconds: 0.1 });
+  assert.deepEqual(processResourceEstimate(404, root, 100), { rss_mb: 0, cpu_seconds: 0 });
 });
 
 test('unregister is PID plus start-token safe across reuse', async () => {

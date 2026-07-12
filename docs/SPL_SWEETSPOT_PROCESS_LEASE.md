@@ -25,6 +25,22 @@ sma spl reap --kill                  # EXPIRED only
 sma spl reap --adopt-orphans --kill  # explicit authority for ORPHAN?
 ```
 
+Wrap any agent or command so its process lifetime is structurally tied to an
+existing lease:
+
+```bash
+sma spl-exec --lease "$SMA_ACTIVE_LEASE_ID" --label "codex task" -- codex exec ...
+```
+
+Use `--lease auto` when the command has no existing work lease. SPL Exec creates
+a short-TTL lease for that run, registers the child PID plus start token before
+work continues, forwards SIGINT/SIGTERM, and unregisters the process on every
+exit path. Auto-leases are also released during cleanup. An explicit lease is
+validated as live but remains owned by its caller.
+
+The implementation lives at `tools/sma-spl-exec.ts`. The SMARCH umbrella must
+register it as the top-level `spl-exec` command (controller-owned wiring).
+
 `start:edit` also accepts `--register-pid` and optional `--register-label`. Releasing or explicitly expiring the associated lease appends an SPL unregister record automatically.
 
 ## Reap safety and audit

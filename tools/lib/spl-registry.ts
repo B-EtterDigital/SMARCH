@@ -16,8 +16,8 @@ export interface SplRegistryOptions { root?: string; registryPath?: string; leas
 function paths(options: SplRegistryOptions) {
   const root = options.root ?? SMA_ROOT;
   return {
-    registry: options.registryPath ?? resolve(root, 'registry/spl-registry.ndjson'),
-    leases: options.leaseRegistryPath ?? resolve(root, 'registry/active-leases.generated.json'),
+    registry: options.registryPath ?? process.env.SMA_SPL_REGISTRY_PATH ?? resolve(root, 'registry/spl-registry.ndjson'),
+    leases: options.leaseRegistryPath ?? process.env.SMA_LEASE_REGISTRY_PATH ?? resolve(root, 'registry/active-leases.generated.json'),
   };
 }
 
