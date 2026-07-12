@@ -45,3 +45,5 @@ jobs:
           find tools -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - name: seal the public ledger (proves the provenance path runs)
         run: node tools/gen-public-ledger.mjs
+      - name: stranger test — a first-time user succeeds from a cold clone
+        run: node tools/evals/stranger-smoke.mjs
