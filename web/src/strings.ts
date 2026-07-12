@@ -70,6 +70,7 @@ export const STRINGS = {
     agents: "Agents",
     resolution: "Resolution"
   },
+  mobileColumns: { when: "When", who: "Who", what: "What" },
   brickColumns: {
     id: "Brick",
     project: "Project",
@@ -113,13 +114,13 @@ export const STRINGS = {
   filter: {
     all: "All modules",
     label: "Filter by module",
-    loading: "…loading module filter",
+    loading: "…loading ledger",
     error: "Module filter unavailable",
     empty: "No modules available."
   },
   leaseBoard: {
     label: "Active lease departures board",
-    loading: "…loading lease ledger",
+    loading: "…loading ledger",
     error: "Lease ledger unavailable",
     retry: "Retry lease ledger"
   },
@@ -127,7 +128,7 @@ export const STRINGS = {
     label: "Provenance attestation chain",
     sealLabel: "Provenance seal",
     attestationLabel: "Attestation JSON",
-    loading: "…loading provenance chain",
+    loading: "…loading ledger",
     error: "Provenance chain unavailable",
     empty: "No provenance seals recorded.",
     retry: "Retry provenance chain",
@@ -145,7 +146,7 @@ export const STRINGS = {
     verdict: "Verdict",
     health: "Health",
     clone: "Clone command",
-    loading: "…loading brick record",
+    loading: "…loading ledger",
     empty: "No brick selected.",
     error: "Brick record unavailable."
   },
@@ -157,7 +158,7 @@ export const STRINGS = {
   },
   brickWall: {
     label: "Brick trust wall",
-    loading: "…loading brick wall",
+    loading: "…loading ledger",
     empty: "No bricks match this ledger view.",
     error: "Brick wall unavailable.",
     openDetail: (id: string) => `Open details for ${id}`,
@@ -237,7 +238,7 @@ export const STRINGS = {
     registryTable: {
       caption: "Registry ledger",
       columns: { brick: "Brick", project: "Project", status: "Status", score: "Score" },
-      loading: "…loading registry ledger",
+      loading: "…loading ledger",
       empty: "No registry entries match the current ledger view.",
       error: "Registry ledger unavailable.",
       retry: "Retry registry",
@@ -246,7 +247,7 @@ export const STRINGS = {
       rowCount: "registry entries"
     },
     sealChip: {
-      loading: "…checking seal",
+      loading: "…loading ledger",
       error: "Seal verification failed",
       broken: "Broken provenance chain",
       labels: { pass: "PASS", fail: "FAIL", waived: "WAIVED", active: "ACTIVE" }
@@ -256,7 +257,7 @@ export const STRINGS = {
       placeholder: "Search bricks, modules, or leases…",
       shortcut: "/",
       shortcutHint: "/ to focus",
-      loading: "…searching ledger",
+      loading: "…loading ledger",
       empty: "No ledger results.",
       error: "Ledger search unavailable.",
       retry: "Retry search",
@@ -272,7 +273,7 @@ export const STRINGS = {
       dataRoot: "Data root path",
       readOnly: "READ-ONLY MODE",
       readOnlyDescription: "This dashboard inspects generated local data. Mutations remain available only through the authenticated control plane.",
-      loading: "…loading settings ledger",
+      loading: "…loading ledger",
       error: "Dashboard settings unavailable.",
       retry: "Retry settings"
     }

@@ -36,8 +36,7 @@ test("font assets are local woff2 only and forbidden visual effects stay absent"
   assert.match(css, /space-grotesk[^\"]+\.woff2/);
   assert.doesNotMatch(css, /\.woff[\"')]/);
   assert.doesNotMatch(css, /box-shadow|drop-shadow/i);
-  const gradients = css.match(/linear-gradient\([^)]*\)/g) || [];
-  assert.deepEqual(gradients, ["linear-gradient(var(--grid-lines)", "linear-gradient(90deg, var(--grid-lines)"]);
+  assert.doesNotMatch(css, /(?:linear|radial|conic)-gradient/i);
   assert.doesNotMatch(css, /#[a-f0-9]{0,2}(?:7c3aed|8b5cf6|a855f7)/i);
 });
 

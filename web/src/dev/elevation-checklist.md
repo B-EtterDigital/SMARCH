@@ -1,0 +1,20 @@
+# Dashboard elevation review checklist
+
+Use this as the source map for the orchestrator's Playwright review. The implementation is intentionally limited to the binding elevation spec.
+
+- [ ] Lease board — acquire a lease while `/` or `/leases` is open and confirm every refreshed lease row flips vertically for 150ms. SSE lease-event wiring is in `web/src/App.tsx:123`; route signal delivery is in `web/src/App.tsx:94` and `web/src/App.tsx:98`; row replay logic is in `web/src/components/lease-row.tsx:51`; the 150ms animation is in `web/src/app.css:65`.
+- [ ] Lease TTL — confirm a TTL below five minutes is amber and crosses 60 seconds with one pulse only. Thresholds are in `web/src/components/lease-row.tsx:60` and `web/src/components/lease-row.tsx:61`; the one-shot state is rendered at `web/src/components/lease-row.tsx:81`; styling is in `web/src/app.css:68` and `web/src/app.css:69`.
+- [ ] Brick wall — hover a brick and confirm the 1px lift settles in 80ms, the mono `id · trust · reuse count` tooltip appears, and only a hovered canonical brick receives the 1px cyan top edge. Tooltip content is in `web/src/App.tsx:80`; tooltip markup is in `web/src/App.tsx:81`; motion, glint, and tooltip styling are in `web/src/app.css:109`, `web/src/app.css:112`, `web/src/app.css:113`, `web/src/app.css:119`, and `web/src/app.css:120`.
+- [ ] Provenance ribbon — confirm connector rules draw once over 400ms on first paint; a broken link is a red dashed rule with a fail stamp; reduced motion draws the static rule without animation. Component state and broken-chain markup are in `web/src/components/provenance-ribbon.tsx:66`, `web/src/components/provenance-ribbon.tsx:72`, and `web/src/components/provenance-ribbon.tsx:91`; connector styling is in `web/src/app.css:99`, `web/src/app.css:101`, `web/src/app.css:102`, and `web/src/app.css:245`.
+- [ ] First-paint choreography — in a fresh browser session, confirm the four stat tiles stamp in 60ms apart, then revisit the route and confirm the choreography does not repeat. The session flag is in `web/src/components/stats-tiles.tsx:14` and `web/src/components/stats-tiles.tsx:44`; stagger timing is in `web/src/app.css:46` through `web/src/app.css:49`.
+- [ ] Canonical dark theme — inspect every route in dark and confirm the `#0E1420` ground plus 7% blueprint grid. Tokens are in `web/src/tokens.css:7` and `web/src/tokens.css:9`; the non-gradient grid is in `web/src/app.css:2`; pre-paint theme restoration is in `web/index.html:2` and `web/index.html:7`; dark remains the unsaved default in `web/src/components/theme-toggle.tsx:13`.
+- [ ] 390px — confirm the rail is a 48px icon strip, the viewport has no horizontal scroll, and lease/conflict/registry tables are card lists. Viewport containment and ledger conversion are in `web/src/app.css:210` through `web/src/app.css:242`; `WHEN | WHO` and `WHAT` row semantics are in `web/src/components/conflict-ledger.tsx:52` through `web/src/components/conflict-ledger.tsx:55`; registry card conversion is in `web/src/components/dashboard-components.css:48` through `web/src/components/dashboard-components.css:60`.
+- [ ] Empty/loading states — inspect empty routes and initial loading. Shared loading copy is `…loading ledger` throughout `web/src/strings.ts:90` through `web/src/strings.ts:276`; the mono loading renderer is in `web/src/components/empty-states.tsx:35`; actionable empty route states remain wired in `web/src/App.tsx:77` and the route components.
+- [ ] Hard bans — confirm there are no gradients, glassmorphism, shadows, purple, emoji chrome, or skeleton shimmer. The automated source audit is in `web/tests/elevation.test.mjs:42`; the complete web suite also enforces existing anti-slop contracts.
+
+## Executor verification
+
+- `cd web && npx tsc --noEmit` — pass.
+- `cd web && node --test tests/*.test.mjs` — pass, 27/27.
+- `cd web && npx vite build` — pass.
+- Root `npx tsc --noEmit` — blocked by pre-existing strict errors in `tools/test/**`, outside this executor's authorized `web/**` scope.

@@ -47,6 +47,17 @@
 .settings-panel__policy p { margin: 2px 0 0; color: var(--muted); line-height: 1.55; }
 @keyframes registry-row-flip { from { transform: translateY(-4px); opacity: .35; } to { transform: translateY(0); opacity: 1; } }
 @keyframes seal-stamp-press { from { transform: scale(1.06); opacity: .3; } to { transform: scale(1); opacity: 1; } }
-@media (max-width: 640px) { .settings-panel__grid { grid-template-columns: 1fr; } .settings-panel__section { border-right: 0; } .registry-table { min-width: 640px; } }
-@media (prefers-reduced-motion: reduce) { .registry-table__row, .seal-chip { animation-duration: 120ms; animation-name: component-fade; } }
+@media (max-width: 640px) {
+  .settings-panel__grid { grid-template-columns: 1fr; }
+  .settings-panel__section { border-right: 0; }
+  .registry-table__scroller { max-width: 100%; overflow: visible; }
+  .registry-table, .registry-table tbody, .registry-table tr, .registry-table td { display: block; width: 100%; }
+  .registry-table thead, .registry-table__spacer { display: none; }
+  .registry-table tbody { display: grid; gap: 8px; padding: 8px; }
+  .registry-table__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 12px; border: 1px solid var(--rule); }
+  .registry-table td { height: auto; min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; white-space: normal; }
+  .registry-table td::before { display: block; margin-bottom: 3px; color: var(--muted); content: attr(data-label); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+  .registry-table__score { text-align: right; }
+}
+@media (prefers-reduced-motion: reduce) { .registry-table__row, .seal-chip { animation: none; } }
 @keyframes component-fade { from { opacity: .55; } to { opacity: 1; } }

@@ -52,6 +52,33 @@ the page fetches the raw files and the ledger from GitHub, recomputes every
 content hash, anchor, and chain head with WebCrypto, and compares. If history
 was edited, the head breaks.
 
+## Version control that answers *why*
+
+`git blame` tells you what changed. SMARCH tells you who intended what, on
+whose authority, proven how:
+
+```text
+$ sma blame --intent tools/sma-lease.ts --lines 259:262
+259-262 | 6f295d2f 2026-07-11 | bdd-main@019f4d06 | implemented atomic owner-safe
+        | locking; why: serialize every acquire | node …sma-lease… selftest (exit 0)
+```
+
+Every line traces to an intent record, and every intent carries its passing
+proof. Merge conflicts get the same treatment: `sma merge propose
+--from-intents` reads both sides' *whys* and drafts the synthesis. The full
+model — intent, claim, proof, trust, collision as the unit of change — is in
+[docs/GEN3_VERSION_CONTROL.md](docs/GEN3_VERSION_CONTROL.md).
+
+## Held to its own dogma
+
+This repo enforces on itself what it preaches — with budgets that can only
+tighten ([docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)):
+
+`strict TS: 0 errors` · `eslint (type-aware): 0` · `dead code: 0` ·
+`duplication ≤2.35%` · `lib coverage: ratcheting floor` — all gated in CI via
+`npm run gate:quality`. A rule without a gate is an opinion; we don't ship
+opinions.
+
 ## Honest status
 
 Fresh from the forge (day 406 of refinement). The one-command installer is
@@ -103,11 +130,11 @@ falling back to this repo's location.
 
 Gen3 is what makes many agents safe in one portfolio:
 
-- **Leases** (`sma-lease.mjs`, `start-edit`/`end-edit`) — claim a brick before
+- **Leases** (`sma start-edit` / `sma end-edit`) — claim a brick before
   editing; collisions are recorded, not discovered in a merge.
-- **Agent context** (`sma-context.mjs`) — a durable per-brick "why" log; every
+- **Agent context** (`sma context`) — a durable per-brick "why" log; every
   meaningful action preserves intent across sessions.
-- **Conflict reports** (`sma-conflict.mjs`) — divergent intents are surfaced
+- **Conflict reports** (`sma conflict`) — divergent intents are surfaced
   from context, not just conflicting bytes.
 - **Gates** (`npm run gate:all`) — rule, scope-drift, source-size, compliance,
   license, and provenance gates that block promotion, not just warn.

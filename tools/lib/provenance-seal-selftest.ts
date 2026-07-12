@@ -18,6 +18,10 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
+import '../test/context-gen3-state.test.mjs';
+import '../test/lease-mutations.test.mjs';
+import '../test/license-lattice-behavior.test.mjs';
+import '../test/merkle-provenance-edge.test.mjs';
 import {
   fingerprintSource, computeSeal, verifySeal, canonicalEvent,
   generateSealKeypair, signSealHead, verifySealSignature,

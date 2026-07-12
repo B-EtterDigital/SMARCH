@@ -20,7 +20,12 @@ import {
 import {
   formatExternalActiveLeases,
   moduleConflictCommand,
+  moduleObservationBigPicture,
+  modulePrompt,
+  moduleWatchBigPicture,
   renderDispatchMarkdown,
+  renderModuleWatchConsole,
+  renderObservationMarkdown,
 } from "../lib/module-work-renderers.ts";
 import {
   blockedReasonCounts,
@@ -181,4 +186,153 @@ test("module-work utility and renderer seams keep controller output deterministi
     moduleWorkBrick: (moduleId, slot) => `module-work-${moduleId}-${slot}`,
     shellArg,
   }), /module-work-registry-2/);
+});
+
+test("module-work big-picture renderers cover missing, launchable, completed, and blocked wave states", () => {
+  const progress = {
+    assignment_count: 2,
+    claimed: 1,
+    active: 1,
+    completed: 0,
+    unclaimed: 1,
+    claimable_unclaimed: 1,
+    launch_blocked_unclaimed: 0,
+    external_active_slot_count: 0,
+    external_active_lease_count: 0,
+    external_active_module_count: 0,
+    open_conflicts: 0,
+    graph_ready: 2,
+  };
+  const watch = {
+    status: "ready",
+    project: "sma",
+    task: "cover renderers",
+    active_lane: "module-work",
+    launchable_agents: 1,
+    blockers: [],
+    warnings: [],
+    next: "npm run module:claim -- --next",
+    capacity: {
+      launch_ready_slots: 2,
+      requested_agents: 2,
+      graph_ready_modules: 2,
+      modules_total: 2,
+      held_slots: 1,
+      graph_blocked_modules: 1,
+      path_overlap_blocked_slots: 1,
+      held_modules: [{ module_id: "held", slot: 2, held_resource: "brick:held", held_by: "agent-a" }],
+    },
+    dispatch: { available: false },
+    progress: { ...progress },
+    gains: {
+      predicted_graph_first_token_reduction_percent: 40,
+      predicted_dirty_status_token_reduction_percent: 50,
+      predicted_collision_reduction_percent: 60,
+      observed_claimed_percent: 50,
+      observed_completed_percent: 0,
+    },
+  };
+
+  assert.match(moduleWatchBigPicture(/** @type {any} */ (watch)).tldr, /Dispatch missing/);
+  const launchable = {
+    ...watch,
+    dispatch: {
+      available: true,
+      dispatch_id: "dispatch-fixture",
+      assignment_count: 2,
+      latest_observation: {
+        json_path: "dispatch-fixture-observed-20260712T000000Z.json",
+        markdown_path: "dispatch-fixture-observed-20260712T000000Z.md",
+      },
+    },
+    progress: { ...progress, dispatch_age_ms: 600_000, dispatch_stale: true, dispatch_max_age_ms: 300_000 },
+  };
+  assert.match(moduleWatchBigPicture(/** @type {any} */ (launchable)).tldr, /launch-ready/);
+  assert.match(moduleWatchBigPicture(/** @type {any} */ ({
+    ...launchable,
+    progress: { ...progress, completed: 2, claimable_unclaimed: 0, unclaimed: 0 },
+  })).tldr, /is complete/);
+  assert.match(moduleWatchBigPicture(/** @type {any} */ ({
+    ...launchable,
+    progress: { ...progress, claimable_unclaimed: 0, launch_blocked_unclaimed: 1 },
+  })).tldr, /not claim-ready/);
+
+  const consoleOutput = renderModuleWatchConsole(/** @type {any} */ (launchable), {
+    blockedReasonSuffix: () => "",
+    formatPercent: (value) => `${value.toFixed(1)}%`,
+  });
+  assert.match(consoleOutput, /dispatch-age:\s+10m stale \(max 5m\)/);
+  assert.match(consoleOutput, /held-modules:\s+held#2:brick:held by agent-a/);
+  assert.match(consoleOutput, /claim-ready:\s+1\/1 unclaimed/);
+
+  const observation = {
+    status: "active",
+    generated_at: "2026-07-12T00:00:00.000Z",
+    dispatch: { dispatch_id: "dispatch-fixture", project: "sma", task: "cover renderers", assignment_count: 2 },
+    summary: { ...progress },
+    gains: {
+      predicted_graph_first_token_reduction_percent: 40,
+      observed_claimed_percent: 50,
+      observed_completed_percent: 0,
+    },
+    comparison: {
+      predicted_requested_agents: 2,
+      predicted_launch_ready_slots: 2,
+      dispatched_slots: 2,
+      observed_claimed_slots: 1,
+      observed_active_slots: 1,
+      observed_completed_slots: 0,
+      observed_claimable_unclaimed_slots: 1,
+      observed_launch_blocked_unclaimed_slots: 0,
+      observed_external_active_slots: 0,
+      observed_external_active_leases: 0,
+      observed_open_conflicts: 0,
+    },
+    next: "npm run module:watch",
+    blockers: ["fixture blocker"],
+    warnings: ["fixture warning"],
+    external_active_module_leases: [{ module_id: "other", held_resource: "brick:other", held_by: "agent-b", slot_count: 2, agent_slots: [3, 4] }],
+    assignments: [{
+      agent_slot: 1,
+      module_id: "registry",
+      slot: 1,
+      status: "active",
+      claim_event_count: 1,
+      completion_event_count: 0,
+      active_lease_count: 1,
+      open_conflicts: 1,
+      context_error: "bad line",
+      dirty_scope_count: 1,
+      held_resource: "brick:registry",
+      agent_packet_markdown_path: "packet.md",
+      conflict_command: "conflict module",
+      dirty_scope_command: "claim dirty",
+      dirty_scope_conflict_command: "conflict dirty",
+    }],
+  };
+  assert.match(moduleObservationBigPicture(/** @type {any} */ (observation)).tldr, /launch-ready/);
+  const markdown = renderObservationMarkdown(/** @type {any} */ (observation), {
+    blockedReasonSuffix: () => "",
+    formatPercent: (value) => `${value}%`,
+  });
+  assert.match(markdown, /## External Active Module Leases/);
+  assert.match(markdown, /context error: bad line/);
+
+  const prompt = modulePrompt({
+    config: { project: "sma" },
+    module: { id: "registry", paths: ["tools/lib/**"], excludePaths: ["tools/lib/private/**"] },
+    partition: { id: "tests", description: "test-only partition" },
+    slot: 2,
+    task: "cover renderers",
+    graphCommand: "npm run graphify:query:self -- -- registry",
+    iterationGates: ["node --test tools/test/module-work.test.mjs"],
+    gates: ["npm run check"],
+    sharedWarnings: [{ id: "quality-ratchet" }],
+    claimCommand: "npm run start:edit",
+    moduleWorkBrick: (moduleId, slot) => `module-work-${moduleId}-${slot}`,
+    shellArg,
+  });
+  assert.match(prompt, /explicit partition `tests`/);
+  assert.match(prompt, /Shared hot-path warning: quality-ratchet/);
+  assert.match(prompt, /conflict reporting is mandatory/);
 });

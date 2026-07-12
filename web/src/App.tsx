@@ -4,9 +4,10 @@ import { ConflictHeatStrip } from "./components/conflict-heat-strip";
 import { ConflictLedger } from "./components/conflict-ledger";
 import { EmptyState } from "./components/empty-states";
 import { GraphView } from "./components/graph-view";
+import { LeaseBoard } from "./components/lease-board";
 import { fetchSnapshot, reportClientError, subscribeToDashboardEvents } from "./lib/api";
 import { countConflicts30d } from "./lib/conflict-count";
-import type { DashboardSnapshot, Lease, RegistryBrick } from "./schema-types";
+import type { DashboardSnapshot, RegistryBrick } from "./schema-types";
 import { STRINGS } from "./strings";
 import { StatsTiles } from "./components/stats-tiles";
 import { resolveInitialTheme, ThemeToggle, type Theme } from "./components/theme-toggle";
@@ -28,13 +29,6 @@ function routeFromPath(pathname: string): RouteKey {
   return ROUTES.find((route) => route.path === pathname)?.key ?? "ledger";
 }
 
-function formatTtl(expiresAt: string): string {
-  const remaining = Math.max(0, Date.parse(expiresAt) - Date.now());
-  const minutes = Math.floor(remaining / 60_000);
-  const seconds = Math.floor((remaining % 60_000) / 1_000);
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
 function Verdict({ kind, label }: { kind: "pass" | "fail" | "waived" | "active"; label: string }) {
   return <VerdictStamp verdict={kind === "active" ? "pass" : kind} label={label} className={kind === "active" ? "verdict-stamp--active" : ""} />;
 }
@@ -52,26 +46,6 @@ function Frame({ title, children, className = "" }: { title: string; children: C
 
 function Stats({ snapshot }: { snapshot: DashboardSnapshot }) {
   return <StatsTiles values={{ bricks: snapshot.registry.summary.bricks, canonical: snapshot.registry.summary.canonical, leases: snapshot.leases.stats.active, conflicts: countConflicts30d(snapshot.conflicts) }} />;
-}
-
-function LeaseBoard({ leases }: { leases: Lease[] }) {
-  const [, tick] = useState(0);
-  useEffect(() => {
-    const timer = window.setInterval(() => { tick((value) => value + 1); }, 1_000);
-    return () => { clearInterval(timer); };
-  }, []);
-  if (!leases.length) return <EmptyState sentence={STRINGS.empty.leases} command={STRINGS.empty.leasesCommand} />;
-  return (
-    <div class="ledger-scroll">
-      <table class="ledger-table">
-        <thead><tr><th scope="col">{STRINGS.leaseColumns.agent}</th><th scope="col">{STRINGS.leaseColumns.brick}</th><th scope="col">{STRINGS.leaseColumns.intent}</th><th scope="col">{STRINGS.leaseColumns.ttl}</th><th scope="col">{STRINGS.leaseColumns.state}</th></tr></thead>
-        <tbody>{leases.map((lease) => {
-          const urgent = Date.parse(lease.expires_at) - Date.now() < 300_000;
-          return <tr class="lease-row" key={lease.lease_id}><td>{lease.agent_id}</td><td>{lease.resource_id}</td><td class="truncate" title={lease.intent}>{lease.intent}</td><td class={urgent ? "ttl ttl--urgent" : "ttl"}>{formatTtl(lease.expires_at)}</td><td><Verdict kind="active" label={STRINGS.verdicts.active} /></td></tr>;
-        })}</tbody>
-      </table>
-    </div>
-  );
 }
 
 function BrickRegistry({ bricks }: { bricks: RegistryBrick[] }) {
@@ -101,7 +75,11 @@ function BrickRegistry({ bricks }: { bricks: RegistryBrick[] }) {
         <kbd>{STRINGS.search.hint}</kbd>
       </div>
       <div class="module-filter" aria-label={STRINGS.filter.label}>{projects.map((item) => <button type="button" aria-pressed={project === item} onClick={() => { setProject(item); }} key={item}>{item}</button>)}</div>
-      {!bricks.length ? <EmptyState sentence={STRINGS.empty.bricks} command={STRINGS.empty.bricksCommand} /> : filtered.length === 0 ? <p class="no-results">{STRINGS.search.noResults}</p> : <div class="brick-wall">{filtered.map((brick) => <article class={`brick brick--${brick.status}`} title={brick.id} key={brick.id}><div><span>{brick.project}</span><strong>{brick.id}</strong></div><Verdict kind={brick.health_status === "ok" ? "pass" : "fail"} label={brick.status.toUpperCase()} /><small>{brick.score}</small></article>)}</div>}
+      {!bricks.length ? <EmptyState sentence={STRINGS.empty.bricks} command={STRINGS.empty.bricksCommand} /> : filtered.length === 0 ? <p class="no-results">{STRINGS.search.noResults}</p> : <div class="brick-wall">{filtered.map((brick) => {
+        const reuseCount = brick.reuse_count ?? 0;
+        const tooltip = `${brick.id} · ${brick.status} · ${String(reuseCount)} reuses`;
+        return <article class={`brick brick--${brick.status}`} tabIndex={0} aria-describedby={`brick-tooltip-${brick.project}-${brick.id}`} key={`${brick.project}:${brick.id}`}><div><span>{brick.project}</span><strong>{brick.id}</strong></div><Verdict kind={brick.health_status === "ok" ? "pass" : "fail"} label={brick.status.toUpperCase()} /><small>{brick.score}</small><span class="brick__tooltip" id={`brick-tooltip-${brick.project}-${brick.id}`} role="tooltip">{tooltip}</span></article>;
+      })}</div>}
     </>
   );
 }
@@ -110,14 +88,14 @@ function Settings({ theme, onTheme }: { theme: Theme; onTheme: (theme: Theme) =>
   return <div class="settings-grid"><Frame title={STRINGS.settings.appearance}><div class="setting-options"><button type="button" aria-pressed={theme === "dark"} onClick={() => { onTheme("dark"); }}>{STRINGS.settings.dark}</button><button type="button" aria-pressed={theme === "light"} onClick={() => { onTheme("light"); }}>{STRINGS.settings.light}</button></div></Frame><Frame title={STRINGS.settings.mode}><Verdict kind="pass" label={STRINGS.settings.mode} /><p>{STRINGS.settings.modeDescription}</p></Frame><Frame title={STRINGS.settings.endpoint}><code>{STRINGS.settings.endpointValue}</code></Frame><Frame title={STRINGS.settings.dataRoot}><code>{STRINGS.settings.dataRootValue}</code></Frame></div>;
 }
 
-function AppContent({ route, snapshot, theme, onTheme }: { route: RouteKey; snapshot: DashboardSnapshot; theme: Theme; onTheme: (theme: Theme) => void }) {
+function AppContent({ route, snapshot, theme, onTheme, leaseFlipSignal }: { route: RouteKey; snapshot: DashboardSnapshot; theme: Theme; onTheme: (theme: Theme) => void; leaseFlipSignal: number }) {
   const [conflictModule, setConflictModule] = useState<string | null>(null);
   if (route === "bricks") return <Frame title={STRINGS.section.registry}><BrickRegistry bricks={snapshot.registry.bricks} /></Frame>;
-  if (route === "leases") return <Frame title={STRINGS.section.activeLeases}><LeaseBoard leases={snapshot.leases.leases} /></Frame>;
+  if (route === "leases") return <Frame title={STRINGS.section.activeLeases}><LeaseBoard leases={snapshot.leases.leases} flipSignal={leaseFlipSignal} /></Frame>;
   if (route === "conflicts") return <div class="conflict-view"><Frame title={STRINGS.section.conflictHeat}><ConflictHeatStrip conflicts={snapshot.conflicts.conflicts} selectedModule={conflictModule} onSelectModule={setConflictModule} /></Frame><Frame title={STRINGS.section.recentConflicts}><ConflictLedger conflicts={snapshot.conflicts.conflicts} moduleFilter={conflictModule} /></Frame></div>;
   if (route === "graph") return <Frame title={STRINGS.section.graphCoverage}><GraphView modules={snapshot.graph.modules} /></Frame>;
   if (route === "settings") return <Settings theme={theme} onTheme={onTheme} />;
-  return <><Stats snapshot={snapshot} /><div class="dashboard-grid"><Frame title={STRINGS.section.activeLeases} className="dashboard-grid__wide"><LeaseBoard leases={snapshot.leases.leases} /></Frame><Frame title={STRINGS.section.recentConflicts}><ConflictLedger conflicts={snapshot.conflicts.conflicts.slice(0, 5)} /></Frame><Frame title={STRINGS.section.moduleActivity}><GraphView modules={snapshot.graph.modules.slice(0, 10)} /></Frame></div></>;
+  return <><Stats snapshot={snapshot} /><div class="dashboard-grid"><Frame title={STRINGS.section.activeLeases} className="dashboard-grid__wide"><LeaseBoard leases={snapshot.leases.leases} flipSignal={leaseFlipSignal} /></Frame><Frame title={STRINGS.section.recentConflicts}><ConflictLedger conflicts={snapshot.conflicts.conflicts.slice(0, 5)} /></Frame><Frame title={STRINGS.section.moduleActivity}><GraphView modules={snapshot.graph.modules.slice(0, 10)} /></Frame></div></>;
 }
 
 export function App() {
@@ -125,14 +103,16 @@ export function App() {
   const [theme, setTheme] = useState<Theme>(() => resolveInitialTheme(localStorage.getItem("smarch-dashboard-theme"), matchMedia("(prefers-color-scheme: light)").matches));
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+  const [leaseFlipSignal, setLeaseFlipSignal] = useState(0);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => { document.title = STRINGS.documentTitle; }, []);
 
-  const load = async () => {
+  const load = async (flipLeases = false) => {
     try {
       setError(null);
       setSnapshot(await fetchSnapshot());
+      if (flipLeases) setLeaseFlipSignal((value) => value + 1);
     } catch (value) {
       const next = value instanceof Error ? value : new Error(String(value));
       setError(next);
@@ -140,7 +120,7 @@ export function App() {
     }
   };
 
-  useEffect(() => { void load(); return subscribeToDashboardEvents(() => void load(), () => { reportClientError("dashboard.sse", "error", new Error(STRINGS.toast.disconnected)); }); }, []);
+  useEffect(() => { void load(); return subscribeToDashboardEvents((event) => void load(event.type === "leases"), () => { reportClientError("dashboard.sse", "error", new Error(STRINGS.toast.disconnected)); }); }, []);
   useEffect(() => {
     const onPop = () => { setRoute(routeFromPath(location.pathname)); };
     const onKey = (event: KeyboardEvent) => {
@@ -169,7 +149,7 @@ export function App() {
         <header class="topbar"><div class="topbar__repo"><span>{STRINGS.appName}</span><b>{STRINGS.routeEyebrow}</b></div><ThemeToggle theme={theme} onThemeChange={setTheme} /></header>
         <main id="main" tabIndex={-1}>
           <header class="page-heading"><p>{STRINGS.routeEyebrow}</p><h1>{STRINGS.routeTitles[route]}</h1><span>{STRINGS.routeDescriptions[route]}</span></header>
-          {error ? <div class="error-panel" role="alert"><Verdict kind="fail" label={STRINGS.verdicts.fail} /><h2>{STRINGS.errors.heading}</h2><p>{STRINGS.errors.body}</p><button type="button" onClick={() => void load()}>{STRINGS.errors.retry}</button></div> : snapshot ? <AppContent route={route} snapshot={snapshot} theme={theme} onTheme={setTheme} /> : <p class="loading" aria-live="polite">{STRINGS.loading}</p>}
+          {error ? <div class="error-panel" role="alert"><Verdict kind="fail" label={STRINGS.verdicts.fail} /><h2>{STRINGS.errors.heading}</h2><p>{STRINGS.errors.body}</p><button type="button" onClick={() => void load()}>{STRINGS.errors.retry}</button></div> : snapshot ? <AppContent route={route} snapshot={snapshot} theme={theme} onTheme={setTheme} leaseFlipSignal={leaseFlipSignal} /> : <p class="loading" aria-live="polite">{STRINGS.loading}</p>}
         </main>
       </div>
       <ToastCenter toasts={error ? [{ id: "dashboard-load-error", message: STRINGS.errors.body, verdict: "fail", error }] : []} />

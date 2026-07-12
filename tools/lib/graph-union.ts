@@ -97,6 +97,7 @@ export function namespaceGraph(graph: Graph, namespace: string): NamespacedGraph
 
 export function mergeNamespacedGraphs(entries: GraphEntry[]) {
   const nodes = new Map<string, GraphRecord>();
+  const nodeOwners = new Map<string, string>();
   const edges = new Map<string, GraphRecord>();
   const hyperedges = new Map<string, GraphRecord>();
   let inputTokens = 0;
@@ -104,7 +105,16 @@ export function mergeNamespacedGraphs(entries: GraphEntry[]) {
 
   for (const entry of entries) {
     const graph = namespaceGraph(entry.graph, entry.namespace);
-    for (const node of graph.nodes) nodes.set(String(node.id), node);
+    for (const node of graph.nodes) {
+      const id = String(node.id);
+      const owner = `${entry.namespace}\0${String(node.original_id ?? "")}`;
+      const priorOwner = nodeOwners.get(id);
+      if (priorOwner !== undefined && priorOwner !== owner) {
+        throw new Error(`namespaced node id collision for "${id}"; choose namespaces and node ids that do not contain an ambiguous "${NAMESPACE_SEPARATOR}" boundary`);
+      }
+      nodeOwners.set(id, owner);
+      nodes.set(id, node);
+    }
     for (const edge of graph.edges) edges.set(edgeKey(edge), edge);
     for (const edge of graph.hyperedges) hyperedges.set(hyperedgeKey(edge), edge);
     inputTokens += Number(entry.graph.input_tokens ?? 0);

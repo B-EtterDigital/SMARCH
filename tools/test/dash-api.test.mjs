@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -17,6 +18,7 @@ import {
   withTimeout,
 } from "../lib/dash-api/core.mjs";
 import { GRAPH_SCOPE, handleGraph, loadGraph } from "../lib/dash-api/api-graph.mjs";
+import { createEventHub } from "../lib/dash-api/api-events-sse.mjs";
 import { LEASES_SCOPE, handleLeases, loadLeases, validateLeasesQuery } from "../lib/dash-api/api-leases.mjs";
 import { loadRegistry, validateRegistryQuery } from "../lib/dash-api/api-registry.mjs";
 
@@ -42,6 +44,89 @@ test("dashboard authentication and query validation fail closed with typed error
   assert.throws(() => validateLeasesQuery(new URLSearchParams("limit=0")), { code: "DASH_API_VALIDATION" });
   assert.throws(() => validateRegistryQuery(new URLSearchParams("status=bogus")), { code: "DASH_API_VALIDATION" });
   assert.deepEqual(errorBody(new DashboardApiError("DASH_API_FORBIDDEN"), "req-1"), { error: { code: "DASH_API_FORBIDDEN", message: "The authenticated principal is not authorized for this operation", request_id: "req-1" } });
+});
+
+test("dashboard auth keeps loopback read access separate from every mutation path", () => {
+  const credentials = loadAuthCredentials({ authTokens: [{
+    subject: "operator",
+    token: "operator-secret",
+    scopes: [LEASES_SCOPE],
+  }] });
+  const bearer = { authorization: "Bearer operator-secret" };
+
+  const loopbackRead = authenticateReadRequest({}, [], { loopback: true });
+  assert.equal(loopbackRead.subject, "loopback-readonly");
+  assert.doesNotThrow(() => authorizePrincipal(loopbackRead, LEASES_SCOPE));
+  assert.throws(() => authenticateRequest({}, []), { code: "DASH_API_AUTH_UNAVAILABLE" });
+
+  assert.deepEqual(authenticateReadRequest(bearer, credentials, { loopback: false }), {
+    subject: "operator",
+    scopes: [LEASES_SCOPE],
+  });
+  assert.deepEqual(authenticateRequest(bearer, credentials), {
+    subject: "operator",
+    scopes: [LEASES_SCOPE],
+  });
+  assert.throws(() => authenticateReadRequest({}, credentials, { loopback: false }), {
+    code: "DASH_API_UNAUTHENTICATED",
+  });
+  assert.throws(() => authenticateRequest({}, credentials), { code: "DASH_API_UNAUTHENTICATED" });
+});
+
+test("dashboard SSE frames retry, replay, ready, live events, and resume validation", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "smarch-dash-sse-"));
+  /** @type {Array<Record<string, unknown>>} */
+  const telemetry = [];
+  const hub = createEventHub(root, { heartbeatMs: 60_000, telemetry: (event) => telemetry.push(event) });
+  try {
+    const replay = hub.publish("registry", { source: "fixture" });
+    assert.equal(replay.id, 1);
+
+    const req = new EventEmitter();
+    /** @type {string[]} */
+    const chunks = [];
+    /** @type {{ status: number, values: Record<string, string> } | undefined} */
+    let headers;
+    let ended = false;
+    const res = {
+      /** @param {number} status @param {Record<string, string>} values */
+      writeHead(status, values) { headers = { status, values }; },
+      /** @param {unknown} chunk */
+      write(chunk) { chunks.push(String(chunk)); return true; },
+      end() { ended = true; },
+    };
+    hub.add(/** @type {any} */ (req), /** @type {any} */ (res), {
+      principal: { subject: "reader", scopes: ["dashboard:events:read"] },
+      query: new URLSearchParams(),
+      lastEventId: "0",
+      requestId: "sse-request",
+    });
+    const live = hub.publish("graph", { module: "alpha" });
+    assert.equal(live.id, 3);
+
+    assert.ok(headers);
+    assert.equal(headers.status, 200);
+    assert.equal(headers.values["Content-Type"], "text/event-stream");
+    const stream = chunks.join("");
+    assert.match(stream, /^retry: 3000\n\nid: 1\nevent: registry\ndata: /);
+    assert.match(stream, /\n\nid: 2\nevent: ready\ndata: \{"type":"ready","changed_at":"[^"]+","request_id":"sse-request","resumed_after":0\}\n\n/);
+    assert.match(stream, /id: 3\nevent: graph\ndata: \{"type":"graph","changed_at":"[^"]+","module":"alpha"\}\n\n$/);
+    assert.equal(telemetry[0].event, "dashboard_sse_connected");
+
+    assert.throws(() => hub.add(/** @type {any} */ (new EventEmitter()), /** @type {any} */ (res), {
+      principal: { subject: "reader", scopes: ["dashboard:events:read"] },
+      query: new URLSearchParams(),
+      lastEventId: "1.5",
+    }), { code: "DASH_API_VALIDATION" });
+
+    req.emit("close");
+    assert.equal(telemetry.at(-1)?.event, "dashboard_sse_disconnected");
+    hub.close();
+    assert.equal(ended, false, "a disconnected response must not be ended twice during hub close");
+  } finally {
+    hub.close();
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("dashboard read handlers enforce scope, timeout, telemetry, and storage semantics", async () => {

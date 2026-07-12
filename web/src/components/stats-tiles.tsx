@@ -1,5 +1,5 @@
 import { memo } from "preact/compat";
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
 
@@ -11,6 +11,7 @@ interface StatsTileValues {
 }
 
 type StatsTilesState = "loading" | "empty" | "error" | "populated";
+const CHOREOGRAPHY_KEY = "smarch-stats-stamped";
 
 export interface StatsTilesProps {
   values?: StatsTileValues;
@@ -29,12 +30,24 @@ function formatStatValue(value: number): string {
  */
 export const StatsTiles = memo(function StatsTiles({ values, state, error, onRetry }: StatsTilesProps) {
   const resolvedState = state ?? (values ? "populated" : "empty");
+  const [stampIn, setStampIn] = useState(false);
 
   useEffect(() => {
     if (resolvedState === "error") {
       reportClientError("dashboard.stats-tiles", "error", error ?? new Error(STRINGS.statsStates.error));
     }
   }, [error, resolvedState]);
+
+  useEffect(() => {
+    if (resolvedState !== "populated") return;
+    try {
+      if (window.sessionStorage.getItem(CHOREOGRAPHY_KEY)) return;
+      window.sessionStorage.setItem(CHOREOGRAPHY_KEY, "1");
+      setStampIn(true);
+    } catch {
+      setStampIn(true);
+    }
+  }, [resolvedState]);
 
   if (resolvedState === "loading") {
     return <p class="stats-tiles__message" role="status" aria-live="polite">{STRINGS.loading}</p>;
@@ -59,9 +72,9 @@ export const StatsTiles = memo(function StatsTiles({ values, state, error, onRet
   ] as const;
 
   return (
-    <dl class="stats-tiles" aria-label={STRINGS.statsStates.label}>
-      {tiles.map((tile) => (
-        <div class="stats-tile" key={tile.key}>
+    <dl class={`stats-tiles${stampIn ? " stats-tiles--stamp-in" : ""}`} aria-label={STRINGS.statsStates.label}>
+      {tiles.map((tile, index) => (
+        <div class={`stats-tile stats-tile--${String(index + 1)}`} key={tile.key}>
           <dt>{tile.label}</dt>
           <dd>{formatStatValue(tile.value)}</dd>
         </div>

@@ -8,10 +8,10 @@ const STORAGE_KEY = "smarch-dashboard-theme";
 
 export function resolveInitialTheme(
   savedTheme?: string | null,
-  prefersLight = false
+  _prefersLight = false
 ): Theme {
   if (savedTheme === "dark" || savedTheme === "light") return savedTheme;
-  return prefersLight ? "light" : "dark";
+  return "dark";
 }
 
 function browserInitialTheme(): Theme {

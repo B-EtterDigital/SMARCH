@@ -46,6 +46,6 @@ test("component CSS honors the motion and anti-slop contract", () => {
   assert.match(css, /150ms ease-out/);
   assert.match(css, /180ms ease-out/);
   assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.match(css, /animation-duration: 120ms/);
+  assert.match(css, /animation: none/);
   assert.doesNotMatch(css, /gradient|box-shadow|drop-shadow|border-radius:\s*(?:1[6-9]|[2-9]\d)px/i);
 });

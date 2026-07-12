@@ -8,13 +8,14 @@ export interface LeaseBoardProps {
   status?: "loading" | "ready" | "error";
   error?: unknown;
   onRetry?: () => void;
+  flipSignal?: number;
 }
 
 /**
  * Accessible active-lease departures board with one shared client-side TTL
  * clock. Loading, empty, error, and populated states are intentionally explicit.
  */
-export function LeaseBoard({ leases = [], status = "ready", error, onRetry }: LeaseBoardProps) {
+export function LeaseBoard({ leases = [], status = "ready", error, onRetry, flipSignal = 0 }: LeaseBoardProps) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export function LeaseBoard({ leases = [], status = "ready", error, onRetry }: Le
             <th scope="col">{STRINGS.leaseColumns.state}</th>
           </tr>
         </thead>
-        <tbody>{leases.map((lease) => <LeaseRow lease={lease} now={now} key={lease.lease_id} />)}</tbody>
+        <tbody>{leases.map((lease) => <LeaseRow lease={lease} now={now} flipSignal={flipSignal} key={lease.lease_id} />)}</tbody>
       </table>
     </div>
   );

@@ -49,10 +49,10 @@ export function ConflictLedger({ conflicts, moduleFilter = null, state = "popula
           const open = conflict.status === "open";
           return (
             <tr class={open ? "conflict-row conflict-row--open" : "conflict-row"} key={conflict.event_id}>
-              <td><time dateTime={conflict.timestamp} title={new Date(conflict.timestamp).toISOString()}>{relativeConflictTime(conflict.timestamp)}</time></td>
-              <td>{conflict.project}</td><td>{conflict.brick_id}</td>
-              <td>{conflict.agents.join(STRINGS.agentSeparator) || STRINGS.unknown}</td>
-              <td><VerdictStamp verdict={open ? "fail" : "pass"} label={open ? STRINGS.verdicts.open : STRINGS.verdicts.resolved} /></td>
+              <td class="conflict-row__when" data-label={STRINGS.conflictColumns.when}><time dateTime={conflict.timestamp} title={new Date(conflict.timestamp).toISOString()}>{relativeConflictTime(conflict.timestamp)}</time></td>
+              <td class="conflict-row__what" data-label={STRINGS.mobileColumns.what}>{conflict.project}</td><td class="conflict-row__brick">{conflict.brick_id}</td>
+              <td class="conflict-row__who" data-label={STRINGS.mobileColumns.who}>{conflict.agents.join(STRINGS.agentSeparator) || STRINGS.unknown}</td>
+              <td class="conflict-row__state" data-label={STRINGS.conflictColumns.resolution}><VerdictStamp verdict={open ? "fail" : "pass"} label={open ? STRINGS.verdicts.open : STRINGS.verdicts.resolved} /></td>
             </tr>
           );
         })}</tbody>

@@ -18,12 +18,15 @@ test("dashboard primitives expose all binding-spec states", () => {
   assert.match(verdict, /aria-hidden="true"/);
 });
 
-test("theme follows saved preference before system preference and persists on root", () => {
+test("theme keeps dark canonical, honors an explicit save, and persists on root", () => {
   const theme = read("src/components/theme-toggle.tsx");
+  const html = read("index.html");
   assert.match(theme, /savedTheme === "dark" \|\| savedTheme === "light"/);
-  assert.match(theme, /prefers-color-scheme: light/);
+  assert.match(theme, /return "dark"/);
   assert.match(theme, /document\.documentElement\.dataset\.theme = activeTheme/);
   assert.match(theme, /localStorage\.setItem\(STORAGE_KEY, activeTheme\)/);
+  assert.match(html, /localStorage\.getItem\("smarch-dashboard-theme"\)/);
+  assert.match(html, /savedTheme === "light" \? "light" : "dark"/);
 });
 
 test("toast center caps, times, pauses, and announces notifications", () => {

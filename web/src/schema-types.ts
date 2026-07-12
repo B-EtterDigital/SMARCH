@@ -40,6 +40,7 @@ export interface RegistryBrick {
   status: string;
   score: number;
   health_status: string;
+  reuse_count?: number;
 }
 
 export interface RegistryResponse {

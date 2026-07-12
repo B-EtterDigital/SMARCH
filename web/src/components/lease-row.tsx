@@ -7,9 +7,10 @@ export type LeaseRowValue = Lease & { state?: string };
 export interface LeaseRowProps {
   lease: LeaseRowValue;
   now?: number;
+  flipSignal?: number;
 }
 
-export function formatLeaseTtl(expiresAt: string, now = Date.now()): string {
+function formatLeaseTtl(expiresAt: string, now = Date.now()): string {
   const parsed = Date.parse(expiresAt);
   const remaining = Number.isFinite(parsed) ? Math.max(0, parsed - now) : 0;
   const minutes = Math.floor(remaining / 60_000);
@@ -17,7 +18,7 @@ export function formatLeaseTtl(expiresAt: string, now = Date.now()): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function truncateLeaseIntent(intent: string): string {
+function truncateLeaseIntent(intent: string): string {
   return intent.length > 48 ? `${intent.slice(0, 47)}…` : intent;
 }
 
@@ -25,11 +26,14 @@ export function truncateLeaseIntent(intent: string): string {
  * One 40px departures-board row. The parent supplies a once-per-second `now`
  * value so every TTL advances from one shared timer between SSE updates.
  */
-export function LeaseRow({ lease, now = Date.now() }: LeaseRowProps) {
+export function LeaseRow({ lease, now = Date.now(), flipSignal = 0 }: LeaseRowProps) {
   const state = lease.state ?? "active";
   const fingerprint = `${lease.resource_id}:${lease.intent}:${lease.expires_at}:${state}`;
   const previousFingerprint = useRef(fingerprint);
   const [flip, setFlip] = useState(false);
+  const previousFlipSignal = useRef(0);
+  const [ttlPulse, setTtlPulse] = useState(false);
+  const previousCritical = useRef(false);
 
   useEffect(() => {
     if (previousFingerprint.current === fingerprint) return;
@@ -43,18 +47,39 @@ export function LeaseRow({ lease, now = Date.now() }: LeaseRowProps) {
     };
   }, [fingerprint]);
 
+  useEffect(() => {
+    if (flipSignal === 0 || previousFlipSignal.current === flipSignal) return;
+    previousFlipSignal.current = flipSignal;
+    setFlip(false);
+    const frame = requestAnimationFrame(() => { setFlip(true); });
+    const timer = window.setTimeout(() => { setFlip(false); }, 150);
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer); };
+  }, [flipSignal]);
+
   const remaining = Date.parse(lease.expires_at) - now;
   const urgent = remaining > 0 && remaining < 300_000;
+  const critical = remaining > 0 && remaining <= 60_000;
   const active = remaining > 0 && state === "active";
   const stateLabel = active ? STRINGS.verdicts.active : state === "active" ? STRINGS.verdicts.expired : state.toUpperCase();
 
+  useEffect(() => {
+    if (!critical || previousCritical.current) {
+      previousCritical.current = critical;
+      return;
+    }
+    previousCritical.current = true;
+    setTtlPulse(true);
+    const timer = window.setTimeout(() => { setTtlPulse(false); }, 300);
+    return () => { clearTimeout(timer); };
+  }, [critical]);
+
   return (
     <tr class={`lease-row${flip ? " lease-row--flip" : ""}`} data-state={state}>
-      <td>{lease.agent_id}</td>
-      <td>{lease.resource_id}</td>
-      <td class="truncate" title={lease.intent}>{truncateLeaseIntent(lease.intent)}</td>
-      <td class={urgent ? "ttl ttl--urgent" : "ttl"}>{formatLeaseTtl(lease.expires_at, now)}</td>
-      <td>
+      <td class="lease-row__who" data-label={STRINGS.leaseColumns.agent}>{lease.agent_id}</td>
+      <td class="lease-row__what" data-label={STRINGS.leaseColumns.brick}>{lease.resource_id}</td>
+      <td class="truncate lease-row__intent" data-label={STRINGS.leaseColumns.intent} title={lease.intent}>{truncateLeaseIntent(lease.intent)}</td>
+      <td class={`${urgent ? "ttl ttl--urgent" : "ttl"}${ttlPulse ? " ttl--pulse" : ""}`} data-label={STRINGS.leaseColumns.ttl}>{formatLeaseTtl(lease.expires_at, now)}</td>
+      <td class="lease-row__state" data-label={STRINGS.leaseColumns.state}>
         <span class={active ? "verdict verdict--active" : "verdict verdict--fail"}>
           <span aria-hidden="true">{active ? STRINGS.verdictIcons.pass : STRINGS.verdictIcons.fail}</span>
           {stateLabel}

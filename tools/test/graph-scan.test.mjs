@@ -5,10 +5,12 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  buildEmbeddingIndex,
   createDeterministicHashEmbedder,
   embeddingTextForNode,
   graphNodeContentHash,
   selftestEmbeddingContentAddress,
+  semanticRerankQuery,
   substringIdfHits,
 } from "../lib/graph-embeddings.ts";
 import {
@@ -52,6 +54,53 @@ test("graph embedding ranking is deterministic, content-addressed, and semantica
   }
 });
 
+test("graph reciprocal-rank math is exact, stable, and deterministic under ties", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "smarch-graph-rank-math-"));
+  try {
+    const graphPath = path.join(root, "graph.json");
+    await writeFile(graphPath, JSON.stringify({ nodes: [
+      { id: "alpha", label: "alpha-node" },
+      { id: "beta", label: "beta-node" },
+      { id: "gamma", label: "gamma-node" },
+    ] }));
+    const embedder = {
+      backend: "fixture",
+      model: "rank-math-v1",
+      async embed(/** @type {string[]} */ texts) {
+        return texts.map((text) => {
+          if (text === "alpha") return [0, 1];
+          if (text.startsWith("alpha-node")) return [1, 0];
+          if (text.startsWith("beta-node")) return [0.6, 0.8];
+          return [0, 1];
+        });
+      },
+    };
+    const built = await buildEmbeddingIndex({ graphPath, embedder });
+    assert.equal(built.built, true);
+
+    const first = await semanticRerankQuery({ graphPath, question: "alpha", embedder, topK: 3 });
+    const second = await semanticRerankQuery({ graphPath, question: "alpha", embedder, topK: 3 });
+    assert.deepEqual(second, first);
+    const ranked = /** @type {Array<{ id: string, score: number, semanticScore: number }>} */ (first.hits);
+    assert.deepEqual(ranked.map((hit) => hit.id), ["alpha", "gamma", "beta"]);
+    assert.ok(Math.abs(ranked[0].score - (1 / 61 + 1 / 63)) < 1e-12);
+    assert.ok(Math.abs(ranked[1].score - (1 / 61)) < 1e-12);
+    assert.ok(Math.abs(ranked[2].score - (1 / 62)) < 1e-12);
+    assert.equal(ranked[1].semanticScore, 1);
+
+    const bounded = await semanticRerankQuery({
+      graphPath,
+      question: "alpha",
+      embedder,
+      topK: 3,
+      allowedNodeIds: ["beta", "gamma"],
+    });
+    assert.deepEqual(bounded.hits.map((hit) => hit.id), ["gamma", "beta"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("graph union namespaces identities, deduplicates edges, preserves metadata, and rejects ambiguous aliases", () => {
   const source = {
     title: "alpha graph",
@@ -89,6 +138,13 @@ test("graph union namespaces identities, deduplicates edges, preserves metadata,
   assert.throws(() => resolveGraphNodeInput(merged, "shared"), /ambiguous.*alpha::shared, beta::shared/);
   assert.equal(resolveGraphNodeInput(merged, "unknown"), "unknown");
   assert.equal(resolveGraphNodeInput(merged, ""), "");
+});
+
+test("graph union rejects separator-shaped namespace collisions instead of overwriting nodes", () => {
+  assert.throws(() => mergeNamespacedGraphs([
+    { namespace: "alpha::beta", graph: { nodes: [{ id: "leaf", label: "first" }] } },
+    { namespace: "alpha", graph: { nodes: [{ id: "beta::leaf", label: "second" }] } },
+  ]), /namespaced node id collision.*alpha::beta::leaf/);
 });
 
 test("scan walk finds only manifests while honoring directory and path exclusions", async () => {

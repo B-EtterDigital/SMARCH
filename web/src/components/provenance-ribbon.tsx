@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { reportClientError } from "../lib/api";
 import { STRINGS } from "../strings";
+import { VerdictStamp } from "./verdict-stamp";
 
 export interface ProvenanceSeal {
   hash: string;
   attestation: unknown;
+  broken?: boolean;
 }
 
 export interface ProvenanceRibbonProps {
@@ -27,11 +29,18 @@ export function hashPrefix(hash: string): string {
 export function ProvenanceRibbon({ seals = [], status = "ready", error, onRetry }: ProvenanceRibbonProps) {
   const [open, setOpen] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [drawIn, setDrawIn] = useState(false);
   const json = useMemo(() => seals.map((seal) => JSON.stringify(seal.attestation, null, 2)), [seals]);
 
   useEffect(() => {
     if (status === "error") reportClientError("dashboard.provenance-ribbon", "error", error ?? STRINGS.provenance.error);
   }, [error, status]);
+
+  useEffect(() => {
+    if (status !== "ready" || seals.length === 0) return;
+    const frame = requestAnimationFrame(() => { setDrawIn(true); });
+    return () => { cancelAnimationFrame(frame); };
+  }, [seals.length, status]);
 
   const copy = async (index: number) => {
     try {
@@ -54,13 +63,13 @@ export function ProvenanceRibbon({ seals = [], status = "ready", error, onRetry 
   if (seals.length === 0) return <p class="empty-state__sentence">{STRINGS.provenance.empty}</p>;
 
   return (
-    <div class="provenance-ribbon" aria-label={STRINGS.provenance.label}>
+    <div class={`provenance-ribbon${drawIn ? " provenance-ribbon--draw-in" : ""}`} aria-label={STRINGS.provenance.label}>
       {seals.map((seal, index) => {
         const popoverId = `provenance-attestation-${index}`;
         const expanded = open === index;
         return (
           <div
-            class="provenance-ribbon__item"
+            class={`provenance-ribbon__item${seal.broken ? " provenance-ribbon__item--broken" : ""}`}
             onMouseEnter={() => { setOpen(index); }}
             onMouseLeave={() => { setOpen(null); }}
             onFocusIn={() => { setOpen(index); }}
@@ -79,6 +88,7 @@ export function ProvenanceRibbon({ seals = [], status = "ready", error, onRetry 
             >
               {hashPrefix(seal.hash)}
             </button>
+            {seal.broken ? <VerdictStamp verdict="fail" label={STRINGS.verdicts.fail} className="provenance-ribbon__fail-stamp" /> : null}
             {expanded ? (
               <div class="provenance-popover" id={popoverId} role="dialog" aria-label={STRINGS.provenance.attestationLabel}>
                 <pre>{json[index]}</pre>
