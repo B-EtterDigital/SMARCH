@@ -16,7 +16,7 @@ OpenCode rules:
 Useful commands:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs --root . --out .sweetspot/scans/latest.registry.json --check
-node ~/DEV/SMARCH/tools/sma-security-gate.mjs --root .
-node ~/DEV/SMARCH/tools/sma-wiki.mjs --registry .sweetspot/scans/latest.registry.json --out .sweetspot/wiki
+node tools/sma-scan.mjs --root . --out .sweetspot/scans/latest.registry.json --check
+node tools/sma-security-gate.mjs --root .
+node tools/sma-wiki.mjs --registry .sweetspot/scans/latest.registry.json --out .sweetspot/wiki
 ```

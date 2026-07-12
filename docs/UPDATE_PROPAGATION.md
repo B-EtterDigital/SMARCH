@@ -13,7 +13,7 @@ additive change (commit `032257d11`, added `getAnnotationCounts` utility).
 # 1. Cut release
 node tools/sma-release.ts --manifest <acme-desktop-v1>/web/src/modules/modcap/module.sweetspot.json \
   --version 0.2.0 --status published \
-  --search-root ~/DEV/Projects/acme-desktop
+  --search-root $SMA_PROJECTS_ROOT/acme-desktop
 # → releases/acme-desktop.frontend-module.web-src-modules-modcap.e049040a/0.2.0.json
 
 # 2. Refresh dependents
@@ -131,7 +131,7 @@ node tools/sma-propagate.ts --since <last-deploy-sha> --source-project acme-desk
 ## What lands where after `--apply`
 
 ```
-~/DEV/SMARCH/registry/propagation/<brick>/<ts>.json
+registry/propagation/<brick>/<ts>.json
    ↑ fan-out report: which dependents got plans, which got notifications
 
 <target_root>/.smarch/incoming-updates/<brick>-<ts>.json
@@ -163,9 +163,9 @@ The next agent finds it via `sma-backlog.mjs list --project <dependent>` and dec
 
 ```bash
 # Nightly: rebuild the dependents index + backlog aggregate
-0 3 * * * node ~/DEV/SMARCH/tools/sma-dependents-index.ts --write
-0 3 * * * node ~/DEV/SMARCH/tools/sma-backlog.ts aggregate
-0 3 * * * node ~/DEV/SMARCH/tools/sma-token-count.ts --root <each_project> --write
+0 3 * * * node tools/sma-dependents-index.ts --write
+0 3 * * * node tools/sma-backlog.ts aggregate
+0 3 * * * node tools/sma-token-count.ts --root <each_project> --write
 ```
 
 ## Why this is non-breaking

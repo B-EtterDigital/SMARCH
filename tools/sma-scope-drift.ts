@@ -46,7 +46,7 @@ Options:
   --manifest <path>       Path to a build.sweetspot.json
   --all                   Every *.build.sweetspot.json under builds/
   --projects-root <path>  Where underlying projects live
-                          (default: $SMA_PROJECTS_ROOT or ~/DEV/Projects)
+                          (default: $SMA_PROJECTS_ROOT or $SMA_PROJECTS_ROOT)
   --report <path>         Write JSON report to file
   --json                  Print JSON to stdout
   --warn-only             Exit 0 even on drift (first-pass adoption)

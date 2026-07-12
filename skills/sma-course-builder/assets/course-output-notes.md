@@ -4,7 +4,7 @@ Generated courses should be self-contained and open offline.
 
 Preferred output:
 
-`~/DEV/SMARCH/wiki/courses/sma-brick-course.generated.html`
+`wiki/courses/sma-brick-course.generated.html`
 
 The course should teach decisions:
 

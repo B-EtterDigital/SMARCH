@@ -39,7 +39,7 @@ Writes `<target>/.smarch/reuse-receipts/<source>-<sha>-<ts>.json` per the
 
 ### `tools/sma-backlog.ts`
 Per-project backlog at `<root>/.smarch/backlog.json`, global aggregate at
-`~/DEV/SMARCH/registry/backlog.generated.json`.
+`registry/backlog.generated.json`.
 
 ```bash
 # Open an entry
@@ -131,15 +131,15 @@ Every `module.sweetspot.json` should carry token estimates as part of `quality.c
 ```bash
 # Top reuse savings across the portfolio:
 jq '.entries | sort_by(-.estimates.tokens_saved_estimate.upper) | .[0:5]' \
-  ~/DEV/SMARCH/registry/reuse-receipts.generated.json
+  registry/reuse-receipts.generated.json
 
 # Top backlog debt (high-severity open items):
 jq '.entries | map(select(.severity == "high" or .severity == "blocker") | select(.status == "open"))' \
-  ~/DEV/SMARCH/registry/backlog.generated.json
+  registry/backlog.generated.json
 
 # Cost-of-cleanup (sum estimated_token_cost for open entries):
 jq '[.entries[] | select(.status == "open") | .estimated_token_cost // 0] | add' \
-  ~/DEV/SMARCH/registry/backlog.generated.json
+  registry/backlog.generated.json
 ```
 
 ## The standard, in one paragraph

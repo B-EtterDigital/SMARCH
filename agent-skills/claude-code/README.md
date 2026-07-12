@@ -5,7 +5,7 @@ This guide shows how to install the SMARCH skill bundle for Claude Code and wher
 Install:
 
 ```bash
-node ~/DEV/SMARCH/tools/install-agent-skills.mjs \
+node tools/install-agent-skills.ts \
   --target /path/to/project \
   --platform claude-code
 ```

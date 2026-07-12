@@ -39,7 +39,7 @@ interface PortfolioScanArgs {
 
 const HELP_TEXT = `Usage: node tools/sma-portfolio-scan.ts [options]
 
-Scan first-class portfolio projects from ~/DEV/Projects into SMA scan outputs.
+Scan first-class portfolio projects from $SMA_PROJECTS_ROOT into SMA scan outputs.
 
 Options:
   --project <id>          Scan only this project id. Repeatable.

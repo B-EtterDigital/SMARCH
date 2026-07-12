@@ -10,7 +10,7 @@ Use this skill to create human learning material from SMA data.
 ## Workflow
 
 1. Find the registry or manifests:
-   - global registry: `~/DEV/SMARCH/registry/global-modules.generated.json`
+   - global registry: `registry/global-modules.generated.json`
    - brick manifests: `module.sweetspot.json`
    - project indexes: `.sweetspot/modules.json`
 2. Generate or update wiki pages:
@@ -26,17 +26,17 @@ Use this skill to create human learning material from SMA data.
 Generate the wiki and course from the current global registry:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-wiki.mjs \
-  --registry ~/DEV/SMARCH/registry/global-modules.generated.json \
-  --out ~/DEV/SMARCH/wiki
+node tools/sma-wiki.mjs \
+  --registry registry/global-modules.generated.json \
+  --out wiki
 ```
 
 Refresh the registry first:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs \
-  --root ~/DEV/Projects \
-  --out ~/DEV/SMARCH/registry/global-modules.generated.json
+node tools/sma-scan.mjs \
+  --root $SMA_PROJECTS_ROOT \
+  --out registry/global-modules.generated.json
 ```
 
 ## Teaching Rules

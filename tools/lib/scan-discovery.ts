@@ -179,7 +179,7 @@ function printHelp(): void {
   console.log(`SMA scanner
 
 Usage:
-  node tools/sma-scan.ts --root ~/DEV/Projects --out registry/global-modules.generated.json
+  node tools/sma-scan.ts --root $SMA_PROJECTS_ROOT --out registry/global-modules.generated.json
 
 Options:
   --root  Directory to scan for module.sweetspot.json files

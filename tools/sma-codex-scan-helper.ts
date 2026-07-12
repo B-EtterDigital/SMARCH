@@ -41,7 +41,7 @@ function parseArgs(argv: string[]) {
     else if (a === "--model" && n) { opts.model = n; i += 1; }
   }
   if (!opts.project) opts.project = path.basename(opts.root || "");
-  if (!opts.out) opts.out = path.resolve(`~/DEV/SMARCH/security/scan_long_tail.${opts.project}.json`);
+  if (!opts.out) opts.out = path.resolve(`$SMARCH_DIR/security/scan_long_tail.${opts.project}.json`);
   return opts;
 }
 
@@ -139,7 +139,7 @@ function isCoveredByDirManifest(filePath: string, coveredDirs: Set<string>): boo
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  if (!opts.root) { console.error("error: --root ~/DEV/Projects/<x> required"); process.exit(2); }
+  if (!opts.root) { console.error("error: --root $SMA_PROJECTS_ROOT/<x> required"); process.exit(2); }
   console.error(`scanning ${opts.root} for uncovered files...`);
 
   const allFiles = await listAllFiles(opts.root);

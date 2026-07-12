@@ -19,7 +19,7 @@ const LEDGER_PATH = 'registry/public-ledger.generated.json';
 const FILES = [
   'tools/sma-ci.ts',
   'tools/sma-scan.ts',
-  'tools/install-agent-skills.mjs',
+  'tools/install-agent-skills.ts',
   'tools/lib/provenance-seal.ts',
   'tools/lib/license-lattice.ts',
 ];

@@ -16,7 +16,7 @@ Claude Code rules:
 Useful commands:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs --root . --out .sweetspot/scans/latest.registry.json --check
-node ~/DEV/SMARCH/tools/sma-validate.mjs --registry .sweetspot/scans/latest.registry.json
-node ~/DEV/SMARCH/tools/sma-security-gate.mjs --root .
+node tools/sma-scan.mjs --root . --out .sweetspot/scans/latest.registry.json --check
+node tools/sma-validate.mjs --registry .sweetspot/scans/latest.registry.json
+node tools/sma-security-gate.mjs --root .
 ```

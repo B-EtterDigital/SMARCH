@@ -44,7 +44,7 @@ The skill bundles the `uvp` tool (`scripts/uvp.py`) — the consumer contract:
 - Controller: `uvp dispatch --ceiling <N>` emits a wave manifest (per-module agent slots ordered by critical-chain weight; hot-path queue serialized) → `meta/wave.json`.
 - Agent: `uvp next --module <id> --tier <haiku|sonnet|opus|fable> [--critical]` — ready tasks (deps satisfied), pre-filtered for delegation by model strength.
 - `uvp claim <id> --agent <name> [--lease]` → work → `uvp complete <id> --evidence-cmd "<the task's gate>"` (command must exit 0; recorded as structured, re-runnable evidence) → controller `uvp verify <id>`.
-  `--lease` bridges the SMA lease protocol automatically: it runs `start:edit` for brick `uv-<module>` (aborting on conflict, per Gen3 back-off rules) and `complete` releases via `end:edit`. Configure in the plan's `modules.json`: `"sma": {"control_plane": "~/DEV/SMARCH", "project_id": "<id>"}`.
+  `--lease` bridges the SMA lease protocol automatically: it runs `start:edit` for brick `uv-<module>` (aborting on conflict, per Gen3 back-off rules) and `complete` releases via `end:edit`. Configure in the plan's `modules.json`: `"sma": {"control_plane": "$SMARCH_DIR", "project_id": "<id>"}`.
 - Honesty tooling: `uvp audit-claims` re-runs sampled done tasks' evidence commands; `uvp report` gives velocity/ETA from the journal; `uvp drift` detects when the vision's source files changed since approval; `uvp featmap` proposes SFM rows for fully delivered pillars.
 - `uvp validate --strict` must pass before any completion claim about the plan; `uvp render` refreshes views and INDEX.
 - Status changes go through the tool (lock-serialized, journaled), never by hand-editing JSONL or markdown views.

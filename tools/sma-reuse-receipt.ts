@@ -129,7 +129,7 @@ const receipt = {
   source: {
     project: args.sourceProject,
     commit: args.sourceCommit ?? '',
-    registry_path: `~/DEV/SMARCH/scans/${args.sourceProject}/latest.registry.json`,
+    registry_path: `scans/${args.sourceProject}/latest.registry.json`,
   },
   target: {
     project: args.targetProject,

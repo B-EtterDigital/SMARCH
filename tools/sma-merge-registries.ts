@@ -134,9 +134,9 @@ function parseArgs(argv: string[]): MergeOptions {
 
 Usage:
   node tools/sma-merge-registries.ts \\
-    --registry acme-studio=~/DEV/SMARCH/scans/acme-studio/latest.registry.json \\
-    --registry acme-factory=~/DEV/SMARCH/scans/acme-factory/latest.registry.json \\
-    --out ~/DEV/SMARCH/scans/all-projects/latest.registry.json
+    --registry acme-studio=scans/acme-studio/latest.registry.json \\
+    --registry acme-factory=scans/acme-factory/latest.registry.json \\
+    --out scans/all-projects/latest.registry.json
 `);
       process.exit(0);
     }

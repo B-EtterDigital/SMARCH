@@ -15,5 +15,5 @@ Required next steps:
 7. Run:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-validate.mjs --manifest module.sweetspot.json
+node tools/sma-validate.mjs --manifest module.sweetspot.json
 ```

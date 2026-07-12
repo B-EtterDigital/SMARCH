@@ -648,7 +648,7 @@ async function buildManifest(candidate: Candidate, context: BootstrapContext) {
   } else {
     manifestPath = path.join(candidatePath, "module.sweetspot.json");
   }
-  const verificationCommand = `node ~/DEV/SMARCH/tools/sma-bootstrap-manifests.ts --registry ${context.registryPath} --write`;
+  const verificationCommand = `node tools/sma-bootstrap-manifests.ts --registry ${context.registryPath} --write`;
   const dependencyList = await packageDependencies(candidatePath);
   const manifest = {
     schema_version: "1.0.0",

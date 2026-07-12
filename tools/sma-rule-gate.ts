@@ -205,7 +205,7 @@ Options:
   --manifest <path>       Path to a build.sweetspot.json manifest
   --all                   Run against every *.build.sweetspot.json under builds/
   --projects-root <path>  Where underlying project repos live
-                          (default: $SMA_PROJECTS_ROOT or ~/DEV/Projects)
+                          (default: $SMA_PROJECTS_ROOT or $SMA_PROJECTS_ROOT)
   --report <path>         Write findings JSON to file
   --json                  Print findings JSON to stdout instead of a summary
   --warn-only             Exit 0 even on blocking findings (for first-pass adoption)

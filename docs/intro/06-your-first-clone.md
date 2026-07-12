@@ -30,7 +30,7 @@ source facts used during the copy.
 
 Run this block from the SMARCH folder. It regenerates and scans the practice
 portfolio, then copies Activity Feed into a separate target folder. By default,
-that folder is `~/DEV/smarch-first-clone`; the automated lesson runner uses a
+that folder is `~/smarch-first-clone`; the automated lesson runner uses a
 temporary folder instead.
 
 `--write` tells the command to make the copy instead of previewing it.
@@ -40,7 +40,7 @@ fixtures are synthetic and public-safe; do not use it for real source without
 an authorized review.
 
 > **Stuck? This is normal.** This exercise writes a practice copy to
-> `~/DEV/smarch-first-clone` unless the lesson runner supplies a temporary
+> `~/smarch-first-clone` unless the lesson runner supplies a temporary
 > folder. If that folder already exists, the guided clone may update its own
 > SMARCH records. Use a different `SMARCH_CLONE_TARGET` if you want a fresh
 > practice destination.
@@ -50,7 +50,7 @@ SMARCH_DIR="${SMARCH_DIR:-$PWD}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
 SMARCH_LESSON_TMP="${SMARCH_LESSON_TMP:-$(mktemp -d)}"
 SMARCH_FIXTURE_REGISTRY="$SMARCH_LESSON_TMP/lesson-06.registry.json"
-SMARCH_CLONE_TARGET="${SMARCH_CLONE_TARGET:-$HOME/DEV/smarch-first-clone}"
+SMARCH_CLONE_TARGET="${SMARCH_CLONE_TARGET:-$HOME/smarch-first-clone}"
 export SMARCH_CLONE_TARGET
 cd "$SMARCH_DIR"
 
@@ -108,7 +108,7 @@ recorded; it does not mean the checklist can be skipped.
 Open the printed checklist before adapting the clone:
 
 ```text
-~/DEV/smarch-first-clone/.sweetspot/clones/acme-desktop-activity-feed.md
+~/smarch-first-clone/.sweetspot/clones/acme-desktop-activity-feed.md
 ```
 
 ## Check your understanding

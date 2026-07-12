@@ -12,13 +12,13 @@ Detection:
 - If `sma.gen3.json` is missing, start with bootstrap rather than assuming Acme Desktop commands.
 
 Global SMA root:
-- `~/DEV/SMARCH`
+- `$SMARCH_DIR`
 
 Minimum portable scripts:
 - `sma:gen3`
 - `sma:gen3:json`
 - `sma:gen3:check`
-- module Graphify check/refresh commands or `~/DEV/SMARCH` wrapper usage
+- module Graphify check/refresh commands or `$SMARCH_DIR` wrapper usage
 - project telemetry audit
 - project release/SMA gate
 
@@ -32,7 +32,7 @@ Hot paths to map in every repo:
 - build/release/deploy files,
 - native/platform code.
 
-Portfolio refresh from `~/DEV/SMARCH`:
+Portfolio refresh from `$SMARCH_DIR`:
 - `npm run scan:safe`
 - `npm run state:safe`
 - `npm run gen3:dashboard`
@@ -41,7 +41,7 @@ Portfolio refresh from `~/DEV/SMARCH`:
 
 Refresh after module/manifests/build/release/agent-rule changes or before reporting portfolio numbers. Use leases; do not regenerate global artifacts concurrently.
 
-Mandatory module Graphify from `~/DEV/SMARCH`:
+Mandatory module Graphify from `$SMARCH_DIR`:
 - `npm run graphify:check:modules -- --project <project-id> --strict`
 - `npm run graphify:refresh:modules -- --project <project-id> --global`
 - `npm run graphify:refresh:modules -- --project <project-id> --missing-only --limit 25 --global`
@@ -92,8 +92,8 @@ SRS maintenance:
 ## Acme Suite / ACME-STUDIO
 
 Known roots:
-- `~/DEV/Projects/acme-studio-workspace`
-- `~/DEV/Projects/acme-studio-workspace/acme-studio`
+- `$SMA_PROJECTS_ROOT/acme-studio-workspace`
+- `$SMA_PROJECTS_ROOT/acme-studio-workspace/acme-studio`
 
 Bootstrap notes:
 - Inspect root `AGENTS.md` and `CLAUDE.md` first.
@@ -103,7 +103,7 @@ Bootstrap notes:
 ## Acme Factory
 
 Known root:
-- `~/DEV/Projects/acme-factory`
+- `$SMA_PROJECTS_ROOT/acme-factory`
 
 Bootstrap notes:
 - Inspect `CLAUDE.md`, `acme-factory_ai_instructions.md`, package scripts, `.github/workflows`, and module directories before planning.

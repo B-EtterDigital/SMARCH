@@ -22,7 +22,7 @@ Ambient mode wires Claude Code `PreToolUse` and `PostToolUse` hooks to the
 `Write`, `Edit`, `MultiEdit`, and `NotebookEdit` tools:
 
 ```bash
-node tools/install-agent-skills.mjs --target /path/to/project --hooks
+node tools/install-agent-skills.ts --target /path/to/project --hooks
 ```
 
 The installer merges entries into `.claude/settings.json`. Existing settings,

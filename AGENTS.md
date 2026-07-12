@@ -45,7 +45,7 @@ reap is audited. See docs/SPL_SWEETSPOT_PROCESS_LEASE.md.
 ## SMA Gen3 Collision Reporting (mandatory)
 
 - Before editing an SMA brick/module, use `npm run start:edit -- --project <id> --brick <id> --intent "..."` so the lease and `edit_planned` event are recorded together.
-- For edits inside `~/DEV/SMARCH`, use `--project sma` and a clear control-plane brick id, for example `sma-gen3-ci-control-plane` or `sma-graphify-control-plane`.
+- For edits inside `$SMARCH_DIR`, use `--project sma` and a clear control-plane brick id, for example `sma-gen3-ci-control-plane` or `sma-graphify-control-plane`.
 - Before broad SMA control-plane reads, prefer `npm run graphify:query:self -- -- "question"`; refresh the local code-only graph with `npm run graphify:refresh:self` when missing or stale.
 - If `start:edit` fails because the brick/resource is already leased, do not keep editing the same surface. The tool records `conflict_detected`; back off, choose another module, or wait for a handoff.
 - If you discover overlap outside `start:edit` (dirty file overlap, shared hot path, regen/global write, graph/global state contention), run `npm run conflict -- report --project <id> --brick <id> --intent "..." --resolution-plan "..."`.

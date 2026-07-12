@@ -92,7 +92,7 @@
   },
   {
    "brick_id": "smarch.tools.install-agent-skills",
-   "path": "tools/install-agent-skills.mjs",
+   "path": "tools/install-agent-skills.ts",
    "content_hash": "9a9713c4fca55e37c4a811106e68a8741cef060cfee77d5498c2eb235a6036fd",
    "anchor": "a40821519af60bd08c67c8cfa168bad9c63dcd26078e15a6404f651291f23ea2",
    "head": "ae87f8ce61c1a36e1eba573c1442e5b8a8c39d91ce62793a870b66ec187ed121",

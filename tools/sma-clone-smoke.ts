@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 import { PROJECTS_ROOT } from "./lib/sma-paths.ts";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..");
-// sma-dependents-index hardcodes ~/DEV/Projects as its scan root,
+// sma-dependents-index hardcodes $SMA_PROJECTS_ROOT as its scan root,
 // so a smoke sandbox must live there for the dependent-registration step to pass.
 
 interface CloneOptions { buildId: string; buildIndex: string; buildManifest: string; json: boolean; keep: boolean; registry: string; sandbox: string }

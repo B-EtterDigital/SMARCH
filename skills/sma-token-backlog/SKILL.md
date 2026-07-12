@@ -7,8 +7,8 @@ description: Run the SMA token-accounting + backlog + update-propagation workflo
 
 Read these in order:
 
-1. [~/DEV/SMARCH/docs/TOKEN_ACCOUNTING_AND_BACKLOG.md](../../docs/TOKEN_ACCOUNTING_AND_BACKLOG.md)
-2. [~/DEV/SMARCH/docs/UPDATE_PROPAGATION.md](../../docs/UPDATE_PROPAGATION.md)
+1. [$SMARCH_DIR/docs/TOKEN_ACCOUNTING_AND_BACKLOG.md](../../docs/TOKEN_ACCOUNTING_AND_BACKLOG.md)
+2. [$SMARCH_DIR/docs/UPDATE_PROPAGATION.md](../../docs/UPDATE_PROPAGATION.md)
 
 ## When to invoke
 
@@ -26,23 +26,23 @@ Read these in order:
 ## Required after every clone
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-token-count.mjs --root <target> --write
-node ~/DEV/SMARCH/tools/sma-reuse-receipt.mjs \
+node tools/sma-token-count.mjs --root <target> --write
+node tools/sma-reuse-receipt.mjs \
   --target <target> --target-project <id> --source-project <src> --source-commit <sha> \
   --item <pkg/path>:source=<src/path>:kind=brick \
   --infra-tokens <est> --backlog-id <id>... --write
-node ~/DEV/SMARCH/tools/sma-backlog.mjs add --project <id> --kind ... --severity ... --title "..."
-node ~/DEV/SMARCH/tools/sma-dependents-index.mjs --write   # source project now sees this dependent
+node tools/sma-backlog.mjs add --project <id> --kind ... --severity ... --title "..."
+node tools/sma-dependents-index.mjs --write   # source project now sees this dependent
 ```
 
 ## Required after a source brick version bump
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-release.mjs --manifest <source>/module.sweetspot.json
-node ~/DEV/SMARCH/tools/sma-dependents-index.mjs --write
-node ~/DEV/SMARCH/tools/sma-propagate.mjs --source-brick <id> --release releases/<brick>/<version>.json
+node tools/sma-release.mjs --manifest <source>/module.sweetspot.json
+node tools/sma-dependents-index.mjs --write
+node tools/sma-propagate.mjs --source-brick <id> --release releases/<brick>/<version>.json
 # review dry-run, then:
-node ~/DEV/SMARCH/tools/sma-propagate.mjs --source-brick <id> --release releases/<brick>/<version>.json --apply
+node tools/sma-propagate.mjs --source-brick <id> --release releases/<brick>/<version>.json --apply
 ```
 
 ## Output paths
@@ -52,9 +52,9 @@ node ~/DEV/SMARCH/tools/sma-propagate.mjs --source-brick <id> --release releases
 - `<project>/.smarch/backlog.json`
 - `<project>/.smarch/incoming-updates/<brick>-<ts>.json` (push-side stubs)
 - `<project>/.smarch/update-plan-<brick>-<ts>.json` (locked targets only)
-- `~/DEV/SMARCH/registry/backlog.generated.json`
-- `~/DEV/SMARCH/registry/dependents.generated.json`
-- `~/DEV/SMARCH/registry/propagation/<brick>/<ts>.json`
+- `registry/backlog.generated.json`
+- `registry/dependents.generated.json`
+- `registry/propagation/<brick>/<ts>.json`
 
 ## Don'ts
 

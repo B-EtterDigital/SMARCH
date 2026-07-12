@@ -25,7 +25,7 @@ Before editing a brick, regenerating a generated artifact, or modifying an impor
 
 ```bash
 # Edit a brick
-node ~/DEV/SMARCH/tools/sma-lease.mjs acquire \
+node tools/sma-lease.mjs acquire \
   --resource-kind brick \
   --resource <brick_id> \
   --agent <agent_id> \
@@ -33,14 +33,14 @@ node ~/DEV/SMARCH/tools/sma-lease.mjs acquire \
   --ttl 600
 
 # Regenerate the wiki / dashboard / brick-wall
-node ~/DEV/SMARCH/tools/sma-lease.mjs acquire \
+node tools/sma-lease.mjs acquire \
   --resource-kind wiki-regen \
   --resource wiki/all-projects \
   --agent <agent_id> \
   --intent "regenerate after brick X promotion"
 
 # Check whether a resource is held before queueing work
-node ~/DEV/SMARCH/tools/sma-lease.mjs status \
+node tools/sma-lease.mjs status \
   --resource-kind brick --resource <brick_id>
 # exit 0 = free, 10 = held by other, 11 = held by self
 ```
@@ -57,7 +57,7 @@ agents — the Entire-shaped layer that git does not give you.
 See `docs/INFLUENCES.md` for the lineage.
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-context.mjs append \
+node tools/sma-context.mjs append \
   --project <project_id> \
   --brick <brick_id> \
   --kind edit_applied \
@@ -75,7 +75,7 @@ Required for every edit: `--kind`, `--intent`. Strongly encouraged: `--decision`
 Read prior intent before starting:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-context.mjs summarize \
+node tools/sma-context.mjs summarize \
   --project <project_id> --brick <brick_id>
 ```
 
@@ -86,7 +86,7 @@ override, push from a second machine), generate a merge proposal that surfaces
 the *intents* in addition to the file changes:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-merge.mjs propose \
+node tools/sma-merge.mjs propose \
   --project <project_id> --brick <brick_id> --write
 ```
 
@@ -99,7 +99,7 @@ Once a release artifact exists at `releases/<brick>/<version>.json`, install it
 into a target project by id and version (no manual path tracking required):
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-store.mjs install \
+node tools/sma-store.mjs install \
   --brick <brick_id> --version <v> --target <project_path> --write
 ```
 
@@ -111,7 +111,7 @@ SDK-first storage direction; see `docs/INFLUENCES.md`. Hosted variant deferred.
 Scan:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs \
+node tools/sma-scan.mjs \
   --root . \
   --out .sweetspot/global-modules.generated.json \
   --check
@@ -120,14 +120,14 @@ node ~/DEV/SMARCH/tools/sma-scan.mjs \
 Validate:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-validate.mjs \
+node tools/sma-validate.mjs \
   --registry .sweetspot/global-modules.generated.json
 ```
 
 Generate wiki (only after acquiring a wiki-regen lease):
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-wiki.mjs \
+node tools/sma-wiki.mjs \
   --registry .sweetspot/global-modules.generated.json \
   --out .sweetspot/wiki
 ```
@@ -135,7 +135,7 @@ node ~/DEV/SMARCH/tools/sma-wiki.mjs \
 Run all:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-ci.mjs \
+node tools/sma-ci.mjs \
   --root . \
   --registry .sweetspot/global-modules.generated.json \
   --wiki .sweetspot/wiki
@@ -157,8 +157,8 @@ node ~/DEV/SMARCH/tools/sma-ci.mjs \
 All tools below have a short form via the umbrella binary:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma.mjs <command> [...args]
-# or after `npm link` in ~/DEV/SMARCH:
+node tools/sma.mjs <command> [...args]
+# or after `npm link` in $SMARCH_DIR:
 sma <command> [...args]
 ```
 
@@ -191,10 +191,10 @@ Use `--strict-context-gate` once your team is consistently appending context eve
 
 ```bash
 # Warn-only — surfaces gaps without failing
-node ~/DEV/SMARCH/tools/sma-ci.mjs --require-context
+node tools/sma-ci.mjs --require-context
 
 # Strict — fails the pipeline on missing context
-node ~/DEV/SMARCH/tools/sma-ci.mjs --context-strict
+node tools/sma-ci.mjs --context-strict
 
 # npm script alias
 npm run ci:gen3
@@ -222,5 +222,5 @@ sma doctor                      # text report including the Gen-3 section
 
 - Read `references/enforcement-checklist.md` when reviewing a brick.
 - Read `references/agent-swarm-rules.md` before assigning multi-agent work.
-- Read `~/DEV/SMARCH/docs/MULTI_AGENT_OPERATIONS.md` for the multi-agent and Gen-3 operating model.
-- Read `~/DEV/SMARCH/docs/MULTI_AGENT_OPERATIONS.md` for the operator's guide.
+- Read `$SMARCH_DIR/docs/MULTI_AGENT_OPERATIONS.md` for the multi-agent and Gen-3 operating model.
+- Read `$SMARCH_DIR/docs/MULTI_AGENT_OPERATIONS.md` for the operator's guide.

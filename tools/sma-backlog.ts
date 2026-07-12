@@ -15,7 +15,7 @@
  *
  * Per-project backlog lives at <project_root>/.smarch/backlog.json
  * (schema: schemas/backlog.schema.json). Global aggregate is rebuilt by
- *   `sma-backlog.ts aggregate` at ~/DEV/SMARCH/registry/backlog.generated.json.
+ *   `sma-backlog.ts aggregate` at registry/backlog.generated.json.
  *
  * Subcommands:
  *   add        --project <id> --title "..." --kind <kind> --severity <s> [--brick X] [--file F]...

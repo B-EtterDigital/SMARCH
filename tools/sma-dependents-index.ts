@@ -15,13 +15,13 @@
  * sma-dependents-index.ts — build the inverted "who has copies of which brick" index.
  *
  * Reads (does not modify):
- *   - ~/DEV/Projects/*\/.smarch/import-lock.json    (formal sma-clone provenance)
- *   - ~/DEV/Projects/*\/.smarch/reuse-receipts/*.json  (manual / additive copies)
- *   - ~/DEV/Projects/*\/(packages|web/src/modules|...)/<brick>/module.sweetspot.json
+ *   - $SMA_PROJECTS_ROOT/*\/.smarch/import-lock.json    (formal sma-clone provenance)
+ *   - $SMA_PROJECTS_ROOT/*\/.smarch/reuse-receipts/*.json  (manual / additive copies)
+ *   - $SMA_PROJECTS_ROOT/*\/(packages|web/src/modules|...)/<brick>/module.sweetspot.json
  *       → provenance.source_chain[*] (legacy / scanner-bootstrapped fallback)
  *
  * Writes:
- *   ~/DEV/SMARCH/registry/dependents.generated.json
+ *   registry/dependents.generated.json
  *   conforming to schemas/dependents-index.schema.json
  *
  * Use:

@@ -14,7 +14,7 @@
 /**
  * sma-lease.ts — soft-lock registry for SMARCH agent collision avoidance.
  *
- * Runtime cache: ~/DEV/SMARCH/registry/active-leases.generated.json
+ * Runtime cache: registry/active-leases.generated.json
  * The file is intentionally ignored by git because it changes whenever leases
  * are acquired/released.
  * Schema:   schemas/active-leases.schema.json

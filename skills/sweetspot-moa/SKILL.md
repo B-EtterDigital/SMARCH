@@ -290,7 +290,7 @@ run-total row:
 Mechanics — run the bundled tool; do not hand-compute:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-smoa-token-summary.mjs \
+node tools/sma-smoa-token-summary.mjs \
   --claude-session ~/.claude/projects/<project-dir>/<session-id>.jsonl \
   --codex-since <ISO timestamp of first dispatch>   # add --json for machines
 ```

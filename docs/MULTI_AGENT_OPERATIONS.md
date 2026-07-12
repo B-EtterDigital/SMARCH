@@ -346,7 +346,7 @@ npm run lease:expire
 
 `--agent` defaults to `$SMA_AGENT` then `$USER`. Set `SMA_AGENT=claude-opus-4-7@sma-operator` (or whatever) in your shell profile so lease ownership is unambiguous across tools.
 
-For edits to the SMA control plane itself (`~/DEV/SMARCH`), use `--project sma` with a descriptive control-plane brick id. The SMA project logs to its own `.smarch/agent-context/` directory just like regular modular projects.
+For edits to the SMA control plane itself (`$SMARCH_DIR`), use `--project sma` with a descriptive control-plane brick id. The SMA project logs to its own `.smarch/agent-context/` directory just like regular modular projects.
 
 Before broad SMA control-plane reads, use the self graph:
 

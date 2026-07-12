@@ -8,7 +8,7 @@ SMA works best when the agent can load the rules automatically.
 The canonical SMA skills live in:
 
 ```text
-~/DEV/SMARCH/skills/
+skills/
   sma-enforcer/
   sma-course-builder/
 ```
@@ -16,7 +16,7 @@ The canonical SMA skills live in:
 Install them into a project:
 
 ```bash
-node ~/DEV/SMARCH/tools/install-agent-skills.ts \
+node tools/install-agent-skills.ts \
   --target /path/to/project \
   --platform all
 ```

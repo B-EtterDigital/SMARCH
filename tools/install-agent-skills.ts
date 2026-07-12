@@ -7,7 +7,7 @@
  * HOW: The command accepts a target and platform, copies skill directories, and optionally merges instructions and hooks.
  * Inputs are local repository templates; outputs stay inside the selected project's agent configuration directories.
  * Use the no-instructions flag when only skill packages should be installed.
- * Usage: node tools/install-agent-skills.mjs --help
+ * Usage: node tools/install-agent-skills.ts --help
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -82,7 +82,7 @@ function parseArgs(argv: string[]): InstallOptions {
       console.log(`Install SMA agent skills
 
 Usage:
-  node tools/install-agent-skills.mjs --target /path/to/project --platform all
+  node tools/install-agent-skills.ts --target /path/to/project --platform all
 
 Platforms:
   claude-code, codex, opencode, all

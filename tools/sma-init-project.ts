@@ -183,10 +183,10 @@ async function main() {
     project_json_written: projectWritten,
     modules_json_written: modulesWritten,
     next_commands: [
-      `node ~/DEV/SMARCH/tools/sma-scan.ts --root ${options.target} --out ${path.join(options.target, ".sweetspot", "scans", "latest.registry.json")} --check`,
-      `node ~/DEV/SMARCH/tools/sma-security-gate.mjs --root ${options.target}`,
-      `node ~/DEV/SMARCH/tools/sma-compliance-gate.mjs --root ${options.target} --gate`,
-      `node ~/DEV/SMARCH/tools/sma-wiki.mjs --registry ${path.join(options.target, ".sweetspot", "scans", "latest.registry.json")} --out ${path.join(options.target, ".sweetspot", "wiki")}`
+      `node tools/sma-scan.ts --root ${options.target} --out ${path.join(options.target, ".sweetspot", "scans", "latest.registry.json")} --check`,
+      `node tools/sma-security-gate.mjs --root ${options.target}`,
+      `node tools/sma-compliance-gate.mjs --root ${options.target} --gate`,
+      `node tools/sma-wiki.mjs --registry ${path.join(options.target, ".sweetspot", "scans", "latest.registry.json")} --out ${path.join(options.target, ".sweetspot", "wiki")}`
     ]
   }, null, 2));
 }

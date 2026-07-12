@@ -114,7 +114,7 @@ function parseArgs(argv: string[]): typeof defaultOptions {
 
 Usage:
   node tools/sma-validate.ts --manifest path/to/module.sweetspot.json
-  node tools/sma-validate.ts --root ~/DEV/Projects
+  node tools/sma-validate.ts --root $SMA_PROJECTS_ROOT
   node tools/sma-validate.ts --registry registry/global-modules.generated.json
 `);
       process.exit(0);

@@ -317,7 +317,7 @@ function buildAudit(opts: AuditOptions): Audit {
       restore_plan: 'npm run codex:profile:restore',
       restore_apply_latest: 'npm run codex:profile:restore:apply',
       selftest: 'npm run codex:profile:selftest',
-      nested_smoke: 'codex exec --cd ~/DEV/Projects/<project> "Reply with READY and nothing else."',
+      nested_smoke: 'codex exec --cd $SMA_PROJECTS_ROOT/<project> "Reply with READY and nothing else."',
     },
   };
 }

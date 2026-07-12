@@ -5,7 +5,7 @@ to know SMA, so this file bundles the operating rules the plan depends on.
 
 **Spec resolution order — and fail-loudly rule:**
 1. The project's own `sma.gen3.json` + repo agent docs (AGENTS.md/CLAUDE.md) — always authoritative for module names, gates, commands.
-2. The `$sma-gen3` skill, if installed (`~/.claude/skills/sma-gen3/`), and the global control plane at `~/DEV/SMARCH` (SUP registration: `docs/SUP_SWEETSPOT_ULTRA_PLAN.md`).
+2. The `$sma-gen3` skill, if installed (`~/.claude/skills/sma-gen3/`), and the global control plane at `$SMARCH_DIR` (SUP registration: `docs/SUP_SWEETSPOT_ULTRA_PLAN.md`).
 3. This bundled condensation.
 
 If (1) is missing, the plan's M0 milestone MUST contain the Gen3 bootstrap tasks (below). If you cannot read this file or reconcile the sources, **stop and say so — never improvise "SMA-ish" structure.**
@@ -28,7 +28,7 @@ If (1) is missing, the plan's M0 milestone MUST contain the Gen3 bootstrap tasks
 2. Create `sma.gen3.json` with `paidServicesEnabledByDefault: false`.
 3. Adapt the Gen3 classifier + tests; add `sma:gen3`, `sma:gen3:json`, `sma:gen3:check` scripts.
 4. Wire Gen3 validation into release gates; anchor rules in repo agent docs.
-5. Refresh module Graphify graphs; register with `~/DEV/SMARCH` (`npm run scan:safe`, `state:safe`, `gen3:dashboard`).
+5. Refresh module Graphify graphs; register with `$SMARCH_DIR` (`npm run scan:safe`, `state:safe`, `gen3:dashboard`).
 
 ## Mechanical compliance checklist
 
@@ -73,4 +73,4 @@ the mechanical items; the planner attests the procedural ones in INDEX notes.
 - Derive `modules`/`ownership` from `sma.gen3.json` when it exists (target-state additions go to 03-TARGET-ARCHITECTURE.md and become shared-hot-path tasks). For repos without one, `uvp gen3-draft` emits a ready-to-adapt draft from modules.json — adopting it is the M0 shared-hot-path task.
 - `allowed_deps` lists the modules each module MAY depend on. Derive from the architecture's dependency directions; most modules should list the shared/hot-path module. Omit the key only when the architecture genuinely allows unrestricted edges.
 - `product.media_class` implements the media-pipeline detection rule mechanically; `product.platforms` drives per-platform template fan-out; `product.calibration`/per-module `calibration` hold pilot-derived complexity shifts.
-- Optional `"sma": {"control_plane": "~/DEV/SMARCH", "project_id": "<id>"}` enables the lease bridge: `uvp claim --lease` runs `start:edit` for brick `uv-<module>` (aborting on conflict, per Gen3 back-off rules) and `uvp complete` releases it via `end:edit`. Portfolio visibility: `npm run sup:status` in the control plane rolls up every registered project's `.UltraVision/meta/stats.json`.
+- Optional `"sma": {"control_plane": "$SMARCH_DIR", "project_id": "<id>"}` enables the lease bridge: `uvp claim --lease` runs `start:edit` for brick `uv-<module>` (aborting on conflict, per Gen3 back-off rules) and `uvp complete` releases it via `end:edit`. Portfolio visibility: `npm run sup:status` in the control plane rolls up every registered project's `.UltraVision/meta/stats.json`.

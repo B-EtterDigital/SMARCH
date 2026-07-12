@@ -121,11 +121,11 @@ Default retrieval policy:
 - `single-module`: query that module's graph before broad file reads.
 - `multi-module`: each module agent queries its own graph; the controller compares module answers and uses the project graph for joins.
 - `shared-hot-path`: use project graph first, then relevant module graphs.
-- portfolio questions: use the global graph or `~/DEV/SMARCH` wrapper.
+- portfolio questions: use the global graph or `$SMARCH_DIR` wrapper.
 
-Preferred SMA wrapper from `~/DEV/SMARCH`:
+Preferred SMA wrapper from `$SMARCH_DIR`:
 - `npm run graphify:check:modules -- --project <project-id> --strict`
-- `npm run graphify:refresh:self` for the SMA control-plane graph in `~/DEV/SMARCH`
+- `npm run graphify:refresh:self` for the SMA control-plane graph in `$SMARCH_DIR`
 - `npm run graphify:query:self -- -- "question"` for SMA control-plane retrieval
 - `npm run graphify:refresh:modules -- --project <project-id> --global`
 - `npm run graphify:refresh:modules -- --project <project-id> --missing-only --limit 25 --global`
@@ -142,11 +142,11 @@ If a required module graph is missing, treat it as a bootstrap gap. For small ur
 
 ## Global SMA Scanner
 
-The global SMA layer lives at `~/DEV/SMARCH`. It is the portfolio registry, scanner, state, wiki, Gen3 dashboard, lease system, and shared rulebook above all projects.
+The global SMA layer lives at `$SMARCH_DIR`. It is the portfolio registry, scanner, state, wiki, Gen3 dashboard, lease system, and shared rulebook above all projects.
 
 Use the scanner whenever work changes module boundaries, manifests, build/release surfaces, shared architecture, agent rules, or a project's SMA/Gen3 readiness. Do not leave portfolio numbers stale after meaningful project work.
 
-Preferred commands from `~/DEV/SMARCH`:
+Preferred commands from `$SMARCH_DIR`:
 - `npm run scan:safe` refreshes `registry/global-modules.generated.json` under a lease.
 - `npm run state:safe` refreshes `wiki/SMA_STATE.generated.json` under a lease.
 - `npm run gen3:dashboard` refreshes `wiki/GEN3_DASHBOARD.generated.html`.
@@ -157,7 +157,7 @@ Preferred commands from `~/DEV/SMARCH`:
 
 Use safe lease-wrapped commands for generated global artifacts. Do not run overlapping scanner/state/wiki/dashboard regeneration from multiple agents without a lease.
 
-For edits inside `~/DEV/SMARCH`, use the project id `sma` with a descriptive control-plane brick id in `start:edit`, `end:edit`, `context`, and `conflict` commands. Before broad SMA control-plane reads, prefer `npm run graphify:query:self -- -- "question"`; if the graph is missing, refresh it with `npm run graphify:refresh:self`. SMA Graphify refresh commands default to local code-only extraction; semantic/provider enrichment is opt-in with `--semantic`.
+For edits inside `$SMARCH_DIR`, use the project id `sma` with a descriptive control-plane brick id in `start:edit`, `end:edit`, `context`, and `conflict` commands. Before broad SMA control-plane reads, prefer `npm run graphify:query:self -- -- "question"`; if the graph is missing, refresh it with `npm run graphify:refresh:self`. SMA Graphify refresh commands default to local code-only extraction; semantic/provider enrichment is opt-in with `--semantic`.
 
 For small code-only edits that do not affect SMA manifests, module ownership, or portfolio readiness, it is enough to note that the global scanner was not required. For any claim about portfolio numbers, always refresh or explicitly say the numbers are stale.
 
@@ -256,7 +256,7 @@ For a project that is modular like Acme Desktop but not yet Gen3-enabled:
 SUP is the opt-in maximum-granularity planning layer above normal Gen3 work:
 full vision reconstruction plus an exhaustive machine-readable task
 decomposition in a repo-root `.UltraVision/` folder. Registered in the control
-plane at `~/DEV/SMARCH/docs/SUP_SWEETSPOT_ULTRA_PLAN.md`; reference
+plane at `$SMARCH_DIR/docs/SUP_SWEETSPOT_ULTRA_PLAN.md`; reference
 implementation is the `f5-ultravisionplan` skill.
 
 - Never run SUP as part of normal SMA development. Trigger only on explicit
@@ -276,7 +276,7 @@ CLI agents via `codex exec` are the ONLY execution workforce (model id
 configurable per your codex auth), cross-reviewing each other under an
 evidence-forced contract.
 Registered in the control plane at
-`~/DEV/SMARCH/docs/SMOA_SWEETSPOT_MOA.md`; reference
+`$SMARCH_DIR/docs/SMOA_SWEETSPOT_MOA.md`; reference
 implementation is the `sweetspot-moa` skill.
 
 - Never self-trigger. Activate only on the literal tokens `SMOA`,
@@ -307,7 +307,7 @@ SFF is the opt-in design-excellence layer: Fable designs with its design
 skill stack force-loaded, known AI-slop tells are hard-banned, delivery
 requires Playwright screenshot verification at 3 breakpoints, and the result
 is locked in a repo `.sff/DESIGN-LOCK.md`. Registered in the control plane
-at `~/DEV/SMARCH/docs/SFF_SWEETSPOT_FRONTEND_FIX.md`; reference
+at `$SMARCH_DIR/docs/SFF_SWEETSPOT_FRONTEND_FIX.md`; reference
 implementation is the `sweetspot-frontend-fix` skill.
 
 - Never self-trigger. Activate only on literal `SFF` / `/sff` /

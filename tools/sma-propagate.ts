@@ -10,7 +10,7 @@
  * sma-propagate.ts — push-side fan-out when a source brick is upgraded.
  *
  * Pipeline:
- *   1. Read ~/DEV/SMARCH/registry/dependents.generated.json (built by
+ *   1. Read registry/dependents.generated.json (built by
  *      sma-dependents-index.ts).
  *   2. For the given --source-brick (or all bricks with a release artifact since
  *      <since-commit>), enumerate dependents.
@@ -19,7 +19,7 @@
  *   4. For each dependent that only has a reuse-receipt (informal copy), produce
  *      a "manual review" diff hint: which files in target diverge from current
  *      source HEAD; flagged for human/agent decision.
- *   5. Write a fan-out report to ~/DEV/SMARCH/registry/propagation/<brick>/<ts>.json
+ *   5. Write a fan-out report to registry/propagation/<brick>/<ts>.json
  *      and per-target stub files at <target>/.smarch/incoming-updates/<brick>-<ts>.json.
  *
  * Default is dry-run: produces the report but does not modify any target. Use
@@ -85,15 +85,15 @@ if (args.help || (!args.sourceBrick && !args.since)) {
   --since <sha>           Run propagation for every brick whose source files
                           changed since this commit in --source-project.
   --release <path>        Release artifact to propagate. Defaults to latest in
-                          ~/DEV/SMARCH/releases/<brick>/.
+                          $SMARCH_DIR/releases/<brick>/.
   --apply                 Actually run sma-update-plan against each formally-locked
                           target (writes plan files). Reuse-receipt dependents are
                           NEVER auto-applied; they require human/agent review.
   --apply-pr              Reserved: open draft PRs in dependent repos. Not implemented.
   --json                  Machine output.
 
-Reads:  ~/DEV/SMARCH/registry/dependents.generated.json
-Writes: ~/DEV/SMARCH/registry/propagation/<brick>/<ts>.json (fan-out report)
+Reads:  registry/dependents.generated.json
+Writes: registry/propagation/<brick>/<ts>.json (fan-out report)
         <target_root>/.smarch/incoming-updates/<brick>-<ts>.json  (per dependent)
 `);
   exit(args.help ? 0 : 2);

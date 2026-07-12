@@ -7,7 +7,7 @@ description: F5-UltraVisionPlan — the reference implementation of SUP (Sweetsp
 
 Turn a repo into a complete, evidence-backed, **machine-readable** plan from current state to the perfect realization of its vision: documented in `.UltraVision/`, decomposed into atomic tasks with deterministic IDs, complexity-rated for model-strength delegation, DAG-chained, and grouped by SMA Gen3 module ownership so parallel agents never collide.
 
-SUP is registered in the SMA control plane (`~/DEV/SMARCH/docs/SUP_SWEETSPOT_ULTRA_PLAN.md`; portfolio roll-up: `npm run sup:status` there). It is **opt-in**: run it only when explicitly requested or when a `.UltraVision/` folder already exists. This is a planning skill — it writes plans, not product code.
+SUP is registered in the SMA control plane (`$SMARCH_DIR/docs/SUP_SWEETSPOT_ULTRA_PLAN.md`; portfolio roll-up: `npm run sup:status` there). It is **opt-in**: run it only when explicitly requested or when a `.UltraVision/` folder already exists. This is a planning skill — it writes plans, not product code.
 
 ## Architecture in one paragraph
 

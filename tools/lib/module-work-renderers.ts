@@ -502,7 +502,7 @@ export function modulePrompt({
   const pathLimit = partition ? module.paths : (module.paths || []).slice(0, 4);
   return [
     'Use $sma-gen3.',
-    `From ~/DEV/SMARCH run \`${graphCommand}\` before broad file reads.`,
+    `From $SMARCH_DIR run \`${graphCommand}\` before broad file reads.`,
     claimCommand
       ? `Claim with \`${claimCommand}\`.`
       : 'Do not claim from this preview; use the dispatch-pinned claim from the module dispatch manifest.',

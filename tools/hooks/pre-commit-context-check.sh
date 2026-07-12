@@ -6,18 +6,18 @@
 # .git/hooks/pre-commit, lefthook, simple-git-hooks):
 #
 #   #!/bin/sh
-#   ~/DEV/SMARCH/tools/hooks/pre-commit-context-check.sh
+#   tools/hooks/pre-commit-context-check.sh
 #
 # Or, project-local install:
 #
-#   ln -s ~/DEV/SMARCH/tools/hooks/pre-commit-context-check.sh \
+#   ln -s tools/hooks/pre-commit-context-check.sh \
 #         .git/hooks/pre-commit
 #
 # Behavior:
 #   - Inspects `git diff --cached --name-only` for staged
 #     `module.sweetspot.json` / `build.sweetspot.json` files
 #   - Resolves the project id from the closest ancestor under
-#     ~/DEV/Projects/
+#     $SMA_PROJECTS_ROOT/
 #   - Runs `sma context-check check --strict --project <id>` for each
 #     affected project
 #   - Exits non-zero if any project fails (blocks the commit)
@@ -27,8 +27,8 @@
 
 set -euo pipefail
 
-PROJECTS_ROOT="${SMA_PROJECTS_ROOT:-~/DEV/Projects}"
-SMA_ROOT="${SMA_ROOT:-~/DEV/SMARCH}"
+PROJECTS_ROOT="${SMA_PROJECTS_ROOT:-$SMA_PROJECTS_ROOT}"
+SMA_ROOT="${SMA_ROOT:-$SMARCH_DIR}"
 WARN_ONLY="${SMA_CONTEXT_CHECK_WARN:-0}"
 
 # Collect staged manifest paths

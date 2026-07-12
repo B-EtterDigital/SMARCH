@@ -13,7 +13,7 @@ Choose another `SMARCH_DIR` if that path already exists.
 
 ```bash
 SMARCH_REPO="${SMARCH_REPO:-git@github.com:B-EtterDigital/SMARCH.git}"
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 git clone "$SMARCH_REPO" "$SMARCH_DIR"
 ```
 
@@ -26,7 +26,7 @@ Cloning into '.../SMARCH'...
 ## 2. Install the dependencies
 
 ```bash
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 cd "$SMARCH_DIR"
 npm install
 npm --prefix web install
@@ -47,7 +47,7 @@ against the checked-in ratchet instead of treating the existing migration
 backlog as a fresh-install failure.
 
 ```bash
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 cd "$SMARCH_DIR"
 npm run source:size:gate
 node tools/sma-quality-gate.mjs
@@ -70,7 +70,7 @@ The fixtures are deterministic, safe demo projects. Regenerating them gives
 you the same portfolio every time.
 
 ```bash
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
 cd "$SMARCH_DIR"
 npm run fixtures:gen -- --out "$SMARCH_FIXTURE_PORTFOLIO"
@@ -91,7 +91,7 @@ The scanner discovers each [manifest](GLOSSARY.md#manifest) and writes a local
 and silent catch are intentional learning examples, not setup failures.
 
 ```bash
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 SMARCH_FIXTURE_PORTFOLIO="${SMARCH_FIXTURE_PORTFOLIO:-$SMARCH_DIR/tools/evals/fixtures/portfolio}"
 SMARCH_FIXTURE_REGISTRY="${SMARCH_FIXTURE_REGISTRY:-$SMARCH_DIR/scans/quickstart.registry.json}"
 cd "$SMARCH_DIR"
@@ -111,7 +111,7 @@ The doctor combines the freshly scanned registry with a generated state
 snapshot and turns it into a friendly health report.
 
 ```bash
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 SMARCH_FIXTURE_REGISTRY="${SMARCH_FIXTURE_REGISTRY:-$SMARCH_DIR/scans/quickstart.registry.json}"
 SMARCH_FIXTURE_STATE="${SMARCH_FIXTURE_STATE:-$SMARCH_DIR/wiki/SMA_STATE.generated.json}"
 cd "$SMARCH_DIR"
@@ -137,9 +137,9 @@ these generated fixtures are synthetic and public-safe; do not carry that flag
 into a real-source clone without an authorized review.
 
 ```bash
-SMARCH_DIR="${SMARCH_DIR:-$HOME/DEV/SMARCH}"
+SMARCH_DIR="${SMARCH_DIR:-$HOME/SMARCH}"
 SMARCH_FIXTURE_REGISTRY="${SMARCH_FIXTURE_REGISTRY:-$SMARCH_DIR/scans/quickstart.registry.json}"
-SMARCH_CLONE_TARGET="${SMARCH_CLONE_TARGET:-$HOME/DEV/smarch-first-clone}"
+SMARCH_CLONE_TARGET="${SMARCH_CLONE_TARGET:-$HOME/smarch-first-clone}"
 cd "$SMARCH_DIR"
 mkdir -p "$SMARCH_CLONE_TARGET"
 node tools/sma-provenance-ledger.ts --registry "$SMARCH_FIXTURE_REGISTRY"

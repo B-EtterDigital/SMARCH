@@ -143,7 +143,7 @@ license arrives by email while checkout is built:
 
 ```bash
 # Where your projects live (defaults to ../Projects next to this repo)
-export SMA_PROJECTS_ROOT=~/DEV/Projects
+export SMA_PROJECTS_ROOT=$SMA_PROJECTS_ROOT
 
 # Optionally describe priority projects / path overrides
 cp registry/portfolio.config.example.json registry/portfolio.config.json

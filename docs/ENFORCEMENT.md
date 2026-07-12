@@ -20,10 +20,10 @@ SMA is only credible when checks can fail.
 ## Recommended CI
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-ci.ts \
-  --root ~/DEV/Projects \
-  --registry ~/DEV/SMARCH/registry/global-modules.generated.json \
-  --wiki ~/DEV/SMARCH/wiki
+node tools/sma-ci.ts \
+  --root $SMA_PROJECTS_ROOT \
+  --registry registry/global-modules.generated.json \
+  --wiki wiki
 ```
 
 Local pre-commit config is available in `.pre-commit-config.yaml`.

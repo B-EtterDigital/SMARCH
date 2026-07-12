@@ -85,7 +85,7 @@ Options:
 
 Examples:
   node tools/sma-release.ts --manifest examples/module.sweetspot.json
-  node tools/sma-release.ts --manifest examples/build.sweetspot.json --search-root ~/DEV/Projects/acme-studio-workspace/acme-studio
+  node tools/sma-release.ts --manifest examples/build.sweetspot.json --search-root $SMA_PROJECTS_ROOT/acme-studio-workspace/acme-studio
 `;
 
 function fail(message: string, code = 1): never {

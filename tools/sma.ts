@@ -21,7 +21,7 @@
  *
  * Install once, anywhere:
  *   npm link                         (then `sma <cmd>` works in any cwd)
- *   alias sma="node ~/DEV/SMARCH/tools/sma.ts"
+ *   alias sma="node tools/sma.ts"
  */
 
 import { spawn } from 'node:child_process';

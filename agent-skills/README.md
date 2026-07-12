@@ -52,7 +52,7 @@ The workspace installer copies the core runtime and enforcement skills:
 Install them into an agent workspace with:
 
 ```bash
-node ~/DEV/SMARCH/tools/install-agent-skills.mjs \
+node tools/install-agent-skills.ts \
   --target /path/to/project \
   --platform all
 ```

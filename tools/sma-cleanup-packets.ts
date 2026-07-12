@@ -971,7 +971,7 @@ function cleanupWavePrompt(packet: CleanupPacket | CleanupAssignment, options: {
   const conflict = packet.conflict_command ?? `npm run conflict -- report --project ${shellArg(packet.project)} --brick ${shellArg(packet.brick)} --intent ${shellArg(`dirty group ${packet.group} overlaps my work`)} --resolution-plan ${shellArg('claim, split, clean, or hand off before integration')}`;
   return [
     'Use $sma-gen3.',
-    `From ~/DEV/SMARCH run \`${claim}\`.`,
+    `From $SMARCH_DIR run \`${claim}\`.`,
     'Clean or commit only the claimed dirty group.',
     `Use \`${inspect}\` only if exact paths are needed.`,
     `If overlap, uncertainty, or shared-path contention appears, conflict reporting is mandatory: run \`${conflict}\` and back off.`,

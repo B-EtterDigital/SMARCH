@@ -47,3 +47,6 @@ graphify-out/
 .smarch/
 web/dist/
 security/*.generated.ndjson
+
+# Internal SUP planning artifact — local plan of record, not a public deliverable
+.UltraVision/

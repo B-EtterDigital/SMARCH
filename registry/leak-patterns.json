@@ -1,7 +1,12 @@
 {
   "$comment": "Operators should extend private_identifiers locally. The private-to-public sync config carries the real replacement list.",
   "machine_paths": [
-    "/home/"
+    "/home/",
+    "~/DEV/",
+    "$HOME/DEV",
+    "/DEV/SMARCH",
+    "/DEV/SMA",
+    "/DEV/Projects"
   ],
   "personal_emails": [
     "@gmail.",

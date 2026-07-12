@@ -149,7 +149,7 @@ Usage:
   node tools/sma-graphify.ts selftest
 
 Project lookup reads registry/global-modules.generated.json plus the merged portfolio registry by default.
-Use --project sma for the ~/DEV/SMARCH control-plane graph.
+Use --project sma for the $SMARCH_DIR control-plane graph.
 Refresh defaults to local code-only extraction. Pass --semantic to opt into
 Graphify's semantic extraction/enrichment path.`);
 }

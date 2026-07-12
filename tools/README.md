@@ -5,9 +5,9 @@
 Scan all projects for brick manifests:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.mjs \
-  --root ~/DEV/Projects \
-  --out ~/DEV/SMARCH/registry/global-modules.generated.json \
+node tools/sma-scan.mjs \
+  --root $SMA_PROJECTS_ROOT \
+  --out registry/global-modules.generated.json \
   --check
 ```
 
@@ -18,8 +18,8 @@ The scanner indexes `module.sweetspot.json` files, records validation health, an
 Validate manifests:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-validate.mjs \
-  --registry ~/DEV/SMARCH/registry/global-modules.generated.json
+node tools/sma-validate.mjs \
+  --registry registry/global-modules.generated.json
 ```
 
 ## Manifest Bootstrap
@@ -27,8 +27,8 @@ node ~/DEV/SMARCH/tools/sma-validate.mjs \
 Create first-pass project-bound manifests from scanner candidates:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-bootstrap-manifests.mjs \
-  --registry ~/DEV/SMARCH/scans/acme-studio/latest.registry.json \
+node tools/sma-bootstrap-manifests.mjs \
+  --registry scans/acme-studio/latest.registry.json \
   --write
 ```
 
@@ -39,7 +39,7 @@ The bootstrapper writes `module.sweetspot.json` files, `.sweetspot/project.json`
 Run lightweight secret/env checks:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-security-gate.mjs \
+node tools/sma-security-gate.mjs \
   --root /path/to/project
 ```
 
@@ -48,9 +48,9 @@ node ~/DEV/SMARCH/tools/sma-security-gate.mjs \
 Generate the user-facing wiki and single-page course:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-wiki.mjs \
-  --registry ~/DEV/SMARCH/registry/global-modules.generated.json \
-  --out ~/DEV/SMARCH/wiki
+node tools/sma-wiki.mjs \
+  --registry registry/global-modules.generated.json \
+  --out wiki
 ```
 
 This creates:
@@ -69,11 +69,11 @@ This creates:
 Merge several project scans into one SMA-level all-project registry:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-merge-registries.mjs \
-  --registry acme-studio=~/DEV/SMARCH/scans/acme-studio/latest.registry.json \
-  --registry acme-factory=~/DEV/SMARCH/scans/acme-factory/latest.registry.json \
-  --registry acme-desktop=~/DEV/SMARCH/scans/acme-desktop/latest.registry.json \
-  --out ~/DEV/SMARCH/scans/all-projects/latest.registry.json
+node tools/sma-merge-registries.mjs \
+  --registry acme-studio=scans/acme-studio/latest.registry.json \
+  --registry acme-factory=scans/acme-factory/latest.registry.json \
+  --registry acme-desktop=scans/acme-desktop/latest.registry.json \
+  --out scans/all-projects/latest.registry.json
 ```
 
 The merger normalizes project ids at the SMA layer so old manifest source names such as `workspace-root` do not collapse different projects into one dashboard card.
@@ -83,10 +83,10 @@ The merger normalizes project ids at the SMA layer so old manifest source names 
 Serve the generated dashboard and enable folder browsing plus scan triggers:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-dashboard-server.mjs \
-  --wiki ~/DEV/SMARCH/scans/acme-studio/wiki \
-  --scans ~/DEV/SMARCH/scans \
-  --allow-root ~/DEV \
+node tools/sma-dashboard-server.mjs \
+  --wiki scans/acme-studio/wiki \
+  --scans scans \
+  --allow-root ~/Projects \
   --port 4777
 ```
 
@@ -102,7 +102,7 @@ The dashboard has two project actions:
 Prepare a new project before coding starts:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-init-project.mjs \
+node tools/sma-init-project.mjs \
   --target /path/to/new-project \
   --project-id my-project \
   --name "My Project" \
@@ -113,7 +113,7 @@ node ~/DEV/SMARCH/tools/sma-init-project.mjs \
 Prepare an existing project for refactor:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-init-project.mjs \
+node tools/sma-init-project.mjs \
   --target /path/to/existing-project \
   --project-id existing-project \
   --platform all \
@@ -125,7 +125,7 @@ node ~/DEV/SMARCH/tools/sma-init-project.mjs \
 Install SMA skills:
 
 ```bash
-node ~/DEV/SMARCH/tools/install-agent-skills.mjs \
+node tools/install-agent-skills.ts \
   --target /path/to/project \
   --platform all
 ```

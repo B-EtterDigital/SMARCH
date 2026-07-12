@@ -33,7 +33,7 @@ Each project should eventually have:
 The current merged SMA registry lives here:
 
 ```
-~/DEV/SMARCH/registry/
+registry/
   global-modules.generated.json
   provenance-ledger.generated.json
   license-ledger.generated.json
@@ -67,8 +67,8 @@ This matters for large projects. A monorepo with hundreds of functions should no
 For a project that has no manifests yet, use the bootstrapper:
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-bootstrap-manifests.ts \
-  --registry ~/DEV/SMARCH/scans/<project>/latest.registry.json \
+node tools/sma-bootstrap-manifests.ts \
+  --registry scans/<project>/latest.registry.json \
   --write
 ```
 
@@ -102,9 +102,9 @@ A brick can become canonical only if:
 ## Scanner Command
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-scan.ts \
-  --root ~/DEV/Projects \
-  --out ~/DEV/SMARCH/registry/global-modules.generated.json
+node tools/sma-scan.ts \
+  --root $SMA_PROJECTS_ROOT \
+  --out registry/global-modules.generated.json
 ```
 
 The generated file is an index, not an approval. Human or security-agent review promotes entries into canonical maps.

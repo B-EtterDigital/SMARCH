@@ -331,7 +331,7 @@ function resolveProjects(): string[] {
     out.add(id);
   };
 
-  // (a) absolute control-plane projects outside /DEV/Projects
+  // (a) absolute control-plane projects outside the configured projects root
   for (const id of Object.keys(PROJECT_ABSOLUTE_OVERRIDES)) {
     addIfContextProject(id);
   }

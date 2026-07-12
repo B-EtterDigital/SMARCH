@@ -18,7 +18,7 @@ Use this skill to turn a product **vision** into a **build plan** made from exis
 ### 1. Translate the vision into a ranked brick plan
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-codex-rank.mjs \
+node tools/sma-codex-rank.mjs \
   --vision "<user's vision paragraph>" \
   --top 12 \
   --min-status candidate
@@ -36,7 +36,7 @@ Present the plan to the user for approval before writing anything.
 ### 2. Clone each approved brick into the target
 
 ```bash
-node ~/DEV/SMARCH/tools/sma-clone.mjs \
+node tools/sma-clone.mjs \
   --brick <id> \
   --target /path/to/target/project \
   --write
