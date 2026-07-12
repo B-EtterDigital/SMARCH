@@ -1733,7 +1733,13 @@ async function commandGlobal(options: GraphifyOptions): Promise<number> {
 }
 
 async function commandSelftest() {
-  await selftestGlobalQuery({ graphifyPath: graphifyBin() });
+  // The global-query path shells out to the external graphify CLI (a separate
+  // Python install). It is optional and absent on bare CI runners, so skip its
+  // selftest when the binary is missing rather than failing the whole gate —
+  // every pure-logic selftest below still runs and provides coverage.
+  const graphifyCli = graphifyBin();
+  if (graphifyCli) await selftestGlobalQuery({ graphifyPath: graphifyCli });
+  else console.log("SKIP global-query selftest (graphify CLI not installed)");
   const stderrCap = graphifyGlobalCapMessage({
     stderr: "Error: global graph exceeds GRAPHIFY_MAX_GRAPH_BYTES 512MB",
     stdout: "",
