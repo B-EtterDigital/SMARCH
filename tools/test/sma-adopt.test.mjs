@@ -7,6 +7,7 @@ import test from 'node:test';
 
 const ADOPT = resolve(import.meta.dirname, '../sma-adopt.ts');
 
+/** @param {string} target @param {string[]} [args] */
 function adopt(target, args = []) {
   return execFileSync('node', [ADOPT, '--target', target, '--json', ...args], { encoding: 'utf8' });
 }
@@ -35,9 +36,9 @@ test('never overwrites existing files without --force', () => {
   try {
     writeFileSync(resolve(dir, 'sma'), 'KEEP ME\n');
     const first = JSON.parse(adopt(dir));
-    assert.ok(first.skipped.some((p) => p.endsWith('/sma')), 'existing sma must be skipped');
+    assert.ok(first.skipped.some((/** @type {string} */ p) => p.endsWith('/sma')), 'existing sma must be skipped');
     const forced = JSON.parse(adopt(dir, ['--force']));
-    assert.ok(forced.created.some((p) => p.endsWith('/sma')), '--force must overwrite');
+    assert.ok(forced.created.some((/** @type {string} */ p) => p.endsWith('/sma')), '--force must overwrite');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
