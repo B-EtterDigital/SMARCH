@@ -225,6 +225,30 @@ Best practical ceilings:
 - full Gen3 control plane + merge queue + module ownership: 15-25 agents,
 - 30+ only after most hot shared files are reduced or module-localized.
 
+## App Test Instances — SAIL (mandatory for app-under-test work)
+
+SAIL (Sweetspot App Instance Lease) is the pooled checkout system for
+app-under-test instances (Electron lanes and other CDP-debuggable apps).
+Spec: `$SMARCH_DIR/docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md`; operated
+through `sma sail`.
+
+- Never hand-launch an app instance for testing, never count lanes with
+  `pgrep`, never kill another agent's lane. The pool launches, caps, queues,
+  reuses, and cleans up.
+- Checkout: `sma sail acquire --project <id> --build auto --intent "..."
+  [--wait <seconds>] --json` → drive the returned `cdp` endpoint. Exit 13 =
+  pool full: queue with `--wait`, never spawn around the cap.
+- Fence steering: `sma sail check --lease <id>` before each steer batch
+  (exit 10 = your checkout is stale — stop immediately).
+- Release honestly: `sma sail release --lease <id> --verdict pass|fail`,
+  with `--dirty` whenever the test mutated app state so the next agent gets
+  a restart, not your leftovers.
+- Keep the human's in-window HUD honest: `sma sail hud --instance <id>
+  --phase steering|observing|idle --note "..."` on phase changes.
+- User-launched instances are not in the pool registry and are never
+  touched. Warm same-build reuse is automatic — matching fingerprints
+  inherit the exact booted instance of the previous agent.
+
 ## Claims And Completion
 
 Before saying work is done:

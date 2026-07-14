@@ -214,6 +214,27 @@ codex exec -s read-only -m gpt-5.6-sol \
   registers against a lease and auto-unregisters on exit; if the wrapper dies
   uncleanly, `sma spl reap` reclaims it. Before a fan-out, size the wave with
   `sma spl doctor` (recommended_agents) — the workforce cap must respect it.
+- **Dispatch DETACHED, never as a plain harness background task** (root-caused
+  2026-07-14). Orchestrating harnesses (Claude Code included) stop running
+  background tasks when a new user message arrives mid-run, and `codex exec`
+  reads stdin and exits 0 silently — mid-turn, no signal — when that stdin
+  pipe closes. The result looks like a mystery kill: clean exit code, empty
+  hand-back, session log ending mid-tool-call. Launch the wrapped executor in
+  its own session with stdin severed and a done-marker, then watch the marker
+  with a DISPOSABLE waiter (losing the waiter loses nothing):
+
+  ```bash
+  setsid bash -c 'sma spl-exec --lease auto --label "<task-id>" -- \
+    codex exec --yolo -m <model> -c model_reasoning_effort=xhigh \
+    --output-schema handback.schema.json "$(cat packet.json)" \
+    > <task>.handback.json 2> <task>.log < /dev/null; \
+    echo "exit=$?" > <task>.done' < /dev/null &
+  until [ -f <task>.done ]; do sleep 10; done   # disposable; re-arm freely
+  ```
+
+  A 0-byte hand-back with exit 0 is the stdin-EOF signature — treat it as
+  dispatch-infrastructure failure and re-dispatch; never misread it as the
+  executor refusing the task.
 
 - Model id rule: some codex auth modes (e.g. ChatGPT-subscription) expose
   base model ids only — fused ids like `gpt-5.6-sol-xhigh` are rejected
@@ -221,8 +242,10 @@ codex exec -s read-only -m gpt-5.6-sol \
   (`-c model_reasoning_effort=xhigh`). `--yolo` is mandatory for implementer
   lanes; reviewers stay read-only. If the configured id is unavailable, fall
   back to the base family id (e.g. `gpt-5.5`).
-- Use `codex exec resume --last "<fix instructions>"` for round-2 fixes so
-  the implementer keeps its session context instead of paying re-context.
+- Use `codex exec resume <SESSION_ID> "<fix instructions>"` for round-2 fixes
+  so the implementer keeps its session context instead of paying re-context.
+  Always pass the explicit session id from the implement log's header —
+  `--last` races other concurrent codex sessions on the same machine.
 - `codex review` (non-interactive review subcommand) and the official
   `codex-plugin-cc` plugin (`/codex:adversarial-review`, `/codex:rescue`,
   background `/codex:status` · `/codex:result` · `/codex:cancel`) are
