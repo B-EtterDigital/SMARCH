@@ -1,0 +1,19 @@
+{
+  "$comment": "SAIL project launch recipes — configuration data, not code. Each entry teaches `sma sail` how to launch, fingerprint, and cap one app-under-test. {PORT} is substituted in argv/env; {PID} additionally in post_launch. See docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md.",
+  "projects": {
+    "example-electron-app": {
+      "$comment": "Template entry — copy, rename, and adapt. Not launchable as-is.",
+      "cap": 3,
+      "lease_ttl_s": 900,
+      "idle_ttl_s": 900,
+      "wait_ttl_s": 1200,
+      "cwd": "/path/to/your/electron/project",
+      "argv": ["electron", ".", "--remote-debugging-port={PORT}"],
+      "env": { "MYAPP_ALLOW_PARALLEL_INSTANCE": "1", "MYAPP_REMOTE_DEBUGGING_PORT": "{PORT}" },
+      "ready_path": "/json/version",
+      "fingerprint_paths": ["dist"],
+      "hud": true,
+      "hud_offset_top": 44
+    }
+  }
+}

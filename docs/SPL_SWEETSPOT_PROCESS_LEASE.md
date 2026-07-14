@@ -4,6 +4,8 @@ Agents leave processes behind. SPL gives every process a lease, watches for the 
 
 SPL is the public, generic process-side twin of the SMA brick lease. Every registered process is identified by `{pid, start_token, lease_id, agent, label, registered_at}`. A PID alone is never an identity: `start_token` is platform-opaque and is checked again immediately before every signal.
 
+SPL's app-instance sibling is [SAIL](GLOSSARY.md#sail) (`docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md`): pooled, fingerprint-matched checkouts of app-under-test instances whose processes are SPL-registered, so the orphan story below covers them too.
+
 ## The three authority tiers
 
 - `ACTIVE`: registered and its lease is live. Protected; SPL never reaps it.

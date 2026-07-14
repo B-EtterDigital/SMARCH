@@ -9,7 +9,7 @@ definition. Each term stands on its own.
 
 - **Package or reuse code:** [brick](#brick), [manifest](#manifest), [registry](#registry), [canonical](#canonical), [capsule](#capsule).
 - **Prove that code is ready:** [gate](#gate), [SSA-v2](#ssa-v2), [SSI](#ssi), [STF](#stf), [SPE](#spe), [SRS](#srs), [SVA](#sva), [SRLS](#srls), [SEV](#sev), [SSC](#ssc), [provenance seal](#provenance-seal), [license lattice](#license-lattice).
-- **Coordinate agents safely:** [Gen3](#gen3), [lease](#lease), [agent-context](#agent-context), [conflict report](#conflict-report).
+- **Coordinate agents safely:** [Gen3](#gen3), [lease](#lease), [SAIL](#sail), [agent-context](#agent-context), [conflict report](#conflict-report).
 - **Use an optional workflow:** [SUP](#sup), [SMOA](#smoa), [SFF](#sff).
 
 ## Run the core checks
@@ -71,6 +71,10 @@ A provenance seal is a tamper-evident hash chain over a brick's creator history,
 ## Registry
 
 The registry is the searchable inventory of discovered bricks, builds, releases, and their evidence. Scanners populate it from projects and manifests so people and agents can compare candidates, trace provenance, and choose a verified reusable unit instead of searching repositories by hand.
+
+## SAIL
+
+SAIL, Sweetspot App Instance Lease, is the pooled checkout system for app-under-test instances (Electron lanes and other CDP-debuggable apps). It caps how many instances a project may run, hands a queued agent a warm instance when the build fingerprint matches, recycles dirty or stale-build instances instead of reusing them, registers every instance with SPL so orphans stay reclaimable, and drives the in-window test HUD that shows the human which agent is testing what. Operated through `sma sail`; specified in [docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md](SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md).
 
 ## SEV
 

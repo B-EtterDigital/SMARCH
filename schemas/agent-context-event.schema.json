@@ -90,6 +90,7 @@
         "lease_force_acquired",
         "spl_signal_sent",
         "spl_reap_outcome",
+        "sail_instance_event",
         "edit_planned",
         "edit_applied",
         "decision_recorded",
@@ -198,6 +199,26 @@
         "outcome": { "enum": ["terminated", "killed", "already-dead", "identity-mismatch", "signal-refused", "refused-protected", "refused-live-non-init-parent"] }
       }
     }
+    },
+    "sail": {
+      "type": "object",
+      "description": "Audited Sweetspot App Instance Lease pool transition: launch, checkout, release, recycle, or reap of an app-under-test instance.",
+      "required": ["action", "instance_id", "project"],
+      "additionalProperties": true,
+      "properties": {
+        "action": { "enum": ["instance-launched", "leased", "released", "instance-retired", "checkout-expired"] },
+        "instance_id": { "type": "string", "minLength": 1 },
+        "project": { "type": "string", "minLength": 1 },
+        "lease_id": { "type": "string" },
+        "agent": { "type": "string" },
+        "fingerprint": { "type": "string" },
+        "how": { "enum": ["reused", "fresh-launch"] },
+        "reason": { "type": "string" },
+        "verdict": { "type": ["string", "null"] },
+        "dirty": { "type": "boolean" },
+        "pid": { "type": ["integer", "null"] },
+        "port": { "type": ["integer", "null"] }
+      }
     },
     "proof": {
       "type": "array",

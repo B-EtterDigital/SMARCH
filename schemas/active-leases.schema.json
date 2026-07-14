@@ -63,7 +63,7 @@
         },
         "resource_kind": {
           "type": "string",
-          "description": "Selected resource kind; allowed values are `brick`, `build`, `release`, `registry-regen`, `wiki-regen`, `state-regen`, `import-lock`, `backlog`, `other`.",
+          "description": "Selected resource kind; allowed values are `brick`, `build`, `release`, `registry-regen`, `wiki-regen`, `state-regen`, `import-lock`, `backlog`, `app-instance`, `app-instance-pool`, `other`. The two app-instance kinds are SAIL's: `app-instance` is an agent's checkout of a pooled app-under-test instance, `app-instance-pool` is the pool's ownership lease that SPL registration hangs off.",
           "enum": [
             "brick",
             "build",
@@ -73,6 +73,8 @@
             "state-regen",
             "import-lock",
             "backlog",
+            "app-instance",
+            "app-instance-pool",
             "other"
           ]
         },

@@ -42,6 +42,23 @@ that never comes. Prevent it:
 `sma spl list` / `reap` surface and reclaim what still slips through; every
 reap is audited. See docs/SPL_SWEETSPOT_PROCESS_LEASE.md.
 
+## App test instances never bypass the pool (SAIL)
+
+Parallel app tests collide when agents hand-launch instances, count processes,
+or guess whether a running window belongs to another lane. Use the pool:
+
+- **Acquire every test lane.** Use `sma sail acquire`; never hand-launch the
+  app under test, count it with `pgrep`, or kill another lane.
+- **Fence every steering burst.** Run `sma sail check --lease <id>` before
+  driving the instance so an expired or re-issued checkout stops immediately.
+- **Release honestly.** Use `sma sail release`; add `--dirty` whenever the test
+  mutated instance state so the next checkout receives a recycled instance.
+- **Queue at capacity.** Exit 13 means retry with `--wait`, not launch a fourth
+  instance outside the pool.
+
+User-launched instances are structurally untouchable: SAIL only controls its
+own registry. See docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md.
+
 ## SMA Gen3 Collision Reporting (mandatory)
 
 - Before editing an SMA brick/module, use `npm run start:edit -- --project <id> --brick <id> --intent "..."` so the lease and `edit_planned` event are recorded together.

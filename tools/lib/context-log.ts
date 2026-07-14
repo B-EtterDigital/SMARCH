@@ -76,6 +76,7 @@ export const KINDS = new Set([
   'conflict_resolved',
   'spl_signal_sent',
   'spl_reap_outcome',
+  'sail_instance_event',
   'note',
 ]);
 
@@ -100,6 +101,7 @@ interface ContextEventInput {
   verification?: { status?: string; [key: string]: unknown } | null;
   lockHeld?: boolean;
   spl?: { pid: number; start_token: string; tier: string; reason: string; signal?: string; outcome?: string } | null;
+  sail?: { action: string; instance_id: string; project: string; [key: string]: unknown } | null;
 }
 
 type ContextEvent = Record<string, unknown>;
@@ -225,6 +227,7 @@ export function appendContextEvent({
   verification,
   lockHeld = false,
   spl,
+  sail,
 }: ContextEventInput): ContextEvent {
   validateContextEventInput({ project, brick, kind, intent, actorKind, verification });
 
@@ -255,6 +258,7 @@ export function appendContextEvent({
   if (commit) event.commit = commit;
   if (verification?.status) event.verification = verification;
   if (spl) event.spl = spl;
+  if (sail) event.sail = sail;
 
   const path = logPath(project, brick);
   if (!existsSync(dirname(path))) mkdirSync(dirname(path), { recursive: true });

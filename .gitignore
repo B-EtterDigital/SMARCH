@@ -36,6 +36,7 @@ security/keys/*.key.pem
 # Local SMA Gen3 runtime cache (rewritten whenever leases are acquired/released)
 registry/active-leases.generated.json
 registry/spl-registry.ndjson
+registry/sail-instances.generated.json
 
 # Local Graphify retrieval artifacts
 graphify-out/

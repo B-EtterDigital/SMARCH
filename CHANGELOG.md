@@ -6,6 +6,14 @@ versions track `package.json`.
 ## [Unreleased]
 
 ### Added
+- **SAIL — Sweetspot App Instance Lease** (`sma sail`): pooled,
+  fingerprint-matched checkouts of app-under-test instances. A hard 1–4 cap is
+  clamped by machine budget; strict FIFO queueing, matching-build warm reuse,
+  and dirty/stale recycling keep lanes bounded and compatible. Each pooled
+  instance and its in-window test HUD keeper process are SPL-registered. A
+  hermetic 9-case selftest is wired into `gen3:selftest`; new lease resource
+  kinds are `app-instance` / `app-instance-pool`, and the new context-event kind
+  is `sail_instance_event`.
 - **SPL — Sweetspot Process Lease** (`sma spl`, `sma spl-exec`): lease-bound
   process lifecycle. Processes live only while their lease lives; orphaned
   agent processes (codex/claude trees, detached watch-loops, `setsid` wrappers)

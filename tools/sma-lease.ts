@@ -103,6 +103,8 @@ const RESOURCE_KINDS = new Set([
   'state-regen',
   'import-lock',
   'backlog',
+  'app-instance',
+  'app-instance-pool',
   'other',
 ]);
 

@@ -61,6 +61,7 @@ const COMMANDS: Record<string, CommandEntry | undefined> = {
   lease:           { script: 'sma-lease.ts',          desc: 'Soft locks on bricks/regen targets' },
   spl:             { script: 'sma-spl.ts',            desc: 'Lease-bound process lifecycle and machine health' },
   'spl-exec':      { script: 'sma-spl-exec.ts',       desc: 'Run any command under a process lease (never orphans)' },
+  sail:            { script: 'sma-sail.ts',           desc: 'Pooled app-instance leases with queueing, reuse, and the test HUD' },
   adopt:           { script: 'sma-adopt.ts',          desc: 'Adopt the SMARCH engine into a project (consume, do not vendor)' },
   context:         { script: 'sma-context.ts',        desc: 'Append-only agent-context log' },
   conflict:        { script: 'sma-conflict.ts',       desc: 'Report and resolve Gen3 agent collisions' },
@@ -196,6 +197,7 @@ Usage:
 Multi-agent:
   sma lease         soft-lock on bricks/regen targets
   sma spl           lease-bound process lifecycle and agent-orphan health
+  sma sail          pooled app-instance leases: queueing, warm reuse, test HUD
   sma context       append-only intent log per brick
   sma conflict      report/resolve agent collisions
   sma portfolio-refresh queued/debounced scan + state + dashboard refresh

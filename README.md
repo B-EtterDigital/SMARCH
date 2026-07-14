@@ -90,6 +90,25 @@ signal; reaps are audited to the context log, never a blind `pkill`. Ships
 Linux-first with macOS and Windows adapters. See
 [docs/SPL_SWEETSPOT_PROCESS_LEASE.md](docs/SPL_SWEETSPOT_PROCESS_LEASE.md).
 
+## Test instances without collisions (SAIL — Sweetspot App Instance Lease)
+
+Parallel app testing needs running instances to stay attributable, bounded, and
+compatible with the build under test. SAIL checks agents out of a per-project
+pool: matching fingerprints enable warm reuse, dirty or stale instances recycle,
+and a strict FIFO queue enforces the machine-budget-clamped cap. User-launched
+instances remain outside pool authority.
+
+```bash
+sma sail acquire --project myapp --build auto --intent "..." --json
+sma sail check --lease <id>
+sma sail release --lease <id> --verdict pass
+sma sail reap
+sma sail selftest
+```
+
+See [docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md](docs/SAIL_SWEETSPOT_APP_INSTANCE_LEASE.md)
+for the pool, fencing, recycling, and HUD contracts.
+
 ## Internal and public, cleanly separated
 
 Add internal-only functionality without ever risking a leak: mark a file
