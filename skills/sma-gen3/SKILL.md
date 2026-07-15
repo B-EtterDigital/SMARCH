@@ -306,7 +306,9 @@ no other tree could ever have preserved it.)
   check against the live stamp, (4) fresh build from the canonical tree,
   (5) post-deploy fetch of the live stamp — fail loudly unless production
   serves exactly your stamp. An overwrite can then never masquerade as
-  success, and a clobber is refused before it happens.
+  success, and a clobber is refused before it happens. The SMARCH engine
+  ships this guard as `sma deploy-guard` (config `sma.deploy.json`, spec
+  `docs/SMA_DEPLOY_GUARD.md`) — adopt it instead of hand-rolling the checks.
 - Detection first: when production looks stale or wrong, `curl
   <site>/deploy-stamp.json` BEFORE blaming cache — it names whose build is
   live. Check the live stamp before deploying to see if someone shipped

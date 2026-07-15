@@ -53,6 +53,7 @@
     "anchor:verify": "node tools/sma-anchor.ts --verify",
     "gate:license": "node tools/sma-license-gate.ts --gate",
     "gate:all": "npm run gate:rules && npm run gate:scope && npm run source:size:gate && npm run gate:compliance && npm run gate:license && npm run provenance:verify && npm run gate:leaks && npm run gate:docs",
+    "deploy:guard": "node tools/sma-deploy-guard.mjs",
     "gate:promote": "npm run gate:all && npm run build:promote",
     "build:packets": "node tools/sma-build-packets.ts",
     "release": "node tools/sma-release.ts",

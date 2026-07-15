@@ -63,6 +63,7 @@ const COMMANDS: Record<string, CommandEntry | undefined> = {
   'spl-exec':      { script: 'sma-spl-exec.ts',       desc: 'Run any command under a process lease (never orphans)' },
   sail:            { script: 'sma-sail.ts',           desc: 'Pooled app-instance leases with queueing, reuse, and the test HUD' },
   adopt:           { script: 'sma-adopt.ts',          desc: 'Adopt the SMARCH engine into a project (consume, do not vendor)' },
+  'deploy-guard':  { script: 'sma-deploy-guard.mjs',  desc: 'Serialized, stamped, verified deploys (five mechanical refusals)' },
   context:         { script: 'sma-context.ts',        desc: 'Append-only agent-context log' },
   conflict:        { script: 'sma-conflict.ts',       desc: 'Report and resolve Gen3 agent collisions' },
   'context-check': { script: 'sma-context-check.ts',  desc: 'CI gate: modified manifests have context' },
