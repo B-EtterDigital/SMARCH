@@ -71,7 +71,7 @@ The names of modules differ by project; the workflow should not.
 | --- | --- | --- | --- |
 | `single-module` | Work stays inside one owned module | Fast lane; parallel only when paths do not overlap | Module gates plus Gen3 check |
 | `multi-module` | Multiple modules touched | Split by module where practical | Affected gates before completion |
-| `shared-hot-path` | Shell, package, CI, SMA, branding, native, shared data, or agent rules | One active owner only | Merge queue/release-train thinking |
+| `shared-hot-path` | Shell, package, CI, SMA, branding, native, shared data, agent rules, or an external deploy target | One active owner only | Merge queue/release-train thinking |
 | `unmapped` | Ownership missing | Single-agent work until mapped | Update `sma.gen3.json` or document why |
 
 Never dispatch parallel agents into the same shared hot path.
@@ -197,6 +197,46 @@ Hook changes are shared control-plane work. Keep hooks small, fail-soft where po
 
 Do not re-enable archived or legacy hooks until they are audited for Gen3 lanes, shell quoting, stdout cleanliness, stale-path behavior, and current project boundaries.
 
+## Clean-As-You-Work Dirty Discipline
+
+Agents must reduce dirty-tree noise while they work:
+- use `start:edit` and `end:edit`; current SMA automatically saves a local dirty baseline on start and prints the matching dirty delta on end,
+- `end:edit` also prints the Gen3 big-picture TLDR/readiness/current slice/next slices/horizon after releasing the lease; use `--no-preflight-tldr` only for scripted paths that require minimal output,
+- rely on default session attribution from `CODEX_THREAD_ID`, `CLAUDE_SESSION_ID`, or `SMA_SESSION_ID`; external/scripted agents should set `SMA_AGENT` and `SMA_SESSION_ID` before claiming work,
+- for old sessions or unleased audits, save a task-start dirty baseline with `npm run dirty:save -- --project <project-id>` and report with `npm run dirty:delta -- --project <project-id>`,
+- delete scratch output created by the current task,
+- commit verified task-scoped work in narrow batches when appropriate,
+- release active leases with `end:edit`,
+- never clean, stash, reset, or restore another agent's files.
+
+User-facing status should not dump unrelated dirty paths. Report dirty work as ownership buckets: `own`, `unrelated`, and `overlap/blocker`. Use one compact line for unrelated work, for example: `unrelated dirty work exists: 6 files, 0 untracked; left untouched`.
+
+Interim user-facing status must preserve the big picture. For portfolio or multi-agent work, run `npm run gen3:status -- --no-auto-refresh` from `$SMARCH_DIR` when available, then report the TLDR, readiness percent, recommended agents, launch slots, conflicts, graph packets, active leases, current slice, and at least the next two slices/outlook. Do this before giving a local-only slice update when the user asks "where are we overall?", "how long?", "what gains?", or similar.
+
+Use this reporting shape for SMA Gen3 status updates:
+- `✅ Done`: durable completed surfaces, with proof status when relevant.
+- `🔄 Current`: the active slice and why it matters to the portfolio goal.
+- `⬜ Next`: at least the next two slices, not only the immediate command.
+- `TLDR`: one sentence from `gen3:status`/`parallel:preflight` that preserves the whole program view.
+- `Gains`: percentage gains currently proven or predicted; label predictions clearly.
+- `ETA`: current-slice estimate plus the broader horizon when available.
+
+Do not report only a local packet/slice update for Gen3 coordination. The controller view is the product: users must be able to see what is done, what is in flight, what remains, and whether the practical-max concurrency ceiling is moving.
+
+For live or recently launched cleanup waves, run `npm run gen3:watch -- --no-auto-refresh` from `$SMARCH_DIR` and report wave reduction, remaining paths, held/stale/grew packets, conflict SLA, graph packets, active leases, gains, and next command. Open conflicts or critical conflict SLA items block reassignment until documented and resolved or explicitly handed off.
+
+Default command:
+- `npm run operator:packet` writes/refreshes the compact reusable executive/operator packet in `handoffs/operator-packet.generated.{json,md}`. Read this first before opening large dashboards or state files.
+- `npm run controller:snapshot:quiet -- --project <project-id>`
+- `npm run gen3:status -- --no-auto-refresh`
+- `npm run gen3:watch -- --no-auto-refresh`
+
+Dirty delta commands:
+- `npm run dirty:save -- --project <project-id>`
+- `npm run dirty:delta -- --project <project-id>`
+
+Use `npm run controller:snapshot -- --project <project-id> --dirty-limit <n>` or `--dirty-full` only for controller audits or when a conflict needs exact file names.
+
 ## Conflict Reporting
 
 Every collision must be documented before the blocked agent continues elsewhere.
@@ -217,6 +257,8 @@ Parallel work is safe only when all are true:
 - no two agents touch the same shared hot path,
 - work happens in isolated worktrees or clean branches,
 - each agent runs lane gates for its changes,
+- any deploy to a shared external target is serialized through the guarded
+  deploy entrypoint (see External Deploy Targets),
 - one controller integrates and reviews before release.
 
 Best practical ceilings:
@@ -224,6 +266,38 @@ Best practical ceilings:
 - affected CI + cache + worktrees: 8-12 agents,
 - full Gen3 control plane + merge queue + module ownership: 15-25 agents,
 - 30+ only after most hot shared files are reduced or module-localized.
+
+## External Deploy Targets — serialized, stamped, verified (mandatory)
+
+An external deploy target (Netlify/Vercel site, server, edge functions, store
+listing) is a shared hot path even when no repo file changes: push-style CLI
+deploys are last-writer-wins with zero visibility, so an unserialized second
+deployer silently clobbers production. (Observed failure mode: a concurrent
+agent session ran multiple raw CLI deploys from a divergent copy of the
+project — `branch: none, commit: none` in the host's deploy metadata — and
+overwrote a good production deploy; the enablers were a non-git project and
+no deploy guard.)
+
+- One active deployer per target. Deploying is `shared-hot-path` lane work;
+  never deploy to a target another agent is deploying to.
+- Never raw-CLI deploy in a repo that has a guarded deploy script — use the
+  sanctioned entrypoint (e.g. `pnpm deploy:web -- "why"`). If a project has a
+  deploy target but no guard, adding the guard IS part of your deploy task
+  (always-compliant rule applies).
+- A guarded deploy enforces four things: (1) atomic lock — refuse while any
+  other deploy to the target is alive, (2) a unique stamp baked into the
+  artifact and served at `/deploy-stamp.json` (who/when/which tree/why),
+  (3) fresh build from the canonical tree only, (4) post-deploy fetch of the
+  live stamp — fail loudly unless production serves exactly your stamp. An
+  overwrite can then never masquerade as success.
+- Detection first: when production looks stale or wrong, `curl
+  <site>/deploy-stamp.json` BEFORE blaming cache — it names whose build is
+  live. Check the live stamp before deploying to see if someone shipped
+  after your checkout.
+- A project that is not a git repo is not parallel-safe: agents hold
+  divergent full copies with no merge point. Treat it as `unmapped`/
+  single-agent, and make `git init` + a canonical tree part of bootstrap
+  before any fan-out.
 
 ## App Test Instances — SAIL (mandatory for app-under-test work)
 
@@ -249,6 +323,26 @@ through `sma sail`.
   touched. Warm same-build reuse is automatic — matching fingerprints
   inherit the exact booted instance of the previous agent.
 
+## SSB — Sweetspot Shadow Bench (optional, opt-in benchmark telemetry)
+
+SSB turns real work into benchmark data: agents log semantic events
+(`run.start`, `dispatch`, `handback`, `review`, `gate`, `judgment`,
+`intervention`, `discipline`, `mcp`, `delivery`, `insight`) via `sma ssb`,
+and per-model scorecards are derived from the accumulated stream. Spec:
+`$SMARCH_DIR/SSB-v1/FRAMEWORK.md`.
+
+- **Opt-in twice, never automatic:** local logging only if the project's
+  agent rules enable it; submission to the public bench only with explicit
+  `config.json` opt-in — anonymized by default, inspectable via
+  `sma ssb submit --dry-run` before anything leaves the machine.
+- When enabled: log gates with honest `attempt` numbers, log miss data
+  (infra-failures, REJECTs, interventions, own discipline violations) with
+  the same weight as successes, and close every run with
+  `sma ssb delivery`. The store is hash-chained and signed — `sma ssb
+  verify` proves it intact; never rewrite shards.
+- Fail-soft always: an SSB logging failure is a warning, never a reason to
+  block real work.
+
 ## Claims And Completion
 
 Before saying work is done:
@@ -266,7 +360,7 @@ If the branch is behind origin or heavily diverged, do not push directly unless 
 
 For a project that is modular like Acme Desktop but not yet Gen3-enabled:
 1. Identify modules from folder structure, package scripts, feature docs, and CI paths.
-2. Identify shared hot paths: package/dependencies, CI, app shell, auth, telemetry, agent docs, build/release, native/platform code.
+2. Identify shared hot paths: package/dependencies, CI, app shell, auth, telemetry, agent docs, build/release, external deploy targets, native/platform code.
 3. Create `sma.gen3.json` with `paidServicesEnabledByDefault: false`.
 4. Copy or adapt the Gen3 classifier and tests.
 5. Add `sma:gen3`, `sma:gen3:json`, `sma:gen3:check`.
