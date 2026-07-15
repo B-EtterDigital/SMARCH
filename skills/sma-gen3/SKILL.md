@@ -272,24 +272,41 @@ Best practical ceilings:
 An external deploy target (Netlify/Vercel site, server, edge functions, store
 listing) is a shared hot path even when no repo file changes: push-style CLI
 deploys are last-writer-wins with zero visibility, so an unserialized second
-deployer silently clobbers production. (Observed failure mode: a concurrent
-agent session ran multiple raw CLI deploys from a divergent copy of the
-project — `branch: none, commit: none` in the host's deploy metadata — and
-overwrote a good production deploy; the enablers were a non-git project and
-no deploy guard.)
+deployer silently clobbers production. (Observed failure modes: a concurrent
+agent session running raw CLI deploys from a divergent copy overwrote a good
+production deploy; later a SEQUENTIAL deploy from a lane tree that lacked
+another lane's shipped work clobbered production again — a lock alone stops
+races, not content loss, and the lost work had been deployed uncommitted, so
+no other tree could ever have preserved it.)
 
 - One active deployer per target. Deploying is `shared-hot-path` lane work;
-  never deploy to a target another agent is deploying to.
+  never deploy to a target another agent is deploying to. Where SMA lease
+  tooling exists, wrap the deploy in a deploy-target lease
+  (`sma lease run --resource-kind deploy --resource <target> -- <deploy
+  cmd>`) so concurrent deploys physically queue instead of racing.
 - Never raw-CLI deploy in a repo that has a guarded deploy script — use the
   sanctioned entrypoint (e.g. `pnpm deploy:web -- "why"`). If a project has a
   deploy target but no guard, adding the guard IS part of your deploy task
   (always-compliant rule applies).
-- A guarded deploy enforces four things: (1) atomic lock — refuse while any
-  other deploy to the target is alive, (2) a unique stamp baked into the
-  artifact and served at `/deploy-stamp.json` (who/when/which tree/why),
-  (3) fresh build from the canonical tree only, (4) post-deploy fetch of the
-  live stamp — fail loudly unless production serves exactly your stamp. An
-  overwrite can then never masquerade as success.
+- Deploys ship only clean, committed, pushed trees. A dirty-tree deploy is
+  forbidden: it creates production state that exists in no tree, which the
+  next deploy MUST then destroy. The stamp records the exact commit.
+- Fast-forward only — the rule that stops sequential clobbers: before
+  building, the guard fetches the live stamp and REFUSES unless the live
+  commit is an ancestor of the deploying HEAD ("production has work your
+  tree does not include; integrate first"). Two lanes deploying their own
+  trees in turn is still a clobber even with a lock; sequential is not
+  integrated. Rollback/override requires an explicit human-confirmed flag
+  recorded in the stamp.
+- Lane agents do not release. Deploys go from the canonical branch after
+  integration (one release owner) — release-train, not per-lane shipping.
+- A guarded deploy therefore enforces five things: (1) deploy-target
+  lease/atomic lock, (2) clean committed tree with the commit baked into
+  `/deploy-stamp.json` (who/when/commit/why), (3) fast-forward ancestor
+  check against the live stamp, (4) fresh build from the canonical tree,
+  (5) post-deploy fetch of the live stamp — fail loudly unless production
+  serves exactly your stamp. An overwrite can then never masquerade as
+  success, and a clobber is refused before it happens.
 - Detection first: when production looks stale or wrong, `curl
   <site>/deploy-stamp.json` BEFORE blaming cache — it names whose build is
   live. Check the live stamp before deploying to see if someone shipped
